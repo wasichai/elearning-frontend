@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+.DS_Store
+.idea/
+.vscode/
+
+# variables locales: nunca en el repositorio (la plantilla es .env.example)
+.env
+.env.*
+!.env.example
