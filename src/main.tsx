@@ -1,11 +1,13 @@
+import { WasichaiApp } from '@wasichai/core'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { appName } from './config'
+import { createConfig } from './config'
+import { modules } from './modules'
 import './index.css'
 
-// provisional: E6.2 monta aquí <WasichaiApp>
+// una sola app y un solo router: los de WasichaiApp (ADR-0005 del backend)
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <main className="flex h-screen items-center justify-center text-2xl font-semibold">{appName()}</main>
+    <WasichaiApp config={createConfig()} modules={modules} />
   </StrictMode>
 )
