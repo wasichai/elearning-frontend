@@ -26,7 +26,20 @@ yarn dev            # http://localhost:5180
 ```
 
 `yarn dev` envía `/api` al backend (`http://localhost:8090` por defecto; otro con `WASICHAI_API_URL`). Para arrancar
-el backend, sigue su [README](https://github.com/wasichai/elearning-backend#readme).
+el backend, sigue su [README](https://github.com/wasichai/elearning-backend#readme). Con el backend en el perfil `dev`,
+el login propone el administrador de la semilla de Wasichai (`admin@wasichai.local`).
+
+Variables (opcionales; copia `.env.example` a `.env` o expórtalas en tu shell):
+
+| Variable           | Para qué                                                                    | Por defecto             |
+| ------------------ | --------------------------------------------------------------------------- | ----------------------- |
+| `VITE_APP_NAME`    | Nombre visible del producto; se fija al compilar                            | `wasichai-learning`     |
+| `WASICHAI_API_URL` | Backend al que `yarn dev` y `yarn preview` envían `/api`; no entra al build | `http://localhost:8090` |
+
+## Estructura
+
+La aplicación es una sola `<WasichaiApp>` de `@wasichai/core` (sin router propio): `src/config.ts` arma su
+configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tailwind con el tema de `@wasichai/ui`.
 
 ## Comandos
 

@@ -1,1 +1,5 @@
 @import 'tailwindcss';
+/* tokens y tema claro/oscuro de @wasichai/ui */
+@import '@wasichai/ui/theme.css';
+/* los paquetes @wasichai traen nombres de clase, no CSS: Tailwind los escanea para generarlas */
+@source '../node_modules/@wasichai';
