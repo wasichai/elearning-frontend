@@ -7,7 +7,7 @@ describe('modules', () => {
   it('forman un registro válido junto a coreModule', () => {
     const registry = createRegistry([coreModule, ...modules])
 
-    expect(registry.modules.map((module) => module.id)).toEqual([coreModule.id, ...modules.map((module) => module.id)])
+    expect(registry.modules.map((module) => module.id)).toEqual([coreModule.id, 'catalog'])
     expect(registry.routes.length).toBeGreaterThan(0)
   })
 })
