@@ -100,15 +100,14 @@ const es = {
   lessonType: {
     LECTURA: 'Lectura',
     VIDEO: 'Vídeo',
-    PRACTICA: 'Práctica',
-    CUESTIONARIO: 'Cuestionario',
-    TAREA: 'Tarea',
+    PRESENTACION: 'Presentación',
+    LABORATORIO: 'Laboratorio',
+    EVALUACION: 'Evaluación',
     SESION: 'Sesión en vivo'
   },
   teacherRole: {
     TITULAR: 'titular',
-    ASISTENTE: 'asistente',
-    INVITADO: 'invitado'
+    ASISTENTE: 'asistente'
   },
   workload: {
     caption_one: 'Horas en {{count}} semana',
@@ -279,15 +278,14 @@ const en: typeof es = {
   lessonType: {
     LECTURA: 'Reading',
     VIDEO: 'Video',
-    PRACTICA: 'Practice',
-    CUESTIONARIO: 'Quiz',
-    TAREA: 'Assignment',
+    PRESENTACION: 'Slides',
+    LABORATORIO: 'Lab',
+    EVALUACION: 'Assessment',
     SESION: 'Live session'
   },
   teacherRole: {
     TITULAR: 'lead',
-    ASISTENTE: 'assistant',
-    INVITADO: 'guest'
+    ASISTENTE: 'assistant'
   },
   workload: {
     caption_one: 'Hours over {{count}} week',
