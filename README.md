@@ -41,6 +41,14 @@ Variables (opcionales; copia `.env.example` a `.env` o expórtalas en tu shell):
 La aplicación es una sola `<WasichaiApp>` de `@wasichai/core` (sin router propio): `src/config.ts` arma su
 configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tailwind con el tema de `@wasichai/ui`.
 
+| Módulo                   | Qué es                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `src/modules/catalog/`   | Catálogo público (`/cursos`, `/cursos/:slug`), sin sesión                                         |
+| `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje» |
+
+Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
+formato de fechas, estado de error) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
+
 ## Comandos
 
 | Comando          | Qué hace                                             |
@@ -59,7 +67,9 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 
 `yarn e2e` recorre la build de producción en Chromium (Playwright), con el idioma `es-PE` y la zona `America/Lima`. No
 necesita backend: `e2e/api.ts` contesta `/api/**` dentro del navegador con los ejemplos del contrato
-(`src/modules/catalog/test/fixtures.ts`, los mismos de las pruebas unitarias) y filtra como el servidor. El servidor web lo
+(`src/modules/*/test/fixtures.ts`, los mismos de las pruebas unitarias) y filtra como el servidor. Las pruebas del aula
+entran con una sesión de estudiante simulada (`fakeApi(page, { signedIn: true })`), y el aula guarda su progreso en la
+prueba, así una recarga lo conserva como el servidor. El servidor web lo
 arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
 que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 

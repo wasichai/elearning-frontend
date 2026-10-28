@@ -1,7 +1,8 @@
 import { hashKey, keepPreviousData, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
-import { ApiError, useApiClient, type ApiClient } from '@wasichai/core'
+import { useApiClient, type ApiClient } from '@wasichai/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { retryNetwork } from '../../shared/retry'
 import { coursePageSchema, courseDetailSchema, parseContract, type CourseDetail, type CoursePage, type Sort } from './contract'
 
 // rutas de la API pública, relativas a apiBaseUrl (el cliente de @wasichai/core las completa)
@@ -72,12 +73,6 @@ export async function fetchCourses(client: ApiClient, filters: CatalogFilters, s
 export async function fetchCourse(client: ApiClient, slug: string, signal?: AbortSignal): Promise<CourseDetail> {
   const body = await client.request<unknown>(coursePath(slug), { signal })
   return parseContract(courseDetailSchema, `GET courses/${slug}`, body)
-}
-
-// solo se reintenta lo que pudo ser la red (fetch lanza TypeError). un 4xx, un 5xx o un contrato roto se muestran
-// enseguida, con su botón de reintentar: repetirlos solos no arregla nada y retrasa el mensaje
-export function retryNetwork(failures: number, error: unknown): boolean {
-  return failures < 2 && !(error instanceof ApiError) && error instanceof TypeError
 }
 
 // una consulta que se quedó sin respuesta: el cliente de @wasichai/core, ante un 401, cierra la sesión y vacía la caché
