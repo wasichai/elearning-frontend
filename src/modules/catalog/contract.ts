@@ -1,4 +1,7 @@
 import { z } from 'zod'
+import { civilDate, ianaTimeZone as timeZone } from '../../shared/contract'
+
+export { ContractError, parseContract } from '../../shared/contract'
 
 // el contrato v1 de la API pública del catálogo (GET /lms/public/catalog/…), tal como lo publica el backend.
 // los objetos no son estrictos: un campo nuevo del servidor no rompe la interfaz; uno que falta o cambia de tipo, sí.
@@ -13,21 +16,6 @@ export type Level = (typeof LEVELS)[number]
 export type Modality = (typeof MODALITIES)[number]
 export type Sort = (typeof SORTS)[number]
 
-// una zona que Intl no conoce haría fallar el formateo de fechas al pintar: se rechaza aquí, con el resto del contrato
-const timeZone = z.string().refine(
-  (zone) => {
-    try {
-      new Intl.DateTimeFormat('en', { timeZone: zone })
-      return true
-    } catch {
-      return false
-    }
-  },
-  { message: 'zona horaria IANA desconocida' }
-)
-
-// fecha civil YYYY-MM-DD en la zona de la edición
-const civilDate = z.iso.date()
 const hours = z.number().nonnegative()
 const lines = z.array(z.string())
 
@@ -170,20 +158,3 @@ export type CourseDetail = z.infer<typeof courseDetailSchema>
 export type NextOffering = z.infer<typeof nextOffering>
 export type Offering = z.infer<typeof offering>
 export type Credits = z.infer<typeof credits>
-
-// la respuesta llegó (2xx) pero no cumple el contrato: un desajuste entre versiones de API e interfaz, no un fallo del usuario
-export class ContractError extends Error {
-  readonly resource: string
-
-  constructor(resource: string, error: z.ZodError) {
-    super(`la respuesta de ${resource} no cumple el contrato del catálogo:\n${z.prettifyError(error)}`)
-    this.name = 'ContractError'
-    this.resource = resource
-  }
-}
-
-export function parseContract<T>(schema: z.ZodType<T>, resource: string, body: unknown): T {
-  const result = schema.safeParse(body)
-  if (!result.success) throw new ContractError(resource, result.error)
-  return result.data
-}

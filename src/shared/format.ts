@@ -1,4 +1,4 @@
-// formato de fechas, horas y cantidades del catálogo, en el idioma de la interfaz
+// formato de fechas, horas y cantidades, en el idioma de la interfaz (catálogo y aula)
 
 // diferencia (ms) entre la hora de pared de la zona y UTC en ese instante
 function zoneOffset(instant: number, timeZone: string): number {
