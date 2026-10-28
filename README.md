@@ -43,14 +43,27 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 
 ## Comandos
 
-| Comando          | Qué hace                                            |
-| ---------------- | --------------------------------------------------- |
-| `yarn dev`       | Servidor de desarrollo en el puerto 5180            |
-| `yarn lint`      | Formato (Prettier) y tipos (TypeScript)             |
-| `yarn typecheck` | Solo tipos                                          |
-| `yarn test`      | Pruebas con Vitest                                  |
-| `yarn build`     | Tipos y build de producción en `dist/`              |
-| `yarn preview`   | Sirve `dist/` en el puerto 5180, con el mismo proxy |
-| `yarn format`    | Formatea todo con Prettier                          |
+| Comando          | Qué hace                                             |
+| ---------------- | ---------------------------------------------------- |
+| `yarn dev`       | Servidor de desarrollo en el puerto 5180             |
+| `yarn lint`      | Formato (Prettier) y tipos (TypeScript)              |
+| `yarn typecheck` | Solo tipos                                           |
+| `yarn test`      | Pruebas con Vitest                                   |
+| `yarn e2e`       | Pruebas extremo a extremo (Playwright, API simulada) |
+| `yarn build`     | Tipos y build de producción en `dist/`               |
+| `yarn preview`   | Sirve `dist/` en el puerto 5180, con el mismo proxy  |
+| `yarn format`    | Formatea todo con Prettier                           |
+
+## Pruebas extremo a extremo
+
+`yarn e2e` recorre la build de producción en Chromium (Playwright), con el idioma `es-PE` y la zona `America/Lima`. No
+necesita backend: `e2e/api.ts` contesta `/api/**` dentro del navegador con los ejemplos del contrato
+(`src/modules/catalog/test/fixtures.ts`, los mismos de las pruebas unitarias) y filtra como el servidor. El servidor web lo
+arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
+que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
+
+La primera vez, instala el navegador: `npx playwright install chromium` (en Linux, `--with-deps` también instala las
+librerías del sistema). Si una prueba falla, `npx playwright show-trace test-results/<prueba>/trace.zip` enseña el
+recorrido paso a paso.
 
 Los mensajes de commit siguen Conventional Commits (lo comprueba commitlint al hacer commit).
