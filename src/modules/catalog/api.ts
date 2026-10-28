@@ -119,6 +119,7 @@ export function useCatalogFilters(): [CatalogFilters, (patch: Partial<CatalogFil
     },
     [filters, setParams]
   )
-  const clear = useCallback(() => setParams(filtersToSearch({ ...filtersFromSearch(new URLSearchParams()), sort: filters.sort })), [filters.sort, setParams])
+  // limpiar vuelve al catálogo entero, orden incluido: también saca de un 400 por un parámetro de la URL
+  const clear = useCallback(() => setParams({}), [setParams])
   return [filters, update, clear]
 }
