@@ -9,7 +9,7 @@ import type { CourseDetail, Credits, Offering } from './contract'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from '../../shared/format'
 import { Fact, IllustrativeMark, offeringState, useOpenLabel } from './parts'
 import { ProblemState, useProblemText } from './ProblemState'
-import { PublicHeading, PublicLayout } from './PublicLayout'
+import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
 import { CATALOG_ROUTES } from './routes'
 
 // con más lecciones que estas, cada unidad pliega su lista: el temario se recorre por unidades sin un muro de texto

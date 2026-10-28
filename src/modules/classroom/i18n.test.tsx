@@ -3,7 +3,8 @@ import { join } from 'node:path'
 import { screen } from '@testing-library/react'
 import { mockFetch, renderWithProviders, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
-import { COMPLETIONS, OFFERING_STATUSES, QUESTION_TYPES } from './contract'
+import { ATTENDANCE_STATUSES, SESSION_MODALITIES, SESSION_STATUSES, SESSION_TYPES } from '../../shared/sessions'
+import { COMPLETION_RULES, COMPLETIONS, OFFERING_STATUSES, QUESTION_TYPES } from './contract'
 import { classroomMessages } from './i18n'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
@@ -51,10 +52,18 @@ describe('textos del aula', () => {
       ...QUESTION_TYPES.map((type) => `question.type.${type}`),
       ...['fiveMinutes', 'oneMinute', 'over'].map((stage) => `attempt.stage.${stage}`),
       ...['correct', 'incorrect'].map((verdict) => `result.${verdict}`),
+      ...SESSION_STATUSES.map((status) => `sessions.status.${status}`),
+      ...SESSION_TYPES.map((type) => `sessions.type.${type}`),
+      ...SESSION_MODALITIES.map((modality) => `sessions.modality.${modality}`),
+      ...ATTENDANCE_STATUSES.map((status) => `sessions.attendanceStatus.${status}`),
+      ...COMPLETION_RULES.map((rule) => `completionPanel.rule.${rule}`),
       ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [
         `problem.enrollments.${kind}`,
         `problem.classroom.${kind}`,
         `problem.attempt.${kind}`,
+        `problem.sessions.${kind}`,
+        `problem.completion.${kind}`,
+        `problem.certificate.${kind}`,
         `problem.hint.${kind}`
       ]),
       'problem.hint.unexpected'

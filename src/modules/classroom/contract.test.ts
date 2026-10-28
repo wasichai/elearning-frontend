@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { sessionListSchema, sessionSchema } from '../../shared/sessions'
 import {
   attemptSchema,
+  certificateSchema,
   classroomSchema,
+  completionSchema,
   ContractError,
   enrollmentListSchema,
   enrollmentSchema,
@@ -12,11 +15,15 @@ import {
 import {
   assessmentClassroom,
   assessmentSummary,
+  certificate,
   classroom,
+  completionMet,
+  completionPending,
   enrollment,
   finishedEnrollment,
   gradedAttempt,
   openAttempt,
+  sessions,
   submission,
   submittedAttempt
 } from './test/fixtures'
@@ -136,5 +143,54 @@ describe('contrato de las evaluaciones (F3)', () => {
 
   it('rechaza una entrega sin URL de subida', () => {
     expect(() => parseContract(submissionSchema, 'submission', { id: 'ent-1', file: null })).toThrow('uploadUrl')
+  })
+})
+
+const session = sessions[0]!
+
+describe('contrato de sesiones, finalización y certificado (F3)', () => {
+  it('acepta los ejemplos del documento', () => {
+    expect(parseContract(sessionListSchema, 'sessions', sessions).map((s) => s.status)).toEqual(['REPROGRAMADA', 'CANCELADA', 'PROGRAMADA'])
+    // el docente las recibe sin asistencia
+    const { attendance: _attendance, ...withoutAttendance } = session
+    expect(parseContract(sessionSchema, 'session', withoutAttendance).attendance).toBeUndefined()
+    expect(parseContract(completionSchema, 'completion', completionPending).met).toBe(false)
+    expect(parseContract(completionSchema, 'completion', completionMet).rules).toHaveLength(3)
+    expect(parseContract(completionSchema, 'completion', { met: true, rules: [] }).met).toBe(true)
+    expect(parseContract(certificateSchema, 'certificate', certificate).code).toBe('K7Q2-M9XW-4RTB')
+    expect(parseContract(enrollmentSchema, 'enrollment', { ...enrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }).certificateCode).toBe(
+      'K7Q2-M9XW-4RTB'
+    )
+    expect(parseContract(enrollmentSchema, 'enrollment', { ...enrollment, certificateCode: null }).certificateCode).toBeNull()
+  })
+
+  it.each([
+    ['enlace http', { ...session, link: 'http://meet.example/x' }, 'https'],
+    ['enlace javascript:', { ...session, link: 'javascript:alert(1)' }, 'https'],
+    ['termina antes de empezar', { ...session, end: '2026-09-08T12:00:00Z' }, 'termina antes'],
+    ['estado desconocido', { ...session, status: 'SUSPENDIDA' }, 'status'],
+    ['asistencia desconocida', { ...session, attendance: 'QUIZAS' }, 'attendance'],
+    ['modalidad desconocida', { ...session, modality: 'HIBRIDA' }, 'modality'],
+    ['zona inexistente', { ...session, timeZone: 'America/Atlantis' }, 'zona horaria']
+  ])('rechaza una sesión: %s', (_case, body, hint) => {
+    expect(() => parseContract(sessionSchema, 'GET classroom/enrollments/x/sessions', body)).toThrow(ContractError)
+    expect(() => parseContract(sessionSchema, 'GET classroom/enrollments/x/sessions', body)).toThrow(hint)
+  })
+
+  it.each([
+    ['met que no coincide con sus reglas', { ...completionPending, met: true }, 'met'],
+    ['regla desconocida', { met: false, rules: [{ rule: 'PAGO', met: false, detail: '' }] }, 'rule'],
+    ['reglas que faltan', { met: true }, 'rules']
+  ])('rechaza una finalización: %s', (_case, body, hint) => {
+    expect(() => parseContract(completionSchema, 'completion', body)).toThrow(hint)
+  })
+
+  it.each([
+    ['sin código', { ...certificate, code: '' }, 'code'],
+    ['sin titular', { ...certificate, holderName: '' }, 'holderName'],
+    ['fecha de la edición mal formada', { ...certificate, offering: { ...certificate.offering, endDate: '16/10/2026' } }, 'endDate'],
+    ['horas como texto', { ...certificate, totalHours: '18' }, 'totalHours']
+  ])('rechaza un certificado: %s', (_case, body, hint) => {
+    expect(() => parseContract(certificateSchema, 'certificate', body)).toThrow(hint)
   })
 })

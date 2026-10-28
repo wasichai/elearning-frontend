@@ -16,7 +16,9 @@ const es = {
     reviewLabel: 'Repasar «{{course}}»',
     empty: 'Todavía no estás matriculado en ningún curso',
     emptyHint: 'Explora el catálogo y matricúlate en una edición con la inscripción abierta.',
-    toCatalog: 'Ver el catálogo'
+    toCatalog: 'Ver el catálogo',
+    certified: 'Certificado emitido',
+    certificate: 'Ver el certificado de «{{course}}»'
   },
   offering: {
     dates: 'Edición',
@@ -51,7 +53,12 @@ const es = {
     next: 'Siguiente',
     steps: 'Lección anterior y siguiente',
     lessonMissing: 'Esa lección no está en este curso; te mostramos la siguiente por hacer.',
-    empty: 'Este curso todavía no tiene lecciones.'
+    empty: 'Este curso todavía no tiene lecciones.',
+    more: 'Más del curso',
+    finished: 'Este curso está finalizado: puedes repasarlo, pero ya no se registra avance ni se empiezan intentos.'
+  },
+  subpage: {
+    back: '← Volver al aula'
   },
   completion: {
     section: 'Tu avance en esta lección',
@@ -168,6 +175,101 @@ const es = {
     solution: 'Respuesta correcta: {{answer}}',
     accepted: 'Respuestas aceptadas: {{answers}}'
   },
+  sessions: {
+    title: 'Sesiones en vivo',
+    loading: 'Cargando las sesiones…',
+    none: 'Este curso no tiene sesiones en vivo.',
+    noneForLesson: 'Esta lección aún no tiene sesión programada.',
+    ofLesson: 'La sesión de esta lección',
+    timeZone: 'Horas en {{zone}}',
+    status: {
+      PROGRAMADA: 'Programada',
+      REPROGRAMADA: 'Reprogramada',
+      CANCELADA: 'Cancelada'
+    },
+    type: {
+      TEORIA: 'Teoría',
+      LABORATORIO: 'Laboratorio',
+      CONSULTA: 'Consulta',
+      RECUPERACION: 'Recuperación'
+    },
+    modality: {
+      PRESENCIAL: 'Presencial',
+      VIRTUAL: 'Virtual'
+    },
+    recovers: 'Recupera «{{title}}»',
+    join: 'Entrar a la sesión',
+    joinLabel: 'Entrar a la sesión «{{title}}» (se abre en otra pestaña)',
+    toLesson: 'Ver la lección',
+    attendance: 'Tu asistencia:',
+    attendanceNone: 'aún sin registrar',
+    attendanceStatus: {
+      PRESENTE: 'presente',
+      TARDE: 'tarde',
+      AUSENTE: 'ausente',
+      JUSTIFICADO: 'justificada'
+    }
+  },
+  completionPanel: {
+    title: 'Finalización y certificado',
+    titleIssued: 'Tu certificado',
+    loading: 'Cargando las reglas de finalización…',
+    rules: 'Para terminar el curso',
+    noRules: 'Este curso no declara reglas de finalización.',
+    met: 'Cumples todas las reglas: ya puedes pedir tu certificado.',
+    notMet: 'Aún te falta alguna regla.',
+    rule: {
+      LESSONS: 'Completar todas las lecciones',
+      ASSESSMENTS: 'Aprobar todas las evaluaciones',
+      ATTENDANCE: 'Asistencia mínima a las sesiones'
+    },
+    ruleMet: '(cumplida)',
+    rulePending: '(pendiente)'
+  },
+  certificate: {
+    view: 'Ver e imprimir el certificado',
+    issuedTitle: 'Tu certificado',
+    issued: 'Certificado emitido a nombre de {{name}}.',
+    alreadyIssued: 'Ya tenías un certificado emitido a nombre de {{name}}; es el mismo, no se emite otro.',
+    code: 'Código de verificación: {{code}}',
+    requestTitle: 'Pedir el certificado',
+    name: 'Nombre para el certificado',
+    nameHint: 'Tal como quieres que aparezca, hasta {{max}} caracteres. No se puede cambiar después.',
+    nameInvalid: 'Escribe un nombre de 1 a {{max}} caracteres.',
+    request: 'Emitir mi certificado',
+    requesting: 'Emitiendo…',
+    notYet: 'Cuando cumplas todas las reglas podrás pedir aquí tu certificado.',
+    pendingRules: 'El servidor indica que aún falta alguna regla; arriba está la lista actualizada.',
+    failed: 'No pudimos emitir el certificado. Inténtalo de nuevo.',
+    failedStatus: 'No pudimos emitir el certificado (error {{status}}). Inténtalo de nuevo.',
+    documentTitle: 'Certificado de {{name}} · {{course}}',
+    heading: 'Certificado de aprobación',
+    certifies: 'Se certifica que',
+    passedCourse: 'aprobó el curso «{{course}}».',
+    completedCourse: 'completó el curso «{{course}}».',
+    courseCode: 'Curso',
+    courseVersion: '{{code}} · versión {{version}}',
+    offering: 'Edición',
+    hours: 'Carga de trabajo',
+    hoursValue: '{{value}} h',
+    issuedAt: 'Emitido el',
+    rule: '{{rule}}: {{detail}}',
+    verifyCode: 'Código {{code}}',
+    verifyAt: 'Verificable en {{url}}',
+    print: 'Imprimir'
+  },
+  verify: {
+    title: 'Verificar un certificado',
+    subtitle: 'Escribe el código que figura en el certificado para comprobar que es auténtico.',
+    code: 'Código del certificado',
+    placeholder: 'XXXX-XXXX-XXXX',
+    submit: 'Verificar',
+    notFound: 'No hay ningún certificado con ese código',
+    notFoundHint: 'Revisa el código «{{code}}»: puede tener un error de escritura.',
+    loading: 'Verificando el certificado…',
+    valid: 'Certificado auténtico, emitido por esta plataforma.',
+    another: 'Verificar otro certificado'
+  },
   lessonStatus: {
     NO_INICIADA: 'Sin empezar',
     INICIADA: 'Empezada',
@@ -223,6 +325,33 @@ const es = {
       network: 'No pudimos conectar con el servidor',
       contract: 'No pudimos leer la respuesta del servidor'
     },
+    sessions: {
+      invalid: 'No pudimos cargar las sesiones',
+      notFound: 'No encontramos las sesiones de este curso',
+      conflict: 'No pudimos cargar las sesiones',
+      refused: 'No pudimos cargar las sesiones',
+      server: 'No pudimos cargar las sesiones',
+      network: 'No pudimos conectar con el servidor',
+      contract: 'No pudimos leer la respuesta del servidor'
+    },
+    completion: {
+      invalid: 'No pudimos cargar las reglas de finalización',
+      notFound: 'No encontramos este curso en tus matrículas',
+      conflict: 'No pudimos cargar las reglas de finalización',
+      refused: 'No pudimos cargar las reglas de finalización',
+      server: 'No pudimos cargar las reglas de finalización',
+      network: 'No pudimos conectar con el servidor',
+      contract: 'No pudimos leer la respuesta del servidor'
+    },
+    certificate: {
+      invalid: 'No pudimos verificar el certificado',
+      notFound: 'No hay ningún certificado con ese código',
+      conflict: 'No pudimos verificar el certificado',
+      refused: 'No pudimos verificar el certificado',
+      server: 'No pudimos verificar el certificado',
+      network: 'No pudimos conectar con el servidor',
+      contract: 'No pudimos leer la respuesta del servidor'
+    },
     hint: {
       invalid: 'El servidor no aceptó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
       notFound: 'El servidor no reconoce esta dirección (error {{status}}). Inténtalo de nuevo más tarde.',
@@ -255,7 +384,9 @@ const en: typeof es = {
     reviewLabel: 'Review “{{course}}”',
     empty: 'You are not enrolled in any course yet',
     emptyHint: 'Browse the catalog and enroll in an offering that is open for enrollment.',
-    toCatalog: 'Browse the catalog'
+    toCatalog: 'Browse the catalog',
+    certified: 'Certificate issued',
+    certificate: 'View the certificate for “{{course}}”'
   },
   offering: {
     dates: 'Offering',
@@ -290,7 +421,12 @@ const en: typeof es = {
     next: 'Next',
     steps: 'Previous and next lesson',
     lessonMissing: 'That lesson is not part of this course; here is your next one.',
-    empty: 'This course has no lessons yet.'
+    empty: 'This course has no lessons yet.',
+    more: 'More from the course',
+    finished: 'This course is finished: you can review it, but progress is no longer recorded and no new attempts can be started.'
+  },
+  subpage: {
+    back: '← Back to the classroom'
   },
   completion: {
     section: 'Your progress in this lesson',
@@ -407,6 +543,101 @@ const en: typeof es = {
     solution: 'Correct answer: {{answer}}',
     accepted: 'Accepted answers: {{answers}}'
   },
+  sessions: {
+    title: 'Live sessions',
+    loading: 'Loading the sessions…',
+    none: 'This course has no live sessions.',
+    noneForLesson: 'This lesson has no session scheduled yet.',
+    ofLesson: 'The session for this lesson',
+    timeZone: 'Times in {{zone}}',
+    status: {
+      PROGRAMADA: 'Scheduled',
+      REPROGRAMADA: 'Rescheduled',
+      CANCELADA: 'Cancelled'
+    },
+    type: {
+      TEORIA: 'Theory',
+      LABORATORIO: 'Lab',
+      CONSULTA: 'Office hours',
+      RECUPERACION: 'Make-up'
+    },
+    modality: {
+      PRESENCIAL: 'In person',
+      VIRTUAL: 'Online'
+    },
+    recovers: 'Makes up for “{{title}}”',
+    join: 'Join the session',
+    joinLabel: 'Join the session “{{title}}” (opens in a new tab)',
+    toLesson: 'Go to the lesson',
+    attendance: 'Your attendance:',
+    attendanceNone: 'not recorded yet',
+    attendanceStatus: {
+      PRESENTE: 'present',
+      TARDE: 'late',
+      AUSENTE: 'absent',
+      JUSTIFICADO: 'excused'
+    }
+  },
+  completionPanel: {
+    title: 'Completion and certificate',
+    titleIssued: 'Your certificate',
+    loading: 'Loading the completion rules…',
+    rules: 'To finish the course',
+    noRules: 'This course declares no completion rules.',
+    met: 'You meet every rule: you can now request your certificate.',
+    notMet: 'Some rule is still pending.',
+    rule: {
+      LESSONS: 'Complete every lesson',
+      ASSESSMENTS: 'Pass every assessment',
+      ATTENDANCE: 'Minimum session attendance'
+    },
+    ruleMet: '(met)',
+    rulePending: '(pending)'
+  },
+  certificate: {
+    view: 'View and print the certificate',
+    issuedTitle: 'Your certificate',
+    issued: 'Certificate issued to {{name}}.',
+    alreadyIssued: 'You already had a certificate issued to {{name}}; it is the same one, no new one is issued.',
+    code: 'Verification code: {{code}}',
+    requestTitle: 'Request the certificate',
+    name: 'Name on the certificate',
+    nameHint: 'As you want it to appear, up to {{max}} characters. It cannot be changed later.',
+    nameInvalid: 'Enter a name of 1 to {{max}} characters.',
+    request: 'Issue my certificate',
+    requesting: 'Issuing…',
+    notYet: 'Once you meet every rule you can request your certificate here.',
+    pendingRules: 'The server says some rule is still pending; the list above is up to date.',
+    failed: 'We could not issue the certificate. Please try again.',
+    failedStatus: 'We could not issue the certificate (error {{status}}). Please try again.',
+    documentTitle: 'Certificate of {{name}} · {{course}}',
+    heading: 'Certificate of achievement',
+    certifies: 'This certifies that',
+    passedCourse: 'passed the course “{{course}}”.',
+    completedCourse: 'completed the course “{{course}}”.',
+    courseCode: 'Course',
+    courseVersion: '{{code}} · version {{version}}',
+    offering: 'Offering',
+    hours: 'Workload',
+    hoursValue: '{{value}} h',
+    issuedAt: 'Issued on',
+    rule: '{{rule}}: {{detail}}',
+    verifyCode: 'Code {{code}}',
+    verifyAt: 'Verify at {{url}}',
+    print: 'Print'
+  },
+  verify: {
+    title: 'Verify a certificate',
+    subtitle: 'Enter the code shown on the certificate to check that it is genuine.',
+    code: 'Certificate code',
+    placeholder: 'XXXX-XXXX-XXXX',
+    submit: 'Verify',
+    notFound: 'There is no certificate with that code',
+    notFoundHint: 'Check the code “{{code}}”: it may contain a typo.',
+    loading: 'Verifying the certificate…',
+    valid: 'Genuine certificate, issued by this platform.',
+    another: 'Verify another certificate'
+  },
   lessonStatus: {
     NO_INICIADA: 'Not started',
     INICIADA: 'Started',
@@ -459,6 +690,33 @@ const en: typeof es = {
       conflict: 'We could not open the attempt',
       refused: 'We could not open the attempt',
       server: 'We could not load the attempt',
+      network: 'We could not reach the server',
+      contract: 'We could not read the server response'
+    },
+    sessions: {
+      invalid: 'We could not load the sessions',
+      notFound: 'We could not find the sessions of this course',
+      conflict: 'We could not load the sessions',
+      refused: 'We could not load the sessions',
+      server: 'We could not load the sessions',
+      network: 'We could not reach the server',
+      contract: 'We could not read the server response'
+    },
+    completion: {
+      invalid: 'We could not load the completion rules',
+      notFound: 'We could not find this course among your enrollments',
+      conflict: 'We could not load the completion rules',
+      refused: 'We could not load the completion rules',
+      server: 'We could not load the completion rules',
+      network: 'We could not reach the server',
+      contract: 'We could not read the server response'
+    },
+    certificate: {
+      invalid: 'We could not verify the certificate',
+      notFound: 'There is no certificate with that code',
+      conflict: 'We could not verify the certificate',
+      refused: 'We could not verify the certificate',
+      server: 'We could not verify the certificate',
       network: 'We could not reach the server',
       contract: 'We could not read the server response'
     },

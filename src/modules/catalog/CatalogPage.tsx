@@ -8,7 +8,7 @@ import { LEVELS, MODALITIES, SORTS, type CoursePage, type CourseSummary, type Ne
 import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Fact, IllustrativeMark, offeringState } from './parts'
 import { ProblemState, useProblemText } from './ProblemState'
-import { PublicHeading, PublicLayout } from './PublicLayout'
+import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
 import { CATALOG_ROUTES } from './routes'
 
 // Radix Select no admite el valor vacío: «todas» viaja como este centinela y en la URL es la ausencia del filtro

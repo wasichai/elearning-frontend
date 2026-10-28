@@ -353,3 +353,83 @@ export const gradedAttempt = {
 }
 
 export const submission = { id: 'ent-1', file: null, uploadUrl: '/api/objects/entrega/records/ent-1/files/archivo' }
+
+// las sesiones de la edición SGSPE (horas en Lima, UTC−5): una programada virtual, una reprogramada con la asistencia
+// ya pasada, una cancelada y su recuperación presencial
+export const sessions = [
+  {
+    id: 'ses-1',
+    title: 'Presentación del curso',
+    type: 'TEORIA',
+    modality: 'VIRTUAL',
+    start: '2026-09-08T13:00:00Z',
+    end: '2026-09-08T14:30:00Z',
+    timeZone: 'America/Lima',
+    status: 'REPROGRAMADA',
+    link: 'https://meet.example/sgspe-1',
+    location: null,
+    lessonId: null,
+    originalSessionId: null,
+    attendance: 'PRESENTE'
+  },
+  {
+    id: 'ses-2',
+    title: 'Consulta de la unidad',
+    type: 'CONSULTA',
+    modality: 'VIRTUAL',
+    start: '2026-09-15T13:00:00Z',
+    end: '2026-09-15T14:00:00Z',
+    timeZone: 'America/Lima',
+    status: 'CANCELADA',
+    link: 'https://meet.example/sgspe-2',
+    location: null,
+    lessonId: 'lec-sesion',
+    originalSessionId: null,
+    attendance: null
+  },
+  {
+    id: 'ses-3',
+    title: 'Recuperación de la consulta',
+    type: 'RECUPERACION',
+    modality: 'PRESENCIAL',
+    start: '2026-11-17T13:00:00Z',
+    end: '2026-11-17T14:00:00Z',
+    timeZone: 'America/Lima',
+    status: 'PROGRAMADA',
+    link: null,
+    location: 'Aula 204, sede central',
+    lessonId: 'lec-sesion',
+    originalSessionId: 'ses-2',
+    attendance: null
+  }
+]
+
+export const completionPending = {
+  met: false,
+  rules: [
+    { rule: 'LESSONS', met: false, detail: '1 de 3 lecciones' },
+    { rule: 'ASSESSMENTS', met: false, detail: '0 de 1 evaluaciones aprobadas' },
+    { rule: 'ATTENDANCE', met: true, detail: '100 % de asistencia (mínimo 75 %)' }
+  ]
+}
+
+export const completionMet = {
+  met: true,
+  rules: [
+    { rule: 'LESSONS', met: true, detail: '3 de 3 lecciones' },
+    { rule: 'ASSESSMENTS', met: true, detail: '1 de 1 evaluaciones aprobadas' },
+    { rule: 'ATTENDANCE', met: true, detail: '100 % de asistencia (mínimo 75 %)' }
+  ]
+}
+
+export const certificate = {
+  code: 'K7Q2-M9XW-4RTB',
+  issuedAt: '2026-10-16T20:00:00Z',
+  holderName: 'Rosa Quispe Mamani',
+  course: { code: 'SGSPE-101', title: 'Introducción al SGSPE' },
+  version: 1,
+  offering: { code: 'edicion-sgspe-2026-09', startDate: '2026-09-07', endDate: '2026-10-16', timeZone: 'America/Lima' },
+  totalHours: 18,
+  result: 'APROBADO',
+  rules: completionMet.rules
+}

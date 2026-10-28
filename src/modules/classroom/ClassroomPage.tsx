@@ -57,6 +57,24 @@ function ClassroomProblem({ error, onRetry }: { error: unknown; onRetry: () => v
   )
 }
 
+// las páginas de la matrícula que no son lecciones: sus sesiones en vivo y la finalización con el certificado
+function CourseLinks({ classroom }: { classroom: Classroom }) {
+  const { t } = useTranslation('classroom')
+  const links = useWasichaiLinks()
+  const params = { enrollmentId: classroom.id }
+  const linkClass = 'text-sm text-link underline-offset-4 hover:underline'
+  return (
+    <nav aria-label={t('classroom.more')} className="flex flex-col gap-1.5 border-t border-border pt-4">
+      <Link to={links.to(CLASSROOM_ROUTES.sessions, params)} className={linkClass}>
+        {t('sessions.title')}
+      </Link>
+      <Link to={links.to(CLASSROOM_ROUTES.completion, params)} className={linkClass}>
+        {classroom.certificateCode ? t('completionPanel.titleIssued') : t('completionPanel.title')}
+      </Link>
+    </nav>
+  )
+}
+
 function ClassroomView({ classroom }: { classroom: Classroom }) {
   const { t } = useTranslation('classroom')
   const [params] = useSearchParams()
@@ -78,9 +96,11 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
             <OfferingDates offering={classroom.offering} />
           </div>
           <UnitNav classroom={classroom} units={units} currentLessonId={placed?.lesson.id} />
+          <CourseLinks classroom={classroom} />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col gap-4 pt-6">
           {requested && !found ? <Alert tone="notice">{t('classroom.lessonMissing')}</Alert> : null}
+          {classroom.status === 'FINALIZADA' ? <Alert tone="notice">{t('classroom.finished')}</Alert> : null}
           {placed ? (
             <LessonView enrollmentId={classroom.id} timeZone={classroom.offering.timeZone} placed={placed} previous={previous} next={next} pending={pending} />
           ) : (
