@@ -14,6 +14,7 @@
     "lint": "prettier --check . && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "e2e": "playwright test",
     "format": "prettier --write .",
     "commitlint": "commitlint --edit",
     "prepare": "husky"
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.3",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
