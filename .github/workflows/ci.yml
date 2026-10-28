@@ -16,10 +16,11 @@ permissions:
 
 # @wasichai/* vienen de GitHub Packages, que pide un token con read:packages incluso para leer (README, «Integración
 # continua»). PACKAGES_TOKEN es un PAT del repositorio; sin él se usa el token del flujo, que solo lee los paquetes si su
-# organización dio acceso de Actions a este repositorio. para todos los trabajos porque setup-node escribe un .npmrc que lee
-# ${NODE_AUTH_TOKEN} y, con cache: yarn, consulta yarn enseguida
+# organización dio acceso de Actions a este repositorio. setup-node escribe un .npmrc que lee ${NODE_AUTH_TOKEN} en cada
+# llamada a yarn: aquí va un valor sin uso y el token real solo en «yarn install». lint, pruebas, build y e2e ejecutan el
+# código del PR y no lo ven (revisión de seguridad, E10.1)
 env:
-  NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+  NODE_AUTH_TOKEN: sin-token-fuera-de-la-instalacion
 
 jobs:
   web:
@@ -38,6 +39,8 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@wasichai'
       - run: yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
       - run: yarn lint
       - run: yarn typecheck
       - run: yarn test
@@ -77,6 +80,8 @@ jobs:
           scope: '@wasichai'
       # la versión de commitlint y su configuración son las del lockfile, las mismas del hook commit-msg
       - run: yarn install --frozen-lockfile --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
       - run: npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
