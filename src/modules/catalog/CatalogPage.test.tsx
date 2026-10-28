@@ -42,6 +42,13 @@ function lastQuery(): Record<string, string> {
 }
 
 describe('CatalogPage', () => {
+  it('un curso sin resumen no deja un párrafo vacío ni «null»', async () => {
+    renderCatalog([{ path: '/lms/public/catalog/courses', body: { ...coursePage, content: [{ ...courseSummary, summary: null }] } }])
+
+    expect(await screen.findByRole('link', { name: courseSummary.title })).toBeInTheDocument()
+    expect(screen.queryByText(/null|undefined/)).not.toBeInTheDocument()
+  })
+
   it('lista los cursos como una lista editorial', async () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 

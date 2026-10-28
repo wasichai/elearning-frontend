@@ -249,7 +249,7 @@ function CourseItem({ course }: { course: CourseSummary }) {
           {course.title}
         </Link>
       </h3>
-      <p className="max-w-prose text-sm text-ink-muted">{course.summary}</p>
+      {course.summary ? <p className="max-w-prose text-sm text-ink-muted">{course.summary}</p> : null}
       <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
         <Fact label={t('course.level')}>{t(`level.${course.level}`)}</Fact>
         <Fact label={t('course.modality')}>{t(`modality.${course.modality}`)}</Fact>

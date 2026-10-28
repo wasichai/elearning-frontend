@@ -64,7 +64,7 @@ function CourseView({ course }: { course: CourseDetail }) {
     <article>
       <PublicHeading
         title={course.title}
-        subtitle={course.summary}
+        subtitle={course.summary ?? undefined}
         eyebrow={
           <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted">
             <BackToCatalog />
@@ -194,7 +194,8 @@ function Syllabus({ course }: { course: CourseDetail }) {
                   <li key={lesson.order} className="flex flex-col gap-0.5 text-sm sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                     <span className="text-ink">{lesson.title}</span>
                     <span className="shrink-0 text-ink-muted">
-                      {lessonType(lesson.type)} · {t('detail.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })}
+                      {lessonType(lesson.type)}
+                      {lesson.durationMinutes === null ? null : ` · ${t('detail.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })}`}
                     </span>
                   </li>
                 ))}
@@ -204,7 +205,9 @@ function Syllabus({ course }: { course: CourseDetail }) {
             <li key={unit.order} className="flex flex-col gap-1 py-4">
               <h3 className="font-medium text-ink">{t('detail.unit', { order: unit.order, title: unit.title })}</h3>
               <p className="text-sm text-ink-muted">
-                {t('detail.unitMeta', { count: unit.lessons.length, hours: formatNumber(unit.estimatedHours, i18n.language) })}
+                {unit.estimatedHours === null
+                  ? t('detail.unitLessons', { count: unit.lessons.length })
+                  : t('detail.unitMeta', { count: unit.lessons.length, hours: formatNumber(unit.estimatedHours, i18n.language) })}
               </p>
               {unit.description ? <p className="max-w-prose text-sm text-ink">{unit.description}</p> : null}
               {unit.lessons.length === 0 ? null : folded ? (

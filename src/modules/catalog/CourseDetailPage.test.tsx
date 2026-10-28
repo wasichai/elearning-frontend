@@ -25,7 +25,29 @@ function renderCourse(routes: MockRoute[], route = '/cursos/srtm-anuncios') {
 
 const section = (name: string) => screen.getByRole('heading', { level: 2, name }).closest('section')!
 
+// docs/api/lms.md: el resumen, las horas de una unidad y los minutos de una lección pueden ser null
+const withNulls = {
+  ...courseDetail,
+  summary: null,
+  units: courseDetail.units.map((unit, u) => ({
+    ...unit,
+    estimatedHours: u === 0 ? null : unit.estimatedHours,
+    lessons: unit.lessons.map((lesson, l) => (u === 0 && l === 0 ? { ...lesson, durationMinutes: null } : lesson))
+  }))
+}
+
 describe('CourseDetailPage', () => {
+  it('admite los nulos del contrato sin pintar «null» ni datos vacíos', async () => {
+    renderCourse([{ path: COURSE, body: withNulls }])
+
+    expect(await screen.findByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
+    expect(screen.queryByText(/null|NaN|undefined/)).not.toBeInTheDocument()
+    const firstUnit = within(section('Temario')).getAllByRole('listitem')[0]!
+    expect(within(firstUnit).queryByText(/h estimadas/)).not.toBeInTheDocument()
+    expect(within(firstUnit).queryByText(/\bmin\b/)).toBeInTheDocument()
+    expect(within(firstUnit).getByText(courseDetail.units[0]!.lessons[0]!.title).nextSibling?.textContent).not.toMatch(/min/)
+  })
+
   it('pinta la ficha completa', async () => {
     renderCourse([{ path: COURSE, body: courseDetail }])
 

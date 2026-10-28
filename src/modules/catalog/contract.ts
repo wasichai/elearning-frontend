@@ -48,7 +48,7 @@ const courseBase = z.object({
   slug: z.string().min(1),
   code: z.string(),
   title: z.string(),
-  summary: z.string(),
+  summary: z.string().nullable(),
   language: z.string(),
   level: z.enum(LEVELS),
   modality: z.enum(MODALITIES),
@@ -111,7 +111,7 @@ const lesson = z.object({
   title: z.string(),
   // tipo y rol son vocabularios abiertos del modelo: la interfaz traduce los conocidos y muestra el resto tal cual
   type: z.string(),
-  durationMinutes: z.number().nonnegative(),
+  durationMinutes: z.number().nonnegative().nullable(),
   summary: z.string().nullable(),
   source: z.string().nullable()
 })
@@ -121,7 +121,7 @@ const unit = z.object({
   title: z.string(),
   description: z.string().nullable(),
   objectives: lines,
-  estimatedHours: hours,
+  estimatedHours: hours.nullable(),
   lessons: z.array(lesson)
 })
 
