@@ -63,6 +63,18 @@ describe('las comprobaciones de frontera detectan lo prohibido', () => {
     ])
   })
 
+  it('una clave de ruta de otro módulo, como texto, no es un import: así enlaza la ficha con el aula', () => {
+    const file = join(MODULE_DIR, 'EnrollAction.tsx')
+    const source = [
+      `export const CLASSROOM_ROUTE = 'classroom:classroom'`,
+      `navigate(links.to(CLASSROOM_ROUTE, { enrollmentId: enrollment.id }))`,
+      `import { CLASSROOM_ROUTES } from '../classroom/routes'`
+    ].join('\n')
+
+    expect(foreignModuleImports(file, source, MODULE_DIR)).toEqual(['../classroom/routes'])
+    expect(literalLinks(source)).toEqual([])
+  })
+
   it('texto visible escrito en JSX', () => {
     const bad = [`<h1>Catálogo de cursos</h1>`, `<Button>Reintentar</Button>`, `<Input placeholder="Buscar" />`, `<button aria-label="Next">`]
     const good = [
