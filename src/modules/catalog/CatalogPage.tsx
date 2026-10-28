@@ -1,11 +1,12 @@
 import { ApiError, EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
-import { Badge, Button, Input, Label, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
+import { Button, Input, Label, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { hasActiveFilters, useCatalogFilters, useCourses, type CatalogFilters } from './api'
 import { LEVELS, MODALITIES, SORTS, type CoursePage, type CourseSummary, type NextOffering } from './contract'
 import { formatCivilRange, formatNumber } from './format'
+import { Fact, IllustrativeMark, offeringState } from './parts'
 import { ProblemState, useProblemText } from './ProblemState'
 import { PublicHeading, PublicLayout } from './PublicLayout'
 import { CATALOG_ROUTES } from './routes'
@@ -260,20 +261,6 @@ function CourseItem({ course }: { course: CourseSummary }) {
   )
 }
 
-export function IllustrativeMark() {
-  const { t } = useTranslation('catalog')
-  return <Badge className="bg-notice-soft text-notice">{t('course.illustrative')}</Badge>
-}
-
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex gap-1.5">
-      <dt className="text-ink-muted">{label}</dt>
-      <dd className="text-ink">{children}</dd>
-    </div>
-  )
-}
-
 function OfferingLine({ offering }: { offering: NextOffering | null }) {
   const { t, i18n } = useTranslation('catalog')
   if (!offering) return <p className="text-sm text-ink-muted">{t('offering.none')}</p>
@@ -285,13 +272,6 @@ function OfferingLine({ offering }: { offering: NextOffering | null }) {
       <span className={offering.enrollmentOpen ? 'font-medium text-success' : 'text-ink-muted'}>{t(`offering.state.${offeringState(offering)}`)}</span>
     </p>
   )
-}
-
-// lo que la persona necesita saber de la edición: si puede inscribirse ya y, si no, por qué
-export function offeringState(offering: Pick<NextOffering, 'status' | 'enrollmentOpen'>): 'open' | 'closed' | 'running' | 'scheduled' {
-  if (offering.enrollmentOpen) return 'open'
-  if (offering.status === 'INSCRIPCION_ABIERTA') return 'closed'
-  return offering.status === 'EN_CURSO' ? 'running' : 'scheduled'
 }
 
 const FILTER_LABELS: Record<string, string> = {

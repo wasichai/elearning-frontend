@@ -35,3 +35,21 @@ export function formatCivilRange(start: string, end: string, timeZone: string, l
 export function formatNumber(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value)
 }
+
+// el nombre de la zona en el idioma de la interfaz («hora estándar de Perú»), para decir en qué hora van las fechas
+export function timeZoneLabel(timeZone: string, locale: string): string {
+  const parts = new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'long' }).formatToParts(new Date())
+  return parts.find((part) => part.type === 'timeZoneName')?.value ?? timeZone
+}
+
+export function formatInstant(instant: string, locale: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone }).format(new Date(instant))
+}
+
+export function languageName(code: string, locale: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
