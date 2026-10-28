@@ -38,7 +38,47 @@ const es = {
     back: '← Mis cursos',
     loading: 'Cargando el aula…',
     notFound: 'No encontramos este curso en tus matrículas',
-    notFoundHint: 'El enlace puede ser de otra persona, o la matrícula ya no está activa.'
+    notFoundHint: 'El enlace puede ser de otra persona, o la matrícula ya no está activa.',
+    units: 'Unidades del curso',
+    showUnits: 'Ver las unidades',
+    hideUnits: 'Ocultar las unidades',
+    unit: 'Unidad {{order}}. {{title}}',
+    unitProgress: '{{completed}} de {{total}}',
+    unitProgressLabel: '{{completed}} de {{total}} lecciones completadas',
+    position: 'Unidad {{unit}} · Lección {{lesson}}',
+    minutes: '{{value}} min',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    steps: 'Lección anterior y siguiente',
+    lessonMissing: 'Esa lección no está en este curso; te mostramos la siguiente por hacer.',
+    empty: 'Este curso todavía no tiene lecciones.'
+  },
+  lessonStatus: {
+    NO_INICIADA: 'Sin empezar',
+    INICIADA: 'Empezada',
+    COMPLETADA: 'Completada',
+    APROBADA: 'Aprobada'
+  },
+  lessonType: {
+    LECTURA: 'Lectura',
+    VIDEO: 'Vídeo',
+    PRESENTACION: 'Presentación',
+    LABORATORIO: 'Laboratorio',
+    EVALUACION: 'Evaluación',
+    SESION: 'Sesión en vivo'
+  },
+  resource: {
+    resources: 'Material de la lección',
+    none: 'Esta lección no tiene material.',
+    noFile: 'Este recurso todavía no tiene archivo.',
+    loading: 'Cargando el contenido…',
+    download: 'Descargar',
+    downloadLabel: 'Descargar {{name}} ({{size}})',
+    downloading: 'Descargando…',
+    failed: 'No pudimos cargar este recurso.',
+    failedStatus: 'No pudimos cargar este recurso (error {{status}}).',
+    foreign: 'Este recurso apunta fuera de la aplicación y no se abre.',
+    retry: 'Reintentar'
   },
   problem: {
     enrollments: {
@@ -113,7 +153,47 @@ const en: typeof es = {
     back: '← My courses',
     loading: 'Loading the classroom…',
     notFound: 'We could not find this course among your enrollments',
-    notFoundHint: 'The link may belong to someone else, or the enrollment is no longer active.'
+    notFoundHint: 'The link may belong to someone else, or the enrollment is no longer active.',
+    units: 'Course units',
+    showUnits: 'Show the units',
+    hideUnits: 'Hide the units',
+    unit: 'Unit {{order}}. {{title}}',
+    unitProgress: '{{completed}} of {{total}}',
+    unitProgressLabel: '{{completed}} of {{total}} lessons completed',
+    position: 'Unit {{unit}} · Lesson {{lesson}}',
+    minutes: '{{value}} min',
+    previous: 'Previous',
+    next: 'Next',
+    steps: 'Previous and next lesson',
+    lessonMissing: 'That lesson is not part of this course; here is your next one.',
+    empty: 'This course has no lessons yet.'
+  },
+  lessonStatus: {
+    NO_INICIADA: 'Not started',
+    INICIADA: 'Started',
+    COMPLETADA: 'Completed',
+    APROBADA: 'Passed'
+  },
+  lessonType: {
+    LECTURA: 'Reading',
+    VIDEO: 'Video',
+    PRESENTACION: 'Slides',
+    LABORATORIO: 'Lab',
+    EVALUACION: 'Assessment',
+    SESION: 'Live session'
+  },
+  resource: {
+    resources: 'Lesson materials',
+    none: 'This lesson has no materials.',
+    noFile: 'This resource has no file yet.',
+    loading: 'Loading the content…',
+    download: 'Download',
+    downloadLabel: 'Download {{name}} ({{size}})',
+    downloading: 'Downloading…',
+    failed: 'We could not load this resource.',
+    failedStatus: 'We could not load this resource (error {{status}}).',
+    foreign: 'This resource points outside the application and will not be opened.',
+    retry: 'Retry'
   },
   problem: {
     enrollments: {
