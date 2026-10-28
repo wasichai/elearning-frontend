@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
 import { lessonEvent, useLessonEvent } from './api'
+import { AssessmentLesson } from './Assessment'
 import { Completion } from './Completion'
 import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
@@ -13,6 +14,8 @@ import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 interface LessonViewProps {
   enrollmentId: string
+  // la zona de la edición: en ella se escriben plazos y horas
+  timeZone: string
   placed: PlacedLesson
   previous?: PlacedLesson
   next?: PlacedLesson
@@ -21,7 +24,7 @@ interface LessonViewProps {
 }
 
 // la lección abierta: lectura amplia, su material y el paso siguiente
-export function LessonView({ enrollmentId, placed, previous, next, pending }: LessonViewProps) {
+export function LessonView({ enrollmentId, timeZone, placed, previous, next, pending }: LessonViewProps) {
   const { t, i18n } = useTranslation('classroom')
   const lessonType = useOpenLabel('lessonType')
   const { lesson, unit } = placed
@@ -49,7 +52,12 @@ export function LessonView({ enrollmentId, placed, previous, next, pending }: Le
         {lesson.summary ? <p className="max-w-prose text-base text-ink">{lesson.summary}</p> : null}
       </header>
 
-      <Resources resources={lesson.resources} onVideoEnded={lesson.completion === 'VIDEO_END' ? () => complete('VIDEO_ENDED') : undefined} />
+      {lesson.assessment ? <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} /> : null}
+
+      {/* una evaluación sin material no dice «sin material»: la evaluación es su contenido */}
+      {lesson.assessment && lesson.resources.length === 0 ? null : (
+        <Resources resources={lesson.resources} onVideoEnded={lesson.completion === 'VIDEO_END' ? () => complete('VIDEO_ENDED') : undefined} />
+      )}
 
       <Completion
         enrollmentId={enrollmentId}

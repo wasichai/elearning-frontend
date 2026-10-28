@@ -188,7 +188,7 @@ describe('completar una lección', () => {
     server.units[1]!.lessons[1]!.progress = started
     renderLesson([{ path: CLASSROOM, body: server }], 'lec-quiz')
 
-    expect(await screen.findByText('Se completa con la evaluación o la sesión (próximamente)')).toBeInTheDocument()
+    expect(await screen.findByText('Esta evaluación o sesión todavía no está disponible.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Marcar como completada' })).not.toBeInTheDocument()
     expect(posts()).toEqual([])
   })

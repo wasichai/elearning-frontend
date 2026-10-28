@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { screen } from '@testing-library/react'
 import { mockFetch, renderWithProviders, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
-import { OFFERING_STATUSES } from './contract'
+import { COMPLETIONS, OFFERING_STATUSES, QUESTION_TYPES } from './contract'
 import { classroomMessages } from './i18n'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
@@ -47,9 +47,14 @@ describe('textos del aula', () => {
   it('cada valor de las enumeraciones tiene su texto', () => {
     const composed = [
       ...OFFERING_STATUSES.map((status) => `offering.status.${status}`),
+      ...COMPLETIONS.map((completion) => `completion.how.${completion}`),
+      ...QUESTION_TYPES.map((type) => `question.type.${type}`),
+      ...['fiveMinutes', 'oneMinute', 'over'].map((stage) => `attempt.stage.${stage}`),
+      ...['correct', 'incorrect'].map((verdict) => `result.${verdict}`),
       ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [
         `problem.enrollments.${kind}`,
         `problem.classroom.${kind}`,
+        `problem.attempt.${kind}`,
         `problem.hint.${kind}`
       ]),
       'problem.hint.unexpected'

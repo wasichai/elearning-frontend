@@ -151,3 +151,205 @@ export const problem = (status: number, detail: string) => ({
   detail,
   errors: []
 })
+
+// F3 (ADR-0016): «Introducción al SGSPE» con una evaluación, una sesión en vivo y su certificado
+
+export const assessmentSummary = {
+  id: 'eva-final',
+  title: 'Evaluación final',
+  maxAttempts: 2,
+  timeLimitMinutes: 30,
+  passingPercent: 70,
+  attemptsUsed: 0,
+  openAttemptId: null,
+  best: null
+}
+
+export const assessmentClassroom = {
+  ...otherEnrollment,
+  progress: { completedLessons: 1, totalLessons: 3, percent: 33 },
+  nextLesson: { id: 'lec-eva', title: 'Evaluación final', unitOrder: 1, lessonOrder: 2 },
+  units: [
+    {
+      id: 'uni-sg-1',
+      order: 1,
+      title: 'El SGSPE',
+      description: null,
+      progress: { completedLessons: 1, totalLessons: 3, percent: 33 },
+      lessons: [
+        {
+          id: 'lec-sgspe-1',
+          order: 1,
+          title: 'Qué es el SGSPE',
+          type: 'LECTURA',
+          durationMinutes: 20,
+          summary: null,
+          completion: 'EXPLICIT',
+          progress: { status: 'COMPLETADA', startedAt: '2026-09-08T14:00:00Z', completedAt: '2026-09-08T14:20:00Z', evidence: 'FINALIZACION_EXPLICITA' },
+          resources: []
+        },
+        {
+          id: 'lec-eva',
+          order: 2,
+          title: 'Evaluación final',
+          type: 'EVALUACION',
+          durationMinutes: 30,
+          summary: 'Seis preguntas sobre el SGSPE.',
+          completion: 'ASSESSMENT',
+          progress: notStarted,
+          resources: [],
+          assessment: assessmentSummary
+        },
+        {
+          id: 'lec-sesion',
+          order: 3,
+          title: 'Sesión de consulta',
+          type: 'SESION',
+          durationMinutes: 90,
+          summary: null,
+          completion: 'ATTENDANCE',
+          progress: notStarted,
+          resources: []
+        }
+      ]
+    }
+  ]
+}
+
+const questions = [
+  {
+    id: 'p-single',
+    order: 1,
+    type: 'SINGLE',
+    prompt: '¿Quién otorga la licencia de anuncio?',
+    points: 2,
+    options: [
+      { id: 'o-muni', text: 'La municipalidad' },
+      { id: 'o-sunat', text: 'La SUNAT' }
+    ],
+    rubric: []
+  },
+  {
+    id: 'p-multiple',
+    order: 2,
+    type: 'MULTIPLE',
+    prompt: '¿Qué tipos de anuncio existen?',
+    points: 2,
+    options: [
+      { id: 'o-adosado', text: 'Adosado' },
+      { id: 'o-luminoso', text: 'Luminoso' },
+      { id: 'o-sonoro', text: 'Sonoro' }
+    ],
+    rubric: []
+  },
+  {
+    id: 'p-tf',
+    order: 3,
+    type: 'TRUE_FALSE',
+    prompt: 'El SGSPE registra los expedientes.',
+    points: 1,
+    options: [
+      { id: 'o-v', text: 'Verdadero' },
+      { id: 'o-f', text: 'Falso' }
+    ],
+    rubric: []
+  },
+  { id: 'p-short', order: 4, type: 'SHORT', prompt: '¿Cuáles son las siglas del sistema de rentas?', points: 1, options: [], rubric: [] },
+  {
+    id: 'p-open',
+    order: 5,
+    type: 'OPEN',
+    prompt: 'Explica cómo se liquida una licencia.',
+    points: 2,
+    options: [],
+    rubric: [
+      { description: 'Cita la ordenanza', points: 1 },
+      { description: 'Explica el cálculo', points: 1 }
+    ]
+  },
+  {
+    id: 'p-file',
+    order: 6,
+    type: 'FILE',
+    prompt: 'Sube la liquidación de ejemplo.',
+    points: 2,
+    options: [],
+    rubric: [{ description: 'El cálculo es correcto', points: 2 }]
+  }
+]
+
+const SUBMISSION_FILE = { name: 'liquidacion.pdf', contentType: 'application/pdf', size: 20480, url: '/api/objects/entrega/records/ent-1/files/archivo' }
+
+export const openAttempt = {
+  id: 'int-1',
+  number: 1,
+  status: 'OPEN',
+  startedAt: '2026-10-28T15:00:00Z',
+  deadline: '2026-10-28T15:30:00Z',
+  submittedAt: null,
+  questions,
+  answers: [],
+  result: null
+}
+
+export const filledAnswers = [
+  { questionId: 'p-single', optionIds: ['o-muni'], text: null, submissionId: null },
+  { questionId: 'p-multiple', optionIds: ['o-adosado', 'o-luminoso'], text: null, submissionId: null },
+  { questionId: 'p-tf', optionIds: ['o-f'], text: null, submissionId: null },
+  { questionId: 'p-short', optionIds: [], text: 'SRTM', submissionId: null },
+  { questionId: 'p-open', optionIds: [], text: 'Se aplica la tasa de la ordenanza al área del anuncio.', submissionId: null },
+  { questionId: 'p-file', optionIds: [], text: null, submissionId: 'ent-1', submission: { id: 'ent-1', file: SUBMISSION_FILE } }
+]
+
+// enviado, con la pregunta abierta y la de archivo por corregir
+export const submittedAttempt = {
+  ...openAttempt,
+  status: 'SUBMITTED',
+  submittedAt: '2026-10-28T15:20:00Z',
+  answers: filledAnswers,
+  result: {
+    score: 5,
+    maxScore: 10,
+    percent: null,
+    passed: null,
+    pending: true,
+    questions: [
+      { questionId: 'p-single', points: 2, maxPoints: 2, correct: true, comment: null, solution: null },
+      { questionId: 'p-multiple', points: 2, maxPoints: 2, correct: true, comment: null, solution: null },
+      { questionId: 'p-tf', points: 0, maxPoints: 1, correct: false, comment: null, solution: null },
+      { questionId: 'p-short', points: 1, maxPoints: 1, correct: true, comment: null, solution: null },
+      { questionId: 'p-open', points: null, maxPoints: 2, correct: null, comment: null, solution: null },
+      { questionId: 'p-file', points: null, maxPoints: 2, correct: null, comment: null, solution: null }
+    ]
+  }
+}
+
+// corregido y con las soluciones a la vista (showSolutions: ON_SUBMIT)
+export const gradedAttempt = {
+  ...submittedAttempt,
+  status: 'GRADED',
+  result: {
+    score: 8,
+    maxScore: 10,
+    percent: 80,
+    passed: true,
+    pending: false,
+    questions: [
+      { questionId: 'p-single', points: 2, maxPoints: 2, correct: true, comment: null, solution: { optionIds: ['o-muni'], acceptedAnswers: [] } },
+      {
+        questionId: 'p-multiple',
+        points: 2,
+        maxPoints: 2,
+        correct: true,
+        comment: null,
+        solution: { optionIds: ['o-adosado', 'o-luminoso'], acceptedAnswers: [] }
+      },
+      { questionId: 'p-tf', points: 0, maxPoints: 1, correct: false, comment: null, solution: { optionIds: ['o-v'], acceptedAnswers: [] } },
+      { questionId: 'p-short', points: 1, maxPoints: 1, correct: true, comment: null, solution: { optionIds: [], acceptedAnswers: ['SRTM', 'S.R.T.M.'] } },
+      { questionId: 'p-open', points: 1, maxPoints: 2, correct: null, comment: 'Falta citar la ordenanza.', solution: null },
+      { questionId: 'p-file', points: 2, maxPoints: 2, correct: null, comment: null, solution: null }
+    ]
+  }
+}
+
+export const submission = { id: 'ent-1', file: null, uploadUrl: '/api/objects/entrega/records/ent-1/files/archivo' }

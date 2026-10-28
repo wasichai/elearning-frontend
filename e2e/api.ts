@@ -1,7 +1,7 @@
 import type { Page, Request, Route } from '@playwright/test'
 import { coursePage, courseDetail, courseSummary, courseWithoutOffering, problem } from '../src/modules/catalog/test/fixtures'
-import type { Classroom, Lesson } from '../src/modules/classroom/contract'
-import { classroom, lessonHtml, otherEnrollment } from '../src/modules/classroom/test/fixtures'
+import type { Answer, Attempt, Classroom, Lesson, ResourceFile } from '../src/modules/classroom/contract'
+import { assessmentClassroom, classroom, gradedAttempt, lessonHtml, openAttempt } from '../src/modules/classroom/test/fixtures'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
@@ -11,6 +11,7 @@ import { classroom, lessonHtml, otherEnrollment } from '../src/modules/classroom
 const COURSES = '/api/lms/public/catalog/courses'
 const CLASSROOM = '/api/lms/classroom/'
 const ENROLLMENTS = '/api/lms/classroom/enrollments'
+const ATTEMPTS = '/api/lms/classroom/attempts'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
 export const STUDENT = { id: 'u-estudiante', email: 'estudiante@demo.local', displayName: 'Rosa Estudiante', organizationId: 'org-demo', roles: ['ESTUDIANTE'] }
@@ -22,7 +23,7 @@ export const DETAILS: Record<string, unknown> = { [courseSummary.slug]: courseDe
 // una respuesta JSON (o problem+json) o, para los archivos, el contenido tal cual
 type Reply = { status: number; body: unknown; raw?: { body: string; contentType: string } }
 // una respuesta preparada por la prueba: gana a la simulación mientras devuelva algo
-type Override = (url: URL) => Reply | undefined
+type Override = (url: URL, method: string) => Reply | undefined
 
 export interface FakeApiOptions {
   // con sesión de estudiante: token y usuario en el almacenamiento antes de cargar la página
@@ -40,10 +41,12 @@ export interface FakeApi {
   readonly enrollRequests: { offering: unknown; idempotencyKey: string | null }[]
   // las descargas de archivos de recursos, con la cabecera Authorization que llevaron
   readonly fileRequests: { path: string; authorization: string | null }[]
+  // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
+  readonly uploads: { path: string; name: string | undefined; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
   readonly unexpected: string[]
-  // la próxima respuesta a lo que cumpla `matches` (una sola vez)
-  failOnce: (matches: (url: URL) => boolean, status: number) => void
+  // la próxima respuesta a lo que cumpla `matches` (una sola vez), con el detalle que se quiera
+  failOnce: (matches: (url: URL, method: string) => boolean, status: number, detail?: string) => void
 }
 
 function listCourses(url: URL): Reply {
@@ -102,10 +105,12 @@ function freshClassroom(): ClassroomData {
   return recount(fresh)
 }
 
+// la segunda matrícula (SGSPE, F3): con su lectura hecha, la evaluación por empezar y una sesión
 function classroomState(enrolled: boolean) {
   const classrooms: Record<string, ClassroomData> = enrolled ? { [classroom.id]: freshClassroom() } : {}
+  classrooms[assessmentClassroom.id] = recount(structuredClone(assessmentClassroom) as Classroom)
   const seen = new Map<string, unknown>()
-  return { classrooms, others: [structuredClone(otherEnrollment)], seen }
+  return { classrooms, seen, attempts: new Map<string, AttemptData>(), submissions: new Map<string, SubmissionData>() }
 }
 
 // POST /api/lms/enrollments: la edición abierta del catálogo matricula (201) o devuelve la matrícula que ya había (200)
@@ -150,7 +155,8 @@ function lessonEvent(state: ClassroomState, data: ClassroomData, lessonId: strin
 
 function simulateClassroom(state: ClassroomState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!url.pathname.startsWith(CLASSROOM)) return undefined
-  if (method === 'GET' && url.pathname === ENROLLMENTS) return { status: 200, body: [...Object.values(state.classrooms).map(enrollmentOf), ...state.others] }
+  if (url.pathname.startsWith(`${ATTEMPTS}/`)) return simulateAttempt(state, method, url, body)
+  if (method === 'GET' && url.pathname === ENROLLMENTS) return { status: 200, body: Object.values(state.classrooms).map(enrollmentOf) }
   const [id, rest] = url.pathname
     .slice(ENROLLMENTS.length + 1)
     .split(/\/(.*)/s)
@@ -160,7 +166,148 @@ function simulateClassroom(state: ClassroomState, method: string, url: URL, body
   if (method === 'GET' && !rest) return { status: 200, body: data }
   const lessonId = rest?.match(/^lessons\/([^/]+)\/events$/)?.[1]
   if (method === 'POST' && lessonId) return lessonEvent(state, data, lessonId, (body ?? {}) as { type?: string; clientEventId?: string })
+  const attemptsOf = rest?.match(/^lessons\/([^/]+)\/attempts$/)?.[1]
+  if (method === 'POST' && attemptsOf) return startAttempt(state, data, attemptsOf)
   return undefined
+}
+
+// los intentos (ADR-0016) como el servidor: intentos y plazo impuestos, soluciones guardadas aparte y nunca servidas
+// mientras el intento está abierto, corrección automática al enviar y lo abierto o de archivo pendiente del docente
+interface AttemptData {
+  attempt: Attempt
+  enrollmentId: string
+  lessonId: string
+}
+interface SubmissionData {
+  id: string
+  attemptId: string
+  questionId: string
+  file: ResourceFile | null
+}
+
+const KEY = Object.fromEntries(gradedAttempt.result.questions.map((outcome) => [outcome.questionId, outcome.solution]))
+const normalized = (text: string | null | undefined) => (text ?? '').trim().toLowerCase()
+
+function lessonOf(data: ClassroomData, lessonId: string) {
+  return data.units.flatMap((unit) => unit.lessons).find((lesson) => lesson.id === lessonId)
+}
+
+function startAttempt(state: ClassroomState, data: ClassroomData, lessonId: string): Reply {
+  const lesson = lessonOf(data, lessonId)
+  if (!lesson) return { status: 404, body: problem(404, 'Lección no encontrada') }
+  const assessment = lesson.assessment
+  if (!assessment) return { status: 409, body: problem(409, 'La lección no tiene evaluación') }
+  if (assessment.openAttemptId) return { status: 200, body: publicAttempt(state, state.attempts.get(assessment.openAttemptId)!.attempt) }
+  if (assessment.attemptsUsed >= assessment.maxAttempts) return { status: 409, body: problem(409, 'Ya no quedan intentos') }
+  const started = new Date()
+  const attempt = structuredClone(openAttempt) as Attempt
+  Object.assign(attempt, {
+    id: `int-${state.attempts.size + 1}`,
+    number: assessment.attemptsUsed + 1,
+    startedAt: started.toISOString(),
+    deadline: assessment.timeLimitMinutes === null ? null : new Date(started.getTime() + assessment.timeLimitMinutes * 60_000).toISOString(),
+    answers: [],
+    result: null
+  })
+  state.attempts.set(attempt.id, { attempt, enrollmentId: data.id, lessonId })
+  Object.assign(assessment, { openAttemptId: attempt.id, attemptsUsed: assessment.attemptsUsed + 1 })
+  if (lesson.progress.status === 'NO_INICIADA') Object.assign(lesson.progress, { status: 'INICIADA', startedAt: now() })
+  state.classrooms[data.id] = recount(data)
+  return { status: 201, body: publicAttempt(state, attempt) }
+}
+
+// las respuestas con la entrega y su archivo, como las sirve el servidor
+function publicAttempt(state: ClassroomState, attempt: Attempt): Attempt {
+  return {
+    ...attempt,
+    answers: attempt.answers.map((answer) => {
+      const submission = answer.submissionId ? state.submissions.get(answer.submissionId) : undefined
+      return { ...answer, submission: submission ? { id: submission.id, file: submission.file } : null }
+    })
+  }
+}
+
+function grade(attempt: Attempt): NonNullable<Attempt['result']> {
+  const questions = attempt.questions.map((question) => {
+    const answer = attempt.answers.find((candidate) => candidate.questionId === question.id)
+    const key = KEY[question.id]
+    const manual = question.type === 'OPEN' || question.type === 'FILE'
+    const correct = manual
+      ? null
+      : question.type === 'SHORT'
+        ? (key?.acceptedAnswers ?? []).some((accepted) => normalized(accepted) === normalized(answer?.text))
+        : [...(answer?.optionIds ?? [])].sort().join() === [...(key?.optionIds ?? [])].sort().join()
+    return {
+      questionId: question.id,
+      points: manual ? null : correct ? question.points : 0,
+      maxPoints: question.points,
+      correct,
+      comment: null,
+      solution: null
+    }
+  })
+  const score = questions.reduce((sum, outcome) => sum + (outcome.points ?? 0), 0)
+  const maxScore = questions.reduce((sum, outcome) => sum + outcome.maxPoints, 0)
+  const pending = questions.some((outcome) => outcome.points === null)
+  const percent = pending ? null : Math.round((score * 100) / maxScore)
+  return { score, maxScore, percent, passed: percent === null ? null : percent >= 70, pending, questions }
+}
+
+function simulateAttempt(state: ClassroomState, method: string, url: URL, body: unknown): Reply | undefined {
+  const [attemptId, rest] = url.pathname
+    .slice(ATTEMPTS.length + 1)
+    .split(/\/(.*)/s)
+    .map((part) => (part === undefined ? undefined : decodeURIComponent(part)))
+  const found = attemptId === undefined ? undefined : state.attempts.get(attemptId)
+  if (!found) return { status: 404, body: problem(404, 'Intento no encontrado') }
+  const { attempt } = found
+  if (method === 'GET' && !rest) return { status: 200, body: publicAttempt(state, attempt) }
+  if (attempt.status !== 'OPEN') return { status: 409, body: problem(409, 'El intento ya se envió') }
+  if (attempt.deadline && Date.parse(attempt.deadline) < Date.now()) return { status: 409, body: problem(409, 'El plazo del intento venció') }
+  if (method === 'PUT' && rest === 'answers') {
+    attempt.answers = ((body as { answers?: Answer[] } | null)?.answers ?? []).map(({ questionId, optionIds, text, submissionId }) => ({
+      questionId,
+      optionIds,
+      text,
+      submissionId
+    }))
+    return { status: 200, body: publicAttempt(state, attempt) }
+  }
+  const questionId = rest?.match(/^questions\/([^/]+)\/submission$/)?.[1]
+  if (method === 'POST' && questionId) {
+    const id = `ent-${state.submissions.size + 1}`
+    state.submissions.set(id, { id, attemptId: attempt.id, questionId, file: null })
+    return { status: 201, body: { id, file: null, uploadUrl: `/api/objects/entrega/records/${id}/files/archivo` } }
+  }
+  if (method === 'POST' && rest === 'submit') {
+    const result = grade(attempt)
+    Object.assign(attempt, { status: result.pending ? 'SUBMITTED' : 'GRADED', submittedAt: now(), result })
+    const data = state.classrooms[found.enrollmentId]!
+    const lesson = lessonOf(data, found.lessonId)!
+    const best = lesson.assessment!.best
+    const better = !best || (best.percent ?? -1) < (result.percent ?? -1)
+    Object.assign(lesson.assessment!, {
+      openAttemptId: null,
+      best: better ? { percent: result.percent, passed: result.passed, pending: result.pending } : best
+    })
+    if (result.passed)
+      Object.assign(lesson.progress, { status: 'APROBADA', completedAt: now(), evidence: 'EVALUACION_APROBADA', startedAt: lesson.progress.startedAt ?? now() })
+    state.classrooms[data.id] = recount(data)
+    return { status: 200, body: publicAttempt(state, attempt) }
+  }
+  return undefined
+}
+
+// POST uploadUrl: el archivo de una entrega (multipart, parte «file»); queda en la entrega con su nombre
+const UPLOADS = /^\/api\/objects\/entrega\/records\/([^/]+)\/files\/archivo$/
+
+function simulateUpload(state: ClassroomState, method: string, url: URL, name: string | undefined, size: number): Reply | undefined {
+  const id = UPLOADS.exec(url.pathname)?.[1]
+  if (method !== 'POST' || !id) return undefined
+  const submission = state.submissions.get(id)
+  if (!submission) return { status: 404, body: problem(404, 'Entrega no encontrada') }
+  submission.file = { name: name ?? 'archivo', contentType: 'application/octet-stream', size, url: url.pathname }
+  return { status: 200, body: { name } }
 }
 
 // los archivos de los recursos del aula (wasichai-files), por la versión de recurso de su URL
@@ -216,13 +363,14 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     classroomRequests: [],
     enrollRequests: [],
     fileRequests: [],
+    uploads: [],
     unexpected: [],
-    failOnce: (matches, status) => {
+    failOnce: (matches, status, detail = 'Fallo simulado') => {
       let used = false
-      overrides.push((url) => {
-        if (used || !matches(url)) return undefined
+      overrides.push((url, method) => {
+        if (used || !matches(url, method)) return undefined
         used = true
-        return { status, body: problem(status, 'Fallo simulado') }
+        return { status, body: problem(status, detail) }
       })
     }
   }
@@ -235,11 +383,14 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
       api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
     else if (FILES.test(url.pathname)) api.fileRequests.push({ path: url.pathname, authorization: (await request.allHeaders()).authorization ?? null })
+    else if (UPLOADS.test(url.pathname))
+      api.uploads.push({ path: url.pathname, name: uploadedName(request), authorization: (await request.allHeaders()).authorization ?? null })
     else if (!isPlatform(url)) api.unexpected.push(`${method} ${url.pathname}`)
     let reply: Reply | undefined
-    for (const override of overrides) reply ??= override(url)
+    for (const override of overrides) reply ??= override(url, method)
+    reply ??= simulateUpload(state, method, url, uploadedName(request), request.postDataBuffer()?.length ?? 0)
     if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
-    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url, request.postDataJSON()) ?? simulateFile(method, url) ?? simulate(url)
+    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url, jsonBody(request)) ?? simulateFile(method, url) ?? simulate(url)
     if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
       status: reply.status,
@@ -248,6 +399,20 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     })
   })
   return api
+}
+
+// el cuerpo JSON de la petición (un multipart no lo es)
+function jsonBody(request: Request): unknown {
+  try {
+    return request.postDataJSON()
+  } catch {
+    return null
+  }
+}
+
+// el nombre del archivo de una subida multipart
+function uploadedName(request: Request): string | undefined {
+  return /filename="([^"]*)"/.exec(request.postDataBuffer()?.toString('latin1') ?? '')?.[1]
 }
 
 export const isCourseList = (url: URL) => url.pathname === COURSES

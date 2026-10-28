@@ -17,7 +17,9 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
-      include: ['src/**/*.test.{ts,tsx}']
+      include: ['src/**/*.test.{ts,tsx}'],
+      // los recorridos de un formulario con userEvent (un intento, la corrección) pasan de 5 s en una máquina cargada
+      testTimeout: 15_000
     }
   }
 })

@@ -8,6 +8,8 @@ export const CLASSROOM_ROUTES = {
 
 // la lección abierta del aula vive en la URL (?leccion=<id>): se vuelve a ella y se comparte con el enlace
 export const LESSON_PARAM = 'leccion'
+// el intento abierto de la evaluación de esa lección (?leccion=<id>&intento=<id>)
+export const ATTEMPT_PARAM = 'intento'
 
 // la lista del catálogo (módulo catalog): la clave de ruta como texto, que es lo que permite el registro sin importar
 // otro módulo. si el catálogo no está registrado, links.has(…) es false y no se enlaza
