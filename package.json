@@ -2,6 +2,7 @@
   "name": "elearning-frontend",
   "version": "0.0.0",
   "private": true,
+  "license": "LGPL-3.0-or-later",
   "description": "Interfaz web de wasichai-learning sobre @wasichai/*",
   "type": "module",
   "engines": {
