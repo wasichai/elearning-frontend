@@ -53,6 +53,8 @@ describe('la evaluación como lección', () => {
     renderAssessment([
       { path: CLASSROOM, body: assessmentClassroom },
       { method: 'POST', path: ATTEMPTS, status: 201, body: opened },
+      // al montarse, el intento recién empezado se vuelve a leer
+      { path: ATTEMPT, body: opened },
       { method: 'POST', path: `${CLASSROOM}/lessons/lec-eva/events`, body: { status: 'INICIADA', startedAt: '2026-10-28T15:00:00Z' } }
     ])
 
@@ -67,7 +69,9 @@ describe('la evaluación como lección', () => {
 
     await userEvent.click(rules.getByRole('button', { name: 'Empezar el intento' }))
 
-    expect(await screen.findByRole('heading', { level: 3, name: 'Intento 1' })).toHaveFocus()
+    const heading = await screen.findByRole('heading', { level: 3, name: 'Intento 1' })
+    // el foco lo mueve un efecto, que corre tras pintar
+    await waitFor(() => expect(heading).toHaveFocus())
     expect(calls('POST', ATTEMPTS)).toHaveLength(1)
     expect(screen.getByRole('link', { name: '← Volver a la evaluación' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1?leccion=lec-eva')
     expect(screen.getAllByRole('group')).toHaveLength(6)
