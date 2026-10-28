@@ -45,7 +45,7 @@ jobs:
       - run: yarn typecheck
       - run: yarn test
       - run: yarn build
-      # e2e con la API simulada (e2e/api.ts); el humo contra el backend real (yarn e2e:real) no corre aquí
+      # e2e con la API simulada (e2e/api.ts); los recorridos contra el backend real van en el trabajo e2e-real
       - run: npx playwright install --with-deps chromium
       - run: yarn e2e
         env:
@@ -86,3 +86,88 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
+  # recorridos del catálogo y del aula (e2e/real/) contra el backend de verdad: main de elearning-backend, perfil dev,
+  # PostgreSQL 18 y los datos de demostración, como en el README («Humo contra el backend real»). el token de paquetes
+  # solo llega a la compilación del backend (código de main, no del PR) y a la instalación; las pruebas no lo ven
+  e2e-real:
+    name: E2E contra el backend real
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: elearning
+          POSTGRES_USER: elearning
+          POSTGRES_PASSWORD: elearning-ci
+        ports: ['127.0.0.1:5436:5432']
+        options: >-
+          --health-cmd "pg_isready -U elearning" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      WASICHAI_API_URL: http://localhost:8090
+      # el administrador de la semilla dev (solo existe con el perfil dev) y una contraseña de usuarios demo de usar y tirar
+      WASICHAI_EMAIL: admin@wasichai.local
+      WASICHAI_PASSWORD: admin
+      WASICHAI_DEMO_PASSWORD: Demo-ci-e2e-2026
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: wasichai/elearning-backend
+          ref: main
+          path: backend
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+      - run: ./gradlew bootJar --no-daemon
+        working-directory: backend
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+      - name: Backend en marcha
+        working-directory: backend
+        env:
+          WASICHAI_DB_HOST: 127.0.0.1
+          WASICHAI_DB_PORT: '5436'
+          WASICHAI_DB_NAME: elearning
+          WASICHAI_DB_USERNAME: elearning
+          WASICHAI_DB_PASSWORD: elearning-ci
+          LMS_PUBLIC_ORGANIZATION: demo
+          LMS_CATALOG_REFRESH: 2s
+        run: |
+          export WASICHAI_JWT_SECRET="$(openssl rand -base64 48)" LMS_FILES_PATH="$RUNNER_TEMP/archivos"
+          nohup java -jar build/libs/elearning-backend.jar --spring.profiles.active=dev > "$RUNNER_TEMP/backend.log" 2>&1 &
+          for _ in $(seq 1 90); do
+            curl -sf -o /dev/null "$WASICHAI_API_URL/api/lms/public/catalog/courses" && exit 0
+            sleep 2
+          done
+          cat "$RUNNER_TEMP/backend.log"
+          exit 1
+      - run: python3 model/apply.py --demo
+        working-directory: backend
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: yarn
+          registry-url: https://npm.pkg.github.com
+          scope: '@wasichai'
+      - run: yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+      - run: npx playwright install --with-deps chromium
+      - run: yarn e2e:real
+        env:
+          CI: 'true'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright-real
+          path: |
+            test-results/
+            ${{ runner.temp }}/backend.log

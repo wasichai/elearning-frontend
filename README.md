@@ -85,6 +85,13 @@ catálogo muestra los tres cursos publicados de los datos de demostración y no 
 contrato de la interfaz, que la del curso de IA da 216 h y créditos ECTS propuestos, que un slug inexistente es «Curso
 no encontrado» y que un `POST` anónimo a la ruta pública responde 401.
 
+Y los recorridos del aula (`e2e/real/classroom.spec.ts`): un estudiante nuevo —lo crea en cada ejecución el
+administrador del perfil dev (`WASICHAI_EMAIL`/`WASICHAI_PASSWORD`, por defecto los de la semilla)— inicia sesión, se
+matricula desde la ficha de SRTM, abre la lectura en el `iframe` aislado, la completa y la sigue viendo completada al
+recargar; baja la guía PDF y termina el vídeo, que completa su lección. Con `WASICHAI_DEMO_PASSWORD` comprueba además
+que el estudiante demo encuentra su curso en «Mis cursos». En CI corren en el trabajo `e2e-real`, contra el `main` de
+`elearning-backend`.
+
 Antes, el backend tiene que estar en marcha en el perfil `dev` y con los datos de demostración aplicados: sigue
 [la puesta en marcha del backend](https://github.com/wasichai/elearning-backend/blob/main/docs/development/getting-started.md)
 (`elearning-backend/docs/development/getting-started.md`) hasta `python3 model/apply.py --demo`. El catálogo público se
