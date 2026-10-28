@@ -7,12 +7,23 @@ export const DEV_LOGIN_EMAIL = 'admin@wasichai.local'
 
 export interface AppEnv {
   VITE_APP_NAME?: string
+  VITE_VIDEO_COMPLETION?: string
   DEV: boolean
 }
 
 // una variable vacía en .env cuenta como no puesta
 export function appName(env: Pick<AppEnv, 'VITE_APP_NAME'> = import.meta.env): string {
   return env.VITE_APP_NAME?.trim() || DEFAULT_APP_NAME
+}
+
+// fracción de un vídeo que hay que reproducir para completar su lección (RF-AUL-04): por defecto, todo (el final).
+// VITE_VIDEO_COMPLETION la cambia por despliegue, entre 0 (excluido) y 1; vacía o inválida, el defecto
+export const DEFAULT_VIDEO_COMPLETION = 1
+
+export function videoCompletion(env: Pick<AppEnv, 'VITE_VIDEO_COMPLETION'> = import.meta.env): number {
+  const text = env.VITE_VIDEO_COMPLETION?.trim()
+  const value = text ? Number(text) : Number.NaN
+  return value > 0 && value <= 1 ? value : DEFAULT_VIDEO_COMPLETION
 }
 
 // la configuración de <WasichaiApp>. /api lo atiende el proxy de Vite (vite.config.ts) o el del despliegue.
