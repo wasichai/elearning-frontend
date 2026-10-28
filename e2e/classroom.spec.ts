@@ -60,6 +60,35 @@ test('recorrido: mis cursos → aula → lección HTML → marcar completada →
   expect(api.unexpected).toEqual([])
 })
 
+// RF-AUL-02: una unidad entera, y de ella a la siguiente, sin más acción que «Siguiente»
+test('una unidad se recorre entera solo con «Siguiente»: cada lección abierta, la siguiente unidad después', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
+  const units = page.getByRole('navigation', { name: 'Unidades del curso' })
+  const steps = page.getByRole('navigation', { name: 'Lección anterior y siguiente' })
+  const walk = [
+    { id: 'lec-html', title: 'Tipos de anuncio', position: 'Unidad 1 · Lección 1' },
+    { id: 'lec-video', title: 'Recorrido por la pantalla', position: 'Unidad 1 · Lección 2' },
+    { id: 'lec-pdf', title: 'Guía de liquidación', position: 'Unidad 2 · Lección 1' },
+    { id: 'lec-quiz', title: 'Cuestionario de la unidad', position: 'Unidad 2 · Lección 2' }
+  ]
+
+  for (const [index, lesson] of walk.entries()) {
+    if (index > 0) await steps.getByRole('link', { name: `Siguiente ${lesson.title}` }).click()
+    await expect(page).toHaveURL(`/mis-cursos/mat-srtm-1?leccion=${lesson.id}`)
+    await expect(page.getByRole('heading', { level: 2, name: lesson.title })).toBeVisible()
+    await expect(page.getByText(lesson.position)).toBeVisible()
+    // la navegación lateral sigue ahí y marca la lección abierta
+    await expect(units.locator('[aria-current="page"]')).toContainText(lesson.title)
+  }
+  // la última del curso no tiene «Siguiente»
+  await expect(steps.getByRole('link', { name: /^Siguiente/ })).toHaveCount(0)
+  await expect(steps.getByRole('link', { name: 'Anterior Guía de liquidación' })).toBeVisible()
+  // pasar de lección no completa nada: abrirlas solo las inicia
+  await expect(units.getByRole('link', { name: /Completada$/ })).toHaveCount(0)
+  expect(api.unexpected).toEqual([])
+})
+
 test('«Mis cursos» muestra el avance que guardó el servidor', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
