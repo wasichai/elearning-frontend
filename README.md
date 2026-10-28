@@ -135,3 +135,10 @@ que pueda leerlos; hay dos maneras:
 Un `401`/`403` en `yarn install` significa que ninguno de los dos está en su sitio.
 
 Los mensajes de commit siguen Conventional Commits (lo comprueba commitlint al hacer commit y, en los PR, la CI).
+
+## Licencia
+
+[LGPL-3.0-or-later](LICENSE), provisional
+([ADR-0015](https://github.com/wasichai/elearning-backend/blob/main/docs/adr/0015-licencia-lgpl-provisional.md)). Cubre
+este repositorio; `@wasichai/*`, de los que depende, aún no tienen licencia
+([docs/legal/licensing.md](https://github.com/wasichai/elearning-backend/blob/main/docs/legal/licensing.md)).
