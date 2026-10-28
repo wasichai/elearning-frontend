@@ -8,7 +8,12 @@ describe('classroomModule', () => {
 
     expect(registry.routes.filter((route) => route.moduleId === 'classroom').map(({ key, path, chrome }) => ({ key, path, chrome }))).toEqual([
       { key: CLASSROOM_ROUTES.enrollments, path: '/mis-cursos', chrome: 'shell' },
-      { key: CLASSROOM_ROUTES.classroom, path: '/mis-cursos/:enrollmentId', chrome: 'shell' }
+      { key: CLASSROOM_ROUTES.classroom, path: '/mis-cursos/:enrollmentId', chrome: 'shell' },
+      { key: CLASSROOM_ROUTES.sessions, path: '/mis-cursos/:enrollmentId/sesiones', chrome: 'shell' },
+      { key: CLASSROOM_ROUTES.completion, path: '/mis-cursos/:enrollmentId/finalizacion', chrome: 'shell' },
+      // la verificación del certificado es pública, como el catálogo
+      { key: CLASSROOM_ROUTES.verify, path: '/certificados', chrome: 'public' },
+      { key: CLASSROOM_ROUTES.certificate, path: '/certificados/:code', chrome: 'public' }
     ])
   })
 
@@ -30,6 +35,7 @@ describe('classroomModule', () => {
 
     expect(links.to(CLASSROOM_ROUTES.enrollments)).toBe('/mis-cursos')
     expect(links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: 'mat-1' }, { leccion: 'lec-2' })).toBe('/mis-cursos/mat-1?leccion=lec-2')
+    expect(links.to(CLASSROOM_ROUTES.certificate, { code: 'K7Q2-M9XW-4RTB' })).toBe('/certificados/K7Q2-M9XW-4RTB')
   })
 
   it('carga sus páginas bajo demanda y trae sus textos', async () => {

@@ -63,3 +63,8 @@ export function formatDateTime(instant: string | number | Date, locale: string, 
 export function formatTime(instant: string | number | Date, locale: string, timeZone: string): string {
   return new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone }).format(new Date(instant))
 }
+
+// el tramo de una sesión en una zona: «10 nov 2026, 08:00–09:30» (el día una vez si no cambia)
+export function formatInstantRange(start: string, end: string, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', timeZone }).formatRange(new Date(start), new Date(end))
+}

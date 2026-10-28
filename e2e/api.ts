@@ -1,7 +1,16 @@
 import type { Page, Request, Route } from '@playwright/test'
 import { coursePage, courseDetail, courseSummary, courseWithoutOffering, problem } from '../src/modules/catalog/test/fixtures'
-import type { Answer, Attempt, Classroom, Lesson, ResourceFile } from '../src/modules/classroom/contract'
-import { assessmentClassroom, classroom, gradedAttempt, lessonHtml, openAttempt } from '../src/modules/classroom/test/fixtures'
+import type { Answer, Attempt, Certificate, Classroom, CompletionStatus, Lesson, ResourceFile } from '../src/modules/classroom/contract'
+import {
+  assessmentClassroom,
+  certificate,
+  classroom,
+  gradedAttempt,
+  lessonHtml,
+  openAttempt,
+  sessions as sgspeSessions
+} from '../src/modules/classroom/test/fixtures'
+import type { Session } from '../src/shared/sessions'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
@@ -30,6 +39,10 @@ export interface FakeApiOptions {
   signedIn?: boolean
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean
+  // SGSPE con todo hecho: lecciones, evaluación aprobada y asistencia; la finalización se cumple
+  courseComplete?: boolean
+  // el certificado del ejemplo ya emitido (para la verificación pública)
+  certificateIssued?: boolean
 }
 
 export interface FakeApi {
@@ -41,6 +54,8 @@ export interface FakeApi {
   readonly enrollRequests: { offering: unknown; idempotencyKey: string | null }[]
   // las descargas de archivos de recursos, con la cabecera Authorization que llevaron
   readonly fileRequests: { path: string; authorization: string | null }[]
+  // las verificaciones públicas de certificados
+  readonly certificateRequests: string[]
   // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
   readonly uploads: { path: string; name: string | undefined; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
@@ -106,11 +121,66 @@ function freshClassroom(): ClassroomData {
 }
 
 // la segunda matrícula (SGSPE, F3): con su lectura hecha, la evaluación por empezar y una sesión
-function classroomState(enrolled: boolean) {
+function classroomState({ enrolled = true, courseComplete = false, certificateIssued = false }: FakeApiOptions) {
   const classrooms: Record<string, ClassroomData> = enrolled ? { [classroom.id]: freshClassroom() } : {}
-  classrooms[assessmentClassroom.id] = recount(structuredClone(assessmentClassroom) as Classroom)
+  const sgspe = structuredClone(assessmentClassroom) as Classroom
+  const sessions: Record<string, Session[]> = { [sgspe.id]: structuredClone(sgspeSessions) as Session[] }
+  if (courseComplete) {
+    for (const lesson of sgspe.units.flatMap((unit) => unit.lessons)) {
+      const status = lesson.assessment ? 'APROBADA' : 'COMPLETADA'
+      lesson.progress = { status, startedAt: '2026-09-08T14:00:00Z', completedAt: '2026-09-08T15:00:00Z', evidence: 'FINALIZACION_EXPLICITA' }
+      if (lesson.assessment) Object.assign(lesson.assessment, { attemptsUsed: 1, best: { percent: 80, passed: true, pending: false } })
+    }
+    for (const session of sessions[sgspe.id]!) if (session.status !== 'CANCELADA') session.attendance = 'PRESENTE'
+  }
+  classrooms[sgspe.id] = recount(sgspe)
+  const certificates = new Map<string, Certificate>(certificateIssued ? [[certificate.code, structuredClone(certificate) as Certificate]] : [])
   const seen = new Map<string, unknown>()
-  return { classrooms, seen, attempts: new Map<string, AttemptData>(), submissions: new Map<string, SubmissionData>() }
+  return { classrooms, seen, sessions, certificates, attempts: new Map<string, AttemptData>(), submissions: new Map<string, SubmissionData>() }
+}
+
+// la finalización como la calcula el servidor: las tres reglas de la versión, citadas
+function completionOf(state: ClassroomState, data: ClassroomData): CompletionStatus {
+  const lessons = data.units.flatMap((unit) => unit.lessons).filter((lesson) => lesson.completion !== 'NOT_YET')
+  const done = lessons.filter(isDone).length
+  const assessed = lessons.filter((lesson) => lesson.assessment)
+  const passed = assessed.filter((lesson) => lesson.progress.status === 'APROBADA').length
+  const held = (state.sessions[data.id] ?? []).filter((session) => session.status !== 'CANCELADA')
+  const attended = held.filter((session) => session.attendance === 'PRESENTE' || session.attendance === 'TARDE').length
+  const percent = held.length === 0 ? 100 : Math.round((attended * 100) / held.length)
+  const rules = [
+    { rule: 'LESSONS' as const, met: done === lessons.length, detail: `${done} de ${lessons.length} lecciones` },
+    { rule: 'ASSESSMENTS' as const, met: passed === assessed.length, detail: `${passed} de ${assessed.length} evaluaciones aprobadas` },
+    { rule: 'ATTENDANCE' as const, met: percent >= 75, detail: `${percent} % de asistencia (mínimo 75 %)` }
+  ]
+  return { met: rules.every((rule) => rule.met), rules }
+}
+
+// POST …/certificate: 200 el ya emitido, 400 nombre inválido, 409 reglas pendientes, 201 nuevo (y la matrícula se cierra)
+function issueCertificate(state: ClassroomState, data: ClassroomData, body: unknown): Reply {
+  if (data.certificateCode) return { status: 200, body: state.certificates.get(data.certificateCode) }
+  const holderName = String((body as { holderName?: unknown } | null)?.holderName ?? '').trim()
+  if (holderName.length === 0 || holderName.length > 120) return { status: 400, body: problem(400, 'El nombre debe tener de 1 a 120 caracteres') }
+  const completion = completionOf(state, data)
+  if (!completion.met) return { status: 409, body: { ...problem(409, 'Aún no cumples las reglas de finalización'), rules: completion.rules } }
+  const issued: Certificate = {
+    ...(structuredClone(certificate) as Certificate),
+    issuedAt: now(),
+    holderName,
+    course: { code: data.course.code, title: data.course.title },
+    rules: completion.rules
+  }
+  state.certificates.set(issued.code, issued)
+  Object.assign(data, { status: 'FINALIZADA', certificateCode: issued.code })
+  return { status: 201, body: issued }
+}
+
+const PUBLIC_CERTIFICATES = '/api/lms/public/certificates/'
+
+function publicCertificate(state: ClassroomState, method: string, url: URL): Reply | undefined {
+  if (method !== 'GET' || !url.pathname.startsWith(PUBLIC_CERTIFICATES)) return undefined
+  const found = state.certificates.get(decodeURIComponent(url.pathname.slice(PUBLIC_CERTIFICATES.length)))
+  return found ? { status: 200, body: found } : { status: 404, body: problem(404, 'Certificado no encontrado') }
 }
 
 // POST /api/lms/enrollments: la edición abierta del catálogo matricula (201) o devuelve la matrícula que ya había (200)
@@ -164,6 +234,11 @@ function simulateClassroom(state: ClassroomState, method: string, url: URL, body
   const data = id === undefined ? undefined : state.classrooms[id]
   if (!data) return { status: 404, body: problem(404, 'Matrícula no encontrada') }
   if (method === 'GET' && !rest) return { status: 200, body: data }
+  if (method === 'GET' && rest === 'sessions') return { status: 200, body: state.sessions[data.id] ?? [] }
+  if (method === 'GET' && rest === 'completion') return { status: 200, body: completionOf(state, data) }
+  if (method === 'POST' && rest === 'certificate') return issueCertificate(state, data, body)
+  // una matrícula finalizada queda en solo lectura: ni avance ni intentos nuevos
+  if (method === 'POST' && data.status === 'FINALIZADA') return { status: 409, body: problem(409, 'La matrícula no está activa') }
   const lessonId = rest?.match(/^lessons\/([^/]+)\/events$/)?.[1]
   if (method === 'POST' && lessonId) return lessonEvent(state, data, lessonId, (body ?? {}) as { type?: string; clientEventId?: string })
   const attemptsOf = rest?.match(/^lessons\/([^/]+)\/attempts$/)?.[1]
@@ -349,7 +424,7 @@ function isCatalog(request: Request, url: URL): boolean {
 
 export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise<FakeApi> {
   const overrides: Override[] = []
-  const state = classroomState(options.enrolled ?? true)
+  const state = classroomState(options)
   if (options.signedIn)
     await page.addInitScript(
       ({ prefix, user }) => {
@@ -364,6 +439,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     enrollRequests: [],
     fileRequests: [],
     uploads: [],
+    certificateRequests: [],
     unexpected: [],
     failOnce: (matches, status, detail = 'Fallo simulado') => {
       let used = false
@@ -379,6 +455,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     const url = new URL(request.url())
     const method = request.method()
     if (isCatalog(request, url)) api.catalogRequests.push(url)
+    else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
       api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
@@ -390,7 +467,12 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     for (const override of overrides) reply ??= override(url, method)
     reply ??= simulateUpload(state, method, url, uploadedName(request), request.postDataBuffer()?.length ?? 0)
     if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
-    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url, jsonBody(request)) ?? simulateFile(method, url) ?? simulate(url)
+    reply ??=
+      simulatePlatform(method, url) ??
+      publicCertificate(state, method, url) ??
+      simulateClassroom(state, method, url, jsonBody(request)) ??
+      simulateFile(method, url) ??
+      simulate(url)
     if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
       status: reply.status,

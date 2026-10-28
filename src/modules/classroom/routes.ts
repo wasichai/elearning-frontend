@@ -3,7 +3,11 @@ export const CLASSROOM_MODULE_ID = 'classroom'
 // claves de ruta para useWasichaiLinks().to(...)
 export const CLASSROOM_ROUTES = {
   enrollments: `${CLASSROOM_MODULE_ID}:enrollments`,
-  classroom: `${CLASSROOM_MODULE_ID}:classroom`
+  classroom: `${CLASSROOM_MODULE_ID}:classroom`,
+  sessions: `${CLASSROOM_MODULE_ID}:sessions`,
+  completion: `${CLASSROOM_MODULE_ID}:completion`,
+  verify: `${CLASSROOM_MODULE_ID}:verify`,
+  certificate: `${CLASSROOM_MODULE_ID}:certificate`
 } as const
 
 // la lección abierta del aula vive en la URL (?leccion=<id>): se vuelve a ella y se comparte con el enlace

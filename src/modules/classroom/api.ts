@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
 import { retryNetwork } from '../../shared/retry'
+import { sessionListSchema, type Session } from '../../shared/sessions'
 import {
   attemptSchema,
+  certificateSchema,
+  completionSchema,
   classroomSchema,
   submissionSchema,
   enrollmentListSchema,
@@ -10,6 +13,8 @@ import {
   parseContract,
   type Answer,
   type Attempt,
+  type Certificate,
+  type CompletionStatus,
   type Classroom,
   type Enrollment,
   type LessonEventType,
@@ -53,7 +58,10 @@ export const classroomKeys = {
   all: ['classroom'] as const,
   enrollments: ['classroom', 'enrollments'] as const,
   classroom: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId] as const,
-  attempt: (attemptId: string) => ['classroom', 'attempt', attemptId] as const
+  attempt: (attemptId: string) => ['classroom', 'attempt', attemptId] as const,
+  sessions: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId, 'sessions'] as const,
+  completion: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId, 'completion'] as const,
+  certificate: (code: string) => ['classroom', 'certificate', code] as const
 }
 
 export function useEnrollments() {
@@ -225,5 +233,70 @@ export function useUploadSubmission(attemptId: string) {
       await uploadFile(client, created.uploadUrl, file)
       return created
     }
+  })
+}
+
+// sesiones, finalización y certificado (ADR-0016)
+
+export async function fetchSessions(client: ApiClient, enrollmentId: string, signal?: AbortSignal): Promise<Session[]> {
+  const body = await client.request<unknown>(`${enrollmentPath(enrollmentId)}/sessions`, { signal })
+  return parseContract(sessionListSchema, `GET classroom/enrollments/${enrollmentId}/sessions`, body)
+}
+
+export async function fetchCompletion(client: ApiClient, enrollmentId: string, signal?: AbortSignal): Promise<CompletionStatus> {
+  const body = await client.request<unknown>(`${enrollmentPath(enrollmentId)}/completion`, { signal })
+  return parseContract(completionSchema, `GET classroom/enrollments/${enrollmentId}/completion`, body)
+}
+
+// 201 si se emite, 200 si ya estaba emitido (con el nombre de entonces): las dos son el certificado
+export async function requestCertificate(client: ApiClient, enrollmentId: string, holderName: string): Promise<Certificate> {
+  const body = await client.request<unknown>(`${enrollmentPath(enrollmentId)}/certificate`, { method: 'POST', body: JSON.stringify({ holderName }) })
+  return parseContract(certificateSchema, `POST classroom/enrollments/${enrollmentId}/certificate`, body)
+}
+
+// la verificación pública, sin sesión
+export async function fetchPublicCertificate(client: ApiClient, code: string, signal?: AbortSignal): Promise<Certificate> {
+  const body = await client.request<unknown>(`/lms/public/certificates/${encodeURIComponent(code)}`, { signal })
+  return parseContract(certificateSchema, `GET public/certificates/${code}`, body)
+}
+
+export function useSessions(enrollmentId: string) {
+  const client = useApiClient()
+  return useQuery({ queryKey: classroomKeys.sessions(enrollmentId), queryFn: ({ signal }) => fetchSessions(client, enrollmentId, signal), retry: retryNetwork })
+}
+
+export function useCompletion(enrollmentId: string) {
+  const client = useApiClient()
+  return useQuery({
+    queryKey: classroomKeys.completion(enrollmentId),
+    queryFn: ({ signal }) => fetchCompletion(client, enrollmentId, signal),
+    retry: retryNetwork
+  })
+}
+
+// un 404 es la respuesta de la verificación (no existe ese código), no un fallo que reintentar
+export function usePublicCertificate(code: string) {
+  const client = useApiClient()
+  return useQuery({ queryKey: classroomKeys.certificate(code), queryFn: ({ signal }) => fetchPublicCertificate(client, code, signal), retry: retryNetwork })
+}
+
+// pedir el certificado. tras la respuesta, o tras un 409 (reglas pendientes: el ApiError de core no trae el cuerpo con
+// sus reglas, así que se vuelve a leer la finalización), se releen la finalización, el aula y la lista de matrículas
+export function useRequestCertificate(enrollmentId: string) {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: classroomKeys.completion(enrollmentId) }),
+      queryClient.invalidateQueries({ queryKey: classroomKeys.classroom(enrollmentId) }),
+      queryClient.invalidateQueries({ queryKey: classroomKeys.enrollments })
+    ])
+  return useMutation({
+    mutationFn: (holderName: string) => requestCertificate(client, enrollmentId, holderName),
+    onSuccess: (certificate) => {
+      queryClient.setQueryData(classroomKeys.certificate(certificate.code), certificate)
+      void refresh()
+    },
+    onError: () => void refresh()
   })
 }

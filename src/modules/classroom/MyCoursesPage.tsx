@@ -86,6 +86,14 @@ function EnrollmentItem({ enrollment }: { enrollment: Enrollment }) {
         </h2>
         <OfferingDates offering={enrollment.offering} />
       </div>
+      {enrollment.certificateCode ? (
+        <p className="flex flex-wrap gap-x-3 text-sm">
+          <span className="font-medium text-success">{t('enrollments.certified')}</span>
+          <Link to={links.to(CLASSROOM_ROUTES.certificate, { code: enrollment.certificateCode })} className="text-link underline-offset-4 hover:underline">
+            {t('enrollments.certificate', { course })}
+          </Link>
+        </p>
+      ) : null}
       <ProgressBar progress={enrollment.progress} label={t('progress.course')} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink">{next ? t('enrollments.next', { lesson: next.title }) : t('enrollments.finished')}</p>

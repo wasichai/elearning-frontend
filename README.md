@@ -41,10 +41,10 @@ Variables (opcionales; copia `.env.example` a `.env` o expórtalas en tu shell):
 La aplicación es una sola `<WasichaiApp>` de `@wasichai/core` (sin router propio): `src/config.ts` arma su
 configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tailwind con el tema de `@wasichai/ui`.
 
-| Módulo                   | Qué es                                                                                                                                       |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/modules/catalog/`   | Catálogo público (`/cursos`, `/cursos/:slug`), sin sesión                                                                                    |
-| `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje»; sus evaluaciones (`?leccion=…&intento=…`) |
+| Módulo                   | Qué es                                                                                                                                                                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/modules/catalog/`   | Catálogo público (`/cursos`, `/cursos/:slug`), sin sesión                                                                                                                                                                                                                                                          |
+| `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje»; sus evaluaciones (`?leccion=…&intento=…`), sesiones (`…/sesiones`) y finalización (`…/finalizacion`); la verificación pública e imprimible del certificado (`/certificados`, `/certificados/:code`), sin sesión |
 
 Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
 formato de fechas, estado de error) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
@@ -71,7 +71,10 @@ necesita backend: `e2e/api.ts` contesta `/api/**` dentro del navegador con los e
 entran con una sesión de estudiante simulada (`fakeApi(page, { signedIn: true })`), y el aula guarda su progreso en la
 prueba, así una recarga lo conserva como el servidor. La segunda matrícula (SGSPE) trae una evaluación: la simulación
 impone intentos y plazo, corrige lo automático al enviar, deja lo abierto y las entregas pendientes del docente, y nunca
-sirve soluciones de un intento abierto (`e2e/assessment.spec.ts`; el plazo vencido se prueba con el reloj de Playwright). El servidor web lo
+sirve soluciones de un intento abierto (`e2e/assessment.spec.ts`; el plazo vencido se prueba con el reloj de Playwright).
+Sus sesiones, su finalización y su certificado (`e2e/certificate.spec.ts`) también se simulan: `fakeApi(page, {
+courseComplete: true })` la deja con todo cumplido para pedir el certificado, y `certificateIssued: true` publica el del
+ejemplo para la verificación sin sesión. La impresión se comprueba con `page.emulateMedia({ media: 'print' })`. El servidor web lo
 arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
 que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 

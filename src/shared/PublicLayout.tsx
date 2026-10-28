@@ -1,20 +1,26 @@
 import { useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { CATALOG_ROUTES } from './routes'
 
-// el marco de las páginas públicas: sin shell ni menú, el nombre del producto vuelve al catálogo
+// el catálogo (módulo catalog), por su clave de ruta como texto: src/shared no importa ningún módulo
+const CATALOG_COURSES_ROUTE = 'catalog:courses'
+
+// el marco de las páginas públicas (catálogo, verificación de certificados): sin shell ni menú, el nombre del producto
+// vuelve al catálogo si está registrado. no sale al imprimir: una página impresa no lleva navegación
 export function PublicLayout({ children }: { children: ReactNode }) {
   const { appName } = useWasichaiConfig()
   const links = useWasichaiLinks()
+  const home = links.has(CATALOG_COURSES_ROUTE) ? links.to(CATALOG_COURSES_ROUTE) : undefined
   return (
     <div className="min-h-full bg-surface text-ink">
-      <header className="border-b border-border">
+      <header className="border-b border-border print:hidden">
         <div className="mx-auto flex max-w-4xl items-center px-4 py-3 sm:px-6">
-          {appName ? (
-            <Link to={links.to(CATALOG_ROUTES.courses)} className="text-sm font-semibold tracking-tight text-ink hover:text-brand-strong">
+          {appName && home ? (
+            <Link to={home} className="text-sm font-semibold tracking-tight text-ink hover:text-brand-strong">
               {appName}
             </Link>
+          ) : appName ? (
+            <span className="text-sm font-semibold tracking-tight text-ink">{appName}</span>
           ) : null}
         </div>
       </header>

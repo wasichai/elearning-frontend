@@ -55,7 +55,7 @@ export function OfferingDates({ offering }: { offering: Enrollment['offering'] }
 }
 
 // el texto de un error, por tipo; el estado HTTP queda a la vista para quien tenga que reportarlo
-export function useProblemText(error: unknown, resource: 'enrollments' | 'classroom' | 'attempt') {
+export function useProblemText(error: unknown, resource: 'enrollments' | 'classroom' | 'attempt' | 'sessions' | 'completion' | 'certificate') {
   const { t } = useTranslation('classroom')
   const kind = problemKind(error)
   const status = error instanceof ApiError ? error.status : undefined

@@ -3,3 +3,10 @@
 @import '@wasichai/ui/theme.css';
 /* los paquetes @wasichai traen nombres de clase, no CSS: Tailwind los escanea para generarlas */
 @source '../node_modules/@wasichai';
+
+/* el certificado se imprime en una hoja, con márgenes propios (CertificatePage) */
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+}

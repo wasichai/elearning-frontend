@@ -10,6 +10,7 @@ import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
 import { useOpenLabel } from './parts'
 import { Resources } from './Resources'
+import { Sessions } from './SessionsPage'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 interface LessonViewProps {
@@ -54,8 +55,15 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
 
       {lesson.assessment ? <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} /> : null}
 
-      {/* una evaluación sin material no dice «sin material»: la evaluación es su contenido */}
-      {lesson.assessment && lesson.resources.length === 0 ? null : (
+      {lesson.completion === 'ATTENDANCE' ? (
+        <section aria-label={t('sessions.ofLesson')} className="flex flex-col gap-3">
+          <h3 className="text-base font-medium text-ink">{t('sessions.ofLesson')}</h3>
+          <Sessions enrollmentId={enrollmentId} lessonId={lesson.id} />
+        </section>
+      ) : null}
+
+      {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
+      {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
         <Resources resources={lesson.resources} onVideoEnded={lesson.completion === 'VIDEO_END' ? () => complete('VIDEO_ENDED') : undefined} />
       )}
 

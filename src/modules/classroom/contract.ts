@@ -71,7 +71,9 @@ export const enrollmentSchema = z.object({
   version: z.number().int().positive(),
   offering,
   progress: progressSummarySchema,
-  nextLesson: nextLesson.nullable()
+  nextLesson: nextLesson.nullable(),
+  // F3: el código del certificado, si ya se emitió (la matrícula queda FINALIZADA, en solo lectura)
+  certificateCode: z.string().min(1).nullish()
 })
 
 export const enrollmentListSchema = z.array(enrollmentSchema)
@@ -232,3 +234,33 @@ export type Answer = z.infer<typeof answer>
 export type AttemptResult = z.infer<typeof attemptResult>
 export type QuestionResult = z.infer<typeof questionResult>
 export type Submission = z.infer<typeof submissionSchema>
+
+// la finalización (ADR-0016): las reglas que declara la versión, cada una con si se cumple y su detalle legible
+export const COMPLETION_RULES = ['LESSONS', 'ASSESSMENTS', 'ATTENDANCE'] as const
+
+const completionRule = z.object({ rule: z.enum(COMPLETION_RULES), met: z.boolean(), detail: z.string() })
+
+export const completionSchema = z
+  .object({ met: z.boolean(), rules: z.array(completionRule) })
+  .refine((completion) => completion.met === completion.rules.every((rule) => rule.met), { message: 'met no coincide con sus reglas', path: ['met'] })
+
+// el certificado, congelado al emitirse; lo mismo lo devuelve la emisión que la verificación pública
+export const certificateSchema = z.object({
+  code: z.string().min(1),
+  issuedAt: instant,
+  holderName: z.string().min(1),
+  course: z.object({ code: z.string(), title: z.string() }),
+  version: z.number().int().positive(),
+  offering: z.object({ code: z.string(), startDate: civilDate, endDate: civilDate, timeZone: ianaTimeZone }),
+  totalHours: z.number().nonnegative(),
+  // APROBADO; vocabulario del servidor
+  result: z.string(),
+  rules: z.array(completionRule)
+})
+
+// el nombre para el certificado: de 1 a 120 caracteres (400 si no)
+export const HOLDER_NAME_MAX = 120
+
+export type CompletionRule = z.infer<typeof completionRule>
+export type CompletionStatus = z.infer<typeof completionSchema>
+export type Certificate = z.infer<typeof certificateSchema>
