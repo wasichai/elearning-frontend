@@ -3,7 +3,7 @@ import { Alert, Button, Table, Td, Th } from '@wasichai/ui'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
-import { useCourse } from './api'
+import { catalogKeys, useCourse, useQueryProblem } from './api'
 import type { CourseDetail, Credits, Offering } from './contract'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from './format'
 import { Fact, IllustrativeMark, offeringState, useOpenLabel } from './parts'
@@ -17,15 +17,10 @@ export const LONG_SYLLABUS = 12
 export function CourseDetailPage() {
   const { slug = '' } = useParams()
   const query = useCourse(slug)
+  const { problem, retry } = useQueryProblem(query, catalogKeys.course(slug))
   return (
     <PublicLayout>
-      {query.isPending ? (
-        <LoadingState />
-      ) : query.isError ? (
-        <CourseProblem error={query.error} onRetry={() => void query.refetch()} />
-      ) : (
-        <CourseView course={query.data} />
-      )}
+      {problem ? <CourseProblem error={problem} onRetry={retry} /> : query.data ? <CourseView course={query.data} /> : <LoadingState />}
     </PublicLayout>
   )
 }

@@ -3,7 +3,7 @@ import { Button, Input, Label, Pagination, Select, SelectContent, SelectItem, Se
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { hasActiveFilters, useCatalogFilters, useCourses, type CatalogFilters } from './api'
+import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
 import { LEVELS, MODALITIES, SORTS, type CoursePage, type CourseSummary, type NextOffering } from './contract'
 import { formatCivilRange, formatNumber } from './format'
 import { Fact, IllustrativeMark, offeringState } from './parts'
@@ -18,6 +18,7 @@ export function CatalogPage() {
   const { t } = useTranslation('catalog')
   const [filters, update, clear] = useCatalogFilters()
   const query = useCourses(filters)
+  const { problem, retry } = useQueryProblem(query, catalogKeys.courses(filters))
   const resultsHeading = useRef<HTMLHeadingElement>(null)
 
   const goToPage = (page: number) => {
@@ -34,12 +35,12 @@ export function CatalogPage() {
         <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="sr-only">
           {t('catalog.results')}
         </h2>
-        {query.isPending ? (
-          <LoadingState label={t('catalog.loading')} />
-        ) : query.isError ? (
-          <CatalogProblem error={query.error} onRetry={() => void query.refetch()} onClear={clear} />
-        ) : (
+        {problem ? (
+          <CatalogProblem error={problem} onRetry={retry} onClear={clear} />
+        ) : query.data ? (
           <Results page={query.data} filters={filters} busy={query.isPlaceholderData} onPage={goToPage} onClear={clear} />
+        ) : (
+          <LoadingState label={t('catalog.loading')} />
         )}
       </section>
     </PublicLayout>
@@ -89,7 +90,7 @@ function Filters({ filters, page, onChange, onClear }: FiltersProps) {
           <Button type="submit">{t('filters.submit')}</Button>
         </div>
       </form>
-      <fieldset className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <legend className="sr-only">{t('filters.legend')}</legend>
         <FilterSelect id={`${id}-category`} label={t('filters.category')} value={filters.category} onChange={(category) => onChange({ category })}>
           {categoryOptions.map((category) => (

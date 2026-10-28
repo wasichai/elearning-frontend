@@ -157,6 +157,14 @@ describe('CourseDetailPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
   })
 
+  it('un 401 no deja la ficha cargando para siempre', async () => {
+    renderCourse([{ path: COURSE, status: 401, body: problem(401, 'Full authentication is required') }])
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No pudimos abrir este curso')
+    expect(alert).toHaveTextContent('error 401')
+  })
+
   it('una ficha fuera de contrato no se pinta a medias', async () => {
     renderCourse([{ path: COURSE, body: { ...courseDetail, credits: { ...courseDetail.credits, system: 'SCH' } } }])
 

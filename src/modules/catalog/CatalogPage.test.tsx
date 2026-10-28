@@ -93,7 +93,7 @@ describe('CatalogPage', () => {
     await screen.findByRole('list')
 
     const level = screen.getByRole('combobox', { name: 'Nivel' })
-    expect(level).toHaveTextContent('Todas')
+    expect(level).toHaveTextContent('Cualquiera')
     level.focus()
     await user.keyboard('{Enter}')
     await user.click(await screen.findByRole('option', { name: 'Avanzado' }))
@@ -114,7 +114,7 @@ describe('CatalogPage', () => {
     expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveTextContent('Título')
 
     await user.click(category)
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Todas', 'Gestión municipal (2)', 'Programación (1)'])
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Cualquiera', 'Gestión municipal (2)', 'Programación (1)'])
   })
 
   it('«empieza desde» filtra por fecha', async () => {
@@ -198,6 +198,33 @@ describe('CatalogPage', () => {
     expect(alert).toHaveTextContent('error 500')
     // el detalle técnico del servidor no se le enseña al público
     expect(alert).not.toHaveTextContent('NullPointerException')
+
+    fetchMock.restore()
+    fetchMock = mockFetch([{ path: COURSES, body: coursePage }])
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }))
+
+    expect(await screen.findByRole('list')).toBeInTheDocument()
+  })
+
+  it('un 403 no culpa a los filtros: el catálogo no está disponible', async () => {
+    renderCatalog([{ path: COURSES, status: 403, body: problem(403, 'Access Denied') }], '/cursos?level=INICIAL')
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('El catálogo no está disponible')
+    expect(alert).toHaveTextContent('error 403')
+    expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+    expect(within(alert).queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument()
+  })
+
+  // el cliente de @wasichai/core cierra la sesión ante un 401 y vacía la caché con la consulta en vuelo
+  it('un 401 no deja la página cargando para siempre', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, status: 401, body: problem(401, 'Full authentication is required') }])
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('El catálogo no está disponible')
+    expect(alert).toHaveTextContent('error 401')
+    expect(screen.queryByText('Cargando cursos…')).not.toBeInTheDocument()
 
     fetchMock.restore()
     fetchMock = mockFetch([{ path: COURSES, body: coursePage }])

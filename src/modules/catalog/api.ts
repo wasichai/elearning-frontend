@@ -1,6 +1,6 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { hashKey, keepPreviousData, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { ApiError, useApiClient, type ApiClient } from '@wasichai/core'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { coursePageSchema, courseDetailSchema, parseContract, type CourseDetail, type CoursePage, type Sort } from './contract'
 
@@ -80,6 +80,62 @@ export function retryNetwork(failures: number, error: unknown): boolean {
   return failures < 2 && !(error instanceof ApiError) && error instanceof TypeError
 }
 
+// una consulta que se quedó sin respuesta: el cliente de @wasichai/core, ante un 401, cierra la sesión y vacía la caché
+// de React Query con la consulta en vuelo; la cancelación es silenciosa y la página se quedaría «cargando» para siempre.
+// la API pública no debería responder 401, pero si lo hace, la página lo dice y deja reintentar.
+export class InterruptedRequestError extends Error {
+  constructor() {
+    super('la consulta se canceló sin respuesta')
+    this.name = 'InterruptedRequestError'
+  }
+}
+
+// el último fallo de cada consulta: el 401 que la cancelación silenciosa se traga sigue explicándose con su estado
+const lastFailure = new Map<string, unknown>()
+
+async function remembering<T>(queryKey: QueryKey, run: () => Promise<T>): Promise<T> {
+  const hash = hashKey(queryKey)
+  try {
+    const result = await run()
+    lastFailure.delete(hash)
+    return result
+  } catch (error) {
+    lastFailure.set(hash, error)
+    throw error
+  }
+}
+
+interface ObservedQuery {
+  isError: boolean
+  error: unknown
+  data: unknown
+  isPlaceholderData?: boolean
+  refetch: () => Promise<unknown>
+}
+
+// el error que la página debe explicar (o null) y cómo reintentar
+export function useQueryProblem(query: ObservedQuery, queryKey: QueryKey): { problem: unknown; retry: () => void } {
+  const client = useQueryClient()
+  const hash = hashKey(queryKey)
+  const [removed, setRemoved] = useState<string | null>(null)
+  useEffect(
+    () =>
+      client.getQueryCache().subscribe((event) => {
+        if (event.type === 'removed' && event.query.queryHash === hash) setRemoved(hash)
+      }),
+    [client, hash]
+  )
+  // con datos reales a la vista no hay nada que explicar; los de la página anterior (placeholder) no cuentan
+  const interrupted = removed === hash && (query.data === undefined || query.isPlaceholderData === true)
+  return {
+    problem: query.isError ? query.error : interrupted ? (lastFailure.get(hash) ?? new InterruptedRequestError()) : null,
+    retry: () => {
+      setRemoved(null)
+      void query.refetch()
+    }
+  }
+}
+
 export const catalogKeys = {
   all: ['catalog'] as const,
   courses: (filters: CatalogFilters) => ['catalog', 'courses', filters] as const,
@@ -90,7 +146,7 @@ export function useCourses(filters: CatalogFilters) {
   const client = useApiClient()
   return useQuery({
     queryKey: catalogKeys.courses(filters),
-    queryFn: ({ signal }) => fetchCourses(client, filters, signal),
+    queryFn: ({ queryKey, signal }) => remembering(queryKey, () => fetchCourses(client, filters, signal)),
     // al cambiar de filtro o página se queda la lista anterior a la vista (atenuada) en vez de un parpadeo de carga
     placeholderData: keepPreviousData,
     retry: retryNetwork
@@ -101,7 +157,7 @@ export function useCourse(slug: string) {
   const client = useApiClient()
   return useQuery({
     queryKey: catalogKeys.course(slug),
-    queryFn: ({ signal }) => fetchCourse(client, slug, signal),
+    queryFn: ({ queryKey, signal }) => remembering(queryKey, () => fetchCourse(client, slug, signal)),
     retry: retryNetwork
   })
 }
