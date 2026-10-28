@@ -2,6 +2,7 @@ import { useWasichaiLinks } from '@wasichai/core'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { videoCompletion } from '../../config'
 import { formatNumber } from '../../shared/format'
 import { lessonEvent, useLessonEvent } from './api'
 import { AssessmentLesson } from './Assessment'
@@ -35,9 +36,11 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   // el estado de la mutación es de la lección que la lanzó: al cambiar de lección no se arrastra
   const ownEvent = completion.variables?.lessonId === lesson.id
   const done = isDone(lesson.progress.status)
-  const complete = (type: 'MARKED_COMPLETE' | 'VIDEO_ENDED') => {
-    if (!done && !completion.isPending) completion.mutate(lessonEvent(lesson.id, type))
+  const markComplete = () => {
+    if (!done && !completion.isPending) completion.mutate(lessonEvent(lesson.id, 'MARKED_COMPLETE'))
   }
+  const videoThreshold = videoCompletion()
+  const videoWatched = useVideoWatched(lesson, done, completion.mutate)
   const upcoming = next ?? (pending && pending.lesson.id !== lesson.id ? pending : undefined)
   return (
     <article aria-labelledby={`lesson-${lesson.id}`} className="flex min-w-0 flex-col gap-6 lg:max-w-4xl">
@@ -64,7 +67,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
 
       {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
       {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
-        <Resources resources={lesson.resources} onVideoEnded={lesson.completion === 'VIDEO_END' ? () => complete('VIDEO_ENDED') : undefined} />
+        <Resources resources={lesson.resources} videoThreshold={videoThreshold} onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined} />
       )}
 
       <Completion
@@ -72,7 +75,8 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         lesson={lesson}
         upcoming={upcoming}
         upcomingIsPending={!next && upcoming !== undefined}
-        onMarkComplete={() => complete('MARKED_COMPLETE')}
+        videoThreshold={videoThreshold}
+        onMarkComplete={markComplete}
         marking={ownEvent && completion.isPending}
         error={ownEvent ? completion.error : null}
         justCompleted={ownEvent && completion.isSuccess}
@@ -119,6 +123,22 @@ function useStartLesson(enrollmentId: string, lesson: Lesson) {
     started.current.add(lesson.id)
     mutate(lessonEvent(lesson.id, 'STARTED'))
   }, [lesson.id, mutate, notStarted])
+}
+
+// VIDEO_ENDED una sola vez por lección (RF-AUL-04): el reproductor avisa en cada timeupdate pasado el umbral y en cada
+// ended, y el estado de la mutación llega tarde para frenarlos. si el envío falla, el siguiente aviso lo reintenta
+function useVideoWatched(lesson: Lesson, done: boolean, mutate: ReturnType<typeof useLessonEvent>['mutate']) {
+  const sent = useRef<string | null>(null)
+  return () => {
+    if (done || sent.current === lesson.id) return
+    const lessonId = lesson.id
+    sent.current = lessonId
+    mutate(lessonEvent(lessonId, 'VIDEO_ENDED'), {
+      onError: () => {
+        if (sent.current === lessonId) sent.current = null
+      }
+    })
+  }
 }
 
 // al cambiar de lección (no al abrir la página), el foco pasa a su título: quien navega con teclado o lector sigue leyendo ahí

@@ -1,14 +1,16 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import type { ReactEventHandler } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, useDownload, useFileBlob, useFileText, useObjectUrl } from './files'
 import { formatFileSize } from './parts'
+import { watchedEnough } from './video'
 
 // el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en un iframe aislado,
-// VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga
-export function Resources({ resources, onVideoEnded }: { resources: Resource[]; onVideoEnded?: ReactEventHandler<HTMLVideoElement> }) {
+// VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
+// onVideoWatched avisa cada vez que el reproductor dice que se vio lo bastante (umbral de RF-AUL-04 o fin): quien lo
+// recibe decide enviarlo una sola vez
+export function Resources({ resources, videoThreshold = 1, onVideoWatched }: { resources: Resource[]; videoThreshold?: number; onVideoWatched?: () => void }) {
   const { t } = useTranslation('classroom')
   if (resources.length === 0) return <p className="text-sm text-ink-muted">{t('resource.none')}</p>
   return (
@@ -16,7 +18,11 @@ export function Resources({ resources, onVideoEnded }: { resources: Resource[]; 
       {resources.map((resource) => (
         <section key={resource.id} aria-label={resource.title} className="flex flex-col gap-3">
           <h3 className="text-base font-medium text-ink">{resource.title}</h3>
-          {resource.file ? <ResourceBody type={resource.type} title={resource.title} file={resource.file} onVideoEnded={onVideoEnded} /> : <NoFile />}
+          {resource.file ? (
+            <ResourceBody type={resource.type} title={resource.title} file={resource.file} videoThreshold={videoThreshold} onVideoWatched={onVideoWatched} />
+          ) : (
+            <NoFile />
+          )}
         </section>
       ))}
     </div>
@@ -32,12 +38,13 @@ interface BodyProps {
   type: string
   title: string
   file: ResourceFile
-  onVideoEnded?: ReactEventHandler<HTMLVideoElement>
+  videoThreshold: number
+  onVideoWatched?: () => void
 }
 
-function ResourceBody({ type, title, file, onVideoEnded }: BodyProps) {
+function ResourceBody({ type, title, file, videoThreshold, onVideoWatched }: BodyProps) {
   if (type === 'HTML') return <HtmlResource title={title} file={file} />
-  if (type === 'VIDEO') return <VideoResource file={file} onEnded={onVideoEnded} />
+  if (type === 'VIDEO') return <VideoResource file={file} threshold={videoThreshold} onWatched={onVideoWatched} />
   return <DownloadResource file={file} />
 }
 
@@ -59,7 +66,8 @@ export function HtmlResource({ title, file }: { title: string; file: ResourceFil
   )
 }
 
-function VideoResource({ file, onEnded }: { file: ResourceFile; onEnded?: ReactEventHandler<HTMLVideoElement> }) {
+// eventos reales del reproductor: timeupdate con lo reproducido (si el umbral no es el final) y ended
+function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; threshold: number; onWatched?: () => void }) {
   const { t } = useTranslation('classroom')
   const query = useFileBlob(file)
   const source = useObjectUrl(query.data)
@@ -67,7 +75,14 @@ function VideoResource({ file, onEnded }: { file: ResourceFile; onEnded?: ReactE
   if (!source) return <LoadingState label={t('resource.loading')} />
   return (
     <div className="flex flex-col gap-2">
-      <video controls preload="metadata" src={source} onEnded={onEnded} className="aspect-video w-full rounded-md bg-ink" />
+      <video
+        controls
+        preload="metadata"
+        src={source}
+        onTimeUpdate={onWatched ? (event) => watchedEnough(event.currentTarget, threshold) && onWatched() : undefined}
+        onEnded={onWatched}
+        className="aspect-video w-full rounded-md bg-ink"
+      />
       <DownloadResource file={file} quiet />
     </div>
   )

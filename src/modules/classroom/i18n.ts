@@ -72,6 +72,7 @@ const es = {
       ATTENDANCE: 'Se completa al asistir a la sesión.',
       NOT_YET: 'Esta evaluación o sesión todavía no está disponible.'
     },
+    videoPart: 'Se completa al ver el {{percent}} % del vídeo.',
     next: 'Siguiente lección',
     nextLabel: 'Siguiente lección: {{lesson}}',
     pending: 'Te queda una lección anterior por hacer',
@@ -439,6 +440,7 @@ const en: typeof es = {
       ATTENDANCE: 'Completed when you attend the session.',
       NOT_YET: 'This assessment or session is not available yet.'
     },
+    videoPart: 'Completed when you have watched {{percent}}% of the video.',
     next: 'Next lesson',
     nextLabel: 'Next lesson: {{lesson}}',
     pending: 'You still have an earlier lesson to do',

@@ -3,6 +3,7 @@ import { Alert, Button } from '@wasichai/ui'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { formatNumber } from '../../shared/format'
 import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
 import { WRAP } from './parts'
@@ -14,6 +15,8 @@ interface CompletionProps {
   // la lección que sigue: la siguiente en orden o, al final del curso, una anterior que quedó por hacer
   upcoming?: PlacedLesson
   upcomingIsPending: boolean
+  // fracción del vídeo que lo completa (RF-AUL-04): si no es el final, el texto dice cuánto
+  videoThreshold: number
   onMarkComplete: () => void
   marking: boolean
   error: unknown
@@ -22,8 +25,18 @@ interface CompletionProps {
 }
 
 // cómo se completa la lección (ADR-0012) y, una vez completada, el paso siguiente bien a la vista
-export function Completion({ enrollmentId, lesson, upcoming, upcomingIsPending, onMarkComplete, marking, error, justCompleted }: CompletionProps) {
-  const { t } = useTranslation('classroom')
+export function Completion({
+  enrollmentId,
+  lesson,
+  upcoming,
+  upcomingIsPending,
+  videoThreshold,
+  onMarkComplete,
+  marking,
+  error,
+  justCompleted
+}: CompletionProps) {
+  const { t, i18n } = useTranslation('classroom')
   const done = isDone(lesson.progress.status)
   return (
     <section aria-label={t('completion.section')} className="flex flex-col items-start gap-3 rounded-card border border-border bg-surface-muted px-5 py-4">
@@ -44,7 +57,11 @@ export function Completion({ enrollmentId, lesson, upcoming, upcomingIsPending, 
           {marking ? t('completion.marking') : t('completion.mark')}
         </Button>
       ) : (
-        <p className="text-sm text-ink-muted">{t(`completion.how.${lesson.completion}`)}</p>
+        <p className="text-sm text-ink-muted">
+          {lesson.completion === 'VIDEO_END' && videoThreshold < 1
+            ? t('completion.videoPart', { percent: formatNumber(videoThreshold * 100, i18n.language) })
+            : t(`completion.how.${lesson.completion}`)}
+        </p>
       )}
     </section>
   )
