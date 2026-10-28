@@ -53,6 +53,21 @@ const es = {
     lessonMissing: 'Esa lección no está en este curso; te mostramos la siguiente por hacer.',
     empty: 'Este curso todavía no tiene lecciones.'
   },
+  completion: {
+    section: 'Tu avance en esta lección',
+    mark: 'Marcar como completada',
+    marking: 'Guardando…',
+    done: 'Lección completada',
+    video: 'Se completa al terminar el vídeo.',
+    notYet: 'Se completa con la evaluación o la sesión (próximamente)',
+    next: 'Siguiente lección',
+    nextLabel: 'Siguiente lección: {{lesson}}',
+    pending: 'Te queda una lección anterior por hacer',
+    courseDone: 'Has completado todas las lecciones disponibles del curso.',
+    backToCourses: 'Volver a Mis cursos',
+    conflict: 'Esta lección no se puede completar así. Ya te mostramos su estado actual.',
+    failed: 'No pudimos guardar tu avance. Inténtalo de nuevo.'
+  },
   lessonStatus: {
     NO_INICIADA: 'Sin empezar',
     INICIADA: 'Empezada',
@@ -167,6 +182,21 @@ const en: typeof es = {
     steps: 'Previous and next lesson',
     lessonMissing: 'That lesson is not part of this course; here is your next one.',
     empty: 'This course has no lessons yet.'
+  },
+  completion: {
+    section: 'Your progress in this lesson',
+    mark: 'Mark as completed',
+    marking: 'Saving…',
+    done: 'Lesson completed',
+    video: 'Completed when the video ends.',
+    notYet: 'Completed with the assessment or the session (coming soon)',
+    next: 'Next lesson',
+    nextLabel: 'Next lesson: {{lesson}}',
+    pending: 'You still have an earlier lesson to do',
+    courseDone: 'You have completed every available lesson in the course.',
+    backToCourses: 'Back to My courses',
+    conflict: 'This lesson cannot be completed this way. Here is its current state.',
+    failed: 'We could not save your progress. Please try again.'
   },
   lessonStatus: {
     NO_INICIADA: 'Not started',

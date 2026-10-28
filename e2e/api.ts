@@ -1,6 +1,7 @@
 import type { Page, Request, Route } from '@playwright/test'
 import { coursePage, courseDetail, courseSummary, courseWithoutOffering, problem } from '../src/modules/catalog/test/fixtures'
-import { classroom, enrollment, lessonHtml, otherEnrollment } from '../src/modules/classroom/test/fixtures'
+import type { Classroom, Lesson } from '../src/modules/classroom/contract'
+import { classroom, lessonHtml, otherEnrollment } from '../src/modules/classroom/test/fixtures'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
@@ -63,23 +64,83 @@ function getCourse(slug: string): Reply {
   return detail ? { status: 200, body: detail } : { status: 404, body: problem(404, 'Curso no encontrado') }
 }
 
-// el aula del estudiante: sus matrículas y el aula de cada una
+// el aula del estudiante: sus matrículas y el aula de cada una. empieza sin nada hecho, para recorrer el curso desde
+// la primera lección, y lleva el progreso como el servidor (ADR-0012): solo avanza, cada hecho según cómo se completa
+// la lección, idempotente por clientEventId, y el avance de unidades, total y siguiente lección se calcula
+type ClassroomData = Classroom
+type LessonData = Lesson
+const NOT_STARTED: Lesson['progress'] = { status: 'NO_INICIADA', startedAt: null, completedAt: null, evidence: null }
+const isDone = (lesson: LessonData) => lesson.progress.status === 'COMPLETADA' || lesson.progress.status === 'APROBADA'
+
+function summary(lessons: LessonData[]) {
+  const countable = lessons.filter((lesson) => lesson.completion !== 'NOT_YET')
+  const completedLessons = countable.filter(isDone).length
+  const totalLessons = countable.length
+  return { completedLessons, totalLessons, percent: totalLessons === 0 ? 0 : Math.floor((completedLessons * 100) / totalLessons) }
+}
+
+function recount(data: ClassroomData): ClassroomData {
+  const units = data.units.map((unit) => ({ ...unit, progress: summary(unit.lessons) }))
+  const next = units
+    .flatMap((unit) => unit.lessons.map((lesson) => ({ unit, lesson })))
+    .find(({ lesson }) => lesson.completion !== 'NOT_YET' && !isDone(lesson))
+  return {
+    ...data,
+    units,
+    progress: summary(units.flatMap((unit) => unit.lessons)),
+    nextLesson: next ? { id: next.lesson.id, title: next.lesson.title, unitOrder: next.unit.order, lessonOrder: next.lesson.order } : null
+  }
+}
+
 function classroomState() {
-  const classrooms: Record<string, typeof classroom> = { [classroom.id]: structuredClone(classroom) }
-  const enrollments = [structuredClone(enrollment), structuredClone(otherEnrollment)]
-  return { classrooms, enrollments }
+  const fresh = structuredClone(classroom) as Classroom
+  for (const unit of fresh.units) for (const lesson of unit.lessons) lesson.progress = { ...NOT_STARTED }
+  const classrooms: Record<string, ClassroomData> = { [classroom.id]: recount(fresh) }
+  const seen = new Map<string, unknown>()
+  return { classrooms, others: [structuredClone(otherEnrollment)], seen }
 }
 
 type ClassroomState = ReturnType<typeof classroomState>
 
-function simulateClassroom(state: ClassroomState, method: string, url: URL): Reply | undefined {
+function enrollmentOf(data: ClassroomData) {
+  const { units: _units, ...enrollmentFields } = data
+  return enrollmentFields
+}
+
+const now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z')
+
+// POST …/lessons/{lessonId}/events: la regla de cada tipo de lección, o 409
+function lessonEvent(state: ClassroomState, data: ClassroomData, lessonId: string, body: { type?: string; clientEventId?: string }): Reply {
+  const lesson = data.units.flatMap((unit) => unit.lessons).find((candidate) => candidate.id === lessonId)
+  if (!lesson) return { status: 404, body: problem(404, 'Lección no encontrada') }
+  const key = `${data.id}/${lessonId}/${body.clientEventId}`
+  if (state.seen.has(key)) return { status: 200, body: state.seen.get(key) }
+  const progress = lesson.progress
+  if (body.type === 'STARTED') {
+    if (progress.status === 'NO_INICIADA') Object.assign(progress, { status: 'INICIADA', startedAt: now() })
+  } else if (body.type === 'MARKED_COMPLETE' && lesson.completion === 'EXPLICIT') {
+    if (!isDone(lesson))
+      Object.assign(progress, { status: 'COMPLETADA', startedAt: progress.startedAt ?? now(), completedAt: now(), evidence: 'FINALIZACION_EXPLICITA' })
+  } else if (body.type === 'VIDEO_ENDED' && lesson.completion === 'VIDEO_END') {
+    if (!isDone(lesson)) Object.assign(progress, { status: 'COMPLETADA', startedAt: progress.startedAt ?? now(), completedAt: now(), evidence: 'FIN_DE_VIDEO' })
+  } else return { status: 409, body: problem(409, `${body.type} no se admite en esta lección`) }
+  state.classrooms[data.id] = recount(data)
+  state.seen.set(key, structuredClone(progress))
+  return { status: 200, body: progress }
+}
+
+function simulateClassroom(state: ClassroomState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!url.pathname.startsWith(CLASSROOM)) return undefined
-  if (method === 'GET' && url.pathname === ENROLLMENTS) return { status: 200, body: state.enrollments }
-  const id = url.pathname.startsWith(`${ENROLLMENTS}/`) ? decodeURIComponent(url.pathname.slice(ENROLLMENTS.length + 1)) : undefined
-  if (method === 'GET' && id !== undefined && !id.includes('/')) {
-    const found = state.classrooms[id]
-    return found ? { status: 200, body: found } : { status: 404, body: problem(404, 'Matrícula no encontrada') }
-  }
+  if (method === 'GET' && url.pathname === ENROLLMENTS) return { status: 200, body: [...Object.values(state.classrooms).map(enrollmentOf), ...state.others] }
+  const [id, rest] = url.pathname
+    .slice(ENROLLMENTS.length + 1)
+    .split(/\/(.*)/s)
+    .map((part) => (part === undefined ? undefined : decodeURIComponent(part)))
+  const data = id === undefined ? undefined : state.classrooms[id]
+  if (!data) return { status: 404, body: problem(404, 'Matrícula no encontrada') }
+  if (method === 'GET' && !rest) return { status: 200, body: data }
+  const lessonId = rest?.match(/^lessons\/([^/]+)\/events$/)?.[1]
+  if (method === 'POST' && lessonId) return lessonEvent(state, data, lessonId, (body ?? {}) as { type?: string; clientEventId?: string })
   return undefined
 }
 
@@ -155,7 +216,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     else if (!isPlatform(url)) api.unexpected.push(`${method} ${url.pathname}`)
     let reply: Reply | undefined
     for (const override of overrides) reply ??= override(url)
-    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url) ?? simulateFile(method, url) ?? simulate(url)
+    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url, request.postDataJSON()) ?? simulateFile(method, url) ?? simulate(url)
     if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
       status: reply.status,
