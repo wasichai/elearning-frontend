@@ -50,6 +50,7 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 | `yarn typecheck` | Solo tipos                                           |
 | `yarn test`      | Pruebas con Vitest                                   |
 | `yarn e2e`       | Pruebas extremo a extremo (Playwright, API simulada) |
+| `yarn e2e:real`  | Humo extremo a extremo contra el backend de verdad   |
 | `yarn build`     | Tipos y build de producción en `dist/`               |
 | `yarn preview`   | Sirve `dist/` en el puerto 5180, con el mismo proxy  |
 | `yarn format`    | Formatea todo con Prettier                           |
@@ -65,5 +66,26 @@ que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 La primera vez, instala el navegador: `npx playwright install chromium` (en Linux, `--with-deps` también instala las
 librerías del sistema). Si una prueba falla, `npx playwright show-trace test-results/<prueba>/trace.zip` enseña el
 recorrido paso a paso.
+
+### Humo contra el backend real
+
+`yarn e2e:real` (que pone `E2E_REAL=1`; `yarn e2e` nunca las corre) ejecuta solo `e2e/real/`: sin simular nada, contra el
+backend al que `vite preview` envía `/api` (`WASICHAI_API_URL`, por defecto `http://localhost:8090`). Comprueba que el
+catálogo muestra los tres cursos publicados de los datos de demostración y no el borrador, que cada ficha cumple el
+contrato de la interfaz, que la del curso de IA da 216 h y créditos ECTS propuestos, que un slug inexistente es «Curso
+no encontrado» y que un `POST` anónimo a la ruta pública responde 401.
+
+Antes, el backend tiene que estar en marcha en el perfil `dev` y con los datos de demostración aplicados: sigue
+[la puesta en marcha del backend](https://github.com/wasichai/elearning-backend/blob/main/docs/development/getting-started.md)
+(`elearning-backend/docs/development/getting-started.md`) hasta `python3 model/apply.py --demo`. El catálogo público se
+lee de una proyección que se refresca cada 30 s: tras aplicar los datos, espera ese tiempo. Si el backend no contesta,
+la prueba lo dice antes de abrir el navegador.
+
+```bash
+yarn e2e:real                                          # backend en http://localhost:8090
+WASICHAI_API_URL=http://localhost:8091 yarn e2e:real   # otro backend
+```
+
+Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el que se arrancó, no al de `WASICHAI_API_URL`.
 
 Los mensajes de commit siguen Conventional Commits (lo comprueba commitlint al hacer commit).

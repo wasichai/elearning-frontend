@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "e2e": "playwright test",
+    "e2e:real": "E2E_REAL=1 playwright test",
     "format": "prettier --write .",
     "commitlint": "commitlint --edit",
     "prepare": "husky"
