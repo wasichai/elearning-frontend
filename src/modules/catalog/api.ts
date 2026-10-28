@@ -1,9 +1,9 @@
-import { hashKey, keepPreviousData, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { hashKey, keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { retryNetwork } from '../../shared/retry'
-import { coursePageSchema, courseDetailSchema, parseContract, type CourseDetail, type CoursePage, type Sort } from './contract'
+import { coursePageSchema, courseDetailSchema, createdEnrollmentSchema, parseContract, type CourseDetail, type CoursePage, type Sort } from './contract'
 
 // rutas de la API pública, relativas a apiBaseUrl (el cliente de @wasichai/core las completa)
 const COURSES_PATH = '/lms/public/catalog/courses'
@@ -173,4 +173,22 @@ export function useCatalogFilters(): [CatalogFilters, (patch: Partial<CatalogFil
   // limpiar vuelve al catálogo entero, orden incluido: también saca de un 400 por un parámetro de la URL
   const clear = useCallback(() => setParams({}), [setParams])
   return [filters, update, clear]
+}
+
+// matricularse en una edición (con sesión). Idempotency-Key: si la red repite el envío, el servidor no matricula dos
+// veces; y si ya estaba matriculada, devuelve la misma matrícula (200)
+const ENROLLMENTS_PATH = '/lms/enrollments'
+
+export async function enroll(client: ApiClient, offering: string, idempotencyKey: string): Promise<{ id: string }> {
+  const body = await client.request<unknown>(ENROLLMENTS_PATH, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ offering })
+  })
+  return parseContract(createdEnrollmentSchema, 'POST enrollments', body)
+}
+
+export function useEnroll() {
+  const client = useApiClient()
+  return useMutation({ mutationFn: (offering: string) => enroll(client, offering, crypto.randomUUID()) })
 }

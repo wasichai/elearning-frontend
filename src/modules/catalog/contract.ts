@@ -158,3 +158,7 @@ export type CourseDetail = z.infer<typeof courseDetailSchema>
 export type NextOffering = z.infer<typeof nextOffering>
 export type Offering = z.infer<typeof offering>
 export type Credits = z.infer<typeof credits>
+
+// POST /lms/enrollments (aula del estudiante, docs/api/lms.md) devuelve la Enrollment entera, cuyo contrato valida el
+// módulo classroom. a la ficha solo le hace falta su id para abrir el aula
+export const createdEnrollmentSchema = z.object({ id: z.string().min(1) })

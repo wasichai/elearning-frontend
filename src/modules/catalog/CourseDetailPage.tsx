@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { catalogKeys, useCourse, useQueryProblem } from './api'
+import { EnrollAction } from './EnrollAction'
 import type { CourseDetail, Credits, Offering } from './contract'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from '../../shared/format'
 import { Fact, IllustrativeMark, offeringState, useOpenLabel } from './parts'
@@ -275,6 +276,7 @@ function OfferingView({ offering }: { offering: Offering }) {
           </Fact>
         ) : null}
       </dl>
+      <EnrollAction offering={offering} />
     </div>
   )
 }

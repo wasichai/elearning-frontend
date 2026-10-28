@@ -27,6 +27,8 @@ type Override = (url: URL) => Reply | undefined
 export interface FakeApiOptions {
   // con sesión de estudiante: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
+  // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
+  enrolled?: boolean
 }
 
 export interface FakeApi {
@@ -34,6 +36,8 @@ export interface FakeApi {
   readonly catalogRequests: URL[]
   // las del aula, como «MÉTODO /ruta»
   readonly classroomRequests: string[]
+  // las matrículas pedidas desde la ficha, con su Idempotency-Key
+  readonly enrollRequests: { offering: unknown; idempotencyKey: string | null }[]
   // las descargas de archivos de recursos, con la cabecera Authorization que llevaron
   readonly fileRequests: { path: string; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
@@ -92,12 +96,27 @@ function recount(data: ClassroomData): ClassroomData {
   }
 }
 
-function classroomState() {
+function freshClassroom(): ClassroomData {
   const fresh = structuredClone(classroom) as Classroom
   for (const unit of fresh.units) for (const lesson of unit.lessons) lesson.progress = { ...NOT_STARTED }
-  const classrooms: Record<string, ClassroomData> = { [classroom.id]: recount(fresh) }
+  return recount(fresh)
+}
+
+function classroomState(enrolled: boolean) {
+  const classrooms: Record<string, ClassroomData> = enrolled ? { [classroom.id]: freshClassroom() } : {}
   const seen = new Map<string, unknown>()
   return { classrooms, others: [structuredClone(otherEnrollment)], seen }
+}
+
+// POST /api/lms/enrollments: la edición abierta del catálogo matricula (201) o devuelve la matrícula que ya había (200)
+function simulateEnroll(state: ClassroomState, body: unknown): Reply {
+  const offering = (body as { offering?: unknown } | null)?.offering
+  if (offering !== classroom.offering.code) return { status: 404, body: problem(404, 'Edición no encontrada') }
+  const existing = state.classrooms[classroom.id]
+  if (existing) return { status: 200, body: enrollmentOf(existing) }
+  const created = freshClassroom()
+  state.classrooms[created.id] = created
+  return { status: 201, body: enrollmentOf(created) }
 }
 
 type ClassroomState = ReturnType<typeof classroomState>
@@ -183,7 +202,7 @@ function isCatalog(request: Request, url: URL): boolean {
 
 export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise<FakeApi> {
   const overrides: Override[] = []
-  const state = classroomState()
+  const state = classroomState(options.enrolled ?? true)
   if (options.signedIn)
     await page.addInitScript(
       ({ prefix, user }) => {
@@ -195,6 +214,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
   const api: FakeApi = {
     catalogRequests: [],
     classroomRequests: [],
+    enrollRequests: [],
     fileRequests: [],
     unexpected: [],
     failOnce: (matches, status) => {
@@ -212,10 +232,13 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     const method = request.method()
     if (isCatalog(request, url)) api.catalogRequests.push(url)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
+    else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
+      api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
     else if (FILES.test(url.pathname)) api.fileRequests.push({ path: url.pathname, authorization: (await request.allHeaders()).authorization ?? null })
     else if (!isPlatform(url)) api.unexpected.push(`${method} ${url.pathname}`)
     let reply: Reply | undefined
     for (const override of overrides) reply ??= override(url)
+    if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
     reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url, request.postDataJSON()) ?? simulateFile(method, url) ?? simulate(url)
     if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
