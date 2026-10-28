@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
+import { WRAP } from './parts'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 interface CompletionProps {
@@ -19,9 +20,6 @@ interface CompletionProps {
   // la persona acaba de completarla aquí (no venía completada): el foco pasa al paso siguiente
   justCompleted: boolean
 }
-
-// en un área estrecha (el menú del shell no se pliega en el móvil) el texto del botón baja de línea en vez de salirse
-const WRAP = 'h-auto min-h-9 py-2 whitespace-normal'
 
 // cómo se completa la lección (ADR-0012) y, una vez completada, el paso siguiente bien a la vista
 export function Completion({ enrollmentId, lesson, upcoming, upcomingIsPending, onMarkComplete, marking, error, justCompleted }: CompletionProps) {
@@ -46,7 +44,7 @@ export function Completion({ enrollmentId, lesson, upcoming, upcomingIsPending, 
           {marking ? t('completion.marking') : t('completion.mark')}
         </Button>
       ) : (
-        <p className="text-sm text-ink-muted">{lesson.completion === 'VIDEO_END' ? t('completion.video') : t('completion.notYet')}</p>
+        <p className="text-sm text-ink-muted">{t(`completion.how.${lesson.completion}`)}</p>
       )}
     </section>
   )

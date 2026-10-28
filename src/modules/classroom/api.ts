@@ -2,15 +2,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
 import { retryNetwork } from '../../shared/retry'
 import {
+  attemptSchema,
   classroomSchema,
+  submissionSchema,
   enrollmentListSchema,
   lessonProgressSchema,
   parseContract,
+  type Answer,
+  type Attempt,
   type Classroom,
   type Enrollment,
   type LessonEventType,
-  type LessonProgress
+  type LessonProgress,
+  type Submission
 } from './contract'
+import { uploadFile } from './files'
 
 // la API del aula, con sesión, relativa a apiBaseUrl (el cliente de @wasichai/core pone el token y la base)
 const ENROLLMENTS_PATH = '/lms/classroom/enrollments'
@@ -21,6 +27,16 @@ export function enrollmentPath(enrollmentId: string): string {
 
 export function lessonEventsPath(enrollmentId: string, lessonId: string): string {
   return `${enrollmentPath(enrollmentId)}/lessons/${encodeURIComponent(lessonId)}/events`
+}
+
+const ATTEMPTS_PATH = '/lms/classroom/attempts'
+
+export function attemptsPath(enrollmentId: string, lessonId: string): string {
+  return `${enrollmentPath(enrollmentId)}/lessons/${encodeURIComponent(lessonId)}/attempts`
+}
+
+export function attemptPath(attemptId: string): string {
+  return `${ATTEMPTS_PATH}/${encodeURIComponent(attemptId)}`
 }
 
 export async function fetchEnrollments(client: ApiClient, signal?: AbortSignal): Promise<Enrollment[]> {
@@ -36,7 +52,8 @@ export async function fetchClassroom(client: ApiClient, enrollmentId: string, si
 export const classroomKeys = {
   all: ['classroom'] as const,
   enrollments: ['classroom', 'enrollments'] as const,
-  classroom: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId] as const
+  classroom: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId] as const,
+  attempt: (attemptId: string) => ['classroom', 'attempt', attemptId] as const
 }
 
 export function useEnrollments() {
@@ -104,5 +121,109 @@ export function useLessonEvent(enrollmentId: string) {
       void refresh()
     },
     onError: () => void refresh()
+  })
+}
+
+// los intentos de una evaluación (ADR-0016). el servidor impone intentos y plazo: la interfaz los muestra, no los decide
+
+// empezar (201) o retomar el que ya está abierto (200): las dos respuestas son el intento
+export async function startAttempt(client: ApiClient, enrollmentId: string, lessonId: string): Promise<Attempt> {
+  const body = await client.request<unknown>(attemptsPath(enrollmentId, lessonId), { method: 'POST', body: '{}' })
+  return parseContract(attemptSchema, `POST classroom/enrollments/${enrollmentId}/lessons/${lessonId}/attempts`, body)
+}
+
+export async function fetchAttempt(client: ApiClient, attemptId: string, signal?: AbortSignal): Promise<Attempt> {
+  const body = await client.request<unknown>(attemptPath(attemptId), { signal })
+  return parseContract(attemptSchema, `GET classroom/attempts/${attemptId}`, body)
+}
+
+// lo que se envía de una respuesta: sin la entrega con su archivo, que es del servidor
+export type AnswerInput = Omit<Answer, 'submission'>
+
+// se guardan todas las respuestas del intento a la vez, con la misma forma que Attempt.answers
+export async function saveAnswers(client: ApiClient, attemptId: string, answers: AnswerInput[]): Promise<Attempt> {
+  const body = await client.request<unknown>(`${attemptPath(attemptId)}/answers`, { method: 'PUT', body: JSON.stringify({ answers }) })
+  return parseContract(attemptSchema, `PUT classroom/attempts/${attemptId}/answers`, body)
+}
+
+export async function submitAttempt(client: ApiClient, attemptId: string): Promise<Attempt> {
+  const body = await client.request<unknown>(`${attemptPath(attemptId)}/submit`, { method: 'POST', body: '{}' })
+  return parseContract(attemptSchema, `POST classroom/attempts/${attemptId}/submit`, body)
+}
+
+export async function createSubmission(client: ApiClient, attemptId: string, questionId: string): Promise<Submission> {
+  const body = await client.request<unknown>(`${attemptPath(attemptId)}/questions/${encodeURIComponent(questionId)}/submission`, { method: 'POST', body: '{}' })
+  return parseContract(submissionSchema, `POST classroom/attempts/${attemptId}/questions/${questionId}/submission`, body)
+}
+
+export function useAttempt(attemptId: string) {
+  const client = useApiClient()
+  return useQuery({ queryKey: classroomKeys.attempt(attemptId), queryFn: ({ signal }) => fetchAttempt(client, attemptId, signal), retry: retryNetwork })
+}
+
+// tras cualquier cambio de un intento (o un 409: el servidor ya lo cerró) se vuelven a leer el intento y el aula, que
+// trae los intentos usados, el mejor resultado y el progreso de la lección
+function useAttemptRefresh(enrollmentId: string) {
+  const queryClient = useQueryClient()
+  return (attemptId?: string) =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: classroomKeys.classroom(enrollmentId) }),
+      queryClient.invalidateQueries({ queryKey: classroomKeys.enrollments }),
+      attemptId ? queryClient.invalidateQueries({ queryKey: classroomKeys.attempt(attemptId) }) : undefined
+    ])
+}
+
+export function useStartAttempt(enrollmentId: string) {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  const refresh = useAttemptRefresh(enrollmentId)
+  return useMutation({
+    mutationFn: (lessonId: string) => startAttempt(client, enrollmentId, lessonId),
+    onSuccess: (attempt) => {
+      queryClient.setQueryData(classroomKeys.attempt(attempt.id), attempt)
+      void refresh()
+    },
+    onError: () => void refresh()
+  })
+}
+
+export function useSaveAnswers(enrollmentId: string, attemptId: string) {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  const refresh = useAttemptRefresh(enrollmentId)
+  return useMutation({
+    mutationFn: (answers: AnswerInput[]) => saveAnswers(client, attemptId, answers),
+    onSuccess: (attempt) => queryClient.setQueryData(classroomKeys.attempt(attemptId), attempt),
+    onError: () => void refresh(attemptId)
+  })
+}
+
+// enviar guarda antes las respuestas: lo último que se escribió entra en el intento
+export function useSubmitAttempt(enrollmentId: string, attemptId: string) {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  const refresh = useAttemptRefresh(enrollmentId)
+  return useMutation({
+    mutationFn: async (answers: AnswerInput[]) => {
+      await saveAnswers(client, attemptId, answers)
+      return submitAttempt(client, attemptId)
+    },
+    onSuccess: (attempt) => {
+      queryClient.setQueryData(classroomKeys.attempt(attemptId), attempt)
+      void refresh()
+    },
+    onError: () => void refresh(attemptId)
+  })
+}
+
+// la entrega de una pregunta FILE: se crea, se sube el archivo a su uploadUrl y se devuelve para guardarla en la respuesta
+export function useUploadSubmission(attemptId: string) {
+  const client = useApiClient()
+  return useMutation({
+    mutationFn: async ({ questionId, file }: { questionId: string; file: File }) => {
+      const created = await createSubmission(client, attemptId, questionId)
+      await uploadFile(client, created.uploadUrl, file)
+      return created
+    }
   })
 }

@@ -23,22 +23,41 @@ export function fileRequestUrl(client: Pick<ApiClient, 'baseUrl'>, url: string, 
   return `${target.pathname}${target.search}`
 }
 
-export async function fetchFile(client: ApiClient, url: string, signal?: AbortSignal): Promise<Blob> {
+function sessionHeaders(client: ApiClient): Headers {
   const headers = new Headers()
   const token = client.getToken()
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const response = await fetch(fileRequestUrl(client, url), { headers, signal })
-  if (!response.ok) {
-    let detail: string | undefined
-    try {
-      const problem = (await response.json()) as { detail?: string; title?: string }
-      detail = problem.detail ?? problem.title
-    } catch {
-      detail = undefined
-    }
-    throw new ApiError(response.status, detail ?? `HTTP ${response.status}`)
+  return headers
+}
+
+// el problem+json de una respuesta fallida, como el ApiError del cliente de core
+async function responseError(response: Response): Promise<ApiError> {
+  let detail: string | undefined
+  try {
+    const problem = (await response.json()) as { detail?: string; title?: string }
+    detail = problem.detail ?? problem.title
+  } catch {
+    detail = undefined
   }
+  return new ApiError(response.status, detail ?? `HTTP ${response.status}`)
+}
+
+export async function fetchFile(client: ApiClient, url: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await fetch(fileRequestUrl(client, url), { headers: sessionHeaders(client), signal })
+  if (!response.ok) throw await responseError(response)
   return response.blob()
+}
+
+// el máximo de una entrega (docs/api/lms.md): uno mayor se rechaza antes de subirlo
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
+// subir un archivo a una URL de wasichai-files (multipart, parte «file») con la sesión. el cliente de core no sirve:
+// siempre manda JSON. la URL pasa por la misma guarda que las descargas: el token no sale de la API
+export async function uploadFile(client: ApiClient, uploadUrl: string, file: File): Promise<void> {
+  const body = new FormData()
+  body.append('file', file)
+  const response = await fetch(fileRequestUrl(client, uploadUrl), { method: 'POST', headers: sessionHeaders(client), body })
+  if (!response.ok) throw await responseError(response)
 }
 
 export const fileKey = (url: string) => ['classroom', 'file', url] as const

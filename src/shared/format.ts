@@ -53,3 +53,13 @@ export function languageName(code: string, locale: string): string {
     return code
   }
 }
+
+// fecha y hora de un instante en una zona (la de la edición), en el idioma de la interfaz
+export function formatDateTime(instant: string | number | Date, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(instant))
+}
+
+// solo la hora de un instante en una zona
+export function formatTime(instant: string | number | Date, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone }).format(new Date(instant))
+}

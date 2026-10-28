@@ -82,7 +82,7 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
         <div className="flex min-w-0 flex-1 flex-col gap-4 pt-6">
           {requested && !found ? <Alert tone="notice">{t('classroom.lessonMissing')}</Alert> : null}
           {placed ? (
-            <LessonView enrollmentId={classroom.id} placed={placed} previous={previous} next={next} pending={pending} />
+            <LessonView enrollmentId={classroom.id} timeZone={classroom.offering.timeZone} placed={placed} previous={previous} next={next} pending={pending} />
           ) : (
             <p className="text-sm text-ink-muted">{t('classroom.empty')}</p>
           )}
