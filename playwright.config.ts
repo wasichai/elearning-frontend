@@ -1,12 +1,16 @@
 import { defineConfig, devices } from '@playwright/test'
 
 // pruebas extremo a extremo sobre la build de producción (vite preview), en Chromium, con el idioma y la zona de Lima.
-// las de e2e/ simulan la API en el navegador (e2e/api.ts): no necesitan backend
+// las de e2e/ simulan la API en el navegador (e2e/api.ts): no necesitan backend. las de e2e/real/ (humo contra el backend
+// de verdad, al que vite preview envía /api según WASICHAI_API_URL) solo corren con E2E_REAL=1, y entonces solas
 const PORT = 5180
 const BASE_URL = `http://localhost:${PORT}`
+const REAL = /\/real\//
+const real = Boolean(process.env.E2E_REAL)
 
 export default defineConfig({
   testDir: 'e2e',
+  ...(real ? { testMatch: REAL } : { testIgnore: REAL }),
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
