@@ -62,3 +62,21 @@ export function useProblemText(error: unknown, resource: 'enrollments' | 'classr
     description: t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
   }
 }
+
+// el tamaño de un archivo, en la unidad que se lee mejor (KB, MB…)
+export function formatFileSize(bytes: number, locale: string): string {
+  const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte'] as const
+  let value = bytes
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit++
+  }
+  return new Intl.NumberFormat(locale, { style: 'unit', unit: units[unit], unitDisplay: 'short', maximumFractionDigits: unit < 2 ? 0 : 1 }).format(value)
+}
+
+// un vocabulario abierto del modelo (tipo de lección): la traducción si existe; si no, el valor legible
+export function useOpenLabel(group: string) {
+  const { t } = useTranslation('classroom')
+  return (value: string) => t(`${group}.${value}`, { defaultValue: value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' ') })
+}

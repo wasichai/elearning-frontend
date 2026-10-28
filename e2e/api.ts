@@ -1,6 +1,6 @@
 import type { Page, Request, Route } from '@playwright/test'
 import { coursePage, courseDetail, courseSummary, courseWithoutOffering, problem } from '../src/modules/catalog/test/fixtures'
-import { classroom, enrollment, otherEnrollment } from '../src/modules/classroom/test/fixtures'
+import { classroom, enrollment, lessonHtml, otherEnrollment } from '../src/modules/classroom/test/fixtures'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
@@ -18,7 +18,8 @@ const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categori
 export const COURSES_IN_CATALOG = [courseSummary, courseWithoutOffering]
 export const DETAILS: Record<string, unknown> = { [courseSummary.slug]: courseDetail }
 
-type Reply = { status: number; body: unknown }
+// una respuesta JSON (o problem+json) o, para los archivos, el contenido tal cual
+type Reply = { status: number; body: unknown; raw?: { body: string; contentType: string } }
 // una respuesta preparada por la prueba: gana a la simulación mientras devuelva algo
 type Override = (url: URL) => Reply | undefined
 
@@ -32,6 +33,8 @@ export interface FakeApi {
   readonly catalogRequests: URL[]
   // las del aula, como «MÉTODO /ruta»
   readonly classroomRequests: string[]
+  // las descargas de archivos de recursos, con la cabecera Authorization que llevaron
+  readonly fileRequests: { path: string; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
   readonly unexpected: string[]
   // la próxima respuesta a lo que cumpla `matches` (una sola vez)
@@ -80,6 +83,22 @@ function simulateClassroom(state: ClassroomState, method: string, url: URL): Rep
   return undefined
 }
 
+// los archivos de los recursos del aula (wasichai-files), por la versión de recurso de su URL
+const FILES = /^\/api\/objects\/version_recurso\/records\/([^/]+)\/files\/archivo$/
+const FILE_CONTENTS: Record<string, { body: string; contentType: string }> = {
+  'vr-html': { body: lessonHtml, contentType: 'text/html' },
+  'vr-video': { body: 'no es un vídeo de verdad', contentType: 'video/mp4' },
+  'vr-pdf': { body: '%PDF-1.7 guía de liquidación', contentType: 'application/pdf' },
+  'vr-xlsx': { body: 'plantilla', contentType: 'application/octet-stream' }
+}
+
+function simulateFile(method: string, url: URL): Reply | undefined {
+  const id = FILES.exec(url.pathname)?.[1]
+  if (method !== 'GET' || !id) return undefined
+  const file = FILE_CONTENTS[id]
+  return file ? { status: 200, body: null, raw: file } : { status: 404, body: problem(404, 'Archivo no encontrado') }
+}
+
 // lo que @wasichai/core pide por su cuenta con sesión: permisos, preferencias y, en el panel de inicio, los objetos.
 // sin endpoint de preferencias (404), core las guarda solo en el navegador
 const isPlatform = (url: URL) => url.pathname.startsWith('/api/auth/') || url.pathname === '/api/objects'
@@ -115,6 +134,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
   const api: FakeApi = {
     catalogRequests: [],
     classroomRequests: [],
+    fileRequests: [],
     unexpected: [],
     failOnce: (matches, status) => {
       let used = false
@@ -131,10 +151,12 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     const method = request.method()
     if (isCatalog(request, url)) api.catalogRequests.push(url)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
+    else if (FILES.test(url.pathname)) api.fileRequests.push({ path: url.pathname, authorization: (await request.allHeaders()).authorization ?? null })
     else if (!isPlatform(url)) api.unexpected.push(`${method} ${url.pathname}`)
     let reply: Reply | undefined
     for (const override of overrides) reply ??= override(url)
-    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url) ?? simulate(url)
+    reply ??= simulatePlatform(method, url) ?? simulateClassroom(state, method, url) ?? simulateFile(method, url) ?? simulate(url)
+    if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
       status: reply.status,
       contentType: reply.status < 400 ? 'application/json' : 'application/problem+json',
