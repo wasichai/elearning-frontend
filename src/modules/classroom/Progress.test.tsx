@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import type { Classroom, LessonProgress } from './contract'
 import { classroomModule } from './module'
@@ -28,6 +28,7 @@ let files: ReturnType<typeof serveFiles> | undefined
 afterEach(() => {
   files?.restore()
   fetchMock?.restore()
+  vi.unstubAllEnvs()
 })
 
 // el aula que contesta el servidor: un objeto que la prueba cambia para simular lo que el servidor guardó
@@ -181,6 +182,73 @@ describe('completar una lección', () => {
     expect(posts()[0]).toMatchObject({ path: events('lec-video'), body: { type: 'VIDEO_ENDED', clientEventId: expect.stringMatching(UUID) } })
     expect(await screen.findByText('Lección completada', { selector: '[role="status"]' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Siguiente lección: Guía de liquidación' })).toHaveFocus()
+  })
+
+  // RF-AUL-04: el umbral del vídeo (VITE_VIDEO_COMPLETION, src/config.ts). lo que cuenta es lo reproducido
+  async function openVideo(post: MockRoute = { method: 'POST', path: events('lec-video'), body: { ...completed, evidence: 'FIN_DE_VIDEO' } }) {
+    const server = serverClassroom()
+    server.units[0]!.lessons[1]!.progress = started
+    const view = renderLesson([{ path: CLASSROOM, body: server }, post], 'lec-video')
+    files?.restore()
+    files = serveFiles({ '/api/objects/version_recurso/records/vr-video/files/archivo': { body: 'mp4', contentType: 'video/mp4' } })
+    await waitFor(() => expect(view.container.querySelector('video')).toHaveAttribute('src'))
+    const video = view.container.querySelector('video')!
+    // jsdom no reproduce: la duración y los tramos reproducidos los pone la prueba, como los daría el navegador
+    const play = (...spans: Array<[number, number]>) => {
+      Object.defineProperty(video, 'duration', { configurable: true, value: 100 })
+      Object.defineProperty(video, 'played', {
+        configurable: true,
+        value: { length: spans.length, start: (i: number) => spans[i]![0], end: (i: number) => spans[i]![1] }
+      })
+      fireEvent.timeUpdate(video)
+    }
+    return { server, video, play }
+  }
+
+  it('VIDEO_END con umbral: completa al reproducir esa fracción, una sola vez', async () => {
+    vi.stubEnv('VITE_VIDEO_COMPLETION', '0.9')
+    const { server, video, play } = await openVideo()
+
+    expect(screen.getByText('Se completa al ver el 90 % del vídeo.')).toBeInTheDocument()
+    play([0, 50])
+    // saltar al final no es verlo
+    play([0, 50], [95, 100])
+    expect(posts()).toEqual([])
+
+    server.units[0]!.lessons[1]!.progress = { ...completed, evidence: 'FIN_DE_VIDEO' }
+    play([0, 90])
+    play([0, 91])
+    fireEvent.ended(video)
+    await waitFor(() => expect(posts()).toHaveLength(1))
+    expect(posts()[0]).toMatchObject({ path: events('lec-video'), body: { type: 'VIDEO_ENDED' } })
+    expect(await screen.findByText('Lección completada', { selector: '[role="status"]' })).toBeInTheDocument()
+    play([0, 100])
+    fireEvent.ended(video)
+    expect(posts()).toHaveLength(1)
+  })
+
+  it('VIDEO_END por defecto: reproducir casi todo no basta, el final sí y una sola vez', async () => {
+    const { server, video, play } = await openVideo()
+
+    expect(screen.getByText('Se completa al terminar el vídeo.')).toBeInTheDocument()
+    play([0, 99.9])
+    expect(posts()).toEqual([])
+
+    server.units[0]!.lessons[1]!.progress = { ...completed, evidence: 'FIN_DE_VIDEO' }
+    fireEvent.ended(video)
+    fireEvent.ended(video)
+    await waitFor(() => expect(posts()).toHaveLength(1))
+    expect(await screen.findByText('Lección completada', { selector: '[role="status"]' })).toBeInTheDocument()
+    expect(posts()).toHaveLength(1)
+  })
+
+  it('VIDEO_END: si el envío falla, el siguiente evento del reproductor lo reintenta', async () => {
+    const { video } = await openVideo({ method: 'POST', path: events('lec-video'), status: 503, body: problem(503, 'no disponible') })
+
+    fireEvent.ended(video)
+    expect(await screen.findByText('No pudimos guardar tu avance. Inténtalo de nuevo.')).toBeInTheDocument()
+    fireEvent.ended(video)
+    await waitFor(() => expect(posts()).toHaveLength(2))
   })
 
   it('NOT_YET: ni botón ni evento de fin; se dice cómo se completará', async () => {
