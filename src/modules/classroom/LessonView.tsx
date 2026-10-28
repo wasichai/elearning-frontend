@@ -3,6 +3,9 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
+import { lessonEvent, useLessonEvent } from './api'
+import { Completion } from './Completion'
+import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
 import { useOpenLabel } from './parts'
 import { Resources } from './Resources'
@@ -13,14 +16,25 @@ interface LessonViewProps {
   placed: PlacedLesson
   previous?: PlacedLesson
   next?: PlacedLesson
+  // la siguiente por hacer según el servidor (nextLesson), por si al final del curso quedó una atrás
+  pending?: PlacedLesson
 }
 
 // la lección abierta: lectura amplia, su material y el paso siguiente
-export function LessonView({ enrollmentId, placed, previous, next }: LessonViewProps) {
+export function LessonView({ enrollmentId, placed, previous, next, pending }: LessonViewProps) {
   const { t, i18n } = useTranslation('classroom')
   const lessonType = useOpenLabel('lessonType')
   const { lesson, unit } = placed
   const heading = useFocusOnChange(lesson.id)
+  useStartLesson(enrollmentId, lesson)
+  const completion = useLessonEvent(enrollmentId)
+  // el estado de la mutación es de la lección que la lanzó: al cambiar de lección no se arrastra
+  const ownEvent = completion.variables?.lessonId === lesson.id
+  const done = isDone(lesson.progress.status)
+  const complete = (type: 'MARKED_COMPLETE' | 'VIDEO_ENDED') => {
+    if (!done && !completion.isPending) completion.mutate(lessonEvent(lesson.id, type))
+  }
+  const upcoming = next ?? (pending && pending.lesson.id !== lesson.id ? pending : undefined)
   return (
     <article aria-labelledby={`lesson-${lesson.id}`} className="flex min-w-0 flex-col gap-6 lg:max-w-4xl">
       <header className="flex flex-col gap-1.5">
@@ -35,7 +49,18 @@ export function LessonView({ enrollmentId, placed, previous, next }: LessonViewP
         {lesson.summary ? <p className="max-w-prose text-base text-ink">{lesson.summary}</p> : null}
       </header>
 
-      <Resources resources={lesson.resources} />
+      <Resources resources={lesson.resources} onVideoEnded={lesson.completion === 'VIDEO_END' ? () => complete('VIDEO_ENDED') : undefined} />
+
+      <Completion
+        enrollmentId={enrollmentId}
+        lesson={lesson}
+        upcoming={upcoming}
+        upcomingIsPending={!next && upcoming !== undefined}
+        onMarkComplete={() => complete('MARKED_COMPLETE')}
+        marking={ownEvent && completion.isPending}
+        error={ownEvent ? completion.error : null}
+        justCompleted={ownEvent && completion.isSuccess}
+      />
 
       <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
     </article>
@@ -65,6 +90,19 @@ function LessonSteps({ enrollmentId, previous, next }: { enrollmentId: string; p
       ) : null}
     </nav>
   )
+}
+
+// abrir una lección no iniciada la marca como iniciada, una vez por lección mientras dure la página. si falla no se
+// insiste ni se molesta: la lectura sigue y el próximo hecho (completarla) también la inicia en el servidor
+function useStartLesson(enrollmentId: string, lesson: Lesson) {
+  const { mutate } = useLessonEvent(enrollmentId)
+  const started = useRef(new Set<string>())
+  const notStarted = lesson.progress.status === 'NO_INICIADA'
+  useEffect(() => {
+    if (!notStarted || started.current.has(lesson.id)) return
+    started.current.add(lesson.id)
+    mutate(lessonEvent(lesson.id, 'STARTED'))
+  }, [lesson.id, mutate, notStarted])
 }
 
 // al cambiar de lección (no al abrir la página), el foco pasa a su título: quien navega con teclado o lector sigue leyendo ahí

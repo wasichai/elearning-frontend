@@ -79,18 +79,20 @@ function DownloadResource({ file, quiet = false }: { file: ResourceFile; quiet?:
   const size = formatFileSize(file.size, i18n.language)
   return (
     <div className="flex flex-col items-start gap-2">
-      <Button
-        variant={quiet ? 'ghost' : 'secondary'}
-        size="sm"
-        onClick={() => void download()}
-        disabled={pending}
-        aria-label={t('resource.downloadLabel', { name: file.name, size })}
-      >
-        {pending ? t('resource.downloading') : t('resource.download')}
-        <span className="font-normal text-ink-muted">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Button
+          variant={quiet ? 'ghost' : 'secondary'}
+          size="sm"
+          onClick={() => void download()}
+          disabled={pending}
+          aria-label={t('resource.downloadLabel', { name: file.name, size })}
+        >
+          {pending ? t('resource.downloading') : t('resource.download')}
+        </Button>
+        <span aria-hidden="true" className="text-sm break-all text-ink-muted">
           {file.name} · {size}
         </span>
-      </Button>
+      </div>
       {error ? <FileProblem error={error} /> : null}
     </div>
   )

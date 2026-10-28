@@ -66,6 +66,7 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
   const found = requested ? path.find((placed) => placed.lesson.id === requested) : undefined
   const placed = found ?? defaultLesson(path, classroom.nextLesson?.id)
   const { previous, next } = placed ? neighbours(path, placed.lesson.id) : {}
+  const pending = path.find((candidate) => candidate.lesson.id === classroom.nextLesson?.id)
   return (
     <>
       <PageHeader title={classroom.course.title} />
@@ -81,7 +82,7 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
         <div className="flex min-w-0 flex-1 flex-col gap-4 pt-6">
           {requested && !found ? <Alert tone="notice">{t('classroom.lessonMissing')}</Alert> : null}
           {placed ? (
-            <LessonView enrollmentId={classroom.id} placed={placed} previous={previous} next={next} />
+            <LessonView enrollmentId={classroom.id} placed={placed} previous={previous} next={next} pending={pending} />
           ) : (
             <p className="text-sm text-ink-muted">{t('classroom.empty')}</p>
           )}
