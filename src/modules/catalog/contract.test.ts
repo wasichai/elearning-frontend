@@ -8,6 +8,13 @@ describe('contrato del catálogo', () => {
     expect(parseContract(courseDetailSchema, 'course', courseDetail).credits.proposal?.proposed).toBe(8)
   })
 
+  // RF-ACA-05 del backend: la modalidad presencial es una más
+  it('acepta un curso presencial', () => {
+    const inPerson = { ...coursePage, content: [{ ...courseSummary, modality: 'PRESENCIAL' }] }
+    expect(parseContract(coursePageSchema, 'courses', inPerson).content[0]!.modality).toBe('PRESENCIAL')
+    expect(parseContract(courseDetailSchema, 'course', { ...courseDetail, modality: 'PRESENCIAL' }).modality).toBe('PRESENCIAL')
+  })
+
   it('acepta campos nuevos que el contrato no conoce', () => {
     expect(() => parseContract(coursePageSchema, 'courses', { ...coursePage, sortedBy: 'upcoming' })).not.toThrow()
   })

@@ -7,7 +7,7 @@ export { ContractError, parseContract } from '../../shared/contract'
 // los objetos no son estrictos: un campo nuevo del servidor no rompe la interfaz; uno que falta o cambia de tipo, sí.
 
 export const LEVELS = ['INICIAL', 'INTERMEDIO', 'AVANZADO'] as const
-export const MODALITIES = ['ASINCRONA', 'SINCRONA', 'HIBRIDA'] as const
+export const MODALITIES = ['ASINCRONA', 'SINCRONA', 'HIBRIDA', 'PRESENCIAL'] as const
 export const SORTS = ['upcoming', 'title', 'duration'] as const
 export const OFFERING_STATUSES = ['PROGRAMADA', 'INSCRIPCION_ABIERTA', 'EN_CURSO'] as const
 export const CREDIT_SYSTEMS = ['ECTS', 'SCH'] as const

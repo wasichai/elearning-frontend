@@ -37,7 +37,8 @@ const es = {
   modality: {
     ASINCRONA: 'Asíncrona',
     SINCRONA: 'Síncrona',
-    HIBRIDA: 'Híbrida'
+    HIBRIDA: 'Híbrida',
+    PRESENCIAL: 'Presencial'
   },
   course: {
     illustrative: 'Contenido ilustrativo',
@@ -227,7 +228,8 @@ const en: typeof es = {
   modality: {
     ASINCRONA: 'Self-paced',
     SINCRONA: 'Live online',
-    HIBRIDA: 'Blended'
+    HIBRIDA: 'Blended',
+    PRESENCIAL: 'In person'
   },
   course: {
     illustrative: 'Illustrative content',
