@@ -88,4 +88,24 @@ WASICHAI_API_URL=http://localhost:8091 yarn e2e:real   # otro backend
 
 Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el que se arrancó, no al de `WASICHAI_API_URL`.
 
-Los mensajes de commit siguen Conventional Commits (lo comprueba commitlint al hacer commit).
+## Integración continua
+
+`.github/workflows/ci.yml` corre en cada `push` a `main` y en cada PR, con Node 26 (`.node-version`): `yarn install
+--frozen-lockfile`, `yarn lint`, `yarn typecheck`, `yarn test`, `yarn build` y `yarn e2e` (Chromium instalado con
+`npx playwright install --with-deps chromium`; si falla, las trazas quedan como artefacto `playwright`). En los PR, el
+trabajo `commits` pasa commitlint por todos los commits del PR. El humo contra el backend real no corre en CI.
+
+El flujo solo pide `contents: read` y `packages: read`. Para instalar `@wasichai/*` de GitHub Packages necesita un token
+que pueda leerlos; hay dos maneras:
+
+- **Secreto `PACKAGES_TOKEN`** (Settings → Secrets and variables → Actions → New repository secret): un token personal
+  (_classic_) con solo el permiso `read:packages`, de una cuenta que pueda leer los paquetes de `wasichai`. Caduca: pon
+  una fecha y renuévalo.
+- **Acceso de Actions a los paquetes**: en la organización, en la configuración de cada paquete `@wasichai/*`
+  (`core`, `ui`, `testing`; Package settings → Manage Actions access), añade `elearning-frontend` con el rol _Read_.
+  Entonces basta el token del propio flujo (`GITHUB_TOKEN`) y no hace falta el secreto: si `PACKAGES_TOKEN` no existe,
+  el flujo usa ese.
+
+Un `401`/`403` en `yarn install` significa que ninguno de los dos está en su sitio.
+
+Los mensajes de commit siguen Conventional Commits (lo comprueba commitlint al hacer commit y, en los PR, la CI).

@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# un PR con un push nuevo cancela la ejecución anterior; main conserva cada una
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  packages: read
+
+# @wasichai/* vienen de GitHub Packages, que pide un token con read:packages incluso para leer (README, «Integración
+# continua»). PACKAGES_TOKEN es un PAT del repositorio; sin él se usa el token del flujo, que solo lee los paquetes si su
+# organización dio acceso de Actions a este repositorio. para todos los trabajos porque setup-node escribe un .npmrc que lee
+# ${NODE_AUTH_TOKEN} y, con cache: yarn, consulta yarn enseguida
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+
+jobs:
+  web:
+    name: Lint, pruebas, build y e2e
+    runs-on: ubuntu-latest
+    # un yarn install o un navegador colgados no deben quemar las 6 h por defecto
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: yarn
+          registry-url: https://npm.pkg.github.com
+          scope: '@wasichai'
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn test
+      - run: yarn build
+      # e2e con la API simulada (e2e/api.ts); el humo contra el backend real (yarn e2e:real) no corre aquí
+      - run: npx playwright install --with-deps chromium
+      - run: yarn e2e
+        env:
+          CI: 'true'
+      # las trazas de lo que falló (trace: retain-on-failure), para abrirlas con npx playwright show-trace
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: playwright
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  commits:
+    name: Mensajes de commit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # el historial entero: commitlint recorre base..head del PR
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: yarn
+          registry-url: https://npm.pkg.github.com
+          scope: '@wasichai'
+      # la versión de commitlint y su configuración son las del lockfile, las mismas del hook commit-msg
+      - run: yarn install --frozen-lockfile --ignore-scripts
+      - run: npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
