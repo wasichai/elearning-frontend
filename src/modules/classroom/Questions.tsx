@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { formatNumber } from '../../shared/format'
 import type { AnswerInput } from './api'
 import type { Answer, Question } from './contract'
-import { MAX_UPLOAD_BYTES } from './files'
+import { MAX_UPLOAD_BYTES } from '../../shared/files'
 import { formatFileSize } from './parts'
 
 // las preguntas de un intento abierto, una por tipo (ADR-0016): opción única y verdadero/falso con radio, múltiple con

@@ -9,6 +9,7 @@ export const SESSION_MODALITIES = ['PRESENCIAL', 'VIRTUAL'] as const
 export const SESSION_STATUSES = ['PROGRAMADA', 'REPROGRAMADA', 'CANCELADA'] as const
 export const ATTENDANCE_STATUSES = ['PRESENTE', 'TARDE', 'AUSENTE', 'JUSTIFICADO'] as const
 
+export type SessionType = (typeof SESSION_TYPES)[number]
 export type SessionStatus = (typeof SESSION_STATUSES)[number]
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 

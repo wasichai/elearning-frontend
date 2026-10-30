@@ -1,6 +1,18 @@
 import { z } from 'zod'
+import { fileSchema, percentSchema, type FileRef } from '../../shared/attempts'
 import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
+export {
+  ATTEMPT_STATUSES,
+  attemptSchema,
+  QUESTION_TYPES,
+  type Answer,
+  type Attempt,
+  type AttemptResult,
+  type Question,
+  type QuestionResult,
+  type QuestionType
+} from '../../shared/attempts'
 export { ContractError, ENROLLMENT_STATUSES, OFFERING_STATUSES, parseContract, progressSummarySchema, type ProgressSummary } from '../../shared/contract'
 
 // el contrato del aula del estudiante (F2, ADR-0012; F3, ADR-0016): «Aula del estudiante» y «Evaluaciones, sesiones y
@@ -67,25 +79,14 @@ export const enrollmentSchema = z.object({
 
 export const enrollmentListSchema = z.array(enrollmentSchema)
 
-// la descarga de wasichai-files con la misma sesión. file es null en un recurso sin archivo
-const file = z.object({
-  name: z.string(),
-  contentType: z.string(),
-  size: z.number().int().nonnegative(),
-  url: z.string().min(1)
-})
-
 const resource = z.object({
   id,
   title: z.string(),
   // HTML, PDF, VIDEO… vocabulario abierto: lo que la interfaz no sabe mostrar se ofrece como descarga
   type: z.string(),
   version: z.number().int().positive(),
-  file: file.nullable()
+  file: fileSchema.nullable()
 })
-
-// porcentaje de 0 a 100 (notas: no tiene por qué ser entero)
-const percent = z.number().min(0).max(100)
 
 // la evaluación de una lección, tal como la ve el estudiante: sus reglas y lo que lleva hecho. best es null sin ningún
 // intento enviado; mientras su mejor intento espera corrección, percent y passed son null (como en el resultado)
@@ -95,10 +96,10 @@ export const assessmentSummarySchema = z
     title: z.string(),
     maxAttempts: z.number().int().positive(),
     timeLimitMinutes: z.number().int().positive().nullable(),
-    passingPercent: percent,
+    passingPercent: percentSchema,
     attemptsUsed: z.number().int().nonnegative(),
     openAttemptId: id.nullable(),
-    best: z.object({ percent: percent.nullable(), passed: z.boolean().nullable(), pending: z.boolean() }).nullable()
+    best: z.object({ percent: percentSchema.nullable(), passed: z.boolean().nullable(), pending: z.boolean() }).nullable()
   })
   .refine((assessment) => assessment.attemptsUsed <= assessment.maxAttempts, { message: 'más intentos usados que permitidos', path: ['attemptsUsed'] })
 
@@ -131,82 +132,8 @@ const unit = z.object({
 
 export const classroomSchema = enrollmentSchema.extend({ units: z.array(unit) })
 
-// los intentos de una evaluación (F3, ADR-0016): la instantánea de sus preguntas, las respuestas y, tras enviar, el resultado
-export const QUESTION_TYPES = ['SINGLE', 'MULTIPLE', 'TRUE_FALSE', 'SHORT', 'OPEN', 'FILE'] as const
-export const ATTEMPT_STATUSES = ['OPEN', 'SUBMITTED', 'GRADED'] as const
-
-export type QuestionType = (typeof QUESTION_TYPES)[number]
-
-const points = z.number().nonnegative()
-
-const question = z
-  .object({
-    id,
-    order,
-    type: z.enum(QUESTION_TYPES),
-    prompt: z.string(),
-    points,
-    options: z.array(z.object({ id, text: z.string() })),
-    // solo en OPEN y FILE: con qué se corrige
-    rubric: z.array(z.object({ description: z.string(), points }))
-  })
-  .refine((question) => question.type !== 'TRUE_FALSE' || question.options.length === 2, { message: 'verdadero/falso sin dos opciones', path: ['options'] })
-
 // la entrega de una pregunta FILE: el archivo (null hasta subirlo) se sube con POST uploadUrl y la misma sesión
-export const submissionSchema = z.object({ id, file: file.nullable(), uploadUrl: z.string().min(1) })
-
-// sin respuesta: optionIds vacío y text y submissionId null. submission (la entrega con su archivo) la añadió el backend
-// para el estudiante y el docente; puede faltar o ser null
-const answer = z.object({
-  questionId: id,
-  optionIds: z.array(id),
-  text: z.string().nullable(),
-  submissionId: id.nullable(),
-  submission: z.object({ id, file: file.nullable() }).nullish()
-})
-
-// la solución solo llega si la evaluación las muestra al enviar (o al docente)
-const solution = z.object({ optionIds: z.array(id), acceptedAnswers: z.array(z.string()) })
-
-// los puntos y si es correcta faltan (null) en una pregunta que aún espera corrección manual
-const questionResult = z.object({
-  questionId: id,
-  points: points.nullable(),
-  maxPoints: points,
-  correct: z.boolean().nullable(),
-  comment: z.string().nullable(),
-  solution: solution.nullable()
-})
-
-const attemptResult = z
-  .object({
-    score: points,
-    maxScore: points,
-    percent: percent.nullable(),
-    passed: z.boolean().nullable(),
-    pending: z.boolean(),
-    questions: z.array(questionResult)
-  })
-  .refine((result) => result.pending || (result.percent !== null && result.passed !== null), { message: 'resultado sin nota ni pendiente', path: ['percent'] })
-
-export const attemptSchema = z
-  .object({
-    id,
-    number: z.number().int().positive(),
-    status: z.enum(ATTEMPT_STATUSES),
-    startedAt: instant,
-    // null sin tiempo límite
-    deadline: instant.nullable(),
-    submittedAt: instant.nullable(),
-    questions: z.array(question),
-    answers: z.array(answer),
-    result: attemptResult.nullable()
-  })
-  // mientras está abierto no hay soluciones ni puntos ganados; enviado, siempre trae su resultado
-  .refine((attempt) => (attempt.status === 'OPEN') === (attempt.result === null), {
-    message: 'resultado en un intento abierto o enviado sin él',
-    path: ['result']
-  })
+export const submissionSchema = z.object({ id, file: fileSchema.nullable(), uploadUrl: z.string().min(1) })
 
 export type LessonProgress = z.infer<typeof lessonProgressSchema>
 export type Enrollment = z.infer<typeof enrollmentSchema>
@@ -214,13 +141,8 @@ export type Classroom = z.infer<typeof classroomSchema>
 export type Unit = z.infer<typeof unit>
 export type Lesson = z.infer<typeof lesson>
 export type Resource = z.infer<typeof resource>
-export type ResourceFile = z.infer<typeof file>
+export type ResourceFile = FileRef
 export type AssessmentSummary = z.infer<typeof assessmentSummarySchema>
-export type Attempt = z.infer<typeof attemptSchema>
-export type Question = z.infer<typeof question>
-export type Answer = z.infer<typeof answer>
-export type AttemptResult = z.infer<typeof attemptResult>
-export type QuestionResult = z.infer<typeof questionResult>
 export type Submission = z.infer<typeof submissionSchema>
 
 // la finalización (ADR-0016): las reglas que declara la versión, cada una con si se cumple y su detalle legible

@@ -59,6 +59,21 @@ export function formatDateTime(instant: string | number | Date, locale: string, 
   return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(instant))
 }
 
+// la fecha civil y la hora local de un instante en una zona: lo que piden los campos de fecha y hora de un formulario
+export function zonedDateTime(instant: string, timeZone: string): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).formatToParts(new Date(instant))
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((candidate) => candidate.type === type)?.value ?? ''
+  return { date: `${part('year')}-${part('month')}-${part('day')}`, time: `${part('hour')}:${part('minute')}` }
+}
+
 // solo la hora de un instante en una zona
 export function formatTime(instant: string | number | Date, locale: string, timeZone: string): string {
   return new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone }).format(new Date(instant))

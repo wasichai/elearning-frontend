@@ -21,7 +21,7 @@ import {
   type LessonProgress,
   type Submission
 } from './contract'
-import { uploadFile } from './files'
+import { uploadFile } from '../../shared/files'
 
 // la API del aula, con sesión, relativa a apiBaseUrl (el cliente de @wasichai/core pone el token y la base)
 const ENROLLMENTS_PATH = '/lms/classroom/enrollments'

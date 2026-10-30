@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import type { Classroom, LessonProgress } from './contract'
 import { classroomModule } from './module'
-import { serveFiles } from './test/files'
+import { serveFiles } from '../../test/files'
 import { classroom, problem } from './test/fixtures'
 
 // el progreso en el aula (ADR-0012): cada hecho va al servidor con su clientEventId y lo que él responde manda
