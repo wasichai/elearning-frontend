@@ -11,6 +11,7 @@ import {
   sessions as sgspeSessions
 } from '../src/modules/classroom/test/fixtures'
 import type { Session } from '../src/shared/sessions'
+import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
@@ -24,7 +25,10 @@ const ATTEMPTS = '/api/lms/classroom/attempts'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
 export const STUDENT = { id: 'u-estudiante', email: 'estudiante@demo.local', displayName: 'Rosa Estudiante', organizationId: 'org-demo', roles: ['ESTUDIANTE'] }
-const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categoria: ['READ'] } }
+const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categoria: ['READ'], matricula: ['READ', 'CREATE'] } }
+// un docente: lee las asignaciones (docente_edicion), que es lo que muestra el menú «Docencia»
+export const TEACHER = { id: 'u-docente', email: 'docente@demo.local', displayName: 'Luis Docente', organizationId: 'org-demo', roles: ['DOCENTE'] }
+const TEACHER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ'], progreso_leccion: ['READ'] } }
 
 export const COURSES_IN_CATALOG = [courseSummary, courseWithoutOffering]
 export const DETAILS: Record<string, unknown> = { [courseSummary.slug]: courseDetail }
@@ -34,9 +38,11 @@ type Reply = { status: number; body: unknown; raw?: { body: string; contentType:
 // una respuesta preparada por la prueba: gana a la simulación mientras devuelva algo
 type Override = (url: URL, method: string) => Reply | undefined
 
-export interface FakeApiOptions {
-  // con sesión de estudiante: token y usuario en el almacenamiento antes de cargar la página
+export interface FakeApiOptions extends TeachingOptions {
+  // con sesión: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
+  // quién inicia sesión: el estudiante (por defecto) o un docente con ediciones asignadas
+  as?: 'student' | 'teacher'
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean
   // SGSPE con todo hecho: lecciones, evaluación aprobada y asistencia; la finalización se cumple
@@ -56,6 +62,8 @@ export interface FakeApi {
   readonly fileRequests: { path: string; authorization: string | null }[]
   // las verificaciones públicas de certificados
   readonly certificateRequests: string[]
+  // las del espacio docente, como «MÉTODO /ruta»
+  readonly teachingRequests: string[]
   // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
   readonly uploads: { path: string; name: string | undefined; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
@@ -405,8 +413,8 @@ function simulateFile(method: string, url: URL): Reply | undefined {
 // sin endpoint de preferencias (404), core las guarda solo en el navegador
 const isPlatform = (url: URL) => url.pathname.startsWith('/api/auth/') || url.pathname === '/api/objects'
 
-function simulatePlatform(method: string, url: URL): Reply | undefined {
-  if (method === 'GET' && url.pathname === '/api/auth/me/permissions') return { status: 200, body: STUDENT_PERMISSIONS }
+function simulatePlatform(method: string, url: URL, teacher: boolean): Reply | undefined {
+  if (method === 'GET' && url.pathname === '/api/auth/me/permissions') return { status: 200, body: teacher ? TEACHER_PERMISSIONS : STUDENT_PERMISSIONS }
   if (method === 'GET' && url.pathname === '/api/objects') return { status: 200, body: [] }
   return undefined
 }
@@ -425,13 +433,15 @@ function isCatalog(request: Request, url: URL): boolean {
 export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise<FakeApi> {
   const overrides: Override[] = []
   const state = classroomState(options)
+  const teaching = teachingState(options)
+  const teacher = options.as === 'teacher'
   if (options.signedIn)
     await page.addInitScript(
       ({ prefix, user }) => {
         localStorage.setItem(`${prefix}.token`, 'token-e2e')
         localStorage.setItem(`${prefix}.user`, JSON.stringify(user))
       },
-      { prefix: STORAGE_PREFIX, user: STUDENT }
+      { prefix: STORAGE_PREFIX, user: teacher ? TEACHER : STUDENT }
     )
   const api: FakeApi = {
     catalogRequests: [],
@@ -440,6 +450,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     fileRequests: [],
     uploads: [],
     certificateRequests: [],
+    teachingRequests: [],
     unexpected: [],
     failOnce: (matches, status, detail = 'Fallo simulado') => {
       let used = false
@@ -456,6 +467,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     const method = request.method()
     if (isCatalog(request, url)) api.catalogRequests.push(url)
     else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
+    else if (url.pathname.startsWith(TEACHING)) api.teachingRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
       api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
@@ -468,7 +480,8 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     reply ??= simulateUpload(state, method, url, uploadedName(request), request.postDataBuffer()?.length ?? 0)
     if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
     reply ??=
-      simulatePlatform(method, url) ??
+      simulatePlatform(method, url, teacher) ??
+      simulateTeaching(teaching, method, url) ??
       publicCertificate(state, method, url) ??
       simulateClassroom(state, method, url, jsonBody(request)) ??
       simulateFile(method, url) ??
