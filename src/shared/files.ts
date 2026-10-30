@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiError, useApiClient, useAuth, type ApiClient } from '@wasichai/core'
 import { useCallback, useEffect, useState } from 'react'
-import type { ResourceFile } from './contract'
+import type { FileRef } from './attempts'
 
-// los archivos de los recursos (wasichai-files) se bajan con la sesión: el token va en la cabecera, como en el cliente
+// los archivos de wasichai-files (recursos del aula, entregas) se bajan con la sesión: el token va en la cabecera, como en el cliente
 // de @wasichai/core, que no sirve aquí porque lee JSON. por eso nunca se pinta un <a href> ni un <video src> con la URL
 // del servidor: el navegador no mandaría el token. el archivo llega como Blob y se muestra o se guarda desde memoria.
 
@@ -60,7 +60,7 @@ export async function uploadFile(client: ApiClient, uploadUrl: string, file: Fil
   if (!response.ok) throw await responseError(response)
 }
 
-export const fileKey = (url: string) => ['classroom', 'file', url] as const
+export const fileKey = (url: string) => ['file', url] as const
 
 // pedir un archivo con la sesión; un 401 cierra la sesión como lo haría el cliente de core
 function useFileFetcher() {
@@ -82,12 +82,12 @@ function useFileFetcher() {
 // una versión publicada de un recurso no cambia (ADR-0012): bajada una vez, sirve mientras dure la página
 const FILE_QUERY = { staleTime: Infinity, retry: false } as const
 
-export function useFileBlob(file: ResourceFile) {
+export function useFileBlob(file: FileRef) {
   const fetcher = useFileFetcher()
   return useQuery({ queryKey: fileKey(file.url), queryFn: ({ signal }) => fetcher(file.url, signal), ...FILE_QUERY })
 }
 
-export function useFileText(file: ResourceFile) {
+export function useFileText(file: FileRef) {
   const fetcher = useFileFetcher()
   return useQuery({
     queryKey: [...fileKey(file.url), 'text'],
@@ -112,7 +112,7 @@ export function useObjectUrl(blob: Blob | undefined): string | undefined {
 }
 
 // guardar un archivo: se baja con la sesión (o se toma de la caché) y se entrega al navegador con su nombre
-export function useDownload(file: ResourceFile) {
+export function useDownload(file: FileRef) {
   const fetcher = useFileFetcher()
   const queryClient = useQueryClient()
   const [state, setState] = useState<{ pending: boolean; error: unknown }>({ pending: false, error: null })

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { deadlineStage, formatRemaining } from './Countdown'
 import { classroomModule } from './module'
-import { serveFiles, type ServedFile } from './test/files'
+import { serveFiles, type ServedFile } from '../../test/files'
 import { assessmentClassroom, gradedAttempt, openAttempt, problem, submission, submittedAttempt } from './test/fixtures'
 
 // la evaluación en el aula (ADR-0016): reglas, intento, respuestas por tipo, plazo, envío y resultado

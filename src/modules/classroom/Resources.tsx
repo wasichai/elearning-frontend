@@ -2,7 +2,7 @@ import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
-import { ForeignFileError, useDownload, useFileBlob, useFileText, useObjectUrl } from './files'
+import { ForeignFileError, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
 import { formatFileSize } from './parts'
 import { watchedEnough } from './video'
 
