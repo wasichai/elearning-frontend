@@ -403,6 +403,8 @@ const FILE_CONTENTS: Record<string, { body: string; contentType: string }> = {
 }
 
 function simulateFile(method: string, url: URL): Reply | undefined {
+  // la entrega que descarga el docente
+  if (method === 'GET' && UPLOADS.test(url.pathname)) return { status: 200, body: null, raw: { body: '%PDF-1.7 liquidación', contentType: 'application/pdf' } }
   const id = FILES.exec(url.pathname)?.[1]
   if (method !== 'GET' || !id) return undefined
   const file = FILE_CONTENTS[id]
@@ -472,6 +474,8 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
       api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
     else if (FILES.test(url.pathname)) api.fileRequests.push({ path: url.pathname, authorization: (await request.allHeaders()).authorization ?? null })
+    else if (UPLOADS.test(url.pathname) && method !== 'POST')
+      api.fileRequests.push({ path: url.pathname, authorization: (await request.allHeaders()).authorization ?? null })
     else if (UPLOADS.test(url.pathname))
       api.uploads.push({ path: url.pathname, name: uploadedName(request), authorization: (await request.allHeaders()).authorization ?? null })
     else if (!isPlatform(url)) api.unexpected.push(`${method} ${url.pathname}`)
@@ -481,7 +485,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
     reply ??=
       simulatePlatform(method, url, teacher) ??
-      simulateTeaching(teaching, method, url) ??
+      simulateTeaching(teaching, method, url, jsonBody(request)) ??
       publicCertificate(state, method, url) ??
       simulateClassroom(state, method, url, jsonBody(request)) ??
       simulateFile(method, url) ??

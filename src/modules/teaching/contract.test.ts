@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { ContractError, parseContract, rosterSchema, teachingOfferingListSchema } from './contract'
-import { offering, otherOffering, roster } from './test/fixtures'
+import { attendanceRowListSchema, ContractError, parseContract, pendingAttemptListSchema, rosterSchema, teachingOfferingListSchema } from './contract'
+import { attemptSchema } from '../../shared/attempts'
+import { sessionListSchema } from '../../shared/sessions'
+import { attemptGraded, attemptToGrade, attendanceRows, offering, otherOffering, pendingAttempts, roster, teachingSessions } from './test/fixtures'
 
 const student = roster[0]!
 
@@ -34,5 +36,32 @@ describe('contrato del espacio docente', () => {
   ])('rechaza los matriculados: %s', (_case, body, hint) => {
     expect(() => parseContract(rosterSchema, 'GET teaching/offerings/x/students', body)).toThrow(ContractError)
     expect(() => parseContract(rosterSchema, 'GET teaching/offerings/x/students', body)).toThrow(hint)
+  })
+})
+
+describe('contrato de corrección, sesiones y asistencia', () => {
+  it('acepta los ejemplos del documento', () => {
+    expect(parseContract(pendingAttemptListSchema, 'queue', pendingAttempts)[0]?.pendingQuestions).toBe(2)
+    expect(parseContract(pendingAttemptListSchema, 'queue', [{ ...pendingAttempts[0], email: null }])[0]?.email).toBeNull()
+    expect(parseContract(attemptSchema, 'attempt', attemptToGrade).answers[2]?.submission?.file?.name).toBe('liquidacion.pdf')
+    expect(parseContract(attemptSchema, 'attempt', attemptGraded).result?.passed).toBe(true)
+    expect(parseContract(sessionListSchema, 'sessions', teachingSessions)[0]?.attendance).toBeUndefined()
+    expect(parseContract(attendanceRowListSchema, 'attendance', attendanceRows)[0]?.status).toBeNull()
+  })
+
+  it.each([
+    ['sin preguntas por corregir', [{ ...pendingAttempts[0], pendingQuestions: 0 }], 'pendingQuestions'],
+    ['fecha de envío sin zona', [{ ...pendingAttempts[0], submittedAt: '2026-10-28 15:20' }], 'submittedAt'],
+    ['sin lección', [{ ...pendingAttempts[0], lessonId: undefined }], 'lessonId']
+  ])('rechaza la cola: %s', (_case, body, hint) => {
+    expect(() => parseContract(pendingAttemptListSchema, 'queue', body)).toThrow(ContractError)
+    expect(() => parseContract(pendingAttemptListSchema, 'queue', body)).toThrow(hint)
+  })
+
+  it.each([
+    ['estado desconocido', [{ ...attendanceRows[0], status: 'QUIZAS' }], 'status'],
+    ['sin matrícula', [{ ...attendanceRows[0], enrollmentId: '' }], 'enrollmentId']
+  ])('rechaza la asistencia: %s', (_case, body, hint) => {
+    expect(() => parseContract(attendanceRowListSchema, 'attendance', body)).toThrow(hint)
   })
 })

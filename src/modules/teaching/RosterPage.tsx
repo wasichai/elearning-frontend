@@ -1,12 +1,13 @@
-import { LoadingState, PageHeader } from '@wasichai/core'
+import { LoadingState, PageHeader, useWasichaiLinks } from '@wasichai/core'
 import { Button, Table, Td, Th } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useOfferings, useRoster } from './api'
 import type { RosterAssessment, RosterEntry } from './contract'
 import { BackToOfferings, OfferingDates, useProblemText } from './parts'
+import { TEACHING_ROUTES } from './routes'
 
 // los matriculados de una edición asignada: su progreso, su asistencia y sus evaluaciones
 export function RosterPage() {
@@ -20,9 +21,26 @@ export function RosterPage() {
       <div className="flex flex-col gap-5 px-4 pt-6 pb-16 sm:px-8">
         <BackToOfferings />
         {offering ? <OfferingDates offering={offering} /> : null}
+        <OfferingNav code={code} pending={offering?.pendingAttempts} />
         <Roster code={code} />
       </div>
     </>
+  )
+}
+
+function OfferingNav({ code, pending }: { code: string; pending?: number }) {
+  const { t, i18n } = useTranslation('teaching')
+  const links = useWasichaiLinks()
+  const linkClass = 'text-sm text-link underline-offset-4 hover:underline'
+  return (
+    <nav aria-label={t('roster.more')} className="flex flex-wrap gap-x-6 gap-y-1">
+      <Link to={links.to(TEACHING_ROUTES.queue, { code })} className={linkClass}>
+        {pending ? t('roster.toQueuePending', { count: pending, value: formatNumber(pending, i18n.language) }) : t('roster.toQueue')}
+      </Link>
+      <Link to={links.to(TEACHING_ROUTES.sessions, { code })} className={linkClass}>
+        {t('roster.toSessions')}
+      </Link>
+    </nav>
   )
 }
 

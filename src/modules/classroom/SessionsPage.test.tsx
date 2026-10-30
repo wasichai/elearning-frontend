@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { classroomModule } from './module'
 import { SessionsPage } from './SessionsPage'
-import { serveFiles } from './test/files'
+import { serveFiles } from '../../test/files'
 import { assessmentClassroom, problem, sessions } from './test/fixtures'
 
 // las sesiones en vivo de una matrícula (ADR-0016): horas en la zona de la edición, estado, enlace https y asistencia

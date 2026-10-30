@@ -4,7 +4,7 @@ import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { classroomModule } from './module'
-import { serveFiles, type ServedFile } from './test/files'
+import { serveFiles, type ServedFile } from '../../test/files'
 import { classroom, lessonHtml, problem } from './test/fixtures'
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'

@@ -8,7 +8,11 @@ describe('teachingModule', () => {
 
     expect(registry.routes.filter((route) => route.moduleId === 'teaching').map(({ key, path, chrome }) => ({ key, path, chrome }))).toEqual([
       { key: TEACHING_ROUTES.offerings, path: '/docencia', chrome: 'shell' },
-      { key: TEACHING_ROUTES.roster, path: '/docencia/:code', chrome: 'shell' }
+      { key: TEACHING_ROUTES.roster, path: '/docencia/:code', chrome: 'shell' },
+      { key: TEACHING_ROUTES.queue, path: '/docencia/:code/correccion', chrome: 'shell' },
+      { key: TEACHING_ROUTES.attempt, path: '/docencia/:code/correccion/:attemptId', chrome: 'shell' },
+      { key: TEACHING_ROUTES.sessions, path: '/docencia/:code/sesiones', chrome: 'shell' },
+      { key: TEACHING_ROUTES.attendance, path: '/docencia/:code/sesiones/:sessionId/asistencia', chrome: 'shell' }
     ])
   })
 
