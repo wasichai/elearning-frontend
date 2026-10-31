@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ATTENDANCE_STATUSES } from '../../shared/sessions'
 import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
 export { ContractError, parseContract } from '../../shared/contract'
@@ -45,6 +46,36 @@ export const rosterEntrySchema = z.object({
 
 export const rosterSchema = z.array(rosterEntrySchema)
 
+// la cola de corrección: los intentos enviados que esperan al docente
+export const pendingAttemptListSchema = z.array(
+  z.object({
+    attemptId: z.string().min(1),
+    enrollmentId: z.string().min(1),
+    email: z.string().nullable(),
+    lessonId: z.string().min(1),
+    lessonTitle: z.string(),
+    submittedAt: z.iso.datetime({ offset: true }),
+    pendingQuestions: z.number().int().positive()
+  })
+)
+
+// la asistencia de una sesión: una fila por matriculado; status es null mientras no se ha registrado
+export const attendanceRowListSchema = z.array(
+  z.object({
+    enrollmentId: z.string().min(1),
+    email: z.string().nullable(),
+    status: z.enum(ATTENDANCE_STATUSES).nullable()
+  })
+)
+
+// cómo se repite una sesión al crearla; days solo con WEEKDAYS
+export const RECURRENCE_PATTERNS = ['ONCE', 'DAILY', 'ALTERNATE_DAYS', 'WEEKDAYS'] as const
+export const WEEK_DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const
+
+export type RecurrencePattern = (typeof RECURRENCE_PATTERNS)[number]
+export type WeekDay = (typeof WEEK_DAYS)[number]
+export type PendingAttempt = z.infer<typeof pendingAttemptListSchema>[number]
+export type AttendanceRow = z.infer<typeof attendanceRowListSchema>[number]
 export type TeachingOffering = z.infer<typeof teachingOfferingSchema>
 export type RosterEntry = z.infer<typeof rosterEntrySchema>
 export type RosterAssessment = z.infer<typeof rosterAssessment>

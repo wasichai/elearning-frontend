@@ -13,13 +13,37 @@ export function canTeach(permissions: CallerPermissions | null): boolean {
   return permissions !== null && (permissions.admin || (permissions.objects.docente_edicion ?? []).includes('READ'))
 }
 
-// el espacio docente (ADR-0016 del backend): sus ediciones y sus matriculados, con sesión (chrome 'shell')
+// el espacio docente (ADR-0016 del backend): sus ediciones, matriculados, corrección, sesiones y asistencia, con sesión (chrome 'shell')
 export function teachingModule(): WasichaiModule {
   return {
     id: TEACHING_MODULE_ID,
     routes: [
       { id: 'offerings', path: 'docencia', chrome: 'shell', lazy: () => import('./OfferingsPage').then((m) => ({ default: m.OfferingsPage })) },
-      { id: 'roster', path: 'docencia/:code', chrome: 'shell', lazy: () => import('./RosterPage').then((m) => ({ default: m.RosterPage })) }
+      { id: 'roster', path: 'docencia/:code', chrome: 'shell', lazy: () => import('./RosterPage').then((m) => ({ default: m.RosterPage })) },
+      {
+        id: 'queue',
+        path: 'docencia/:code/correccion',
+        chrome: 'shell',
+        lazy: () => import('./GradingQueuePage').then((m) => ({ default: m.GradingQueuePage }))
+      },
+      {
+        id: 'attempt',
+        path: 'docencia/:code/correccion/:attemptId',
+        chrome: 'shell',
+        lazy: () => import('./AttemptGradingPage').then((m) => ({ default: m.AttemptGradingPage }))
+      },
+      {
+        id: 'sessions',
+        path: 'docencia/:code/sesiones',
+        chrome: 'shell',
+        lazy: () => import('./OfferingSessionsPage').then((m) => ({ default: m.OfferingSessionsPage }))
+      },
+      {
+        id: 'attendance',
+        path: 'docencia/:code/sesiones/:sessionId/asistencia',
+        chrome: 'shell',
+        lazy: () => import('./AttendancePage').then((m) => ({ default: m.AttendancePage }))
+      }
     ],
     // tras «Aprendizaje» (5) y antes que los grupos de core (datos 10)
     navGroups: [{ id: 'teaching', labelKey: `${TEACHING_MODULE_ID}:nav.group`, order: 6 }],

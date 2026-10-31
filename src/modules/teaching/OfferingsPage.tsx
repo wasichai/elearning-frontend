@@ -75,9 +75,9 @@ function OfferingItem({ offering }: { offering: TeachingOffering }) {
       <p className="flex flex-wrap gap-x-4 text-sm text-ink">
         <span>{t('offerings.enrolled', { count: offering.enrolled, value: formatNumber(offering.enrolled, locale) })}</span>
         {offering.pendingAttempts > 0 ? (
-          <span className="font-medium text-warning">
+          <Link to={links.to(TEACHING_ROUTES.queue, { code: offering.code })} className="font-medium text-link underline-offset-4 hover:underline">
             {t('offerings.pending', { count: offering.pendingAttempts, value: formatNumber(offering.pendingAttempts, locale) })}
-          </span>
+          </Link>
         ) : (
           <span className="text-ink-muted">{t('offerings.nothingPending')}</span>
         )}

@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ENROLLMENT_STATUSES, OFFERING_STATUSES } from '../../shared/contract'
+import { ATTENDANCE_STATUSES, SESSION_MODALITIES, SESSION_STATUSES, SESSION_TYPES } from '../../shared/sessions'
+import { RECURRENCE_PATTERNS, WEEK_DAYS } from './contract'
 import { teachingMessages } from './i18n'
 
 type Tree = { [key: string]: string | Tree }
@@ -40,9 +42,19 @@ describe('textos del espacio docente', () => {
     const composed = [
       ...OFFERING_STATUSES.map((status) => `offering.status.${status}`),
       ...ENROLLMENT_STATUSES.map((status) => `roster.enrollmentStatus.${status}`),
+      ...SESSION_STATUSES.map((status) => `sessions.status.${status}`),
+      ...SESSION_TYPES.map((type) => `sessions.type.${type}`),
+      ...SESSION_MODALITIES.map((modality) => `sessions.modality.${modality}`),
+      ...ATTENDANCE_STATUSES.map((status) => `attendance.statuses.${status}`),
+      ...RECURRENCE_PATTERNS.map((pattern) => `form.patterns.${pattern}`),
+      ...WEEK_DAYS.map((day) => `form.weekDays.${day}`),
       ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [
         `problem.offerings.${kind}`,
         `problem.roster.${kind}`,
+        `problem.queue.${kind}`,
+        `problem.attempt.${kind}`,
+        `problem.sessions.${kind}`,
+        `problem.attendance.${kind}`,
         `problem.hint.${kind}`
       ]),
       'problem.hint.unexpected'
