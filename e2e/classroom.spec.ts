@@ -128,6 +128,35 @@ test('la lección HTML se lee en un iframe aislado: su script no corre', async (
   expect(api.fileRequests).toEqual([{ path: '/api/objects/version_recurso/records/vr-html/files/archivo', authorization: 'Bearer token-e2e' }])
 })
 
+test('la lectura HTML no pide nada fuera: ni imágenes, ni estilos, ni fuentes remotas, y un meta refresh no la lleva a otra página', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  const outside: string[] = []
+  await page.route('https://rastreo.example/**', (route) => {
+    outside.push(route.request().url())
+    return route.fulfill({ status: 200, contentType: 'image/png', body: '' })
+  })
+  // gana a la simulación: Playwright prueba primero la última ruta registrada
+  await page.route('**/api/objects/version_recurso/records/vr-html/files/archivo', (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body:
+        '<!doctype html><html><head><meta http-equiv="refresh" content="0; url=https://rastreo.example/fuera">' +
+        '<link rel="stylesheet" href="https://rastreo.example/estilo.css"><style>@font-face { font-family: f; src: url(https://rastreo.example/f.woff2) }' +
+        ' body { font-family: f }</style></head><body><h1>Tipos de anuncio</h1><img alt="píxel" src="https://rastreo.example/pixel.png">' +
+        '<img alt="en línea" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></body></html>'
+    })
+  )
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
+
+  const content = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
+  await expect(content.getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
+  await expect(content.getByRole('img', { name: 'en línea' })).toBeVisible()
+  // tiempo de sobra para que el refresh, la imagen, el estilo o la fuente se hubieran pedido
+  await page.waitForTimeout(1500)
+  await expect(content.getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
+  expect(outside).toEqual([])
+})
+
 test('el PDF se descarga con su nombre y el vídeo se reproduce desde memoria', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-pdf')

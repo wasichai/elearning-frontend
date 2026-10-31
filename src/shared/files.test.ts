@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createApiClient } from '@wasichai/core'
-import { fileRequestUrl, ForeignFileError, uploadFile } from './files'
+import { fileRequestUrl, ForeignFileError, inertBlob, isVideo, uploadFile } from './files'
 
 describe('fileRequestUrl', () => {
   const client = { baseUrl: '/api' }
@@ -55,5 +55,31 @@ describe('uploadFile', () => {
   it('un fallo del servidor es un ApiError con su detalle', async () => {
     const failed = upload('/api/x', new Response(JSON.stringify({ detail: 'demasiado grande' }), { status: 413 }))
     await expect(failed).rejects.toMatchObject({ status: 413, message: 'demasiado grande' })
+  })
+})
+
+describe('inertBlob', () => {
+  it.each(['text/html', 'image/svg+xml', 'application/pdf', ''])('%s pasa a application/octet-stream con el mismo contenido', async (type) => {
+    const blob = inertBlob(new Blob(['<script>alert(1)</script>'], { type }))
+    expect(blob.type).toBe('application/octet-stream')
+    expect(await blob.text()).toBe('<script>alert(1)</script>')
+  })
+
+  it('un vídeo conserva su tipo; lo demás no, aunque se pida conservar vídeos', () => {
+    const video = new Blob(['mp4'], { type: 'video/mp4' })
+    expect(inertBlob(video, isVideo)).toBe(video)
+    expect(inertBlob(new Blob(['<svg/>'], { type: 'image/svg+xml' }), isVideo).type).toBe('application/octet-stream')
+    expect(inertBlob(new Blob(['<html>'], { type: 'text/html' }), isVideo).type).toBe('application/octet-stream')
+  })
+
+  it.each([
+    ['video/mp4', true],
+    ['video/webm; codecs="vp9"', true],
+    ['VIDEO/MP4', true],
+    ['text/html', false],
+    ['video/', false],
+    ['application/video', false]
+  ])('isVideo(%s) es %s', (type, expected) => {
+    expect(isVideo(type)).toBe(expected)
   })
 })

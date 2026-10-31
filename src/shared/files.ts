@@ -96,6 +96,16 @@ export function useFileText(file: FileRef) {
   })
 }
 
+// una URL blob: es del origen de la aplicación, y un .html o .svg con su tipo, si llegara a navegarse (un navegador que ignora
+// download, «abrir vídeo en otra pestaña»), correría sus scripts donde vive el token. lo que no es del tipo esperado pasa
+// a application/octet-stream: se guarda o se reproduce, nunca se pinta como documento. slice cambia el tipo sin copiar
+export function inertBlob(blob: Blob, keep: (type: string) => boolean = () => false): Blob {
+  return keep(blob.type) ? blob : blob.slice(0, blob.size, 'application/octet-stream')
+}
+
+// un vídeo sigue siendo vídeo: no se ejecuta, y algún navegador lo reproduce solo con su tipo
+export const isVideo = (type: string) => /^video\/[\w.+-]+(\s*;.*)?$/i.test(type)
+
 // una URL blob: para un Blob mientras se muestra; se libera al cambiar o desmontar
 export function useObjectUrl(blob: Blob | undefined): string | undefined {
   const [url, setUrl] = useState<string>()
@@ -120,7 +130,7 @@ export function useDownload(file: FileRef) {
     setState({ pending: true, error: null })
     try {
       const blob = await queryClient.fetchQuery({ queryKey: fileKey(file.url), queryFn: ({ signal }) => fetcher(file.url, signal), ...FILE_QUERY })
-      const objectUrl = URL.createObjectURL(blob)
+      const objectUrl = URL.createObjectURL(inertBlob(blob))
       const anchor = document.createElement('a')
       anchor.href = objectUrl
       anchor.download = file.name
