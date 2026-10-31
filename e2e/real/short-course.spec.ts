@@ -1,5 +1,5 @@
-import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
-import { API_URL, newStudent, signIn, token, type Account } from './helpers'
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { API_URL, browserFor, newStudent, signIn, token } from './helpers'
 
 // el curso corto de punta a punta contra el backend de verdad (CORTO-101, ADR-0016), en el navegador. son los recorridos
 // 5 (evaluación), 6 (resultado), 7 (el docente ve lo permitido) y 13 (sin permiso no puede), hasta el certificado
@@ -28,14 +28,6 @@ async function shortCourseSlug(request: APIRequestContext): Promise<string> {
   const course = body.content.find((candidate) => candidate.code === 'CORTO-101')
   expect(course, 'el catálogo aún no muestra CORTO-101: aplica la demo y espera el refresco').toBeDefined()
   return course!.slug
-}
-
-// cada persona en su propio contexto: ni sesión ni almacenamiento compartidos
-async function browserFor(browser: Browser, baseURL: string | undefined, account?: Account) {
-  const context = await browser.newContext({ baseURL, locale: 'es-PE', timezoneId: 'America/Lima' })
-  const page = await context.newPage()
-  if (account) await signIn(page, account)
-  return { context, page }
 }
 
 async function enroll(page: Page, slug: string): Promise<string> {
