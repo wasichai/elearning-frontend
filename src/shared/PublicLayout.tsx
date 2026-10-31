@@ -1,4 +1,4 @@
-import { useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
+import { useAppTitle, useWasichaiLinks } from '@wasichai/core'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 
@@ -8,7 +8,7 @@ const CATALOG_COURSES_ROUTE = 'catalog:courses'
 // el marco de las páginas públicas (catálogo, verificación de certificados): sin shell ni menú, el nombre del producto
 // vuelve al catálogo si está registrado. no sale al imprimir: una página impresa no lleva navegación
 export function PublicLayout({ children }: { children: ReactNode }) {
-  const { appName } = useWasichaiConfig()
+  const { appName } = useAppTitle()
   const links = useWasichaiLinks()
   const home = links.has(CATALOG_COURSES_ROUTE) ? links.to(CATALOG_COURSES_ROUTE) : undefined
   return (

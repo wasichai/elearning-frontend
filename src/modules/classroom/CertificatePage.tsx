@@ -1,4 +1,4 @@
-import { LoadingState, useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
+import { LoadingState, useAppTitle, useWasichaiLinks } from '@wasichai/core'
 import { Button, Input, Label } from '@wasichai/ui'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -85,7 +85,7 @@ export function CertificatePage() {
 
 function CertificateView({ certificate }: { certificate: Certificate }) {
   const { t, i18n } = useTranslation('classroom')
-  const { appName } = useWasichaiConfig()
+  const { appName } = useAppTitle()
   const links = useWasichaiLinks()
   const locale = i18n.language
   const zone = certificate.offering.timeZone

@@ -1,15 +1,15 @@
 import { ApiError, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { formatCivilRange } from '../../shared/format'
 import { useEnroll } from './api'
 import type { Offering } from './contract'
 import { CLASSROOM_ROUTE } from './routes'
 
 // matricularse desde la ficha, en una edición con la inscripción abierta. sin sesión, el camino es el inicio de sesión
-// de Wasichai: @wasichai/core 1.3.0 no sabe volver a esta página después (README, «Limitaciones»), así que el botón lo
-// dice tal cual. con sesión matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor.
+// de Wasichai, que después vuelve a esta ficha (returnTo, @wasichai/core 1.5.0; lo valida LoginPage). con sesión
+// matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor.
 export function EnrollAction({ offering }: { offering: Offering }) {
   const { user } = useAuth()
   const links = useWasichaiLinks()
@@ -21,9 +21,11 @@ export function EnrollAction({ offering }: { offering: Offering }) {
 function SignInToEnroll() {
   const { t } = useTranslation('catalog')
   const links = useWasichaiLinks()
+  // la ruta del router, no window.location: el router pone el basename
+  const location = useLocation()
   return (
     <Button asChild variant="secondary" size="sm" className="self-start">
-      <Link to={links.login()}>{t('enroll.signIn')}</Link>
+      <Link to={links.login({ returnTo: location.pathname + location.search })}>{t('enroll.signIn')}</Link>
     </Button>
   )
 }

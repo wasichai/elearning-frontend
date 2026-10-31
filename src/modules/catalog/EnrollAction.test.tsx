@@ -46,12 +46,12 @@ const offerings = async () => {
 }
 
 describe('matricularse desde la ficha', () => {
-  it('sin sesión, la edición abierta lleva al inicio de sesión de Wasichai', async () => {
+  it('sin sesión, la edición abierta lleva al inicio de sesión de Wasichai, que vuelve a la ficha', async () => {
     renderCourse([], { signedIn: false })
 
     const section = await offerings()
     const signIn = section.getByRole('link', { name: 'Inicia sesión para matricularte' })
-    expect(signIn).toHaveAttribute('href', '/login')
+    expect(signIn).toHaveAttribute('href', '/login?returnTo=%2Fcursos%2Fsrtm-anuncios')
     expect(section.queryByRole('button', { name: ACTION })).not.toBeInTheDocument()
 
     await userEvent.click(signIn)
@@ -101,7 +101,7 @@ describe('matricularse desde la ficha', () => {
 
     await userEvent.click((await offerings()).getByRole('button', { name: ACTION }))
 
-    expect(await screen.findByRole('link', { name: 'Inicia sesión para matricularte' })).toHaveAttribute('href', '/login')
+    expect(await screen.findByRole('link', { name: 'Inicia sesión para matricularte' })).toHaveAttribute('href', '/login?returnTo=%2Fcursos%2Fsrtm-anuncios')
     expect(screen.getByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
