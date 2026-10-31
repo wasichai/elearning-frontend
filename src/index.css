@@ -1,6 +1,25 @@
 @import 'tailwindcss';
 /* tokens y tema claro/oscuro de @wasichai/ui */
 @import '@wasichai/ui/theme.css';
+/* el tema Quipu de la app (src/theme/themes.ts lo ofrece en el selector) */
+@import './theme/quipu.css';
+
+/* la letra del tema Quipu, servida por la app (sin peticiones a terceros) */
+@font-face {
+  font-family: 'Figtree';
+  src: url('./theme/fonts/Figtree-wght-normal.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Figtree';
+  src: url('./theme/fonts/Figtree-wght-italic.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: italic;
+  font-display: swap;
+}
 /* los paquetes @wasichai traen nombres de clase, no CSS: Tailwind los escanea para generarlas */
 @source '../node_modules/@wasichai';
 
