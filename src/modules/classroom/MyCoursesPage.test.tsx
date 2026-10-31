@@ -1,7 +1,8 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import type { WasichaiModule } from '@wasichai/core'
+import { Link } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
@@ -102,5 +103,26 @@ describe('MyCoursesPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos leer la respuesta del servidor')
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+  })
+
+  // el menú lleva a la misma ruta: la página no se vuelve a montar y solo cambia la entrada del historial (#76)
+  it('con la lista abierta, volver a pulsar su entrada del menú la vuelve a pedir y pinta lo nuevo', async () => {
+    const routes: MockRoute[] = [{ path: ENROLLMENTS, body: [enrollment] }]
+    fetchMock = mockFetch(routes)
+    renderWithProviders(
+      <>
+        <Link to="/mis-cursos">Menú</Link>
+        <MyCoursesPage />
+      </>,
+      { modules: [classroomModule(), catalogStub], permissions: { admin: false, objects: {} }, route: '/mis-cursos' }
+    )
+    expect(await screen.findAllByRole('article')).toHaveLength(1)
+    expect(fetchMock.calls.filter((call) => call.path === ENROLLMENTS)).toHaveLength(1)
+
+    routes[0] = { path: ENROLLMENTS, body: [enrollment, otherEnrollment] }
+    await userEvent.click(screen.getByRole('link', { name: 'Menú' }))
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2))
+    expect(fetchMock.calls.filter((call) => call.path === ENROLLMENTS)).toHaveLength(2)
   })
 })
