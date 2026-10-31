@@ -14,7 +14,8 @@ import type { Session } from '../src/shared/sessions'
 import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
-// las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra, así la lista cambia con la búsqueda; el
+// las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra (salvo las horas de teoría y práctica, que
+// el resumen no trae), así la lista cambia con la búsqueda; el
 // aula guarda su estado en la prueba (no en la página), así sobrevive a una recarga como en el servidor.
 // cualquier otra ruta de /api es un 404 problem+json y queda anotada en `unexpected` para que la prueba lo vea.
 
@@ -80,7 +81,12 @@ function listCourses(url: URL): Reply {
       (!q || `${course.title} ${course.summary}`.toLowerCase().includes(q)) &&
       (!params.get('category') || course.category?.slug === params.get('category')) &&
       (!params.get('level') || course.level === params.get('level')) &&
-      (!params.get('modality') || course.modality === params.get('modality'))
+      (!params.get('modality') || course.modality === params.get('modality')) &&
+      (!params.get('minWeeks') || course.weeks >= Number(params.get('minWeeks'))) &&
+      (!params.get('maxWeeks') || course.weeks <= Number(params.get('maxWeeks'))) &&
+      // el resumen solo trae la próxima edición; en los ejemplos es la única
+      (!params.get('enrollmentOpen') || (course.nextOffering?.enrollmentOpen === true) === (params.get('enrollmentOpen') === 'true')) &&
+      (!params.get('minAutonomousHours') || course.workload.autonomousHours >= Number(params.get('minAutonomousHours')))
   )
   const size = Number(params.get('size') ?? 12)
   return {

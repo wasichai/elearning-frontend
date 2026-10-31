@@ -17,7 +17,21 @@ const noFilters = filtersFromSearch(new URLSearchParams())
 
 describe('filtros en la URL', () => {
   it('lee la URL con valores por defecto', () => {
-    expect(noFilters).toEqual({ q: '', category: '', level: '', modality: '', startsFrom: '', sort: 'upcoming', page: 1 })
+    expect(noFilters).toEqual({
+      q: '',
+      category: '',
+      level: '',
+      modality: '',
+      startsFrom: '',
+      minWeeks: '',
+      maxWeeks: '',
+      enrollmentOpen: '',
+      minTheoryHours: '',
+      minPracticeHours: '',
+      minAutonomousHours: '',
+      sort: 'upcoming',
+      page: 1
+    })
     expect(filtersFromSearch(new URLSearchParams('q=+anuncios+&page=3&sort=title')).page).toBe(3)
     expect(filtersFromSearch(new URLSearchParams('page=-2')).page).toBe(1)
   })
@@ -40,6 +54,9 @@ describe('peticiones', () => {
       level: 'AVANZADO',
       modality: 'SINCRONA',
       startsFrom: '2026-11-01',
+      minWeeks: '12',
+      enrollmentOpen: 'true',
+      minPracticeHours: '6.5',
       page: 2
     })
     const [base, query] = path.split('?')
@@ -51,6 +68,9 @@ describe('peticiones', () => {
       level: 'AVANZADO',
       modality: 'SINCRONA',
       startsFrom: '2026-11-01',
+      minWeeks: '12',
+      enrollmentOpen: 'true',
+      minPracticeHours: '6.5',
       sort: 'upcoming',
       page: '1',
       size: '12'

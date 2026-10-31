@@ -141,6 +141,7 @@ function Filters({ filters, page, onChange, onClear }: FiltersProps) {
           </Select>
         </div>
       </fieldset>
+      <MoreFilters id={id} filters={filters} onChange={onChange} />
       {hasActiveFilters(filters) ? (
         <div>
           <Button variant="ghost" size="sm" onClick={onClear}>
@@ -148,6 +149,111 @@ function Filters({ filters, page, onChange, onClear }: FiltersProps) {
           </Button>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+// duraciones del modelo (RF-ACA-05): de 1 a 8 semanas o semestral (12 a 26). en la URL son minWeeks y maxWeeks
+const DURATIONS = [
+  { key: 'upTo2', minWeeks: '', maxWeeks: '2' },
+  { key: 'from3to8', minWeeks: '3', maxWeeks: '8' },
+  { key: 'semester', minWeeks: '12', maxWeeks: '' }
+] as const
+export const DURATION_KEYS = DURATIONS.map((duration) => duration.key)
+// un rango de la URL que no es ninguno de los anteriores (editado a mano) se ve tal cual, como la categoría
+const CUSTOM_DURATION = 'custom'
+const ENROLLMENT_OPTIONS = ['true', 'false'] as const
+const HOUR_FILTERS = ['minTheoryHours', 'minPracticeHours', 'minAutonomousHours'] as const
+
+// RF-CAT-08: duración, inscripción abierta y horas por tipo. conocimientos previos no tiene filtro: es texto libre
+function MoreFilters({ id, filters, onChange }: { id: string; filters: CatalogFilters; onChange: (patch: Partial<CatalogFilters>) => void }) {
+  const { t } = useTranslation('catalog')
+  const hasDuration = filters.minWeeks !== '' || filters.maxWeeks !== ''
+  const preset = DURATIONS.find((duration) => duration.minWeeks === filters.minWeeks && duration.maxWeeks === filters.maxWeeks)
+  const durationValue = preset ? preset.key : hasDuration ? CUSTOM_DURATION : ''
+
+  const chooseDuration = (key: string) => {
+    if (key === CUSTOM_DURATION) return
+    const next = DURATIONS.find((duration) => duration.key === key)
+    onChange({ minWeeks: next?.minWeeks ?? '', maxWeeks: next?.maxWeeks ?? '' })
+  }
+
+  return (
+    <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <legend className="sr-only">{t('filters.moreLegend')}</legend>
+      <FilterSelect id={`${id}-duration`} label={t('filters.duration')} value={durationValue} onChange={chooseDuration}>
+        {DURATIONS.map((duration) => (
+          <SelectItem key={duration.key} value={duration.key}>
+            {t(`duration.${duration.key}`)}
+          </SelectItem>
+        ))}
+        {durationValue === CUSTOM_DURATION ? (
+          <SelectItem value={CUSTOM_DURATION}>{t('duration.range', { min: filters.minWeeks || 1, max: filters.maxWeeks || 26 })}</SelectItem>
+        ) : null}
+      </FilterSelect>
+      <FilterSelect
+        id={`${id}-enrollment`}
+        label={t('filters.enrollmentOpen')}
+        value={filters.enrollmentOpen}
+        onChange={(enrollmentOpen) => onChange({ enrollmentOpen })}
+      >
+        {ENROLLMENT_OPTIONS.map((option) => (
+          <SelectItem key={option} value={option}>
+            {t(`enrollmentFilter.${option}`)}
+          </SelectItem>
+        ))}
+      </FilterSelect>
+      {HOUR_FILTERS.map((name) => (
+        <HoursInput
+          key={name}
+          id={`${id}-${name}`}
+          label={t(`filters.${name}`)}
+          value={filters[name]}
+          onChange={(value) => onChange(hoursPatch(name, value))}
+        />
+      ))}
+    </fieldset>
+  )
+}
+
+function hoursPatch(name: (typeof HOUR_FILTERS)[number], value: string): Partial<CatalogFilters> {
+  const patch: Partial<CatalogFilters> = {}
+  patch[name] = value
+  return patch
+}
+
+interface HoursInputProps {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+}
+
+// el número se edita libre y se aplica al salir del campo o con Intro: a medio escribir («6.») no es un valor y no
+// conviene una petición por tecla. solo un valor válido (o el borrado) cambia la búsqueda; si la URL cambia, el campo la sigue
+function HoursInput({ id, label, value, onChange }: HoursInputProps) {
+  const [text, setText] = useState(value)
+  useEffect(() => setText(value), [value])
+  const commit = (input: HTMLInputElement) => {
+    if (input.validity.valid && input.value !== value) onChange(input.value)
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type="number"
+        inputMode="decimal"
+        min={0}
+        max={10000}
+        step="any"
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={(event) => commit(event.currentTarget)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') commit(event.currentTarget)
+        }}
+      />
     </div>
   )
 }
@@ -281,6 +387,12 @@ const FILTER_LABELS: Record<string, string> = {
   level: 'filters.level',
   modality: 'filters.modality',
   startsFrom: 'filters.startsFrom',
+  minWeeks: 'filters.duration',
+  maxWeeks: 'filters.duration',
+  enrollmentOpen: 'filters.enrollmentOpen',
+  minTheoryHours: 'filters.minTheoryHours',
+  minPracticeHours: 'filters.minPracticeHours',
+  minAutonomousHours: 'filters.minAutonomousHours',
   sort: 'filters.sort',
   page: 'filters.page',
   size: 'filters.size'

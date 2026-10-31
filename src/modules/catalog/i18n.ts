@@ -22,7 +22,23 @@ const es = {
     sort: 'Ordenar por',
     page: 'Página',
     size: 'Tamaño de página',
+    moreLegend: 'Duración, inscripción y horas',
+    duration: 'Duración',
+    enrollmentOpen: 'Inscripción',
+    minTheoryHours: 'Horas de teoría (mínimo)',
+    minPracticeHours: 'Horas de práctica o laboratorio (mínimo)',
+    minAutonomousHours: 'Horas de trabajo autónomo (mínimo)',
     clear: 'Limpiar filtros'
+  },
+  duration: {
+    upTo2: 'Hasta 2 semanas',
+    from3to8: 'De 3 a 8 semanas',
+    semester: 'Semestral (12 a 26 semanas)',
+    range: 'De {{min}} a {{max}} semanas'
+  },
+  enrollmentFilter: {
+    true: 'Con inscripción abierta',
+    false: 'Sin inscripción abierta'
   },
   sort: {
     upcoming: 'Próxima edición',
@@ -213,7 +229,23 @@ const en: typeof es = {
     sort: 'Sort by',
     page: 'Page',
     size: 'Page size',
+    moreLegend: 'Duration, enrollment and hours',
+    duration: 'Duration',
+    enrollmentOpen: 'Enrollment',
+    minTheoryHours: 'Theory hours (minimum)',
+    minPracticeHours: 'Practice or lab hours (minimum)',
+    minAutonomousHours: 'Self-study hours (minimum)',
     clear: 'Clear filters'
+  },
+  duration: {
+    upTo2: 'Up to 2 weeks',
+    from3to8: '3 to 8 weeks',
+    semester: 'Semester (12 to 26 weeks)',
+    range: '{{min}} to {{max}} weeks'
+  },
+  enrollmentFilter: {
+    true: 'Open for enrollment',
+    false: 'Not open for enrollment'
   },
   sort: {
     upcoming: 'Next offering',

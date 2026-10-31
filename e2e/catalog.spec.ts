@@ -47,6 +47,33 @@ test('buscar y filtrar: la petición lleva el filtro y la lista cambia', async (
   expect(api.unexpected).toEqual([])
 })
 
+test('filtros de duración, inscripción y horas: la lista cambia y, sin resultados, el estado vacío deja limpiar', async ({ page }) => {
+  const api = await fakeApi(page)
+  await page.goto('/cursos')
+  await expect(courses(page)).toHaveCount(2)
+
+  await page.getByRole('combobox', { name: 'Inscripción' }).click()
+  await page.getByRole('option', { name: 'Con inscripción abierta' }).click()
+  await expect.poll(() => lastParam(api.catalogRequests, 'enrollmentOpen')).toBe('true')
+  await expect(courses(page)).toHaveCount(1)
+  await expect(page).toHaveURL(/\/cursos\?enrollmentOpen=true$/)
+
+  await page.getByLabel('Horas de trabajo autónomo (mínimo)').fill('20')
+  await page.getByLabel('Horas de trabajo autónomo (mínimo)').press('Enter')
+  await expect.poll(() => lastParam(api.catalogRequests, 'minAutonomousHours')).toBe('20')
+  await expect(courses(page)).toHaveCount(1)
+
+  await page.getByRole('combobox', { name: 'Duración' }).click()
+  await page.getByRole('option', { name: 'Semestral (12 a 26 semanas)' }).click()
+  await expect.poll(() => lastParam(api.catalogRequests, 'minWeeks')).toBe('12')
+  await expect(results(page).getByText('Ningún curso coincide con la búsqueda')).toBeVisible()
+
+  await results(page).getByRole('button', { name: 'Limpiar filtros' }).click()
+  await expect(courses(page)).toHaveCount(2)
+  await expect(page.getByLabel('Horas de trabajo autónomo (mínimo)')).toHaveValue('')
+  expect(api.unexpected).toEqual([])
+})
+
 test('un error del servidor se explica y «Reintentar» lo recupera', async ({ page }) => {
   const api = await fakeApi(page)
   api.failOnce(isCourseList, 500)

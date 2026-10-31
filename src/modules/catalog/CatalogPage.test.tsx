@@ -134,6 +134,119 @@ describe('CatalogPage', () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ startsFrom: '2026-11-01' }))
   })
 
+  it('la duración elige un rango de semanas y lo manda como minWeeks y maxWeeks', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+
+    const duration = screen.getByRole('combobox', { name: 'Duración' })
+    expect(duration).toHaveTextContent('Cualquiera')
+    await user.click(duration)
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Cualquiera',
+      'Hasta 2 semanas',
+      'De 3 a 8 semanas',
+      'Semestral (12 a 26 semanas)'
+    ])
+    await user.click(screen.getByRole('option', { name: 'Semestral (12 a 26 semanas)' }))
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ minWeeks: '12' }))
+    expect(lastQuery().maxWeeks).toBeUndefined()
+    expect(screen.getByTestId('location')).toHaveTextContent('/cursos?minWeeks=12')
+
+    await user.click(screen.getByRole('combobox', { name: 'Duración' }))
+    await user.click(screen.getByRole('option', { name: 'Hasta 2 semanas' }))
+    await waitFor(() => expect(lastQuery()).toMatchObject({ maxWeeks: '2' }))
+    expect(lastQuery().minWeeks).toBeUndefined()
+  })
+
+  it('un rango de semanas escrito en la URL se ve tal cual en el selector', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?minWeeks=4&maxWeeks=6')
+    await screen.findByRole('list')
+
+    expect(lastQuery()).toMatchObject({ minWeeks: '4', maxWeeks: '6' })
+    expect(screen.getByRole('combobox', { name: 'Duración' })).toHaveTextContent('De 4 a 6 semanas')
+  })
+
+  it('la inscripción filtra los cursos con una edición abierta hoy', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+
+    await user.click(screen.getByRole('combobox', { name: 'Inscripción' }))
+    await user.click(screen.getByRole('option', { name: 'Con inscripción abierta' }))
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ enrollmentOpen: 'true' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/cursos?enrollmentOpen=true')
+  })
+
+  it('las horas por tipo mandan el mínimo de cada una al confirmar, y no un valor inválido', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+    const requests = () => fetchMock.calls.length
+
+    const practice = screen.getByLabelText('Horas de práctica o laboratorio (mínimo)')
+    const before = requests()
+    await user.type(practice, '6.5')
+    // una petición por tecla no: hasta confirmar no se busca
+    expect(requests()).toBe(before)
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(lastQuery()).toMatchObject({ minPracticeHours: '6.5' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/cursos?minPracticeHours=6.5')
+
+    const theory = screen.getByLabelText('Horas de teoría (mínimo)')
+    await user.type(theory, '-3{Enter}')
+    expect(lastQuery().minTheoryHours).toBeUndefined()
+    await user.clear(theory)
+    await user.type(theory, '10')
+    // salir del campo también confirma
+    await user.tab()
+    await waitFor(() => expect(lastQuery()).toMatchObject({ minTheoryHours: '10', minPracticeHours: '6.5' }))
+
+    await user.type(screen.getByLabelText('Horas de trabajo autónomo (mínimo)'), '24{Enter}')
+    await waitFor(() => expect(lastQuery()).toMatchObject({ minAutonomousHours: '24' }))
+  })
+
+  it('sin resultados por un filtro nuevo, el estado vacío ofrece limpiarlos y los campos se vacían', async () => {
+    const user = userEvent.setup()
+    renderCatalog(
+      [
+        { path: /minAutonomousHours=500/, body: emptyPage },
+        { path: COURSES, body: coursePage }
+      ],
+      '/cursos?minAutonomousHours=500&enrollmentOpen=true&minWeeks=12'
+    )
+
+    expect(await screen.findByText('Ningún curso coincide con la búsqueda')).toBeInTheDocument()
+    expect(screen.getByLabelText('Horas de trabajo autónomo (mínimo)')).toHaveValue(500)
+    expect(screen.getByRole('combobox', { name: 'Inscripción' })).toHaveTextContent('Con inscripción abierta')
+    const clear = screen.getAllByRole('button', { name: 'Limpiar filtros' })
+    await user.click(clear.at(-1)!)
+
+    expect(await screen.findByRole('list')).toBeInTheDocument()
+    expect(lastQuery()).toEqual({ sort: 'upcoming', page: '0', size: '12' })
+    expect(screen.getByLabelText('Horas de trabajo autónomo (mínimo)')).toHaveValue(null)
+    expect(screen.getByRole('combobox', { name: 'Duración' })).toHaveTextContent('Cualquiera')
+    expect(screen.getByRole('combobox', { name: 'Inscripción' })).toHaveTextContent('Cualquiera')
+  })
+
+  it('un 400 de un filtro nuevo lo nombra por su rótulo', async () => {
+    renderCatalog(
+      [
+        {
+          path: /maxWeeks=1/,
+          status: 400,
+          body: problem(400, 'Parámetros inválidos', [{ field: 'maxWeeks', message: 'must be >= minWeeks' }])
+        }
+      ],
+      '/cursos?minWeeks=4&maxWeeks=1'
+    )
+
+    const alert = await screen.findByRole('alert')
+    expect(within(alert).getByRole('listitem')).toHaveTextContent('Duración: must be >= minWeeks')
+  })
+
   it('pasa de página con la paginación y la URL lo recuerda', async () => {
     const user = userEvent.setup()
     renderCatalog([
@@ -266,6 +379,14 @@ describe('CatalogPage', () => {
     expect(screen.getByLabelText('Empieza desde')).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveFocus()
+    for (const name of ['Duración', 'Inscripción']) {
+      await user.tab()
+      expect(screen.getByRole('combobox', { name })).toHaveFocus()
+    }
+    for (const label of ['Horas de teoría (mínimo)', 'Horas de práctica o laboratorio (mínimo)', 'Horas de trabajo autónomo (mínimo)']) {
+      await user.tab()
+      expect(screen.getByLabelText(label)).toHaveFocus()
+    }
     await user.tab()
     expect(screen.getByRole('link', { name: courseSummary.title })).toHaveFocus()
 
