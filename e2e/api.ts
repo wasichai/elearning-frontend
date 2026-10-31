@@ -12,6 +12,7 @@ import {
 } from '../src/modules/classroom/test/fixtures'
 import { AUTHOR_ID } from '../src/modules/studio/test/fixtures'
 import type { Session } from '../src/shared/sessions'
+import { REVIEW, reviewState, simulateReview } from './review-api'
 import { simulateStudio, STUDIO, studioState } from './studio-api'
 import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 
@@ -38,11 +39,15 @@ const CREATOR_PERMISSIONS = {
   admin: false,
   objects: { curso: ['READ', 'CREATE', 'UPDATE'], version_curso: ['READ', 'CREATE', 'UPDATE', 'ENVIAR_A_REVISION', 'VER_TODAS'], leccion: ['READ', 'UPDATE'] }
 }
+// un revisor: APROBAR sobre version_curso, que es lo que muestra «Bandeja de revisión»; sin PUBLICAR, como el rol REVISOR
+export const REVIEWER = { id: 'u-revisor', email: 'revisor@demo.local', displayName: 'Eva Revisora', organizationId: 'org-demo', roles: ['REVISOR'] }
+const REVIEWER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR', 'VER_TODAS'] } }
 // quién inicia sesión en la simulación, con sus permisos
 const ACCOUNTS = {
   student: { user: STUDENT, permissions: STUDENT_PERMISSIONS },
   teacher: { user: TEACHER, permissions: TEACHER_PERMISSIONS },
-  creator: { user: CREATOR, permissions: CREATOR_PERMISSIONS }
+  creator: { user: CREATOR, permissions: CREATOR_PERMISSIONS },
+  reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS }
 }
 type Account = (typeof ACCOUNTS)[keyof typeof ACCOUNTS]
 
@@ -57,7 +62,7 @@ type Override = (url: URL, method: string) => Reply | undefined
 export interface FakeApiOptions extends TeachingOptions {
   // con sesión: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
-  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas o un creador de contenido
+  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas, un creador de contenido o un revisor
   as?: keyof typeof ACCOUNTS
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean
@@ -82,6 +87,8 @@ export interface FakeApi {
   readonly teachingRequests: string[]
   // las del estudio del creador, como «MÉTODO /ruta»
   readonly studioRequests: string[]
+  // las de la bandeja del revisor, como «MÉTODO /ruta»
+  readonly reviewRequests: string[]
   // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
   readonly uploads: { path: string; name: string | undefined; authorization: string | null }[]
   // las que no son del catálogo: la página pública no debería hacer ninguna
@@ -439,7 +446,7 @@ function simulateFile(method: string, url: URL): Reply | undefined {
 const isPlatform = (url: URL) => url.pathname.startsWith('/api/auth/') || url.pathname === '/api/objects'
 
 function simulatePlatform(method: string, url: URL, account: Account): Reply | undefined {
-  // iniciar sesión desde la pantalla de Wasichai: entra quien se simula (estudiante, docente o creador)
+  // iniciar sesión desde la pantalla de Wasichai: entra quien se simula (estudiante, docente, creador o revisor)
   if (method === 'POST' && url.pathname === '/api/auth/login')
     return { status: 200, body: { token: 'token-e2e', expiresAt: '2099-01-01T00:00:00Z', user: account.user } }
   if (method === 'GET' && url.pathname === '/api/auth/me/permissions') return { status: 200, body: account.permissions }
@@ -463,6 +470,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
   const state = classroomState(options)
   const teaching = teachingState(options)
   const studio = studioState()
+  const review = reviewState()
   const account = ACCOUNTS[options.as ?? 'student']
   if (options.signedIn)
     await page.addInitScript(
@@ -481,6 +489,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     certificateRequests: [],
     teachingRequests: [],
     studioRequests: [],
+    reviewRequests: [],
     unexpected: [],
     failOnce: (matches, status, detail = 'Fallo simulado') => {
       let used = false
@@ -499,6 +508,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
     else if (url.pathname.startsWith(TEACHING)) api.teachingRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(STUDIO)) api.studioRequests.push(`${method} ${url.pathname}`)
+    else if (url.pathname.startsWith(REVIEW)) api.reviewRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
       api.enrollRequests.push({ offering: request.postDataJSON()?.offering, idempotencyKey: (await request.allHeaders())['idempotency-key'] ?? null })
@@ -516,6 +526,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
       simulatePlatform(method, url, account) ??
       simulateTeaching(teaching, method, url, jsonBody(request)) ??
       simulateStudio(studio, method, url, jsonBody(request)) ??
+      simulateReview(review, method, url, jsonBody(request)) ??
       publicCertificate(state, method, url) ??
       simulateClassroom(state, method, url, jsonBody(request)) ??
       simulateFile(method, url) ??

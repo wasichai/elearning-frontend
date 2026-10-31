@@ -47,6 +47,7 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 | `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje»; sus evaluaciones (`?leccion=…&intento=…`), sesiones (`…/sesiones`) y finalización (`…/finalizacion`); la verificación pública e imprimible del certificado (`/certificados`, `/certificados/:code`), sin sesión |
 | `src/modules/teaching/`  | Espacio docente (`/docencia`, `/docencia/:code` y, debajo, `correccion`, `correccion/:attemptId`, `sesiones`, `sesiones/:sessionId/asistencia`), con sesión, grupo «Docencia»: ediciones asignadas, matriculados, corrección, sesiones y asistencia                                                                |
 | `src/modules/studio/`    | Estudio del creador (`/estudio`, `/estudio/versiones/:id`), con sesión, grupo «Contenido»: mis versiones, temario del borrador con enlaces a editarlo en las pantallas de registros de Wasichai, envío a revisión, comentarios y decisiones del revisor, y versión nueva por copia                                 |
+| `src/modules/review/`    | Bandeja del revisor (`/revision`, `/revision/:versionId`), con sesión, grupo «Revisión» (a quien tiene `APROBAR` sobre `version_curso`): versiones en revisión, comentarios por sección, decisiones con motivo y publicar (con `PUBLICAR`)                                                                         |
 
 Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
 formato de fechas, estado de error) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
@@ -82,7 +83,8 @@ as: 'teacher' })`: un docente con permiso de leer asignaciones y dos ediciones; 
 La corrección, las sesiones y la asistencia (`e2e/grading.spec.ts`) guardan su estado como el servidor: nota y motivo, series
 con hora local, reprogramar y cancelar. El estudio del creador (`e2e/studio.spec.ts`, simulado en `e2e/studio-api.ts`) entra con
 `as: 'creator'`: un borrador y una versión publicada propios; enviar a revisión y crear una versión nueva cambian el estado
-de la prueba. El servidor web lo
+de la prueba. La bandeja del revisor (`e2e/review.spec.ts`, simulada en `e2e/review-api.ts`) entra con
+`as: 'reviewer'`: `APROBAR` sin `PUBLICAR`, y lleva comentarios, decisiones y estados como el servidor. El servidor web lo
 arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
 que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 
@@ -137,6 +139,12 @@ Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el qu
   leer las asignaciones (`docente_edicion: READ`) o administra —nunca por nombre de rol—, y si no tiene ninguna, «Mis
   ediciones» lo dice con un estado vacío claro (RNF-UX-06). Pedido en wasichai-ui: una visibilidad que pueda depender de
   una consulta del módulo.
+
+- **El motivo de una decisión de revisión**: pedir cambios y rechazar usan `ReasonDialog` de `@wasichai/core`, que limita el
+  motivo a `CHANGE_REASON_MAX_LENGTH` (500), por debajo de los 4000 caracteres que acepta el servidor.
+
+- **Sin vista de diferencias en la revisión**: la bandeja aún no muestra `GET /api/lms/review/versions/{id}/diff` (E25.4,
+  llegó al backend después de este paso); irá en un PR posterior.
 
 - **El menú del shell en el móvil**: el panel lateral de `@wasichai/core` no se pliega en pantallas estrechas. Las
   páginas del aula caben en el espacio que deja (lo prueba `e2e/classroom.spec.ts`), pero el plegado es de core.
