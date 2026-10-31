@@ -117,6 +117,17 @@ y otro estudiante no llegan a esa edición ni a ese intento (`404`). Con `E2E_MA
 escribe el backend) comprueba además que reprogramar una sesión avisa por correo a los matriculados y a nadie más; el
 correo puede tardar cerca de un minuto. Sin esa variable, esa prueba se salta.
 
+Y el estudio editorial de la Fase 4 (`e2e/real/editorial.spec.ts`, `SGSPE-101`, con `WASICHAI_DEMO_PASSWORD`): la
+creadora demo copia la versión 1 publicada a un borrador, cambia el título de una lección en las pantallas de registros y
+la envía a revisión; el revisor demo la ve en su bandeja con sus diferencias, comenta la lección y pide cambios; la
+creadora ve el comentario, corrige y la reenvía; el revisor resuelve el comentario y aprueba, y el administrador la
+publica. Antes, un estudiante nuevo se matricula en la versión 1 (en una edición abierta que crea el administrador) y
+completa una lección: tras publicar, su aula sigue en la versión 1 con su progreso, y el catálogo ofrece la nueva. Por la
+API, otro creador no llega al borrador ajeno (`404`, y `403` al tocar su lección) y, con revisor asignado, otra revisora
+no ve ni decide la versión (`404`). La importación desde GitHub no se prueba (necesita red y orígenes permitidos): solo
+que un origen fuera de la lista y quien no puede importar reciben `403`. Cada ejecución publica una versión nueva de
+`SGSPE-101`.
+
 Antes, el backend tiene que estar en marcha en el perfil `dev` y con los datos de demostración aplicados: sigue
 [la puesta en marcha del backend](https://github.com/wasichai/elearning-backend/blob/main/docs/development/getting-started.md)
 (`elearning-backend/docs/development/getting-started.md`) hasta `python3 model/apply.py --demo`. El catálogo público se
