@@ -46,6 +46,7 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 | `src/modules/catalog/`   | Catálogo público (`/cursos`, `/cursos/:slug`), sin sesión                                                                                                                                                                                                                                                          |
 | `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje»; sus evaluaciones (`?leccion=…&intento=…`), sesiones (`…/sesiones`) y finalización (`…/finalizacion`); la verificación pública e imprimible del certificado (`/certificados`, `/certificados/:code`), sin sesión |
 | `src/modules/teaching/`  | Espacio docente (`/docencia`, `/docencia/:code` y, debajo, `correccion`, `correccion/:attemptId`, `sesiones`, `sesiones/:sessionId/asistencia`), con sesión, grupo «Docencia»: ediciones asignadas, matriculados, corrección, sesiones y asistencia                                                                |
+| `src/modules/studio/`    | Estudio del creador (`/estudio`, `/estudio/versiones/:id`), con sesión, grupo «Contenido»: mis versiones, temario del borrador con enlaces a editarlo en las pantallas de registros de Wasichai, envío a revisión, comentarios y decisiones del revisor, y versión nueva por copia                                 |
 
 Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
 formato de fechas, estado de error) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
@@ -79,7 +80,9 @@ ejemplo para la verificación sin sesión. La impresión se comprueba con `page.
 El espacio docente (`e2e/teaching.spec.ts`, simulado en `e2e/teaching-api.ts`) entra con `fakeApi(page, { signedIn: true,
 as: 'teacher' })`: un docente con permiso de leer asignaciones y dos ediciones; `noOfferings: true` lo deja sin ninguna.
 La corrección, las sesiones y la asistencia (`e2e/grading.spec.ts`) guardan su estado como el servidor: nota y motivo, series
-con hora local, reprogramar y cancelar. El servidor web lo
+con hora local, reprogramar y cancelar. El estudio del creador (`e2e/studio.spec.ts`, simulado en `e2e/studio-api.ts`) entra con
+`as: 'creator'`: un borrador y una versión publicada propios; enviar a revisión y crear una versión nueva cambian el estado
+de la prueba. El servidor web lo
 arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
 que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 
