@@ -1,0 +1,51 @@
+<!-- @dsCard group="Diálogos" height=560 -->
+<!doctype html>
+<html lang="es-PE">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Dialog — Quipu</title></head>
+<body>
+
+<div class="wq-root wq-grid-2" style="padding:0">
+  <div style="position:relative;min-height:540px">
+    <div class="wq-scrim" style="position:absolute">
+      <div class="wq-dialog" role="dialog" aria-modal="true" aria-labelledby="d1t">
+        <div class="wq-dialog-head">
+          <h2 class="wq-dialog-title" id="d1t">¿Entregar la evaluación?</h2>
+          <button class="wq-btn wq-btn--icon wq-btn--ghost" aria-label="Cerrar"><span class="wq-i wq-i-x " aria-hidden="true"></span></button>
+        </div>
+        <div class="wq-dialog-body">
+          <p>Respondiste 9 de 10 preguntas. La pregunta 7 está en blanco.</p>
+          <p class="wq-muted">Después de entregar no podrás cambiar tus respuestas. Te quedarán 2 intentos.</p>
+        </div>
+        <div class="wq-dialog-foot">
+          <button class="wq-btn">Seguir respondiendo</button>
+          <button class="wq-btn wq-btn--primary">Entregar ahora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="position:relative;min-height:540px">
+    <div class="wq-scrim" style="position:absolute">
+      <div class="wq-dialog" role="alertdialog" aria-modal="true" aria-labelledby="d2t" aria-describedby="d2d">
+        <div class="wq-dialog-head">
+          <div class="wq-dialog-icon"><span class="wq-i wq-i-alert " aria-hidden="true"></span></div>
+          <div><h2 class="wq-dialog-title" id="d2t">Cancelar la sesión del jue 12 nov</h2>
+          <p class="wq-muted" id="d2d" style="font-size:15px;line-height:22px">Se avisará a los 38 matriculados por correo. Esta acción no se puede deshacer.</p></div>
+        </div>
+        <div class="wq-dialog-body">
+          <div class="wq-field is-invalid">
+            <label class="wq-label" for="r">Motivo de la cancelación</label>
+            <textarea class="wq-textarea" id="r" style="min-height:96px" aria-invalid="true" aria-describedby="r-e"></textarea>
+            <span class="wq-error-msg" id="r-e"><span class="wq-i wq-i-alert " aria-hidden="true"></span> Escribe el motivo: los estudiantes lo verán en el aviso.</span>
+          </div>
+        </div>
+        <div class="wq-dialog-foot">
+          <button class="wq-btn">Volver</button>
+          <button class="wq-btn wq-btn--danger"><span class="wq-i wq-i-trash " aria-hidden="true"></span> Cancelar sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script></script>
+</body>
+</html>

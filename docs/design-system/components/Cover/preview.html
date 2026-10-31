@@ -1,0 +1,96 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="es-PE">
+<head>
+<meta charset="utf-8">
+<title>Quipu</title>
+<style>
+  html, body { margin:0; height:100%; }
+  body { background:var(--bg); color:var(--ink); font-family:var(--font-ui); overflow:hidden; }
+  .cover { position:relative; height:288px; overflow:hidden; }
+  .art { position:absolute; top:0; left:480px; width:480px; height:288px; overflow:hidden; }
+  .art svg { display:block; width:480px; height:288px; }
+  .brand { fill:var(--brand); }
+  .tint { fill:var(--brand-soft); }
+  .maiz { fill:var(--maiz); }
+  .deep { fill:var(--surface-inverse); }
+  .moss { fill:var(--success); }
+  .blk { rx:var(--radius-md); }
+  .cord { fill:none; stroke:var(--line-strong); stroke-width:2; stroke-linecap:round; }
+  .k-brand { fill:var(--brand); }
+  .k-moss { fill:var(--success); }
+  .k-maiz { fill:var(--maiz); }
+  .k-cut { fill:var(--bg); }
+  .words { position:absolute; left:var(--space-8); bottom:var(--space-6); max-width:440px; }
+  .name { margin:0; font-family:var(--font-read); font-size:120px; line-height:.92; font-weight:500; letter-spacing:-.02em; color:var(--ink); }
+  .tag { margin:var(--space-6) 0 0 4px; font-size:14px; line-height:20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 480 288" width="480" height="288">
+<!--
+  blocks      brand 144x232 slab bled off the top (identity, largest) · brand-soft 120x192 tint · maiz 72x72 bled off the top (celebration) · surface-inverse 176x232 bled off the right (deep ink) · success 72x32 once (it only means done) — about 40% of 960x288
+  arrangement one tall terracota slab with satellites, bottoms on one line space-6 above the edge, space-4 gutters
+  pattern     literal motif: a quipu — one main cord (line-strong, 2px) at y=104 with pendant cords at a space-8 pitch and radius-full knots; over blocks the knots are cut out in bg or recoloured (maiz on ink, brand on tint). From "Cada nudo cuenta".
+  scales      sides in space-2 multiples; gutters space-4; pitch space-8; corners radius-md; knots radius-full (r = 6)
+-->
+<rect class="brand blk" x="24" y="-16" width="144" height="232" rx="10"/>
+<rect class="tint blk" x="184" y="72" width="120" height="192" rx="10"/>
+<rect class="maiz blk" x="184" y="-16" width="72" height="72" rx="10"/>
+<rect class="deep blk" x="320" y="32" width="176" height="232" rx="10"/>
+<rect class="moss blk" x="24" y="232" width="72" height="32" rx="10"/>
+<path class="cord" d="M0 104H480"/>
+<path class="cord" d="M40 104V232"/>
+<circle class="k-cut" cx="40" cy="128" r="6"/>
+<circle class="k-cut" cx="40" cy="144" r="6"/>
+<path class="cord" d="M72 104V168"/>
+<circle class="k-cut" cx="72" cy="120" r="6"/>
+<circle class="k-cut" cx="72" cy="144" r="6"/>
+<path class="cord" d="M104 104V168"/>
+<circle class="k-cut" cx="104" cy="128" r="6"/>
+<circle class="k-cut" cx="104" cy="144" r="6"/>
+<path class="cord" d="M136 104V168"/>
+<circle class="k-cut" cx="136" cy="120" r="6"/>
+<path class="cord" d="M168 104V168"/>
+<circle class="k-cut" cx="168" cy="120" r="6"/>
+<circle class="k-cut" cx="168" cy="144" r="6"/>
+<circle class="k-cut" cx="168" cy="168" r="6"/>
+<path class="cord" d="M200 104V256"/>
+<circle class="k-brand" cx="200" cy="120" r="6"/>
+<circle class="k-brand" cx="200" cy="152" r="6"/>
+<path class="cord" d="M232 104V200"/>
+<circle class="k-brand" cx="232" cy="120" r="6"/>
+<path class="cord" d="M264 104V168"/>
+<circle class="k-brand" cx="264" cy="120" r="6"/>
+<path class="cord" d="M296 104V200"/>
+<circle class="k-brand" cx="296" cy="128" r="6"/>
+<circle class="k-brand" cx="296" cy="152" r="6"/>
+<circle class="k-brand" cx="296" cy="176" r="6"/>
+<path class="cord" d="M328 104V232"/>
+<circle class="k-maiz" cx="328" cy="120" r="6"/>
+<circle class="k-maiz" cx="328" cy="144" r="6"/>
+<path class="cord" d="M360 104V232"/>
+<circle class="k-maiz" cx="360" cy="128" r="6"/>
+<circle class="k-maiz" cx="360" cy="152" r="6"/>
+<circle class="k-maiz" cx="360" cy="168" r="6"/>
+<path class="cord" d="M392 104V256"/>
+<circle class="k-maiz" cx="392" cy="128" r="6"/>
+<circle class="k-maiz" cx="392" cy="152" r="6"/>
+<path class="cord" d="M424 104V168"/>
+<circle class="k-maiz" cx="424" cy="128" r="6"/>
+<path class="cord" d="M456 104V232"/>
+<circle class="k-maiz" cx="456" cy="128" r="6"/>
+<circle class="k-maiz" cx="456" cy="144" r="6"/>
+<circle class="k-maiz" cx="456" cy="176" r="6"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">Quipu</h1>
+<p class="tag">Sistema de diseño de wasichai-learning · cada nudo cuenta</p>
+</div>
+</div>
+<script></script>
+</body>
+</html>
