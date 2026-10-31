@@ -7,13 +7,19 @@ const SLUG = 'srtm-anuncios'
 const ACTION = /^Matricularme en la edición 9 nov\s–\s4 dic 2026$/
 const offerings = (page: Page) => page.getByRole('heading', { level: 2, name: 'Ediciones' }).locator('..')
 
-test('sin sesión, «Inicia sesión para matricularte» lleva al inicio de sesión de Wasichai', async ({ page }) => {
-  const api = await fakeApi(page)
+test('sin sesión, «Inicia sesión para matricularte» lleva al inicio de sesión de Wasichai y vuelve a la ficha', async ({ page }) => {
+  const api = await fakeApi(page, { enrolled: false })
   await page.goto(`/cursos/${SLUG}`)
 
   await expect(offerings(page).getByRole('button', { name: ACTION })).toHaveCount(0)
   await offerings(page).getByRole('link', { name: 'Inicia sesión para matricularte' }).click()
-  await expect(page).toHaveURL('/login')
+  await expect(page).toHaveURL(`/login?returnTo=%2Fcursos%2F${SLUG}`)
+  await page.getByLabel('Correo').fill('estudiante@demo.local')
+  await page.getByLabel('Contraseña').fill('una-contraseña')
+  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
+
+  await expect(page).toHaveURL(`/cursos/${SLUG}`)
+  await expect(offerings(page).getByRole('button', { name: ACTION })).toBeVisible()
   expect(api.enrollRequests).toEqual([])
 })
 

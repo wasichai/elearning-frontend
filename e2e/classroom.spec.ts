@@ -101,10 +101,10 @@ test('«Mis cursos» muestra el avance que guardó el servidor', async ({ page }
   await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
 })
 
-test('sin sesión, «Mis cursos» pide iniciar sesión', async ({ page }) => {
+test('sin sesión, «Mis cursos» pide iniciar sesión y recuerda adónde iba', async ({ page }) => {
   await fakeApi(page)
   await page.goto('/mis-cursos')
-  await expect(page).toHaveURL('/login')
+  await expect(page).toHaveURL('/login?returnTo=%2Fmis-cursos')
 })
 
 test('una matrícula ajena es «No encontramos este curso en tus matrículas»', async ({ page }) => {

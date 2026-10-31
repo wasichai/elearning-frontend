@@ -135,10 +135,6 @@ Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el qu
   ediciones» lo dice con un estado vacío claro (RNF-UX-06). Pedido en wasichai-ui: una visibilidad que pueda depender de
   una consulta del módulo.
 
-- **Volver tras el inicio de sesión**: no lo ofrece `@wasichai/core` 1.3.0 (`LoginPage` lleva siempre al inicio y
-  `AuthGate` no recuerda de dónde se venía); pendiente en wasichai-ui. Mientras tanto, en la ficha de un curso el botón
-  dice «Inicia sesión para matricularte» y lleva al inicio de sesión de Wasichai; después, la persona vuelve al catálogo
-  por su cuenta. No hay puente local (regla 7 de `CLAUDE.md`).
 - **El menú del shell en el móvil**: el panel lateral de `@wasichai/core` no se pliega en pantallas estrechas. Las
   páginas del aula caben en el espacio que deja (lo prueba `e2e/classroom.spec.ts`), pero el plegado es de core.
 
