@@ -28,6 +28,11 @@ function renderCompletion(routes: MockRoute[], language?: string) {
 
 const posts = () => fetchMock.calls.filter((call) => call.method === 'POST')
 
+// emitir es irreversible (el nombre no cambia después): se confirma en un diálogo que repite el nombre (RNF-UX-08)
+async function confirmIssue() {
+  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Emitir' }))
+}
+
 describe('CompletionPage', () => {
   it('lista las reglas con su detalle y, sin cumplirlas, no ofrece pedir el certificado', async () => {
     renderCompletion([
@@ -56,6 +61,10 @@ describe('CompletionPage', () => {
     await userEvent.clear(name)
     await userEvent.type(name, '  Rosa Quispe Mamani ')
     await userEvent.click(screen.getByRole('button', { name: 'Emitir mi certificado' }))
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Emitir el certificado a nombre de Rosa Quispe Mamani?' }))
+    expect(dialog.getByText('El nombre queda en el certificado y no se puede cambiar después. Revísalo antes de emitirlo.')).toBeInTheDocument()
+    expect(posts()).toEqual([])
+    await confirmIssue()
 
     expect(await screen.findByText('Certificado emitido a nombre de Rosa Quispe Mamani.')).toBeInTheDocument()
     expect(posts()[0]?.body).toEqual({ holderName: 'Rosa Quispe Mamani' })
@@ -71,6 +80,7 @@ describe('CompletionPage', () => {
     ])
 
     await userEvent.click(await screen.findByRole('button', { name: 'Emitir mi certificado' }))
+    await confirmIssue()
 
     expect(await screen.findByText('Ya tenías un certificado emitido a nombre de Rosa Quispe Mamani; es el mismo, no se emite otro.')).toBeInTheDocument()
   })
@@ -87,6 +97,7 @@ describe('CompletionPage', () => {
     // el servidor ya sabe que falta una: la próxima lectura la trae pendiente
     Object.assign(completion, completionPending)
     await userEvent.click(request)
+    await confirmIssue()
 
     expect(await screen.findByText('El servidor indica que aún falta alguna regla; arriba está la lista actualizada.')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('1 de 3 lecciones')).toBeInTheDocument())
@@ -109,10 +120,30 @@ describe('CompletionPage', () => {
     expect(name).toHaveAttribute('maxLength', '120')
     expect(posts()).toEqual([])
 
+    // un nombre que no vale ni siquiera pide confirmación
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
     await userEvent.type(name, 'X')
     await userEvent.click(screen.getByRole('button', { name: 'Emitir mi certificado' }))
+    await confirmIssue()
     await waitFor(() => expect(posts()).toHaveLength(1))
     expect(await screen.findByText('Escribe un nombre de 1 a 120 caracteres.')).toBeInTheDocument()
+  })
+
+  it('«Revisar el nombre» cierra la confirmación sin emitir nada y deja corregirlo', async () => {
+    renderCompletion([
+      { path: CLASSROOM, body: assessmentClassroom },
+      { path: COMPLETION, body: completionMet }
+    ])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Emitir mi certificado' }))
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: '¿Emitir el certificado a nombre de Tester?' })).getByRole('button', { name: 'Revisar el nombre' })
+    )
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(posts()).toEqual([])
+    expect(screen.getByRole('textbox', { name: 'Nombre para el certificado' })).toBeEnabled()
   })
 
   it('con el certificado ya emitido (certificateCode) lo enlaza sin volver a pedirlo', async () => {
