@@ -172,7 +172,7 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
   )
 }
 
-// un fallo al guardar, subir o enviar. el servidor manda: un 409 es una regla suya (plazo vencido, intento ya enviado,
+// un fallo al empezar, guardar, subir o enviar (RNF-UX-08). el servidor manda: un 409 es una regla suya (plazo vencido, intento ya enviado,
 // intentos agotados, matrícula no activa) y se explica con lo que diga su detalle
 export function AttemptActionProblem({ error, deadline }: { error: unknown; deadline?: string | null }) {
   const { t } = useTranslation('classroom')
@@ -185,5 +185,8 @@ export function AttemptActionProblem({ error, deadline }: { error: unknown; dead
     )
   }
   if (error instanceof ApiError && error.status === 400) return <Alert tone="danger">{t('attempt.invalid')}</Alert>
+  // un 403 no culpa a las respuestas; sin conexión (fetch lanza TypeError) lo escrito sigue en la pantalla
+  if (error instanceof ApiError && error.status === 403) return <Alert tone="danger">{t('attempt.refused')}</Alert>
+  if (error instanceof TypeError) return <Alert tone="danger">{t('attempt.network')}</Alert>
   return <Alert tone="danger">{error instanceof ApiError ? t('attempt.failedStatus', { status: error.status }) : t('attempt.failed')}</Alert>
 }

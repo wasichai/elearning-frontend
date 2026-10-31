@@ -232,6 +232,8 @@ const es = {
     conflict: 'El servidor no lo aceptó: {{detail}}',
     invalid: 'El servidor rechazó los datos: {{detail}}',
     notFound: 'Esto ya no está entre lo tuyo: puede que la edición haya cambiado de docente.',
+    refused: 'No tienes permiso para hacerlo. Si crees que deberías, pide a la coordinación que revise tu asignación.',
+    network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     failed: 'No pudimos guardarlo. Inténtalo de nuevo.',
     failedStatus: 'No pudimos guardarlo (error {{status}}). Inténtalo de nuevo.'
   },
@@ -539,6 +541,8 @@ const en: typeof es = {
     conflict: 'The server did not accept it: {{detail}}',
     invalid: 'The server rejected the data: {{detail}}',
     notFound: 'This is no longer yours: the offering may have changed teacher.',
+    refused: 'You are not allowed to do this. If you think you should be, ask the coordinators to check your assignment.',
+    network: 'There is no connection to the server. Check your connection and try again.',
     failed: 'We could not save it. Please try again.',
     failedStatus: 'We could not save it (error {{status}}). Please try again.'
   },

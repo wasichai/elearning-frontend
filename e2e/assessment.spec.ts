@@ -28,6 +28,10 @@ test('recorrido: empezar, responder cada tipo, entregar un archivo, enviar con c
   const rules = page.getByRole('region', { name: 'Evaluación final' })
   await expect(rules.getByText('0 de 2 usados')).toBeVisible()
   await rules.getByRole('button', { name: 'Empezar el intento' }).click()
+  // empezar gasta un intento y pone en marcha el reloj: se confirma (RNF-UX-08)
+  const start = page.getByRole('dialog', { name: '¿Empezar el intento?' })
+  await expect(start).toContainText('Usarás el intento 1 de 2 y tendrás 30 min')
+  await start.getByRole('button', { name: 'Empezar' }).click()
 
   await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeFocused()
   await expect(page).toHaveURL(`${LESSON}&intento=int-1`)
@@ -71,6 +75,7 @@ test('al acabarse el tiempo la cuenta atrás lo dice, y el 409 del servidor por 
   const api = await fakeApi(page, { signedIn: true })
   await page.goto(LESSON)
   await page.getByRole('button', { name: 'Empezar el intento' }).click()
+  await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
   await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
 
   await page.clock.fastForward('31:00')
@@ -89,6 +94,7 @@ test('con los intentos agotados la evaluación lo dice', async ({ page }) => {
   await page.goto(LESSON)
   for (const number of [1, 2]) {
     await page.getByRole('button', { name: number === 1 ? 'Empezar el intento' : 'Empezar otro intento' }).click()
+    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: `Intento ${number}` })).toBeVisible()
     await page.getByRole('button', { name: 'Enviar el intento' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Enviar' }).click()
@@ -106,6 +112,7 @@ test.describe('en un teléfono', () => {
     await fakeApi(page, { signedIn: true })
     await page.goto(LESSON)
     await page.getByRole('button', { name: 'Empezar el intento' }).click()
+    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
 
     const wider = await page.locator('main').evaluate((main) => {

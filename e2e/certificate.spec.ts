@@ -44,6 +44,9 @@ test('recorrido: cumplir las reglas → pedir el certificado con el nombre → v
   await expect(name).toHaveValue('Rosa Estudiante')
   await name.fill('Rosa Quispe Mamani')
   await page.getByRole('button', { name: 'Emitir mi certificado' }).click()
+  // el nombre no cambia después: se confirma con el nombre a la vista (RNF-UX-08)
+  const issue = page.getByRole('dialog', { name: '¿Emitir el certificado a nombre de Rosa Quispe Mamani?' })
+  await issue.getByRole('button', { name: 'Emitir' }).click()
 
   await expect(page.getByText('Certificado emitido a nombre de Rosa Quispe Mamani.')).toBeVisible()
   await page.getByRole('link', { name: 'Ver e imprimir el certificado' }).click()

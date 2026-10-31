@@ -1,7 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ApiError } from '@wasichai/core'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
+import { AttemptActionProblem } from './AttemptView'
 import { ClassroomPage } from './ClassroomPage'
 import { deadlineStage, formatRemaining } from './Countdown'
 import { classroomModule } from './module'
@@ -68,6 +70,13 @@ describe('la evaluación como lección', () => {
     expect(screen.queryByText('Esta lección no tiene material.')).not.toBeInTheDocument()
 
     await userEvent.click(rules.getByRole('button', { name: 'Empezar el intento' }))
+    // empezar gasta un intento y pone en marcha el reloj: se confirma antes (RNF-UX-08)
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Empezar el intento?' }))
+    expect(
+      dialog.getByText('Usarás el intento 1 de 2 y tendrás 30 min: el tiempo corre desde ahora y no se detiene aunque cierres la página.')
+    ).toBeInTheDocument()
+    expect(calls('POST', ATTEMPTS)).toEqual([])
+    await userEvent.click(dialog.getByRole('button', { name: 'Empezar' }))
 
     const heading = await screen.findByRole('heading', { level: 3, name: 'Intento 1' })
     // el foco lo mueve un efecto, que corre tras pintar
@@ -103,6 +112,18 @@ describe('la evaluación como lección', () => {
     expect(screen.getByRole('button', { name: 'Empezar otro intento' })).toBeInTheDocument()
   })
 
+  it('sin límite de tiempo la confirmación dice qué intento gasta; «Todavía no» no empieza nada', async () => {
+    renderAssessment([{ path: CLASSROOM, body: withAssessment({ attemptsUsed: 1, timeLimitMinutes: null }) }])
+
+    await userEvent.click(within(await panel()).getByRole('button', { name: 'Empezar otro intento' }))
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Empezar el intento?' }))
+    expect(dialog.getByText('Usarás el intento 2 de 2: cuenta desde que empieza, aunque no lo envíes.')).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole('button', { name: 'Todavía no' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(calls('POST', ATTEMPTS)).toEqual([])
+  })
+
   it('un 409 al empezar (intentos agotados en el servidor) se explica con su detalle', async () => {
     renderAssessment([
       { path: CLASSROOM, body: assessmentClassroom },
@@ -110,6 +131,7 @@ describe('la evaluación como lección', () => {
     ])
 
     await userEvent.click(within(await panel()).getByRole('button', { name: 'Empezar el intento' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Empezar' }))
 
     expect(await screen.findByText('El servidor no aceptó el cambio')).toBeInTheDocument()
     expect(screen.getByText('El servidor dice: «Ya no quedan intentos». Te mostramos el estado actual.')).toBeInTheDocument()
@@ -413,6 +435,55 @@ describe('errores del intento', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar el intento')
     expect(alert).toHaveTextContent('error 500')
+  })
+})
+
+// el texto de un fallo al empezar, guardar, subir o enviar (RNF-UX-08): del ProblemDetail a lo que se entiende
+describe('AttemptActionProblem: del ProblemDetail al mensaje', () => {
+  const explain = (error: unknown, deadline?: string | null, language?: string) =>
+    renderWithProviders(<AttemptActionProblem error={error} deadline={deadline} />, { modules: [classroomModule()], language })
+
+  it('un 409 da la regla con el detalle del servidor; con el plazo vencido dice que venció', async () => {
+    const first = explain(new ApiError(409, 'El intento ya fue enviado'))
+    expect(await screen.findByText('El servidor no aceptó el cambio')).toBeInTheDocument()
+    expect(screen.getByText('El servidor dice: «El intento ya fue enviado». Te mostramos el estado actual.')).toBeInTheDocument()
+    first.unmount()
+
+    explain(new ApiError(409, 'Fuera de plazo'), inMinutes(-1))
+    expect(await screen.findByText('El plazo de este intento ya venció')).toBeInTheDocument()
+  })
+
+  it('un 400 culpa a las respuestas; un 403, al permiso', async () => {
+    const first = explain(new ApiError(400, 'Opción ajena'))
+    expect(await screen.findByText('Alguna respuesta no corresponde a su pregunta. Revísalas e inténtalo de nuevo.')).toBeInTheDocument()
+    first.unmount()
+
+    explain(new ApiError(403, 'Forbidden'))
+    expect(await screen.findByText('Tu cuenta no puede hacerlo en esta matrícula. Si crees que es un error, escribe a la coordinación.')).toBeInTheDocument()
+  })
+
+  it('un 5xx deja el estado a la vista; sin conexión se dice así; lo inesperado, sin detalles técnicos', async () => {
+    const first = explain(new ApiError(500, 'fallo'))
+    expect(await screen.findByText('No pudimos guardar el intento (error 500). Inténtalo de nuevo.')).toBeInTheDocument()
+    first.unmount()
+
+    const second = explain(new TypeError('Failed to fetch'))
+    expect(await screen.findByText('No hay conexión con el servidor. Tus respuestas siguen aquí: inténtalo de nuevo en un momento.')).toBeInTheDocument()
+    second.unmount()
+
+    explain(new Error('boom'))
+    expect(await screen.findByText('No pudimos guardar el intento. Inténtalo de nuevo.')).toBeInTheDocument()
+  })
+
+  it('en inglés', async () => {
+    const first = explain(new ApiError(403, 'Forbidden'), null, 'en')
+    expect(
+      await screen.findByText('Your account cannot do this in this enrollment. If you think it is a mistake, write to the coordinators.')
+    ).toBeInTheDocument()
+    first.unmount()
+
+    explain(new TypeError('Failed to fetch'), null, 'en')
+    expect(await screen.findByText('There is no connection to the server. Your answers are still here: try again in a moment.')).toBeInTheDocument()
   })
 })
 

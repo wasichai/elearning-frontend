@@ -74,6 +74,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
       .click()
     await expect(page.getByText('Se completa al aprobar la evaluación.')).toBeVisible()
     await page.getByRole('button', { name: 'Empezar el intento' }).click()
+    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
     await expect(page).toHaveURL(/intento=/)
     attemptUrl = page.url()
@@ -220,6 +221,10 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     await expect(page.getByRole('region', { name: 'Para terminar el curso' })).not.toContainText('(pendiente)')
     await page.getByRole('textbox', { name: 'Nombre para el certificado' }).fill(HOLDER)
     await page.getByRole('button', { name: 'Emitir mi certificado' }).click()
+    await page
+      .getByRole('dialog', { name: `¿Emitir el certificado a nombre de ${HOLDER}?` })
+      .getByRole('button', { name: 'Emitir' })
+      .click()
     await expect(page.getByText(`Certificado emitido a nombre de ${HOLDER}.`)).toBeVisible()
     await page.getByRole('link', { name: 'Ver e imprimir el certificado' }).click()
     await expect(page).toHaveURL(/\/certificados\/[^/]+$/)
