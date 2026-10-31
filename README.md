@@ -45,6 +45,7 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `src/modules/catalog/`   | Catálogo público (`/cursos`, `/cursos/:slug`), sin sesión                                                                                                                                                                                                                                                          |
 | `src/modules/classroom/` | Aula del estudiante (`/mis-cursos`, `/mis-cursos/:enrollmentId`), con sesión, grupo «Aprendizaje»; sus evaluaciones (`?leccion=…&intento=…`), sesiones (`…/sesiones`) y finalización (`…/finalizacion`); la verificación pública e imprimible del certificado (`/certificados`, `/certificados/:code`), sin sesión |
+| `src/modules/teaching/`  | Espacio docente (`/docencia`, `/docencia/:code`), con sesión, grupo «Docencia»: las ediciones asignadas y sus matriculados                                                                                                                                                                                         |
 
 Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
 formato de fechas, estado de error) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
@@ -74,7 +75,9 @@ impone intentos y plazo, corrige lo automático al enviar, deja lo abierto y las
 sirve soluciones de un intento abierto (`e2e/assessment.spec.ts`; el plazo vencido se prueba con el reloj de Playwright).
 Sus sesiones, su finalización y su certificado (`e2e/certificate.spec.ts`) también se simulan: `fakeApi(page, {
 courseComplete: true })` la deja con todo cumplido para pedir el certificado, y `certificateIssued: true` publica el del
-ejemplo para la verificación sin sesión. La impresión se comprueba con `page.emulateMedia({ media: 'print' })`. El servidor web lo
+ejemplo para la verificación sin sesión. La impresión se comprueba con `page.emulateMedia({ media: 'print' })`.
+El espacio docente (`e2e/teaching.spec.ts`, simulado en `e2e/teaching-api.ts`) entra con `fakeApi(page, { signedIn: true,
+as: 'teacher' })`: un docente con permiso de leer asignaciones y dos ediciones; `noOfferings: true` lo deja sin ninguna. El servidor web lo
 arranca Playwright (`yarn build && yarn preview`, puerto 5180); en local reutiliza un `yarn preview` que ya esté abierto,
 que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 
@@ -111,6 +114,13 @@ WASICHAI_API_URL=http://localhost:8091 yarn e2e:real   # otro backend
 Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el que se arrancó, no al de `WASICHAI_API_URL`.
 
 ## Limitaciones
+
+- **«Docencia» en el menú según las asignaciones**: quien enseña es quien tiene ediciones asignadas, y eso solo lo sabe
+  el servidor (`GET /api/lms/teaching/offerings`). En `@wasichai/core` 1.3.0 la visibilidad de una entrada de menú
+  (`NavContribution.visible`) solo recibe los permisos de la persona, no datos. Por eso «Docencia» aparece a quien puede
+  leer las asignaciones (`docente_edicion: READ`) o administra —nunca por nombre de rol—, y si no tiene ninguna, «Mis
+  ediciones» lo dice con un estado vacío claro (RNF-UX-06). Pedido en wasichai-ui: una visibilidad que pueda depender de
+  una consulta del módulo.
 
 - **Volver tras el inicio de sesión**: no lo ofrece `@wasichai/core` 1.3.0 (`LoginPage` lleva siempre al inicio y
   `AuthGate` no recuerda de dónde se venía); pendiente en wasichai-ui. Mientras tanto, en la ficha de un curso el botón
