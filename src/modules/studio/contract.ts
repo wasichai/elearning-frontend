@@ -69,3 +69,62 @@ export type StudioLesson = z.infer<typeof studioLesson>
 export type ReviewComment = z.infer<typeof reviewCommentSchema>
 export type ReviewDecision = z.infer<typeof reviewDecision>
 export type NewVersion = z.infer<typeof newVersionSchema>
+
+// la importación de un manual AsciiDoc a un borrador («Importación» en docs/api/lms.md del backend, ADR-0018 §5)
+export const IMPORT_STATUSES = ['PENDIENTE', 'EN_CURSO', 'HECHO', 'FALLIDO'] as const
+export const IMPORT_PROBLEM_KINDS = [
+  'MISSING_INCLUDE',
+  'INCLUDE_OUTSIDE_ROOT',
+  'INCLUDE_CYCLE',
+  'INCLUDE_TOO_DEEP',
+  'UNRESOLVED_ATTRIBUTE',
+  'UNSUPPORTED_INCLUDE_OPTION',
+  'MISSING_IMAGE',
+  'IMAGE_OUTSIDE_ROOT',
+  'BROKEN_REFERENCE',
+  'DUPLICATE_ANCHOR',
+  'FILE_TOO_LARGE'
+] as const
+// el servidor guarda el sha en minúsculas y exige los 40 caracteres
+export const SHA_PATTERN = /^[0-9a-f]{40}$/
+
+// sha null: cualquier commit del repositorio
+export const importSourceSchema = z.object({ repository: z.string().regex(/^[^/\s@:]+\/[^/\s@:]+$/), sha: z.string().regex(SHA_PATTERN).nullable() })
+export const importSourceListSchema = z.array(importSourceSchema)
+
+// line 0 es el archivo entero
+const importProblem = z.object({ kind: z.enum(IMPORT_PROBLEM_KINDS), origin: z.string(), line: count, detail: z.string() })
+
+export const importReportSchema = z.object({
+  source: z.string(),
+  files: count,
+  includes: count,
+  sections: count,
+  images: count,
+  units: count,
+  lessons: count,
+  // todos los encontrados; problems trae a lo sumo 500
+  problemCount: count,
+  problems: z.array(importProblem)
+})
+
+export const importJobSchema = z.object({
+  id: z.string().min(1),
+  status: z.enum(IMPORT_STATUSES),
+  // el motivo de FALLIDO, o el último fallo pasajero mientras se reintenta
+  error: z.string().nullable(),
+  versionId: z.string().min(1).nullable(),
+  report: importReportSchema.nullable()
+})
+
+// los cursos que la persona puede leer, por la API de registros de Wasichai (objeto curso de model/model.json)
+export const courseRecordPageSchema = z.object({
+  content: z.array(z.object({ id: z.string().min(1), attributes: z.object({ codigo: z.string().nullish(), titulo: z.string().nullish() }) }))
+})
+
+export type ImportStatus = (typeof IMPORT_STATUSES)[number]
+export type ImportProblemKind = (typeof IMPORT_PROBLEM_KINDS)[number]
+export type ImportSource = z.infer<typeof importSourceSchema>
+export type ImportReport = z.infer<typeof importReportSchema>
+export type ImportProblem = z.infer<typeof importProblem>
+export type ImportJob = z.infer<typeof importJobSchema>

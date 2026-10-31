@@ -13,7 +13,7 @@ import {
 import { AUTHOR_ID } from '../src/modules/studio/test/fixtures'
 import type { Session } from '../src/shared/sessions'
 import { REVIEW, reviewState, simulateReview } from './review-api'
-import { simulateStudio, STUDIO, studioState } from './studio-api'
+import { isStudio, simulateStudio, studioState } from './studio-api'
 import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
@@ -33,11 +33,17 @@ const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categori
 // un docente: lee las asignaciones (docente_edicion), que es lo que muestra el menú «Docencia»
 export const TEACHER = { id: 'u-docente', email: 'docente@demo.local', displayName: 'Luis Docente', organizationId: 'org-demo', roles: ['DOCENTE'] }
 const TEACHER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ'], progreso_leccion: ['READ'] } }
-// un creador de contenido: crea versiones de curso (version_curso: CREATE), que es lo que muestra el menú «Contenido»
+// un creador de contenido: crea versiones de curso (version_curso: CREATE), que es lo que muestra el menú «Contenido», y
+// unidades y lecciones, que con lo anterior es lo que exige importar un manual
 export const CREATOR = { id: AUTHOR_ID, email: 'creador@demo.local', displayName: 'Clara Creadora', organizationId: 'org-demo', roles: ['CREADOR'] }
 const CREATOR_PERMISSIONS = {
   admin: false,
-  objects: { curso: ['READ', 'CREATE', 'UPDATE'], version_curso: ['READ', 'CREATE', 'UPDATE', 'ENVIAR_A_REVISION', 'VER_TODAS'], leccion: ['READ', 'UPDATE'] }
+  objects: {
+    curso: ['READ', 'CREATE', 'UPDATE'],
+    version_curso: ['READ', 'CREATE', 'UPDATE', 'ENVIAR_A_REVISION', 'VER_TODAS'],
+    unidad: ['READ', 'CREATE', 'UPDATE'],
+    leccion: ['READ', 'CREATE', 'UPDATE']
+  }
 }
 // un revisor: APROBAR sobre version_curso, que es lo que muestra «Bandeja de revisión»; sin PUBLICAR, como el rol REVISOR
 export const REVIEWER = { id: 'u-revisor', email: 'revisor@demo.local', displayName: 'Eva Revisora', organizationId: 'org-demo', roles: ['REVISOR'] }
@@ -507,7 +513,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     if (isCatalog(request, url)) api.catalogRequests.push(url)
     else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
     else if (url.pathname.startsWith(TEACHING)) api.teachingRequests.push(`${method} ${url.pathname}`)
-    else if (url.pathname.startsWith(STUDIO)) api.studioRequests.push(`${method} ${url.pathname}`)
+    else if (isStudio(url)) api.studioRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(REVIEW)) api.reviewRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')

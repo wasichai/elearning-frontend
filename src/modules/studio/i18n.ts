@@ -1,3 +1,5 @@
+import { importMessages } from './importI18n'
+
 // textos del módulo, espacio de nombres 'studio' (= id del módulo)
 const es = {
   nav: {
@@ -131,7 +133,8 @@ const es = {
       contract: 'La respuesta no tiene el formato que esta página espera; suele pasar durante una actualización. Inténtalo de nuevo en unos minutos.'
     },
     retry: 'Reintentar'
-  }
+  },
+  import: importMessages.es
 }
 
 // mismas claves que es: el tipo lo exige al compilar e i18n.test.tsx lo comprueba hoja a hoja
@@ -267,7 +270,8 @@ const en: typeof es = {
       contract: 'The response is not in the format this page expects; this usually happens during an update. Please try again in a few minutes.'
     },
     retry: 'Retry'
-  }
+  },
+  import: importMessages.en
 }
 
 export const studioMessages = { es, en }
