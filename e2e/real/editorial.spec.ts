@@ -170,7 +170,10 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       expect(firstLesson(draft).title).toBe(LESSON)
       await expect(page.getByText(`Versión ${number} · ${CODE}`)).toBeVisible()
       await expect(page.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeVisible()
-      await expect(page.getByRole('region', { name: 'Cambios', exact: true })).toContainText(`Comparada con la versión ${number - 1}.`)
+      // la copia de la 1 es igual a ella; tras un reintento, la anterior puede ser la copia ya editada del intento previo
+      await expect(page.getByRole('region', { name: 'Cambios', exact: true })).toContainText(
+        new RegExp(`(Su contenido es el mismo que el de|Comparada con) la versión ${number - 1}\\.`)
+      )
     })
 
     let lessonId = ''
