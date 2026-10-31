@@ -1,6 +1,6 @@
 import { useWasichaiLinks } from '@wasichai/core'
-import { Alert, Button } from '@wasichai/ui'
-import type { ReactNode } from 'react'
+import { Alert, Button, ConfirmDialog } from '@wasichai/ui'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { formatNumber } from '../../shared/format'
@@ -38,9 +38,11 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
   const links = useWasichaiLinks()
   const navigate = useNavigate()
   const start = useStartAttempt(enrollmentId)
+  const [confirming, setConfirming] = useState(false)
   const { assessment } = lesson
   const locale = i18n.language
   const exhausted = assessment.openAttemptId === null && assessment.attemptsUsed >= assessment.maxAttempts
+  const attemptNumbers = { number: formatNumber(assessment.attemptsUsed + 1, locale), max: formatNumber(assessment.maxAttempts, locale) }
   const attemptLink = (attemptId: string) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id, [ATTEMPT_PARAM]: attemptId })
   return (
     <section aria-labelledby={`assessment-${assessment.id}`} className="flex flex-col gap-4 rounded-card border border-border px-5 py-4">
@@ -79,15 +81,31 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
           {assessment.timeLimitMinutes !== null ? (
             <p className="text-sm text-ink-muted">{t('assessment.timerStarts', { value: formatNumber(assessment.timeLimitMinutes, locale) })}</p>
           ) : null}
-          <Button
-            className={WRAP}
-            disabled={start.isPending}
-            onClick={() => start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })}
-          >
+          <Button className={WRAP} disabled={start.isPending} onClick={() => setConfirming(true)}>
             {start.isPending ? t('assessment.starting') : assessment.attemptsUsed > 0 ? t('assessment.retry') : t('assessment.start')}
           </Button>
         </div>
       )}
+
+      {/* empezar gasta uno de los intentos y, con límite, pone en marcha un reloj que no se detiene: se confirma (RNF-UX-08) */}
+      {confirming ? (
+        <ConfirmDialog
+          variant="primary"
+          title={t('assessment.confirmTitle')}
+          description={
+            assessment.timeLimitMinutes === null
+              ? t('assessment.confirmUntimed', attemptNumbers)
+              : t('assessment.confirmTimed', { ...attemptNumbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
+          }
+          confirmLabel={t('assessment.confirmStart')}
+          cancelLabel={t('assessment.confirmCancel')}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false)
+            start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })
+          }}
+        />
+      ) : null}
     </section>
   )
 }

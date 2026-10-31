@@ -1,5 +1,5 @@
 import { ApiError, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
-import { Alert, Button, Input, Label } from '@wasichai/ui'
+import { Alert, Button, ConfirmDialog, Input, Label } from '@wasichai/ui'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -75,6 +75,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
   const nameId = useId()
   const [name, setName] = useState(user?.displayName ?? '')
   const [problem, setProblem] = useState<string>()
+  // el nombre que se va a emitir, mientras se confirma
+  const [confirming, setConfirming] = useState<string>()
   const request = useRequestCertificate(classroom.id)
   const issued: Certificate | undefined = request.data
   const code = issued?.code ?? classroom.certificateCode ?? undefined
@@ -107,7 +109,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
       return
     }
     setProblem(undefined)
-    request.mutate(holderName)
+    // el nombre queda en el certificado y no se cambia después: se confirma antes de emitir (RNF-UX-08)
+    setConfirming(holderName)
   }
   return (
     <section aria-labelledby="certificate-request" className="flex flex-col gap-3 rounded-card border border-border px-5 py-4">
@@ -149,6 +152,20 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
           {request.error ? <RequestProblem error={request.error} /> : null}
         </>
       )}
+      {confirming ? (
+        <ConfirmDialog
+          variant="primary"
+          title={t('certificate.confirmTitle', { name: confirming })}
+          description={t('certificate.confirmDescription')}
+          confirmLabel={t('certificate.confirmIssue')}
+          cancelLabel={t('certificate.confirmCancel')}
+          onCancel={() => setConfirming(undefined)}
+          onConfirm={() => {
+            setConfirming(undefined)
+            request.mutate(confirming)
+          }}
+        />
+      ) : null}
     </section>
   )
 }
