@@ -80,10 +80,13 @@ async function retitle(page: Page, current: string, next: string) {
   return lessonId
 }
 
+// la bandeja se carga de nuevo: si ya estaba abierta, el menú lleva a la misma ruta y mostraría la lista que tenía
 async function openInInbox(page: Page, number: number) {
-  await page.getByRole('link', { name: 'Bandeja de revisión' }).click()
+  await expect(page.getByRole('link', { name: 'Bandeja de revisión' })).toBeVisible()
+  await page.goto('/revision')
   await expect(page.getByRole('heading', { level: 1, name: 'Bandeja de revisión' })).toBeVisible()
   const item = page.getByRole('article').filter({ hasText: new RegExp(`${CODE} · versión ${number}(?!\\d)`) })
+  await expect(item).toHaveCount(1)
   await item.getByRole('link', { name: COURSE }).click()
 }
 
