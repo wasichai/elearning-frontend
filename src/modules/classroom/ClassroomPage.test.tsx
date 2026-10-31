@@ -63,8 +63,9 @@ describe('ClassroomPage: el aula', () => {
     expect(frame.getAttribute('sandbox')).toBe('')
     expect(frame.getAttribute('sandbox')).not.toMatch(/allow-scripts|allow-same-origin/)
     const reading = new DOMParser().parseFromString(frame.getAttribute('srcdoc') ?? '', 'text/html')
-    expect(reading.head.firstElementChild).toHaveAttribute('http-equiv', 'Content-Security-Policy')
-    expect(reading.querySelector('h1')).toHaveTextContent('Tipos de anuncio')
+    // de otro documento: jest-dom no los acepta, se leen a mano
+    expect(reading.head.firstElementChild?.getAttribute('http-equiv')).toBe('Content-Security-Policy')
+    expect(reading.querySelector('h1')?.textContent).toBe('Tipos de anuncio')
     expect(frame).not.toHaveAttribute('src')
     expect(files?.calls).toEqual([{ url: `${FILES}/vr-html/files/archivo`, authorization: 'Bearer test-token' }])
   })
