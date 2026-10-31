@@ -12,7 +12,7 @@ import { formatNumber } from './format'
 interface VersionDiffSectionProps {
   // el espacio de nombres i18n del módulo que la pinta
   namespace: string
-  query: UseQueryResult<VersionDiff>
+  query: UseQueryResult<VersionDiff, unknown>
 }
 
 const CHANGE_TONE: Record<DiffChange, string> = {
