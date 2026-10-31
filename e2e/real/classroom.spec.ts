@@ -78,6 +78,35 @@ test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conse
   await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).not.toHaveAttribute('aria-valuenow', '0')
 })
 
+// RF-AUL-05: el progreso vive en el servidor. otro contexto de navegador no comparte almacenamiento ni sesión con el primero
+test('tras completar una lección, «Continuar» lleva a la siguiente pendiente desde otro navegador', async ({ page, browser, baseURL, request }) => {
+  const student = await newStudent(request)
+  const slug = await srtmSlug(request)
+  await signIn(page, student)
+  await page.goto(`/cursos/${slug}`)
+  await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
+  await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
+  await units(page)
+    .getByRole('link', { name: /^Lo que necesita para entrar/ })
+    .click()
+  await page.getByRole('button', { name: 'Marcar como completada' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
+  await page.context().close()
+
+  const other = await browser.newContext({ baseURL, locale: 'es-PE', timezoneId: 'America/Lima' })
+  try {
+    const elsewhere = await other.newPage()
+    await signIn(elsewhere, student)
+    await elsewhere.getByRole('link', { name: 'Mis cursos' }).click()
+    const card = elsewhere.getByRole('article').filter({ has: elsewhere.getByRole('heading', { name: COURSE }) })
+    await card.getByRole('link', { name: /^Continuar «/ }).click()
+    await expect(elsewhere.getByRole('heading', { level: 2, name: 'Ingresar y resolver un ingreso fallido' })).toBeVisible()
+    await expect(units(elsewhere).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
+  } finally {
+    await other.close()
+  }
+})
+
 test('la guía PDF se descarga y el vídeo completa su lección al terminar', async ({ page, request }) => {
   const student = await newStudent(request)
   const slug = await srtmSlug(request)
