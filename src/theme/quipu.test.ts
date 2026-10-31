@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
@@ -41,7 +40,13 @@ function contrast(a: string, b: string): number {
 // un color al alfa dado sobre un fondo, como lo pinta text-shell-muted/70
 function over(hex: string, background: string, alpha: number): string {
   const [front, back] = [channels(hex), channels(background)]
-  return `#${front.map((c, i) => Math.round((alpha * c + (1 - alpha) * back[i]!) * 255).toString(16).padStart(2, '0')).join('')}`
+  return `#${front
+    .map((c, i) =>
+      Math.round((alpha * c + (1 - alpha) * back[i]!) * 255)
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')}`
 }
 
 // texto sobre sus fondos (4,5:1) y marcas que no son texto (3:1, WCAG 1.4.11)
