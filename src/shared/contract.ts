@@ -19,6 +19,21 @@ export const ianaTimeZone = z.string().refine(
 // fecha civil YYYY-MM-DD en la zona de la edición
 export const civilDate = z.iso.date()
 
+// los vocabularios de matrícula y edición del modelo (model/model.json del backend), que leen el aula y el espacio docente
+export const ENROLLMENT_STATUSES = ['ACTIVA', 'RETIRADA', 'FINALIZADA'] as const
+export const OFFERING_STATUSES = ['PROGRAMADA', 'INSCRIPCION_ABIERTA', 'EN_CURSO', 'FINALIZADA', 'CANCELADA'] as const
+
+// lecciones completadas sobre las que se pueden completar; percent es entero 0–100
+export const progressSummarySchema = z
+  .object({
+    completedLessons: z.number().int().nonnegative(),
+    totalLessons: z.number().int().nonnegative(),
+    percent: z.number().int().min(0).max(100)
+  })
+  .refine((progress) => progress.completedLessons <= progress.totalLessons, { message: 'más lecciones completadas que lecciones', path: ['completedLessons'] })
+
+export type ProgressSummary = z.infer<typeof progressSummarySchema>
+
 // la respuesta llegó (2xx) pero no cumple el contrato: un desajuste entre versiones de API e interfaz, no un fallo del usuario
 export class ContractError extends Error {
   readonly resource: string

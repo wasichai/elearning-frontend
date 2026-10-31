@@ -1,15 +1,13 @@
 import { z } from 'zod'
-import { civilDate, ianaTimeZone } from '../../shared/contract'
+import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
-export { ContractError, parseContract } from '../../shared/contract'
+export { ContractError, ENROLLMENT_STATUSES, OFFERING_STATUSES, parseContract, progressSummarySchema, type ProgressSummary } from '../../shared/contract'
 
 // el contrato del aula del estudiante (F2, ADR-0012; F3, ADR-0016): «Aula del estudiante» y «Evaluaciones, sesiones y
 // certificado del estudiante» en docs/api/lms.md del backend.
 // los objetos no son estrictos: un campo nuevo del servidor no rompe la interfaz; uno que falta o cambia de tipo, sí.
 
 // los vocabularios cerrados del contrato y del modelo (model/model.json del backend)
-export const ENROLLMENT_STATUSES = ['ACTIVA', 'RETIRADA', 'FINALIZADA'] as const
-export const OFFERING_STATUSES = ['PROGRAMADA', 'INSCRIPCION_ABIERTA', 'EN_CURSO', 'FINALIZADA', 'CANCELADA'] as const
 // cómo se completa una lección: la marca el estudiante, al terminar el vídeo, al aprobar su evaluación, al asistir a su
 // sesión o todavía no (una evaluación o sesión aún sin definir)
 export const COMPLETIONS = ['EXPLICIT', 'VIDEO_END', 'ASSESSMENT', 'ATTENDANCE', 'NOT_YET'] as const
@@ -24,15 +22,6 @@ export type LessonEventType = (typeof LESSON_EVENTS)[number]
 const id = z.string().min(1)
 const order = z.number().int()
 const instant = z.iso.datetime({ offset: true })
-
-// lecciones completadas sobre las que se pueden completar en F2; percent es entero 0–100
-export const progressSummarySchema = z
-  .object({
-    completedLessons: z.number().int().nonnegative(),
-    totalLessons: z.number().int().nonnegative(),
-    percent: z.number().int().min(0).max(100)
-  })
-  .refine((progress) => progress.completedLessons <= progress.totalLessons, { message: 'más lecciones completadas que lecciones', path: ['completedLessons'] })
 
 // completada o, desde F3, aprobada: no queda nada por hacer en la lección
 export function isDone(status: ProgressStatus): boolean {
@@ -219,7 +208,6 @@ export const attemptSchema = z
     path: ['result']
   })
 
-export type ProgressSummary = z.infer<typeof progressSummarySchema>
 export type LessonProgress = z.infer<typeof lessonProgressSchema>
 export type Enrollment = z.infer<typeof enrollmentSchema>
 export type Classroom = z.infer<typeof classroomSchema>
