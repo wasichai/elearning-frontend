@@ -10,8 +10,10 @@ import {
   openAttempt,
   sessions as sgspeSessions
 } from '../src/modules/classroom/test/fixtures'
+import { AUTHOR_ID } from '../src/modules/studio/test/fixtures'
 import type { Session } from '../src/shared/sessions'
 import { REVIEW, reviewState, simulateReview } from './review-api'
+import { simulateStudio, STUDIO, studioState } from './studio-api'
 import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
@@ -31,9 +33,23 @@ const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categori
 // un docente: lee las asignaciones (docente_edicion), que es lo que muestra el menú «Docencia»
 export const TEACHER = { id: 'u-docente', email: 'docente@demo.local', displayName: 'Luis Docente', organizationId: 'org-demo', roles: ['DOCENTE'] }
 const TEACHER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ'], progreso_leccion: ['READ'] } }
+// un creador de contenido: crea versiones de curso (version_curso: CREATE), que es lo que muestra el menú «Contenido»
+export const CREATOR = { id: AUTHOR_ID, email: 'creador@demo.local', displayName: 'Clara Creadora', organizationId: 'org-demo', roles: ['CREADOR'] }
+const CREATOR_PERMISSIONS = {
+  admin: false,
+  objects: { curso: ['READ', 'CREATE', 'UPDATE'], version_curso: ['READ', 'CREATE', 'UPDATE', 'ENVIAR_A_REVISION', 'VER_TODAS'], leccion: ['READ', 'UPDATE'] }
+}
 // un revisor: APROBAR sobre version_curso, que es lo que muestra «Bandeja de revisión»; sin PUBLICAR, como el rol REVISOR
 export const REVIEWER = { id: 'u-revisor', email: 'revisor@demo.local', displayName: 'Eva Revisora', organizationId: 'org-demo', roles: ['REVISOR'] }
 const REVIEWER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR', 'VER_TODAS'] } }
+// quién inicia sesión en la simulación, con sus permisos
+const ACCOUNTS = {
+  student: { user: STUDENT, permissions: STUDENT_PERMISSIONS },
+  teacher: { user: TEACHER, permissions: TEACHER_PERMISSIONS },
+  creator: { user: CREATOR, permissions: CREATOR_PERMISSIONS },
+  reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS }
+}
+type Account = (typeof ACCOUNTS)[keyof typeof ACCOUNTS]
 
 export const COURSES_IN_CATALOG = [courseSummary, courseWithoutOffering]
 export const DETAILS: Record<string, unknown> = { [courseSummary.slug]: courseDetail }
@@ -46,8 +62,8 @@ type Override = (url: URL, method: string) => Reply | undefined
 export interface FakeApiOptions extends TeachingOptions {
   // con sesión: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
-  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas o un revisor
-  as?: 'student' | 'teacher' | 'reviewer'
+  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas, un creador de contenido o un revisor
+  as?: keyof typeof ACCOUNTS
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean
   // SGSPE con todo hecho: lecciones, evaluación aprobada y asistencia; la finalización se cumple
@@ -69,6 +85,8 @@ export interface FakeApi {
   readonly certificateRequests: string[]
   // las del espacio docente, como «MÉTODO /ruta»
   readonly teachingRequests: string[]
+  // las del estudio del creador, como «MÉTODO /ruta»
+  readonly studioRequests: string[]
   // las de la bandeja del revisor, como «MÉTODO /ruta»
   readonly reviewRequests: string[]
   // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
@@ -427,14 +445,8 @@ function simulateFile(method: string, url: URL): Reply | undefined {
 // sin endpoint de preferencias (404), core las guarda solo en el navegador
 const isPlatform = (url: URL) => url.pathname.startsWith('/api/auth/') || url.pathname === '/api/objects'
 
-const ACCOUNTS = {
-  student: { user: STUDENT, permissions: STUDENT_PERMISSIONS },
-  teacher: { user: TEACHER, permissions: TEACHER_PERMISSIONS },
-  reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS }
-}
-
-function simulatePlatform(method: string, url: URL, account: (typeof ACCOUNTS)[keyof typeof ACCOUNTS]): Reply | undefined {
-  // iniciar sesión desde la pantalla de Wasichai: entra quien se simula (estudiante, docente o revisor)
+function simulatePlatform(method: string, url: URL, account: Account): Reply | undefined {
+  // iniciar sesión desde la pantalla de Wasichai: entra quien se simula (estudiante, docente, creador o revisor)
   if (method === 'POST' && url.pathname === '/api/auth/login')
     return { status: 200, body: { token: 'token-e2e', expiresAt: '2099-01-01T00:00:00Z', user: account.user } }
   if (method === 'GET' && url.pathname === '/api/auth/me/permissions') return { status: 200, body: account.permissions }
@@ -457,6 +469,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
   const overrides: Override[] = []
   const state = classroomState(options)
   const teaching = teachingState(options)
+  const studio = studioState()
   const review = reviewState()
   const account = ACCOUNTS[options.as ?? 'student']
   if (options.signedIn)
@@ -475,6 +488,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     uploads: [],
     certificateRequests: [],
     teachingRequests: [],
+    studioRequests: [],
     reviewRequests: [],
     unexpected: [],
     failOnce: (matches, status, detail = 'Fallo simulado') => {
@@ -493,6 +507,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     if (isCatalog(request, url)) api.catalogRequests.push(url)
     else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
     else if (url.pathname.startsWith(TEACHING)) api.teachingRequests.push(`${method} ${url.pathname}`)
+    else if (url.pathname.startsWith(STUDIO)) api.studioRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(REVIEW)) api.reviewRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(CLASSROOM)) api.classroomRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname === '/api/lms/enrollments' && method === 'POST')
@@ -510,6 +525,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     reply ??=
       simulatePlatform(method, url, account) ??
       simulateTeaching(teaching, method, url, jsonBody(request)) ??
+      simulateStudio(studio, method, url, jsonBody(request)) ??
       simulateReview(review, method, url, jsonBody(request)) ??
       publicCertificate(state, method, url) ??
       simulateClassroom(state, method, url, jsonBody(request)) ??
