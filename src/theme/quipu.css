@@ -1,0 +1,105 @@
+/* tema Quipu de wasichai-learning (sistema de diseño «Quipu»): papel cálido, tinta grafito, terracota para avanzar.
+   dos temas de app según el contrato de @wasichai/ui (ADR-034 y ADR-035 de wasichai): cada bloque pone los 28 tokens.
+   se importa después de @wasichai/ui/theme.css; los ofrece config.themes (src/theme/themes.ts).
+   los pares de contraste que deben cumplir AA los comprueba quipu.test.ts */
+
+/* Figtree (SIL OFL, src/theme/fonts) se declara en src/index.css */
+
+[data-theme='quipu'] {
+  --surface: #fffdf8;
+  --surface-muted: #f7f3ea;
+  --border: #e2d9c7;
+  --ink: #1e2327;
+  --ink-muted: #565b58;
+  --brand: #a5472a;
+  --brand-strong: #8a3a20;
+  --brand-soft: #f5e1d5;
+  --on-brand: #ffffff;
+  /* menú lateral claro, como una hoja más; sus etiquetas de grupo van al 70 %: shell-muted aguanta AA así */
+  --shell: #fffdf8;
+  --shell-muted: #333835;
+  --shell-ink: #1e2327;
+  /* carmín, distinto de la terracota de la marca */
+  --danger: #a3213a;
+  --on-danger: #ffffff;
+  --success: #2e6a44;
+  --warning: #865600;
+  --warning-soft: #fbe6bd;
+  --overlay: rgb(19 23 25 / 56%);
+
+  --success-soft: #dcebdd;
+  --danger-soft: #f7dde0;
+  --notice: #2a5ca6;
+  --notice-soft: #dfe8f6;
+  --link: #a5472a;
+  /* azul, para que el foco no se confunda con la marca */
+  --focus: #1f56b8;
+  --table-head: #efe8da;
+  --table-stripe: #fbf8f1;
+  --line: #e2d9c7;
+  --map-selected: #e8590c;
+  --surface-raised: var(--surface);
+  --border-control: #857a66;
+  --placeholder: var(--ink-muted);
+
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-card: 10px;
+}
+
+[data-theme='quipu-dark'] {
+  --surface: #1b2023;
+  --surface-muted: #131719;
+  --border: #2e353a;
+  --ink: #ece6da;
+  --ink-muted: #a7aba5;
+  /* la terracota se aclara: el texto encima pasa a ser oscuro */
+  --brand: #e58a63;
+  --brand-strong: #f0a27f;
+  --brand-soft: #3a2219;
+  --on-brand: #1b1411;
+  --shell: #0e1113;
+  --shell-muted: #b6b9b3;
+  --shell-ink: #ece6da;
+  --danger: #f28b9b;
+  --on-danger: #1b1012;
+  --success: #86c79b;
+  --warning: #e9b552;
+  --warning-soft: #33270f;
+  --overlay: rgb(0 0 0 / 64%);
+
+  --success-soft: #16291d;
+  --danger-soft: #3a1820;
+  --notice: #93b8f0;
+  --notice-soft: #17233a;
+  --link: #e58a63;
+  --focus: #8ab4ff;
+  --table-head: #0e1113;
+  --table-stripe: #1f2528;
+  --line: #2e353a;
+  --map-selected: #e8590c;
+  /* menús y diálogos se separan de la página */
+  --surface-raised: #232a2e;
+  --border-control: #6f797f;
+  --placeholder: var(--ink-muted);
+
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-card: 10px;
+}
+
+/* en la capa base, como los defectos de @wasichai/ui que reemplaza: las utilidades de un componente siguen ganando */
+@layer base {
+  :is([data-theme='quipu'], [data-theme='quipu-dark']) *:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
