@@ -5,3 +5,5 @@ yarn.lock
 test-results/
 playwright-report/
 blob-report/
+# copia del sistema de diseño Quipu, sincronizada desde su artifact: se guarda tal cual
+docs/design-system/

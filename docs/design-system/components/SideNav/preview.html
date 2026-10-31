@@ -1,0 +1,36 @@
+<!-- @dsCard group="Navegación" height=560 width=1040 -->
+<!doctype html>
+<html lang="es-PE">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SideNav — Quipu</title></head>
+<body>
+
+<div class="wq-shell" style="height:540px;grid-template-columns:var(--sidebar-width) 1fr">
+  <nav class="wq-nav" aria-label="Principal" style="position:static;transform:none;box-shadow:none;width:auto">
+    <a class="wq-brand" href="#"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 7h22" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/><path d="M8 7v15M14 7v11M20 7v17" stroke="var(--line-strong)" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="13" r="3" fill="var(--brand)"/><circle cx="14" cy="16" r="3" fill="var(--maiz)"/><circle cx="20" cy="12" r="3" fill="var(--success)"/><circle cx="20" cy="20" r="3" fill="var(--success)"/></svg>wasichai</a>
+    <div class="wq-nav-group"><div class="wq-nav-label">Aprendizaje</div>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-search " aria-hidden="true"></span>Catálogo</a>
+      <a class="wq-nav-item" href="#" aria-current="page"><span class="wq-i wq-i-book " aria-hidden="true"></span>Mis cursos<span class="wq-count">3</span></a>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-calendar " aria-hidden="true"></span>Sesiones</a>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-award " aria-hidden="true"></span>Certificados</a>
+    </div>
+    <div class="wq-nav-group"><div class="wq-nav-label">Docencia</div>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-users " aria-hidden="true"></span>Mis ediciones</a>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-edit " aria-hidden="true"></span>Corrección<span class="wq-count">12</span></a>
+      <a class="wq-nav-item" href="#"><span class="wq-i wq-i-live " aria-hidden="true"></span>Sesiones y asistencia</a>
+    </div>
+  </nav>
+  <div style="position:relative;background:var(--bg);overflow:hidden">
+    <div style="position:absolute;inset:24px;width:360px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg)">
+      <div class="wq-topbar" style="display:flex"><button class="wq-btn wq-btn--icon wq-btn--ghost" aria-label="Abrir menú" aria-expanded="true"><span class="wq-i wq-i-menu " aria-hidden="true"></span></button><span style="font-weight:650">Mis cursos</span></div>
+      <div style="position:absolute;inset:56px 0 0 0;background:var(--scrim)"></div>
+      <nav class="wq-nav" style="position:absolute;top:0;bottom:0;left:0;width:280px;transform:none;box-shadow:var(--elevation-3)" aria-label="Principal (móvil)">
+        <div class="wq-row" style="justify-content:space-between"><a class="wq-brand" href="#"><svg viewBox="0 0 28 28" aria-hidden="true"><path d="M3 7h22" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/><path d="M8 7v15M14 7v11M20 7v17" stroke="var(--line-strong)" stroke-width="2" stroke-linecap="round"/><circle cx="8" cy="13" r="3" fill="var(--brand)"/><circle cx="14" cy="16" r="3" fill="var(--maiz)"/><circle cx="20" cy="12" r="3" fill="var(--success)"/><circle cx="20" cy="20" r="3" fill="var(--success)"/></svg>wasichai</a><button class="wq-btn wq-btn--icon wq-btn--ghost" aria-label="Cerrar menú"><span class="wq-i wq-i-x " aria-hidden="true"></span></button></div>
+        <div class="wq-nav-group"><div class="wq-nav-label">Aprendizaje</div><a class="wq-nav-item" href="#" aria-current="page"><span class="wq-i wq-i-book " aria-hidden="true"></span>Mis cursos</a><a class="wq-nav-item" href="#"><span class="wq-i wq-i-calendar " aria-hidden="true"></span>Sesiones</a></div>
+        <div class="wq-nav-group"><div class="wq-nav-label">Docencia</div><a class="wq-nav-item" href="#"><span class="wq-i wq-i-users " aria-hidden="true"></span>Mis ediciones</a></div>
+      </nav>
+    </div>
+  </div>
+</div>
+<script></script>
+</body>
+</html>
