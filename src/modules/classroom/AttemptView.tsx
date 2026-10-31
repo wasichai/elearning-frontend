@@ -58,6 +58,14 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
   const { t, i18n } = useTranslation('classroom')
   // el borrador es de la persona: lo que el servidor devuelve al guardar no lo pisa
   const [draft, setDraft] = useState(() => draftOf(attempt))
+  // el borrador al día, para quien termina más tarde: una subida larga no puede pisar lo que se escribió mientras tanto
+  const latestDraft = useRef(draft)
+  const changeAnswer = (questionId: string, change: (answer: AnswerInput) => AnswerInput) => {
+    latestDraft.current = { ...latestDraft.current, [questionId]: change(latestDraft.current[questionId] ?? emptyAnswer(questionId)) }
+    setDraft(latestDraft.current)
+  }
+  // cuántas subidas siguen en curso (cada pregunta de archivo lleva la suya): mientras haya alguna no se guarda ni se envía
+  const [uploading, setUploading] = useState(0)
   const [confirming, setConfirming] = useState(false)
   const [savedAt, setSavedAt] = useState<number>()
   const save = useSaveAnswers(enrollmentId, attempt.id)
@@ -68,7 +76,7 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
   const answers = () => questions.map((question) => draft[question.id] ?? emptyAnswer(question.id))
   const answered = questions.filter((question) => isAnswered(draft[question.id])).length
   const expired = attempt.deadline !== null && Date.parse(attempt.deadline) <= now
-  const busy = save.isPending || submit.isPending
+  const busy = save.isPending || submit.isPending || uploading > 0
   const error = submit.error ?? save.error
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => heading.current?.focus(), [])
@@ -77,14 +85,16 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
 
   // subir el archivo y guardar enseguida la respuesta con su entrega: devuelve el error para la pregunta, si lo hubo
   const uploadFor = (questionId: string) => async (file: File) => {
+    setUploading((count) => count + 1)
     try {
       const created = await upload.mutateAsync({ questionId, file })
-      const next = { ...draft, [questionId]: { ...(draft[questionId] ?? emptyAnswer(questionId)), submissionId: created.id } }
-      setDraft(next)
-      saveNow(questions.map((question) => next[question.id] ?? emptyAnswer(question.id)))
+      changeAnswer(questionId, (answer) => ({ ...answer, submissionId: created.id }))
+      saveNow(questions.map((question) => latestDraft.current[question.id] ?? emptyAnswer(question.id)))
       return undefined
     } catch (cause) {
       return cause instanceof ApiError ? t('question.uploadFailedStatus', { status: cause.status }) : t('question.uploadFailed')
+    } finally {
+      setUploading((count) => count - 1)
     }
   }
 
@@ -111,7 +121,8 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault()
-          setConfirming(true)
+          // Intro en una respuesta corta también envía el formulario: el botón desactivado no basta
+          if (!busy) setConfirming(true)
         }}
       >
         {questions.map((question) => (
@@ -121,7 +132,7 @@ function AttemptForm({ enrollmentId, attempt, timeZone }: { enrollmentId: string
             answer={draft[question.id] ?? emptyAnswer(question.id)}
             saved={attempt.answers.find((answer) => answer.questionId === question.id)}
             disabled={submit.isPending}
-            onChange={(answer) => setDraft((current) => ({ ...current, [question.id]: answer }))}
+            onChange={(answer) => changeAnswer(question.id, () => answer)}
             onUpload={uploadFor(question.id)}
           />
         ))}

@@ -178,6 +178,70 @@ describe('el intento abierto', () => {
     expect(sent.answers.find((answer) => answer.questionId === 'p-file')?.submissionId).toBe('ent-1')
   })
 
+  describe('con una subida en curso', () => {
+    // la subida se queda esperando hasta que la prueba la suelta, como un archivo grande en una conexión lenta
+    function holdUpload() {
+      let release = () => {}
+      const held = new Promise<void>((resolve) => (release = resolve))
+      const next = globalThis.fetch
+      globalThis.fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        if (String(input) === UPLOAD) await held
+        return next(input, init)
+      }
+      return release
+    }
+    const routes: MockRoute[] = [
+      { path: CLASSROOM, body: assessmentClassroom },
+      { path: ATTEMPT, body: attempt() },
+      { method: 'POST', path: `${ATTEMPT}/questions/p-file/submission`, status: 201, body: submission },
+      { method: 'PUT', path: `${ATTEMPT}/answers`, body: attempt() }
+    ]
+    const choose = async () =>
+      userEvent.upload(await screen.findByLabelText('6. Sube la liquidación de ejemplo.'), new File(['%PDF'], 'liquidacion.pdf', { type: 'application/pdf' }))
+
+    it('lo que se escribe mientras tanto no se pierde: ni en la pantalla ni en lo que se guarda al terminar', async () => {
+      renderAssessment(routes, '?leccion=lec-eva&intento=int-1', { [UPLOAD]: { body: '{}', contentType: 'application/json' } })
+      const release = holdUpload()
+
+      await choose()
+      await screen.findByText('Subiendo el archivo…')
+      const open = screen.getByRole('textbox', { name: '5. Explica cómo se liquida una licencia.' })
+      await userEvent.type(open, 'Escrito durante la subida')
+      await userEvent.click(
+        within(screen.getByRole('group', { name: '1. ¿Quién otorga la licencia de anuncio?' })).getByRole('radio', { name: 'La municipalidad' })
+      )
+      release()
+
+      expect(await screen.findByText('Entregado: liquidacion.pdf')).toBeInTheDocument()
+      await waitFor(() => expect(calls('PUT', `${ATTEMPT}/answers`)).toHaveLength(1))
+      const sent = (
+        calls('PUT', `${ATTEMPT}/answers`)[0]?.body as {
+          answers: { questionId: string; optionIds: string[]; text: string | null; submissionId: string | null }[]
+        }
+      ).answers
+      expect(sent.find((answer) => answer.questionId === 'p-open')?.text).toBe('Escrito durante la subida')
+      expect(sent.find((answer) => answer.questionId === 'p-single')?.optionIds).toEqual(['o-muni'])
+      expect(sent.find((answer) => answer.questionId === 'p-file')?.submissionId).toBe('ent-1')
+      expect(open).toHaveValue('Escrito durante la subida')
+    })
+
+    it('no se puede guardar ni enviar hasta que termina; tampoco con Intro en una respuesta corta', async () => {
+      renderAssessment(routes, '?leccion=lec-eva&intento=int-1', { [UPLOAD]: { body: '{}', contentType: 'application/json' } })
+      const release = holdUpload()
+
+      await choose()
+      await screen.findByText('Subiendo el archivo…')
+      expect(screen.getByRole('button', { name: 'Enviar el intento' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: 'Guardar respuestas' })).toBeDisabled()
+      await userEvent.type(screen.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }), 'SRTM{Enter}')
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      release()
+
+      await screen.findByText('Entregado: liquidacion.pdf')
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Enviar el intento' })).toBeEnabled())
+    })
+  })
+
   it('un archivo de más de 25 MB se rechaza sin subirlo', async () => {
     renderAssessment(
       [
