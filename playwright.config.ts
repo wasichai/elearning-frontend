@@ -10,7 +10,8 @@ const real = Boolean(process.env.E2E_REAL)
 
 export default defineConfig({
   testDir: 'e2e',
-  ...(real ? { testMatch: REAL } : { testIgnore: REAL }),
+  // contra el backend de verdad una recarga tarda más que con la API simulada: más margen, solo ahí
+  ...(real ? { testMatch: /\/real\/.*\.spec\.ts$/, expect: { timeout: 15_000 } } : { testIgnore: REAL }),
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,

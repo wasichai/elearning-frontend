@@ -11,7 +11,8 @@ const COURSES = '/api/lms/public/catalog/courses'
 const PUBLISHED = [
   { code: 'SRTM-ANU-101', title: /^Rentas municipales \(SRTM\)/ },
   { code: 'SGSPE-101', title: /^SGSPE: primeros pasos/ },
-  { code: 'IA-AGT-201', title: /^Agentes de IA con trazabilidad/ }
+  { code: 'IA-AGT-201', title: /^Agentes de IA con trazabilidad/ },
+  { code: 'CORTO-101', title: /^Curso corto: mensajes de error claros/ }
 ]
 const DRAFT = 'Atención al contribuyente en ventanilla'
 
@@ -23,7 +24,7 @@ test.beforeAll(async ({ request }) => {
   expect(response instanceof Error ? 0 : response.status(), `el backend no contesta en ${API_URL} (${status}): prepáralo como dice el README`).toBe(200)
 })
 
-test('el catálogo muestra los tres cursos publicados y no el borrador', async ({ page }) => {
+test('el catálogo muestra los cuatro cursos publicados y no el borrador', async ({ page }) => {
   await page.goto('/cursos')
   await expect(courses(page)).toHaveCount(PUBLISHED.length)
   await expect(page.getByRole('region', { name: 'Resultados' }).getByRole('status')).toHaveText(`${PUBLISHED.length} cursos`)
