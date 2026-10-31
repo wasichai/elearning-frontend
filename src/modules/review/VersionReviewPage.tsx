@@ -5,11 +5,12 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { WRAP } from '../../shared/buttons'
 import { formatInstant, formatNumber } from '../../shared/format'
-import { useComment, useDecision, usePublish, useResolveComment, useVersion } from './api'
+import { VersionDiffSection } from '../../shared/VersionDiff'
+import { useComment, useDecision, usePublish, useResolveComment, useVersion, useVersionDiff } from './api'
 import type { Decision, ReviewComment, StudioLesson, StudioVersion, StudioVersionDetail } from './contract'
 import { canPublish } from './permissions'
 import { QueryProblem, useActionError } from './parts'
-import { REVIEW_ROUTES } from './routes'
+import { REVIEW_MODULE_ID, REVIEW_ROUTES } from './routes'
 
 // el máximo de section y text de un comentario (docs/api/lms.md del backend)
 const MAX_COMMENT = 4000
@@ -53,6 +54,7 @@ export function VersionReviewPage() {
 function VersionReview({ version }: { version: StudioVersionDetail }) {
   const { t, i18n } = useTranslation('review')
   const { permissions } = useAuth()
+  const diff = useVersionDiff(version.id)
   // lo último que se hizo aquí: la barra de decisión desaparece al decidir, el aviso queda
   const [notice, setNotice] = useState<string | null>(null)
   const open = version.status === 'EN_REVISION'
@@ -85,6 +87,8 @@ function VersionReview({ version }: { version: StudioVersionDetail }) {
       ) : (
         <Alert tone="notice">{t('version.closed')}</Alert>
       )}
+      {/* qué cambió respecto de la versión anterior, antes de entrar al contenido */}
+      <VersionDiffSection namespace={REVIEW_MODULE_ID} query={diff} />
       <SectionComments versionId={version.id} section={WHOLE_VERSION} label={t('content.whole')} comments={version.comments} canComment={open} heading />
       <ol className="flex flex-col gap-6">
         {units.map((unit) => (

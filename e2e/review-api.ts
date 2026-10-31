@@ -1,4 +1,4 @@
-import { otherVersionInReview, problem, versionDetail } from '../src/modules/review/test/fixtures'
+import { firstVersionDiff, otherVersionInReview, problem, versionDetail, versionDiff } from '../src/modules/review/test/fixtures'
 
 // la bandeja del revisor simulada (ADR-0018): las versiones en revisión a cargo de la persona; lo demás, 404 como el
 // servidor. el estado vive en la prueba, así una recarga conserva lo que se hizo
@@ -21,7 +21,9 @@ type Detail = Omit<typeof versionDetail, 'status' | 'reviewerId' | 'decisions'> 
 
 export function reviewState() {
   const versions: Detail[] = [structuredClone(versionDetail), { ...structuredClone(otherVersionInReview), units: [], comments: [], decisions: [] }]
-  return { versions, lastComment: 10 }
+  // lo que el servidor calcula contra la versión anterior de cada curso, que la bandeja no lista
+  const diffs: Record<string, unknown> = { [versionDetail.id]: versionDiff, [otherVersionInReview.id]: firstVersionDiff }
+  return { versions, diffs, lastComment: 10 }
 }
 
 export type ReviewState = ReturnType<typeof reviewState>
@@ -47,6 +49,7 @@ function text(value: unknown): string | null {
 
 function simulateVersion(state: ReviewState, method: string, version: Detail, action: string | undefined, body: Record<string, unknown>): Reply | undefined {
   if (method === 'GET' && !action) return { status: 200, body: detail(version) }
+  if (method === 'GET' && action === 'diff') return { status: 200, body: state.diffs[version.id] ?? { baseVersion: null, units: [] } }
   if (method === 'POST' && action === 'comments') {
     const section = text(body.section)
     const written = text(body.text)
@@ -78,7 +81,7 @@ export function simulateReview(state: ReviewState, method: string, url: URL, bod
   if (!url.pathname.startsWith(REVIEW)) return undefined
   if (method === 'GET' && url.pathname === VERSIONS)
     return { status: 200, body: state.versions.filter((version) => version.status === 'EN_REVISION').map(summary) }
-  const versionMatch = /^\/api\/lms\/review\/versions\/([^/]+)(?:\/(comments|decision|publish))?$/.exec(url.pathname)
+  const versionMatch = /^\/api\/lms\/review\/versions\/([^/]+)(?:\/(comments|decision|publish|diff))?$/.exec(url.pathname)
   if (versionMatch) {
     const version = state.versions.find((candidate) => candidate.id === decodeURIComponent(versionMatch[1]!))
     if (!version) return notFound('Versión')

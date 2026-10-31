@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { fakeApi } from './api'
 
-// el estudio del creador (ADR-0018) con la API simulada: sus versiones, enviar un borrador a revisión y crear una versión
-// nueva a partir de la publicada
+// el estudio del creador (ADR-0018) con la API simulada: sus versiones, qué cambió cada una respecto de la anterior,
+// enviar un borrador a revisión y crear una versión nueva a partir de la publicada
 
 const DRAFT = 'a1b2c3d4-0000-4000-8000-000000000002'
 const PUBLISHED = 'a1b2c3d4-0000-4000-8000-000000000001'
@@ -25,6 +25,13 @@ test('un creador encuentra «Mis versiones» en el menú y envía su borrador a 
   await expect(page.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Editar la versión' })).toHaveAttribute('href', `/data/objects/version_curso/records/${DRAFT}`)
   await expect(page.getByRole('link', { name: 'Editar la lección «Entrar al portal»' })).toHaveAttribute('href', '/data/objects/leccion/records/l-1')
+  // qué cambió respecto de la versión 1: la lección nueva y el título de la unidad 2; lo igual, plegado
+  const diff = page.getByRole('region', { name: 'Cambios', exact: true })
+  await expect(diff).toContainText('Comparada con la versión 1.')
+  await expect(diff).toContainText('AñadidaLección 1.2. Recorrido por el portal')
+  await expect(diff).toContainText('CambiadaUnidad 2. LiquidacionesAntes: «Liquidación»Cambió: título')
+  await expect(diff.getByText('1 lección sin cambios', { exact: true }).first()).toBeVisible()
+  await expect(diff.getByText('Lección 2.1. Evaluación final')).toBeHidden()
   await page.getByRole('button', { name: 'Enviar a revisión' }).click()
   await page.getByRole('dialog', { name: '¿Enviar a revisión?' }).getByRole('button', { name: 'Sí, enviar a revisión' }).click()
 
@@ -46,6 +53,7 @@ test('a partir de la versión publicada se crea un borrador nuevo, sin sus comen
   await page.goto(`/estudio/versiones/${PUBLISHED}`)
 
   await expect(page.getByRole('heading', { level: 2, name: 'Estado: Publicada' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Cambios', exact: true })).toContainText('Es la primera versión de este curso')
   await expect(page.getByRole('region', { name: 'Comentarios de revisión' })).toContainText('La evaluación pide algo que la unidad no enseña.')
   await expect(page.getByRole('region', { name: 'Decisiones del revisor' })).toContainText('Faltan ejemplos en la unidad 2.')
   await page.getByRole('button', { name: 'Crear una versión nueva a partir de esta' }).click()
@@ -56,6 +64,10 @@ test('a partir de la versión publicada se crea un borrador nuevo, sin sus comen
   await expect(page.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeVisible()
   await expect(page.getByText('El revisor no ha dejado comentarios.')).toBeVisible()
   await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Primeros pasos' })).toBeVisible()
+  // la copia de la versión 1 se compara con la 2: le falta la lección que la 2 añadió
+  const diff = page.getByRole('region', { name: 'Cambios', exact: true })
+  await expect(diff).toContainText('Comparada con la versión 2.')
+  await expect(diff).toContainText('QuitadaLección 1.2. Recorrido por el portal')
   await page.getByRole('link', { name: '← Mis versiones' }).click()
   await expect(page.getByRole('article')).toHaveCount(3)
   expect(api.studioRequests).toContain(`POST /api/lms/studio/courses/c0a8e1f2-0000-4000-8000-0000000000aa/versions`)

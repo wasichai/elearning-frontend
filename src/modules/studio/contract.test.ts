@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ContractError, newVersionSchema, parseContract, studioVersionDetailSchema, studioVersionListSchema, studioVersionSchema } from './contract'
-import { createdVersion, draftDetail, draftVersion, publishedDetail, publishedVersion } from './test/fixtures'
+import {
+  ContractError,
+  newVersionSchema,
+  parseContract,
+  studioVersionDetailSchema,
+  studioVersionListSchema,
+  studioVersionSchema,
+  versionDiffSchema
+} from './contract'
+import { createdVersion, draftDetail, draftDiff, draftVersion, publishedDetail, publishedDiff, publishedVersion } from './test/fixtures'
 
 describe('contrato del estudio del creador', () => {
   it('acepta los ejemplos del documento, también listas vacías, nulos y campos nuevos', () => {
@@ -42,5 +50,15 @@ describe('contrato del estudio del creador', () => {
   ])('rechaza el detalle: %s', (_case, body, hint) => {
     expect(() => parseContract(studioVersionDetailSchema, 'GET studio/versions/x', body)).toThrow(ContractError)
     expect(() => parseContract(studioVersionDetailSchema, 'GET studio/versions/x', body)).toThrow(hint)
+  })
+
+  it('acepta las diferencias con la versión anterior, también sin ella', () => {
+    const diff = parseContract(versionDiffSchema, 'GET studio/versions/x/diff', draftDiff)
+    expect(diff.baseVersion).toBe(1)
+    expect(diff.units[1]?.previousTitle).toBe('Liquidación')
+    expect(parseContract(versionDiffSchema, 'GET studio/versions/x/diff', publishedDiff).units.every((unit) => unit.change === 'ADDED')).toBe(true)
+    expect(() => parseContract(versionDiffSchema, 'GET studio/versions/x/diff', { ...draftDiff, units: [{ ...draftDiff.units[0], change: 'MOVED' }] })).toThrow(
+      ContractError
+    )
   })
 })

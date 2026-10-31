@@ -10,7 +10,9 @@ import {
   type Decision,
   type ReviewComment,
   type StudioVersion,
-  type StudioVersionDetail
+  type StudioVersionDetail,
+  versionDiffSchema,
+  type VersionDiff
 } from './contract'
 
 // la API de la bandeja del revisor, con sesión, relativa a apiBaseUrl
@@ -27,6 +29,12 @@ export async function fetchInbox(client: ApiClient, signal?: AbortSignal): Promi
 export async function fetchVersion(client: ApiClient, id: string, signal?: AbortSignal): Promise<StudioVersionDetail> {
   const body = await client.request<unknown>(versionPath(id), { signal })
   return parseContract(studioVersionDetailSchema, `GET review/versions/${id}`, body)
+}
+
+// contra la versión anterior del mismo curso; se calcula al pedirla
+export async function fetchVersionDiff(client: ApiClient, id: string, signal?: AbortSignal): Promise<VersionDiff> {
+  const body = await client.request<unknown>(`${versionPath(id)}/diff`, { signal })
+  return parseContract(versionDiffSchema, `GET review/versions/${id}/diff`, body)
 }
 
 export interface NewComment {
@@ -62,7 +70,8 @@ export async function postPublish(client: ApiClient, id: string): Promise<Studio
 
 export const reviewKeys = {
   inbox: ['review', 'inbox'] as const,
-  version: (id: string) => ['review', 'version', id] as const
+  version: (id: string) => ['review', 'version', id] as const,
+  diff: (id: string) => ['review', 'version', id, 'diff'] as const
 }
 
 export function useInbox() {
@@ -73,6 +82,11 @@ export function useInbox() {
 export function useVersion(id: string) {
   const client = useApiClient()
   return useQuery({ queryKey: reviewKeys.version(id), queryFn: ({ signal }) => fetchVersion(client, id, signal), retry: retryNetwork })
+}
+
+export function useVersionDiff(id: string) {
+  const client = useApiClient()
+  return useQuery({ queryKey: reviewKeys.diff(id), queryFn: ({ signal }) => fetchVersionDiff(client, id, signal), retry: retryNetwork })
 }
 
 // el servidor manda: tras cualquier cambio, acierte o falle (un 409: otra persona ya decidió), se relee la versión y la bandeja
