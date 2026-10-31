@@ -143,8 +143,8 @@ Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el qu
 - **El motivo de una decisión de revisión**: pedir cambios y rechazar usan `ReasonDialog` de `@wasichai/core`, que limita el
   motivo a `CHANGE_REASON_MAX_LENGTH` (500), por debajo de los 4000 caracteres que acepta el servidor.
 
-- **Sin vista de diferencias en la revisión**: `GET /api/lms/review/versions/{id}/diff` (E25.4) aún no está en el backend;
-  la bandeja la mostrará en un PR posterior.
+- **Sin vista de diferencias en la revisión**: la bandeja aún no muestra `GET /api/lms/review/versions/{id}/diff` (E25.4,
+  llegó al backend después de este paso); irá en un PR posterior.
 
 - **El menú del shell en el móvil**: el panel lateral de `@wasichai/core` no se pliega en pantallas estrechas. Las
   páginas del aula caben en el espacio que deja (lo prueba `e2e/classroom.spec.ts`), pero el plegado es de core.
