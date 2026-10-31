@@ -1,3 +1,4 @@
+import { diffMessages } from '../../shared/diffMessages'
 import { importMessages } from './importI18n'
 
 // textos del módulo, espacio de nombres 'studio' (= id del módulo)
@@ -84,6 +85,8 @@ const es = {
     resolved: 'Resuelto',
     pending: 'Por atender'
   },
+  // las diferencias con la versión anterior (VersionDiffSection)
+  diff: diffMessages.es,
   decisions: {
     title: 'Decisiones del revisor',
     empty: 'Aún no hay decisiones sobre esta versión.'
@@ -221,6 +224,7 @@ const en: typeof es = {
     resolved: 'Resolved',
     pending: 'To address'
   },
+  diff: diffMessages.en,
   decisions: {
     title: 'Reviewer decisions',
     empty: 'There are no decisions on this version yet.'

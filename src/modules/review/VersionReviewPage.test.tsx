@@ -5,7 +5,7 @@ import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '
 import { Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { reviewModule } from './module'
-import { problem, versionDetail, versionInReview } from './test/fixtures'
+import { firstVersionDiff, problem, versionDetail, versionDiff, versionInReview } from './test/fixtures'
 import { VersionReviewPage } from './VersionReviewPage'
 
 // revisar una versión (ADR-0018): contenido con comentarios por sección, decisiones con motivo salvo aprobar, publicar
@@ -15,13 +15,15 @@ const COMMENTS = `${VERSION}/comments`
 const DECISION = `${VERSION}/decision`
 const PUBLISH = `${VERSION}/publish`
 const RESOLVE = '/lms/review/comments/com-1/resolve'
+const DIFF = `${VERSION}/diff`
 const REVIEWER: CallerPermissions = { admin: false, objects: { version_curso: ['READ', 'UPDATE', 'APROBAR'] } }
 
 let fetchMock: FetchMock
 afterEach(() => fetchMock?.restore())
 
+// las pruebas que no miran las diferencias reciben unas cualesquiera
 function renderVersion(routes: MockRoute[], options: { language?: string; permissions?: CallerPermissions } = {}) {
-  fetchMock = mockFetch(routes)
+  fetchMock = mockFetch([...routes, { path: DIFF, body: versionDiff }])
   return renderWithProviders(
     <Routes>
       <Route path="/revision/:versionId" element={<VersionReviewPage />} />
@@ -32,6 +34,52 @@ function renderVersion(routes: MockRoute[], options: { language?: string; permis
 
 const posts = (path: string) => fetchMock.calls.filter((call) => call.method === 'POST' && call.path === path)
 const gets = () => fetchMock.calls.filter((call) => call.method === 'GET' && call.path === VERSION)
+
+describe('VersionReviewPage: las diferencias con la versión anterior', () => {
+  it('muestra lo añadido, lo quitado y lo cambiado respecto de la versión 1, con sus campos', async () => {
+    renderVersion([{ path: VERSION, body: versionDetail }])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByText('Comparada con la versión 1.')).toBeInTheDocument()
+    expect(diff.getByText('Lección 1.1. Qué es el SGSPE').closest('li')).toHaveTextContent('CambiadaLección 1.1. Qué es el SGSPECambió: recursos, resumen')
+    expect(diff.getByText('Lección 1.2. Evaluación de la unidad').closest('li')).toHaveTextContent(/^Añadida/)
+    // lo quitado se nombra por su título de antes
+    expect(diff.getByText('Unidad 2. Anexos').closest('li')).toHaveTextContent(/^QuitadaUnidad 2\. AnexosQuitadaLección 2\.1\. Glosario$/)
+    // el contenido sigue siendo el de esta versión, con sus comentarios
+    expect(screen.getByRole('region', { name: 'Unidad 1. El sistema y sus actores' })).toBeInTheDocument()
+    expect(fetchMock.calls.filter((call) => call.method === 'GET' && call.path === DIFF)).toHaveLength(1)
+  })
+
+  it('la primera versión de un curso dice que todo es nuevo', async () => {
+    renderVersion([
+      { path: VERSION, body: versionDetail },
+      { path: DIFF, body: firstVersionDiff }
+    ])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByText(/no hay una versión anterior con la que compararla/)).toBeInTheDocument()
+  })
+
+  it('una respuesta que no cumple el contrato se explica ahí, sin tapar la revisión', async () => {
+    renderVersion([
+      { path: VERSION, body: versionDetail },
+      { path: DIFF, body: { baseVersion: 1, units: [{ order: 1, change: 'MOVIDA' }] } }
+    ])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByRole('alert')).toHaveTextContent('No pudimos cargar las diferencias con la versión anterior.')
+    expect(screen.getByRole('button', { name: 'Aprobar' })).toBeInTheDocument()
+  })
+
+  it('en inglés', async () => {
+    renderVersion([{ path: VERSION, body: versionDetail }], { language: 'en' })
+
+    const diff = within(await screen.findByRole('region', { name: 'Changes' }))
+    expect(await diff.findByText('Compared with version 1.')).toBeInTheDocument()
+    expect(diff.getByText('Changed: resources, summary')).toBeInTheDocument()
+    expect(diff.getByText('Lesson 1.2. Evaluación de la unidad')).toBeInTheDocument()
+  })
+})
 
 describe('VersionReviewPage: revisar una versión', () => {
   it('muestra el contenido por unidades y lecciones, los comentarios de cada sección y el historial de decisiones', async () => {

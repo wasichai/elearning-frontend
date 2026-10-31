@@ -6,10 +6,11 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { WRAP } from '../../shared/buttons'
 import { formatDateTime, formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
-import { useNewVersion, useSubmitVersion, useVersion } from './api'
+import { VersionDiffSection } from '../../shared/VersionDiff'
+import { useNewVersion, useSubmitVersion, useVersion, useVersionDiff } from './api'
 import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail } from './contract'
 import { BackToVersions, LINK, useActionError, useProblemText } from './parts'
-import { STUDIO_ROUTES } from './routes'
+import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
 
 // el contenido de la versión se edita en las pantallas de registros de Wasichai (core), que la guarda editorial del
 // servidor deja solo al autor y en borrador: aquí no se reimplementan formularios (CLAUDE.md, regla 7)
@@ -65,6 +66,7 @@ function VersionProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
 
 function Version({ version }: { version: StudioVersionDetail }) {
   const { t, i18n } = useTranslation('studio')
+  const diff = useVersionDiff(version.id)
   const draft = version.status === 'BORRADOR'
   return (
     <>
@@ -78,6 +80,7 @@ function Version({ version }: { version: StudioVersionDetail }) {
         ) : null}
         <Actions version={version} />
       </section>
+      <VersionDiffSection namespace={STUDIO_MODULE_ID} query={diff} />
       <Syllabus units={version.units} draft={draft} />
       <Comments comments={version.comments} />
       <Decisions decisions={version.decisions} />

@@ -65,6 +65,36 @@ export const versionDetail = {
   ]
 }
 
+// GET /review/versions/ver-sgspe-2/diff, contra la versión 1: la evaluación es nueva, la lección 1 cambió de resumen y
+// recursos, y la unidad de anexos se quitó
+export const versionDiff = {
+  baseVersion: 1,
+  units: [
+    {
+      order: 1,
+      change: 'CHANGED',
+      title: 'El sistema y sus actores',
+      previousTitle: 'El sistema y sus actores',
+      fields: [],
+      lessons: [
+        { order: 1, change: 'CHANGED', title: 'Qué es el SGSPE', previousTitle: 'Qué es el SGSPE', fields: ['recursos', 'resumen'] },
+        { order: 2, change: 'ADDED', title: 'Evaluación de la unidad', previousTitle: null, fields: [] }
+      ]
+    },
+    {
+      order: 2,
+      change: 'REMOVED',
+      title: null,
+      previousTitle: 'Anexos',
+      fields: [],
+      lessons: [{ order: 1, change: 'REMOVED', title: null, previousTitle: 'Glosario', fields: [] }]
+    }
+  ]
+}
+
+// ver-srtm-1 es la primera versión de su curso
+export const firstVersionDiff = { baseVersion: null, units: [] }
+
 export const problem = (status: number, detail: string) => ({
   type: 'about:blank',
   title: status === 404 ? 'Not Found' : status === 409 ? 'Conflict' : status === 403 ? 'Forbidden' : 'Internal Server Error',

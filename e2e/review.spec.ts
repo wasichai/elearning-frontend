@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { fakeApi } from './api'
 
-// la bandeja del revisor (ADR-0018) con la API simulada: comentar por sección, pedir cambios con motivo y aprobar
+// la bandeja del revisor (ADR-0018) con la API simulada: qué cambió, comentar por sección, pedir cambios con motivo y aprobar
 
-test('un revisor abre su bandeja, comenta una lección y pide cambios con motivo', async ({ page }) => {
+test('un revisor abre su bandeja, ve qué cambió, comenta una lección y pide cambios con motivo', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'reviewer' })
   await page.goto('/')
 
@@ -17,6 +17,12 @@ test('un revisor abre su bandeja, comenta una lección y pide cambios con motivo
 
   await expect(page).toHaveURL('/revision/ver-sgspe-2')
   await expect(page.getByRole('heading', { level: 1, name: 'Introducción al SGSPE' })).toBeVisible()
+  // qué cambió respecto de la versión 1, antes del contenido
+  const diff = page.getByRole('region', { name: 'Cambios', exact: true })
+  await expect(diff).toContainText('Comparada con la versión 1.')
+  await expect(diff).toContainText('CambiadaLección 1.1. Qué es el SGSPECambió: recursos, resumen')
+  await expect(diff).toContainText('AñadidaLección 1.2. Evaluación de la unidad')
+  await expect(diff).toContainText('QuitadaUnidad 2. Anexos')
   await page.getByRole('button', { name: 'Comentar Lección 1.2. Evaluación de la unidad' }).click()
   const form = page.getByRole('form', { name: 'Nuevo comentario sobre Lección 1.2. Evaluación de la unidad' })
   await form.getByRole('textbox', { name: 'Comentario' }).fill('Añade una pregunta sobre la ordenanza.')
@@ -42,11 +48,12 @@ test('un revisor abre su bandeja, comenta una lección y pide cambios con motivo
   expect(api.unexpected).toEqual([])
 })
 
-test('aprobar se confirma; sin PUBLICAR no se ofrece publicar', async ({ page }) => {
+test('aprobar se confirma; sin PUBLICAR no se ofrece publicar; la primera versión de un curso es toda nueva', async ({ page }) => {
   await fakeApi(page, { signedIn: true, as: 'reviewer' })
   await page.goto('/revision/ver-srtm-1')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Cambios', exact: true })).toContainText('Es la primera versión de este curso')
   await page.getByRole('button', { name: 'Aprobar' }).click()
   await page.getByRole('dialog', { name: '¿Aprobar esta versión?' }).getByRole('button', { name: 'Aprobar' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Versión aprobada. Estado: Aprobada.' })).toBeVisible()
