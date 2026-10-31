@@ -4,7 +4,7 @@ import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '
 import { Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioModule } from './module'
-import { createdVersion, draftDetail, draftVersion, problem, publishedDetail, publishedVersion } from './test/fixtures'
+import { createdVersion, draftDetail, draftDiff, draftVersion, problem, publishedDetail, publishedDiff, publishedVersion } from './test/fixtures'
 import { VersionPage } from './VersionPage'
 
 // una versión propia (ADR-0018): su temario, editarla en Wasichai si es borrador, enviarla a revisión, ver comentarios y
@@ -13,12 +13,15 @@ import { VersionPage } from './VersionPage'
 const detailPath = (id: string) => `/lms/studio/versions/${id}`
 const SUBMIT = `${detailPath(draftVersion.id)}/submit`
 const NEW_VERSION = `/lms/studio/courses/${publishedVersion.course.id}/versions`
+const diffPath = (id: string) => `${detailPath(id)}/diff`
+// las pruebas que no miran las diferencias reciben unas cualesquiera
+const ANY_DIFF: MockRoute = { path: /\/lms\/studio\/versions\/[^/]+\/diff$/, body: draftDiff }
 
 let fetchMock: FetchMock
 afterEach(() => fetchMock?.restore())
 
 function renderVersion(id: string, routes: MockRoute[], language?: string) {
-  fetchMock = mockFetch(routes)
+  fetchMock = mockFetch([...routes, ANY_DIFF])
   return renderWithProviders(
     <Routes>
       <Route path="/estudio/versiones/:id" element={<VersionPage />} />
@@ -95,6 +98,48 @@ describe('VersionPage: un borrador', () => {
   })
 })
 
+describe('VersionPage: las diferencias con la versión anterior', () => {
+  it('muestra lo añadido y lo cambiado respecto de la versión 1, con sus campos; lo igual, plegado', async () => {
+    renderVersion(draftVersion.id, [
+      { path: detailPath(draftVersion.id), body: draftDetail },
+      { path: diffPath(draftVersion.id), body: draftDiff }
+    ])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByText('Comparada con la versión 1.')).toBeInTheDocument()
+    expect(diff.getByText('Lección 1.1. Entrar al portal').closest('li')).toHaveTextContent('Cambió: recursos')
+    expect(diff.getByText('Lección 1.2. Recorrido por el portal').closest('li')).toHaveTextContent(/^Añadida/)
+    expect(diff.getByText('Unidad 2. Liquidaciones').closest('li')).toHaveTextContent('Antes: «Liquidación»Cambió: título')
+    expect(diff.getByText('1 lección sin cambios')).toBeVisible()
+    expect(diff.getByText('Lección 2.1. Evaluación final')).not.toBeVisible()
+    expect(fetchMock.calls.filter((call) => call.path === diffPath(draftVersion.id))).toHaveLength(1)
+  })
+
+  it('la primera versión del curso dice que todo es nuevo', async () => {
+    renderVersion(publishedVersion.id, [
+      { path: detailPath(publishedVersion.id), body: publishedDetail },
+      { path: diffPath(publishedVersion.id), body: publishedDiff }
+    ])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByText(/Es la primera versión de este curso/)).toBeInTheDocument()
+    expect(diff.queryByRole('list')).not.toBeInTheDocument()
+  })
+
+  it('si no se pueden cargar, lo dice ahí y el resto de la versión sigue a la vista', async () => {
+    renderVersion(draftVersion.id, [
+      { path: detailPath(draftVersion.id), body: draftDetail },
+      { path: diffPath(draftVersion.id), status: 500, body: problem(500, 'fallo') }
+    ])
+
+    const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
+    expect(await diff.findByRole('alert')).toHaveTextContent('No pudimos cargar las diferencias con la versión anterior.')
+    expect(diff.getByRole('button', { name: 'Reintentar la comparación' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Contenido' })).toHaveTextContent('Unidad 1. Primeros pasos')
+    expect(screen.getByRole('button', { name: 'Enviar a revisión' })).toBeInTheDocument()
+  })
+})
+
 describe('VersionPage: una versión publicada', () => {
   it('no se edita; muestra los comentarios y las decisiones del revisor como texto', async () => {
     renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: publishedDetail }])
@@ -165,11 +210,19 @@ describe('VersionPage: errores e idioma', () => {
   })
 
   it('en inglés', async () => {
-    renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: publishedDetail }], 'en')
+    renderVersion(
+      publishedVersion.id,
+      [
+        { path: detailPath(publishedVersion.id), body: publishedDetail },
+        { path: diffPath(publishedVersion.id), body: publishedDiff }
+      ],
+      'en'
+    )
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Status: Published' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create a new version from this one' })).toBeInTheDocument()
     expect(screen.getByText('Requested changes')).toBeInTheDocument()
     expect(screen.getByText('Reading · 1 resource')).toBeInTheDocument()
+    expect(await within(screen.getByRole('region', { name: 'Changes' })).findByText(/This is the first version of this course/)).toBeInTheDocument()
   })
 })

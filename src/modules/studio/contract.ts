@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export { ContractError, parseContract } from '../../shared/contract'
+export { versionDiffSchema, type VersionDiff } from '../../shared/diff'
 
 // el contrato del estudio del creador (F4, ADR-0018): «Estudio del creador» en docs/api/lms.md del backend. solo las
 // versiones de quien las escribió; lo demás responde 404. los objetos no son estrictos: un campo nuevo no rompe la interfaz

@@ -1,3 +1,5 @@
+import { diffMessages } from '../../shared/diffMessages'
+
 // textos del módulo, espacio de nombres 'review' (= id del módulo)
 const es = {
   nav: {
@@ -92,6 +94,8 @@ const es = {
     PEDIR_CAMBIOS: 'Cambios pedidos',
     RECHAZAR: 'Rechazada'
   },
+  // las diferencias con la versión anterior (VersionDiffSection)
+  diff: diffMessages.es,
   history: {
     title: 'Historial de decisiones',
     empty: 'Aún no hay decisiones sobre esta versión.'
@@ -241,6 +245,7 @@ const en: typeof es = {
     PEDIR_CAMBIOS: 'Changes requested',
     RECHAZAR: 'Rejected'
   },
+  diff: diffMessages.en,
   history: {
     title: 'Decision history',
     empty: 'No decisions on this version yet.'

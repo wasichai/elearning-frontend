@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ContractError, parseContract, reviewCommentSchema, studioVersionDetailSchema, studioVersionListSchema, studioVersionSchema } from './contract'
-import { otherVersionInReview, versionDetail, versionInReview } from './test/fixtures'
+import {
+  ContractError,
+  parseContract,
+  reviewCommentSchema,
+  studioVersionDetailSchema,
+  studioVersionListSchema,
+  studioVersionSchema,
+  versionDiffSchema
+} from './contract'
+import { firstVersionDiff, otherVersionInReview, versionDetail, versionDiff, versionInReview } from './test/fixtures'
 
 describe('contrato de la bandeja del revisor', () => {
   it('acepta los ejemplos del documento, también listas vacías, nulos y campos nuevos', () => {
@@ -23,5 +31,13 @@ describe('contrato de la bandeja del revisor', () => {
       parseContract(studioVersionDetailSchema, 'detail', { ...versionDetail, decisions: [{ ...versionDetail.decisions[0]!, decision: 'OK' }] })
     ).toThrow(ContractError)
     expect(() => parseContract(reviewCommentSchema, 'comment', { ...versionDetail.comments[0]!, resolved: 'no' })).toThrow(ContractError)
+  })
+
+  it('acepta las diferencias con la versión anterior, también sin ella', () => {
+    const diff = parseContract(versionDiffSchema, 'GET review/versions/x/diff', versionDiff)
+    expect(diff.units[1]?.title).toBeNull()
+    expect(diff.units[0]?.lessons[0]?.fields).toEqual(['recursos', 'resumen'])
+    expect(parseContract(versionDiffSchema, 'GET review/versions/x/diff', firstVersionDiff).baseVersion).toBeNull()
+    expect(() => parseContract(versionDiffSchema, 'GET review/versions/x/diff', { ...versionDiff, baseVersion: '1' })).toThrow(ContractError)
   })
 })

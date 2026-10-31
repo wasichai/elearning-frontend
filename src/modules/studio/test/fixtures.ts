@@ -83,6 +83,46 @@ export const decisions = [
 export const draftDetail = { ...draftVersion, units, comments: [], decisions: [] }
 export const publishedDetail = { ...publishedVersion, units, comments, decisions }
 
+// GET /studio/versions/{id}/diff del borrador contra la versión 1: la lección 2 de la unidad 1 es nueva, la 1 cambió de
+// recursos y la unidad 2 de título
+export const draftDiff = {
+  baseVersion: 1,
+  units: [
+    {
+      order: 1,
+      change: 'CHANGED',
+      title: 'Primeros pasos',
+      previousTitle: 'Primeros pasos',
+      fields: [],
+      lessons: [
+        { order: 1, change: 'CHANGED', title: 'Entrar al portal', previousTitle: 'Entrar al portal', fields: ['recursos'] },
+        { order: 2, change: 'ADDED', title: 'Recorrido por el portal', previousTitle: null, fields: [] }
+      ]
+    },
+    {
+      order: 2,
+      change: 'CHANGED',
+      title: 'Liquidaciones',
+      previousTitle: 'Liquidación',
+      fields: ['titulo'],
+      lessons: [{ order: 1, change: 'SAME', title: 'Evaluación final', previousTitle: 'Evaluación final', fields: [] }]
+    }
+  ]
+}
+
+// la primera versión del curso no tiene con qué compararse
+export const publishedDiff = {
+  baseVersion: null,
+  units: units.map((unit) => ({
+    order: unit.order,
+    change: 'ADDED',
+    title: unit.title,
+    previousTitle: null,
+    fields: [],
+    lessons: unit.lessons.map((lesson) => ({ order: lesson.order, change: 'ADDED', title: lesson.title, previousTitle: null, fields: [] }))
+  }))
+}
+
 // lo que responde POST /studio/courses/{id}/versions
 export const createdVersion = { id: 'a1b2c3d4-0000-4000-8000-000000000003', number: 3, status: 'BORRADOR' }
 

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export { ContractError, parseContract } from '../../shared/contract'
+export { versionDiffSchema, type VersionDiff } from '../../shared/diff'
 
 // el contrato de la bandeja del revisor (F4, ADR-0018): «Estudio y revisión» en docs/api/lms.md del backend. solo lo que
 // está en revisión y a cargo de la persona; lo ajeno responde 404. los objetos no son estrictos: un campo nuevo no rompe
