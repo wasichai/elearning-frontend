@@ -98,7 +98,7 @@ no encontrado» y que un `POST` anónimo a la ruta pública responde 401.
 Y los recorridos del aula (`e2e/real/classroom.spec.ts`): un estudiante nuevo —lo crea en cada ejecución el
 administrador del perfil dev (`WASICHAI_EMAIL`/`WASICHAI_PASSWORD`, por defecto los de la semilla)— inicia sesión, se
 matricula desde la ficha de SRTM, abre la lectura en el `iframe` aislado, la completa y la sigue viendo completada al
-recargar; baja la guía PDF y termina el vídeo, que completa su lección. Con `WASICHAI_DEMO_PASSWORD` comprueba además
+recargar; baja la guía PDF y termina el vídeo, que completa su lección; abre la presentación, la baja y la completa. Con `WASICHAI_DEMO_PASSWORD` comprueba además
 que el estudiante demo encuentra su curso en «Mis cursos». En CI corren en el trabajo `e2e-real`, contra el `main` de
 `elearning-backend`.
 
