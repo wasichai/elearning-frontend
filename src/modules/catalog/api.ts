@@ -18,12 +18,32 @@ export interface CatalogFilters {
   level: string
   modality: string
   startsFrom: string
+  // RF-CAT-08: duración en semanas (rango), inscripción abierta hoy ('true' | 'false') y mínimo de horas totales por tipo
+  minWeeks: string
+  maxWeeks: string
+  enrollmentOpen: string
+  minTheoryHours: string
+  minPracticeHours: string
+  minAutonomousHours: string
   sort: string
   // 1 = primera página; la API cuenta desde 0
   page: number
 }
 
-const FILTER_KEYS = ['q', 'category', 'level', 'modality', 'startsFrom', 'sort'] as const
+const FILTER_KEYS = [
+  'q',
+  'category',
+  'level',
+  'modality',
+  'startsFrom',
+  'minWeeks',
+  'maxWeeks',
+  'enrollmentOpen',
+  'minTheoryHours',
+  'minPracticeHours',
+  'minAutonomousHours',
+  'sort'
+] as const
 
 export function filtersFromSearch(params: URLSearchParams): CatalogFilters {
   const page = Number(params.get('page'))
@@ -33,6 +53,12 @@ export function filtersFromSearch(params: URLSearchParams): CatalogFilters {
     level: params.get('level') ?? '',
     modality: params.get('modality') ?? '',
     startsFrom: params.get('startsFrom') ?? '',
+    minWeeks: params.get('minWeeks') ?? '',
+    maxWeeks: params.get('maxWeeks') ?? '',
+    enrollmentOpen: params.get('enrollmentOpen') ?? '',
+    minTheoryHours: params.get('minTheoryHours') ?? '',
+    minPracticeHours: params.get('minPracticeHours') ?? '',
+    minAutonomousHours: params.get('minAutonomousHours') ?? '',
     sort: params.get('sort') ?? DEFAULT_SORT,
     page: Number.isInteger(page) && page > 1 ? page : 1
   }

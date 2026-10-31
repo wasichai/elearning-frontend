@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { screen } from '@testing-library/react'
 import { mockFetch, renderWithProviders, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
-import { CatalogPage } from './CatalogPage'
+import { CatalogPage, DURATION_KEYS } from './CatalogPage'
 import { LEVELS, MODALITIES, SORTS } from './contract'
 import { catalogMessages } from './i18n'
 import { catalogModule } from './module'
@@ -56,6 +56,9 @@ describe('textos del catálogo', () => {
       ...SORTS.map((sort) => `sort.${sort}`),
       ...['open', 'closed', 'running', 'scheduled'].map((state) => `offering.state.${state}`),
       ...['theory', 'practice', 'supervised', 'autonomous'].map((row) => `workload.${row}`),
+      ...DURATION_KEYS.map((key) => `duration.${key}`),
+      ...['true', 'false'].map((option) => `enrollmentFilter.${option}`),
+      ...['minTheoryHours', 'minPracticeHours', 'minAutonomousHours'].map((name) => `filters.${name}`),
       ...['invalid', 'notFound', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [
         `problem.catalog.${kind}`,
         `problem.course.${kind}`,
