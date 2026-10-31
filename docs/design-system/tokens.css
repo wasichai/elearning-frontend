@@ -1,0 +1,178 @@
+/* Quipu — generated from tokens.json (copia de referencia; el tema de la app vive en src/theme/quipu.css) */
+:root, [data-theme="light"] {
+  --bg: #f7f3ea;
+  --surface: #fffdf8;
+  --surface-sunken: #efe8da;
+  --surface-inverse: #1e2327;
+  --line: #e2d9c7;
+  --line-strong: #857a66;
+  --ink: #1e2327;
+  --ink-muted: #565b58;
+  --ink-inverse: #f7f3ea;
+  --brand: #a5472a;
+  --brand-hover: #8a3a20;
+  --brand-soft: #f5e1d5;
+  --on-brand: #ffffff;
+  --maiz: #d99a1e;
+  --maiz-soft: #f8e9c4;
+  --maiz-ink: #7a5306;
+  --on-maiz: #1e2327;
+  --success: #2e6a44;
+  --success-soft: #dcebdd;
+  --warning: #865600;
+  --warning-soft: #fbe6bd;
+  --danger: #a3213a;
+  --danger-hover: #861a2f;
+  --danger-soft: #f7dde0;
+  --on-danger: #ffffff;
+  --info: #2a5ca6;
+  --info-soft: #dfe8f6;
+  --state-todo: var(--ink-muted);
+  --state-todo-soft: #ebe5d8;
+  --state-active: var(--brand);
+  --state-active-soft: var(--brand-soft);
+  --state-done: var(--success);
+  --state-done-soft: var(--success-soft);
+  --state-overdue: var(--danger);
+  --state-overdue-soft: var(--danger-soft);
+  --state-review: var(--info);
+  --state-review-soft: var(--info-soft);
+  --focus: #1f56b8;
+  --scrim: rgba(19, 23, 25, 0.56);
+  --elevation-1: 0 1px 2px rgba(60, 44, 20, 0.08), 0 0 0 1px rgba(60, 44, 20, 0.04);
+  --elevation-2: 0 4px 12px rgba(60, 44, 20, 0.10), 0 1px 3px rgba(60, 44, 20, 0.08);
+  --elevation-3: 0 16px 40px rgba(40, 30, 14, 0.18), 0 4px 10px rgba(40, 30, 14, 0.10);
+}
+[data-theme="dark"] {
+  --bg: #131719;
+  --surface: #1b2023;
+  --surface-sunken: #0e1113;
+  --surface-inverse: #ece6da;
+  --line: #2e353a;
+  --line-strong: #6f797f;
+  --ink: #ece6da;
+  --ink-muted: #a7aba5;
+  --ink-inverse: #1e2327;
+  --brand: #e58a63;
+  --brand-hover: #f0a27f;
+  --brand-soft: #3a2219;
+  --on-brand: #1b1411;
+  --maiz: #e8b04a;
+  --maiz-soft: #382c12;
+  --maiz-ink: #eec26a;
+  --on-maiz: #1e2327;
+  --success: #86c79b;
+  --success-soft: #16291d;
+  --warning: #e9b552;
+  --warning-soft: #33270f;
+  --danger: #f28b9b;
+  --danger-hover: #f7a8b4;
+  --danger-soft: #3a1820;
+  --on-danger: #1b1012;
+  --info: #93b8f0;
+  --info-soft: #17233a;
+  --state-todo: var(--ink-muted);
+  --state-todo-soft: #252b2f;
+  --state-active: var(--brand);
+  --state-active-soft: var(--brand-soft);
+  --state-done: var(--success);
+  --state-done-soft: var(--success-soft);
+  --state-overdue: var(--danger);
+  --state-overdue-soft: var(--danger-soft);
+  --state-review: var(--info);
+  --state-review-soft: var(--info-soft);
+  --focus: #8ab4ff;
+  --scrim: rgba(0, 0, 0, 0.64);
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --elevation-2: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --elevation-3: 0 20px 48px rgba(0, 0, 0, 0.7);
+}
+[data-theme="lectura"] {
+  --bg: #f1e7d3;
+  --surface: #f8f0df;
+  --surface-sunken: #e8dcc4;
+  --line: #dccdb0;
+  --line-strong: #857559;
+  --ink: #2b241b;
+  --ink-muted: #5a4f40;
+  --brand: #9c4224;
+  --brand-hover: #83361c;
+  --brand-soft: #ecd3bd;
+  --maiz-soft: #f1dfb4;
+  --maiz-ink: #704b04;
+  --success: #2b6340;
+  --success-soft: #d6e2c9;
+  --warning: #7a4e00;
+  --warning-soft: #f3dcae;
+  --danger: #9a1f37;
+  --danger-soft: #f0d2cc;
+  --info: #2a5598;
+  --info-soft: #dcdfe0;
+  --state-todo: var(--ink-muted);
+  --state-todo-soft: #e3d6bd;
+  --state-active: var(--brand);
+  --state-active-soft: var(--brand-soft);
+  --state-done: var(--success);
+  --state-done-soft: var(--success-soft);
+  --state-overdue: var(--danger);
+  --state-overdue-soft: var(--danger-soft);
+  --state-review: var(--info);
+  --state-review-soft: var(--info-soft);
+  --focus: #1f50aa;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+  --duration-instant: 90ms;
+  --duration-quick: 160ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
+  --duration-celebrate: 900ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-knot: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --measure: 68ch;
+  --measure-ui: 42rem;
+  --target-min: 44px;
+  --sidebar-width: 272px;
+  --syllabus-width: 320px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --z-sticky: 10;
+  --z-nav: 30;
+  --z-dialog: 50;
+  --z-toast: 60;
+  --font-ui: Figtree, "Segoe UI", system-ui, sans-serif;
+  --font-read: Literata, Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+.display { font-family: var(--font-ui); font-size: 40px; line-height: 44px; font-weight: 650; letter-spacing: -0.02em; }
+.title-1 { font-family: var(--font-ui); font-size: 30px; line-height: 36px; font-weight: 650; letter-spacing: -0.015em; }
+.title-2 { font-family: var(--font-ui); font-size: 23px; line-height: 30px; font-weight: 600; letter-spacing: -0.01em; }
+.title-3 { font-family: var(--font-ui); font-size: 18px; line-height: 26px; font-weight: 600; }
+.body { font-family: var(--font-ui); font-size: 16px; line-height: 24px; font-weight: 400; }
+.body-sm { font-family: var(--font-ui); font-size: 14px; line-height: 20px; font-weight: 400; }
+.label { font-family: var(--font-ui); font-size: 14px; line-height: 20px; font-weight: 600; }
+.caption { font-family: var(--font-ui); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.02em; }
+.numeral { font-family: var(--font-ui); font-size: 28px; line-height: 32px; font-weight: 650; }
+.read-title { font-family: var(--font-read); font-size: 36px; line-height: 44px; font-weight: 500; letter-spacing: -0.01em; }
+.read-h2 { font-family: var(--font-read); font-size: 26px; line-height: 34px; font-weight: 600; }
+.read-h3 { font-family: var(--font-read); font-size: 21px; line-height: 30px; font-weight: 600; }
+.read-body { font-family: var(--font-read); font-size: 19px; line-height: 32px; font-weight: 400; }
+.read-body-sm { font-family: var(--font-read); font-size: 17px; line-height: 28px; font-weight: 400; }
+.read-quote { font-family: var(--font-read); font-size: 21px; line-height: 34px; font-weight: 400; font-style: italic; }
+.code { font-family: var(--font-mono); font-size: 15px; line-height: 24px; font-weight: 400; }

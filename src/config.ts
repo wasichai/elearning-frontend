@@ -1,4 +1,5 @@
 import type { WasichaiConfig } from '@wasichai/core'
+import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
 
 // nombre de trabajo: el producto se llama como diga VITE_APP_NAME en cada despliegue (ADR-0005 del backend)
 export const DEFAULT_APP_NAME = 'wasichai-learning'
@@ -35,6 +36,9 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     storagePrefix: 'elearning',
     languages: ['es', 'en'],
     timeZone: 'America/Lima',
+    // el tema Quipu (src/theme): lo abre un usuario nuevo; claro y oscuro de Wasichai siguen en el selector
+    themes: QUIPU_THEMES,
+    systemThemes: QUIPU_SYSTEM_THEMES,
     defaultLoginEmail: env.DEV ? DEV_LOGIN_EMAIL : ''
   }
 }

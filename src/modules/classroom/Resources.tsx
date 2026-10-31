@@ -1,10 +1,10 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { useMemo } from 'react'
+import { useMemo, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
-import { lockedReading } from './reading'
+import { lockedReading, type ReadingPalette } from './reading'
 import { formatFileSize } from './parts'
 import { watchedEnough } from './video'
 
@@ -56,7 +56,9 @@ function ResourceBody({ type, title, file, videoThreshold, onVideoWatched }: Bod
 export function HtmlResource({ title, file }: { title: string; file: ResourceFile }) {
   const { t } = useTranslation('classroom')
   const query = useFileText(file)
-  const reading = useMemo(() => (query.data === undefined ? undefined : lockedReading(query.data)), [query.data])
+  // la lectura se pinta con el tema de la página y se rehace cuando este cambia
+  const theme = useDocumentTheme()
+  const reading = useMemo(() => (query.data === undefined ? undefined : lockedReading(query.data, documentPalette(theme))), [query.data, theme])
   if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
   if (reading === undefined) return <LoadingState label={t('resource.loading')} />
   return (
@@ -65,7 +67,7 @@ export function HtmlResource({ title, file }: { title: string; file: ResourceFil
       srcDoc={reading}
       title={title}
       referrerPolicy="no-referrer"
-      className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-white"
+      className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-surface"
     />
   )
 }
@@ -136,4 +138,33 @@ function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void 
       ) : null}
     </div>
   )
+}
+
+// el tema aplicado a la página (data-theme en <html>), al día: ThemeProvider lo escribe después de pintar los hijos,
+// por eso se observa el atributo en vez de leerlo durante el render
+function subscribeToTheme(onChange: () => void): () => void {
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] })
+  return () => observer.disconnect()
+}
+
+const documentThemeSnapshot = () => `${document.documentElement.dataset.theme ?? ''}|${document.documentElement.style.colorScheme}`
+
+function useDocumentTheme(): string {
+  return useSyncExternalStore(subscribeToTheme, documentThemeSnapshot)
+}
+
+// los tokens del tema que usa la lectura, resueltos en la página
+function documentPalette(theme: string): ReadingPalette {
+  const css = getComputedStyle(document.documentElement)
+  const token = (name: string) => css.getPropertyValue(`--${name}`).trim() || undefined
+  return {
+    colorScheme: theme.endsWith('|dark') ? 'dark' : 'light',
+    background: token('surface'),
+    text: token('ink'),
+    muted: token('ink-muted'),
+    link: token('link'),
+    line: token('line'),
+    rule: token('border-control')
+  }
 }

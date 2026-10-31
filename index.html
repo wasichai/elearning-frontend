@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>wasichai-learning</title>
+    <script>
+      // antes del bundle: aplica el tema guardado para que nadie vea un destello claro (README de @wasichai/core).
+      // 'elearning' = storagePrefix. cada tema que ofrece la app, id -> esquema de color: light, dark y los de config.themes.
+      // «sistema» y un id desconocido siguen al sistema operativo hasta config.systemThemes, como resolveTheme de core
+      try {
+        const schemes = { light: 'light', dark: 'dark', quipu: 'light', 'quipu-dark': 'dark' }
+        const system = { light: 'quipu', dark: 'quipu-dark' }
+        const stored = localStorage.getItem('elearning.theme')
+        const dark = matchMedia('(prefers-color-scheme: dark)').matches
+        const theme = stored && Object.hasOwn(schemes, stored) ? stored : system[dark ? 'dark' : 'light']
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = schemes[theme]
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
