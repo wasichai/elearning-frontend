@@ -62,7 +62,10 @@ describe('ClassroomPage: el aula', () => {
     expect(frame.tagName).toBe('IFRAME')
     expect(frame.getAttribute('sandbox')).toBe('')
     expect(frame.getAttribute('sandbox')).not.toMatch(/allow-scripts|allow-same-origin/)
-    expect(frame.getAttribute('srcdoc')).toBe(lessonHtml)
+    const reading = new DOMParser().parseFromString(frame.getAttribute('srcdoc') ?? '', 'text/html')
+    // de otro documento: jest-dom no los acepta, se leen a mano
+    expect(reading.head.firstElementChild?.getAttribute('http-equiv')).toBe('Content-Security-Policy')
+    expect(reading.querySelector('h1')?.textContent).toBe('Tipos de anuncio')
     expect(frame).not.toHaveAttribute('src')
     expect(files?.calls).toEqual([{ url: `${FILES}/vr-html/files/archivo`, authorization: 'Bearer test-token' }])
   })
@@ -116,6 +119,8 @@ describe('ClassroomPage: el aula', () => {
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
     expect(files?.calls).toEqual([{ url: `${FILES}/vr-pdf/files/archivo`, authorization: 'Bearer test-token' }])
     expect(await files!.created[0]!.text()).toBe('%PDF-1.7')
+    // un blob del origen de la aplicación nunca se pinta como documento
+    expect(files!.created[0]!.type).toBe('application/octet-stream')
     const anchor = click.mock.contexts[0] as HTMLAnchorElement
     expect(anchor.download).toBe('guia-liquidacion.pdf')
     expect(anchor.href).toBe('blob:prueba/1')
@@ -133,7 +138,17 @@ describe('ClassroomPage: el aula', () => {
     await waitFor(() => expect(container.querySelector('video')).toHaveAttribute('src', 'blob:prueba/1'))
     expect(container.querySelector('video')).toHaveAttribute('controls')
     expect(await files!.created[0]!.text()).toBe('mp4')
+    expect(files!.created[0]!.type).toBe('video/mp4')
     expect(files?.calls[0]?.authorization).toBe('Bearer test-token')
+  })
+
+  it('un «vídeo» que llega como HTML se reproduce como bytes sin tipo: su blob nunca es un documento', async () => {
+    const served = { ...DEFAULT_FILES, [`${FILES}/vr-video/files/archivo`]: { body: '<script>alert(1)</script>', contentType: 'text/html' } }
+    const { container } = renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-video', served)
+    await lessonHeading('Recorrido por la pantalla')
+
+    await waitFor(() => expect(container.querySelector('video')).toHaveAttribute('src', 'blob:prueba/1'))
+    expect(files!.created[0]!.type).toBe('application/octet-stream')
   })
 
   it('un archivo que no se puede bajar se explica con su estado', async () => {

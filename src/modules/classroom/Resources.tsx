@@ -1,8 +1,10 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
-import { ForeignFileError, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
+import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
+import { lockedReading } from './reading'
 import { formatFileSize } from './parts'
 import { watchedEnough } from './video'
 
@@ -49,16 +51,18 @@ function ResourceBody({ type, title, file, videoThreshold, onVideoWatched }: Bod
 }
 
 // el HTML de la lectura, en un iframe con sandbox vacío: sin scripts, sin formularios, sin ventanas, y con un origen
-// opaco (sin allow-same-origin), así ni el contenido ejecuta código ni toca la aplicación ni su sesión. sin saneador
+// opaco (sin allow-same-origin), así ni el contenido ejecuta código ni toca la aplicación ni su sesión. sin saneador:
+// lockedReading solo le pone una CSP que no deja pedir nada fuera y le quita los meta refresh
 export function HtmlResource({ title, file }: { title: string; file: ResourceFile }) {
   const { t } = useTranslation('classroom')
   const query = useFileText(file)
+  const reading = useMemo(() => (query.data === undefined ? undefined : lockedReading(query.data)), [query.data])
   if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
-  if (query.data === undefined) return <LoadingState label={t('resource.loading')} />
+  if (reading === undefined) return <LoadingState label={t('resource.loading')} />
   return (
     <iframe
       sandbox=""
-      srcDoc={query.data}
+      srcDoc={reading}
       title={title}
       referrerPolicy="no-referrer"
       className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-white"
@@ -70,7 +74,8 @@ export function HtmlResource({ title, file }: { title: string; file: ResourceFil
 function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; threshold: number; onWatched?: () => void }) {
   const { t } = useTranslation('classroom')
   const query = useFileBlob(file)
-  const source = useObjectUrl(query.data)
+  const media = useMemo(() => query.data && inertBlob(query.data, isVideo), [query.data])
+  const source = useObjectUrl(media)
   if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
   if (!source) return <LoadingState label={t('resource.loading')} />
   return (
