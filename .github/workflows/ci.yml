@@ -104,8 +104,13 @@ jobs:
         ports: ['127.0.0.1:5436:5432']
         options: >-
           --health-cmd "pg_isready -U elearning" --health-interval 5s --health-timeout 5s --health-retries 20
+      # el buzón al que escribe el perfil dev (application-dev.yml, puerto 1026): el aviso de RF-AUL-09 se comprueba de verdad
+      mailpit:
+        image: axllent/mailpit:v1.27
+        ports: ['127.0.0.1:1026:1025', '127.0.0.1:8025:8025']
     env:
       WASICHAI_API_URL: http://localhost:8090
+      E2E_MAILPIT_URL: http://127.0.0.1:8025
       # el administrador de la semilla dev (solo existe con el perfil dev) y una contraseña de usuarios demo de usar y tirar
       WASICHAI_EMAIL: admin@wasichai.local
       WASICHAI_PASSWORD: admin

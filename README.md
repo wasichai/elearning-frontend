@@ -102,6 +102,13 @@ recargar; baja la guía PDF y termina el vídeo, que completa su lección. Con `
 que el estudiante demo encuentra su curso en «Mis cursos». En CI corren en el trabajo `e2e-real`, contra el `main` de
 `elearning-backend`.
 
+Y el curso corto de punta a punta (`e2e/real/short-course.spec.ts`, `CORTO-101`, con `WASICHAI_DEMO_PASSWORD`): un
+estudiante nuevo se matricula, completa la lectura, responde la evaluación y la envía; el docente demo la corrige con la
+rúbrica y pasa asistencia; el estudiante ve su resultado, pide el certificado y este se verifica sin sesión. Otro docente
+y otro estudiante no llegan a esa edición ni a ese intento (`404`). Con `E2E_MAILPIT_URL` (la API HTTP del Mailpit al que
+escribe el backend) comprueba además que reprogramar una sesión avisa por correo a los matriculados y a nadie más; el
+correo puede tardar cerca de un minuto. Sin esa variable, esa prueba se salta.
+
 Antes, el backend tiene que estar en marcha en el perfil `dev` y con los datos de demostración aplicados: sigue
 [la puesta en marcha del backend](https://github.com/wasichai/elearning-backend/blob/main/docs/development/getting-started.md)
 (`elearning-backend/docs/development/getting-started.md`) hasta `python3 model/apply.py --demo`. El catálogo público se
