@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { API_URL, newStudent, signIn } from './helpers'
 
 // recorridos 1–4 del aula contra el backend de verdad (perfil dev con los datos de demostración aplicados; README,
 // «Humo contra el backend real»): iniciar sesión, matricularse desde la ficha, abrir la unidad y sus recursos, completar
@@ -7,36 +7,8 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 // se puede repetir sin limpiar nada. solo con E2E_REAL=1 (yarn e2e:real)
 test.skip(!process.env.E2E_REAL, 'solo con E2E_REAL=1 y el backend en marcha')
 
-const API_URL = process.env.WASICHAI_API_URL ?? 'http://localhost:8090'
-// las del administrador de la semilla dev y la de los usuarios demo, como en model/apply.py
-const ADMIN = { email: process.env.WASICHAI_EMAIL ?? 'admin@wasichai.local', password: process.env.WASICHAI_PASSWORD ?? 'admin' }
 const DEMO_PASSWORD = process.env.WASICHAI_DEMO_PASSWORD
 const COURSE = /^Rentas municipales \(SRTM\)/
-
-async function token(request: APIRequestContext, email: string, password: string): Promise<string> {
-  const response = await request.post(`${API_URL}/api/auth/login`, { data: { email, password } })
-  expect(response.status(), `no se pudo iniciar sesión como ${email} en ${API_URL}`).toBe(200)
-  return ((await response.json()) as { token: string }).token
-}
-
-async function newStudent(request: APIRequestContext): Promise<{ email: string; password: string }> {
-  const admin = await token(request, ADMIN.email, ADMIN.password)
-  const student = { email: `e2e-${randomUUID()}@demo.wasichai-learning.test`, password: `E2e-${randomUUID()}` }
-  const response = await request.post(`${API_URL}/api/users`, {
-    headers: { Authorization: `Bearer ${admin}` },
-    data: { ...student, displayName: 'Estudiante e2e', roles: ['ESTUDIANTE'] }
-  })
-  expect(response.status()).toBe(201)
-  return student
-}
-
-async function signIn(page: Page, user: { email: string; password: string }) {
-  await page.goto('/login')
-  await page.getByLabel('Correo').fill(user.email)
-  await page.getByLabel('Contraseña').fill(user.password)
-  await page.getByRole('button', { name: 'Iniciar sesión' }).click()
-  await expect(page).not.toHaveURL(/\/login$/)
-}
 
 async function srtmSlug(request: APIRequestContext): Promise<string> {
   const response = await request.get(`${API_URL}/api/lms/public/catalog/courses?q=SRTM`)
