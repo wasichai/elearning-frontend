@@ -57,6 +57,22 @@ describe('VersionsPage: mis versiones', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })
 
+  it('enlaza la importación para quien puede importar; a quien no, no se la ofrece', async () => {
+    const first = renderVersions([{ path: VERSIONS, body: [] }])
+    expect(screen.getByRole('link', { name: 'Importar desde un repositorio' })).toHaveAttribute('href', '/estudio/importar')
+    first.unmount()
+    fetchMock.restore()
+
+    fetchMock = mockFetch([{ path: VERSIONS, body: [] }])
+    renderWithProviders(<VersionsPage />, {
+      modules: [studioModule()],
+      route: '/estudio',
+      permissions: { admin: false, objects: { version_curso: ['READ', 'CREATE', 'UPDATE'], leccion: ['READ', 'UPDATE'] } }
+    })
+    expect(await screen.findByText('Aún no tienes versiones')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Importar desde un repositorio' })).not.toBeInTheDocument()
+  })
+
   it('en inglés', async () => {
     renderVersions([{ path: VERSIONS, body: [publishedVersion] }], 'en')
 

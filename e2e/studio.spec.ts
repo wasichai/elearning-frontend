@@ -7,6 +7,8 @@ import { fakeApi } from './api'
 const DRAFT = 'a1b2c3d4-0000-4000-8000-000000000002'
 const PUBLISHED = 'a1b2c3d4-0000-4000-8000-000000000001'
 const CREATED = 'a1b2c3d4-0000-4000-8000-000000000003'
+const IMPORT_SHA = '0123456789abcdef0123456789abcdef01234567'
+const IMPORT_SOURCE = `wasichai/manual-sgspe@${IMPORT_SHA}:manual/maestro.adoc`
 
 test('un creador encuentra «Mis versiones» en el menú y envía su borrador a revisión', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'creator' })
@@ -89,4 +91,60 @@ test('una versión ajena se explica: solo se ven las propias', async ({ page }) 
   await expect(page.getByRole('alert')).toContainText('Esta versión no está entre las tuyas')
   await page.getByRole('link', { name: '← Mis versiones' }).click()
   await expect(page).toHaveURL('/estudio')
+})
+
+test('un creador importa un manual: encola, sigue el trabajo, lee el informe y abre el borrador', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto('/estudio')
+
+  await page.getByRole('link', { name: 'Importar desde un repositorio' }).click()
+  await expect(page).toHaveURL('/estudio/importar')
+  await expect(page.getByRole('heading', { level: 1, name: 'Importar un manual' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Orígenes permitidos' })).toContainText('wasichai/manual-sgspe')
+  await page.getByLabel('Commit').fill(IMPORT_SHA)
+  await page.getByLabel('Ruta del maestro').fill('manual/maestro.adoc')
+  await page.getByRole('combobox', { name: 'Curso' }).click()
+  await page.getByRole('option', { name: 'Introducción al SGSPE (SGSPE-101)' }).click()
+  await expect(page.getByText(`Se importará ${IMPORT_SOURCE}`)).toBeVisible()
+  await page.getByRole('button', { name: 'Importar como borrador' }).click()
+
+  // el sondeo es cada pocos segundos: PENDIENTE, EN_CURSO y HECHO
+  await expect(page.getByRole('heading', { level: 2, name: 'Estado de la importación' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'Importación terminada' })).toBeVisible({ timeout: 15_000 })
+  const report = page.getByRole('region', { name: 'Informe' })
+  await expect(report.getByRole('heading', { level: 3 })).toHaveText(['Inclusión que no existe (1)', 'Imagen que no existe (2)'])
+  await page.getByRole('link', { name: 'Abrir el borrador' }).click()
+
+  await expect(page).toHaveURL(`/estudio/versiones/${CREATED}`)
+  await expect(page.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Acceso al portal' })).toBeVisible()
+  await expect(page.getByText(`Fuente: ${IMPORT_SOURCE}#entrar`)).toBeVisible()
+  await page.getByRole('link', { name: '← Mis versiones' }).click()
+  await expect(page.getByRole('article')).toHaveCount(3)
+  expect(api.studioRequests).toContain('POST /api/lms/studio/import')
+  expect(api.unexpected).toEqual([])
+})
+
+test('si el servidor no permite el origen (403), la importación lo explica', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  api.failOnce((url, method) => method === 'POST' && url.pathname === '/api/lms/studio/import', 403, 'Origen no permitido')
+  await page.goto('/estudio/importar')
+
+  await page.getByLabel('Commit').fill(IMPORT_SHA)
+  await page.getByLabel('Ruta del maestro').fill('manual/maestro.adoc')
+  await page.getByRole('combobox', { name: 'Curso' }).click()
+  await page.getByRole('option', { name: 'Administración tributaria municipal (SRTM-201)' }).click()
+  await page.getByRole('button', { name: 'Importar como borrador' }).click()
+
+  await expect(page.getByRole('alert')).toContainText('no están entre los orígenes permitidos')
+  await expect(page.getByRole('button', { name: 'Importar como borrador' })).toBeEnabled()
+})
+
+test('a quien no puede importar (403), la página de importación se lo explica', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  api.failOnce((url) => url.pathname === '/api/lms/studio/import/sources', 403, 'Forbidden')
+  await page.goto('/estudio/importar')
+
+  await expect(page.getByRole('alert')).toContainText('No puedes importar manuales')
+  await expect(page.getByLabel('Commit')).toHaveCount(0)
 })

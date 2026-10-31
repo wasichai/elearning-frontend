@@ -6,6 +6,7 @@ import { formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useVersions } from './api'
 import type { StudioVersion } from './contract'
+import { ImportLink } from './ImportLink'
 import { useProblemText } from './parts'
 import { STUDIO_ROUTES } from './routes'
 
@@ -17,7 +18,8 @@ export function VersionsPage() {
   return (
     <>
       <PageHeader title={t('versions.title')} subtitle={t('versions.subtitle')} />
-      <div className="mx-auto max-w-3xl px-4 pb-16 sm:px-8">
+      <div className="mx-auto flex max-w-3xl flex-col px-4 pb-16 sm:px-8">
+        <ImportLink />
         {query.isError ? (
           <ProblemState title={title} description={description}>
             <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>

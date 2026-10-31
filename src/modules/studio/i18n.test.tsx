@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LESSON_TYPES, REVIEW_DECISIONS, VERSION_STATUSES } from './contract'
+import { IMPORT_PROBLEM_KINDS, IMPORT_STATUSES, LESSON_TYPES, REVIEW_DECISIONS, VERSION_STATUSES } from './contract'
 import { studioMessages } from './i18n'
 
 type Tree = { [key: string]: string | Tree }
@@ -46,7 +46,10 @@ describe('textos del estudio', () => {
         `problem.version.${kind}`,
         `problem.hint.${kind}`
       ]),
-      'problem.hint.unexpected'
+      'problem.hint.unexpected',
+      ...IMPORT_STATUSES.flatMap((status) => [`import.status.${status}`, `import.statusHint.${status}`]),
+      ...IMPORT_PROBLEM_KINDS.map((kind) => `import.kind.${kind}`),
+      ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].map((kind) => `import.problem.${kind}`)
     ]
     expect(composed.filter((key) => !defined(key))).toEqual([])
   })
