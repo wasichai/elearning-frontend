@@ -3,6 +3,7 @@ import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ProblemState } from '../../shared/ProblemState'
+import { useRefetchOnRevisit } from '../../shared/revisit'
 import { useEnrollments } from './api'
 import type { Enrollment } from './contract'
 import { OfferingDates, ProgressBar, useProblemText } from './parts'
@@ -12,6 +13,7 @@ import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 export function MyCoursesPage() {
   const { t } = useTranslation('classroom')
   const query = useEnrollments()
+  useRefetchOnRevisit(query.refetch)
   return (
     <>
       <PageHeader title={t('enrollments.title')} subtitle={t('enrollments.subtitle')} />

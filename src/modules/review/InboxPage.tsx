@@ -2,6 +2,7 @@ import { LoadingState, PageHeader, useWasichaiLinks } from '@wasichai/core'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatInstant, formatNumber } from '../../shared/format'
+import { useRefetchOnRevisit } from '../../shared/revisit'
 import { useInbox } from './api'
 import type { StudioVersion } from './contract'
 import { QueryProblem } from './parts'
@@ -11,6 +12,7 @@ import { REVIEW_ROUTES } from './routes'
 export function InboxPage() {
   const { t } = useTranslation('review')
   const query = useInbox()
+  useRefetchOnRevisit(query.refetch)
   return (
     <>
       <PageHeader title={t('inbox.title')} subtitle={t('inbox.subtitle')} />

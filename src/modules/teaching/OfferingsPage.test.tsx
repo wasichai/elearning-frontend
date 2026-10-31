@@ -1,5 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
+import { Link } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { teachingModule } from './module'
 import { OfferingsPage } from './OfferingsPage'
@@ -64,5 +66,26 @@ describe('OfferingsPage: mis ediciones', () => {
     expect(await screen.findByText('2 students')).toBeInTheDocument()
     expect(screen.getByText('1 attempt to grade')).toBeInTheDocument()
     expect(screen.getByText('Sep 7 – Oct 16, 2026')).toBeInTheDocument()
+  })
+
+  // el menú lleva a la misma ruta: la página no se vuelve a montar y solo cambia la entrada del historial (#76)
+  it('con la lista abierta, volver a pulsar su entrada del menú la vuelve a pedir y pinta lo nuevo', async () => {
+    const routes: MockRoute[] = [{ path: OFFERINGS, body: [offering] }]
+    fetchMock = mockFetch(routes)
+    renderWithProviders(
+      <>
+        <Link to="/docencia">Menú</Link>
+        <OfferingsPage />
+      </>,
+      { modules: [teachingModule()], route: '/docencia' }
+    )
+    expect(await screen.findAllByRole('article')).toHaveLength(1)
+    expect(fetchMock.calls.filter((call) => call.path === OFFERINGS)).toHaveLength(1)
+
+    routes[0] = { path: OFFERINGS, body: [offering, otherOffering] }
+    await userEvent.click(screen.getByRole('link', { name: 'Menú' }))
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2))
+    expect(fetchMock.calls.filter((call) => call.path === OFFERINGS)).toHaveLength(2)
   })
 })

@@ -1,5 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
+import { Link } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioModule } from './module'
 import { draftVersion, problem, publishedVersion } from './test/fixtures'
@@ -79,5 +81,26 @@ describe('VersionsPage: mis versiones', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'My versions' })).toBeInTheDocument()
     expect(await screen.findByText('Published')).toBeInTheDocument()
     expect(screen.getByText('1 comment to address')).toBeInTheDocument()
+  })
+
+  // el menú lleva a la misma ruta: la página no se vuelve a montar y solo cambia la entrada del historial (#76)
+  it('con la lista abierta, volver a pulsar su entrada del menú la vuelve a pedir y pinta lo nuevo', async () => {
+    const routes: MockRoute[] = [{ path: VERSIONS, body: [draftVersion] }]
+    fetchMock = mockFetch(routes)
+    renderWithProviders(
+      <>
+        <Link to="/estudio">Menú</Link>
+        <VersionsPage />
+      </>,
+      { modules: [studioModule()], route: '/estudio' }
+    )
+    expect(await screen.findAllByRole('article')).toHaveLength(1)
+    expect(fetchMock.calls.filter((call) => call.path === VERSIONS)).toHaveLength(1)
+
+    routes[0] = { path: VERSIONS, body: [draftVersion, publishedVersion] }
+    await userEvent.click(screen.getByRole('link', { name: 'Menú' }))
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2))
+    expect(fetchMock.calls.filter((call) => call.path === VERSIONS)).toHaveLength(2)
   })
 })
