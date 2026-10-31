@@ -52,7 +52,8 @@ export const studioKeys = {
   all: ['studio'] as const,
   versions: ['studio', 'versions'] as const,
   version: (id: string) => ['studio', 'version', id] as const,
-  diff: (id: string) => ['studio', 'version', id, 'diff'] as const
+  // fuera de version(id): enviar no cambia el contenido, y releerla no debe esperar a la comparación
+  diff: (id: string) => ['studio', 'diff', id] as const
 }
 
 export function useVersions() {

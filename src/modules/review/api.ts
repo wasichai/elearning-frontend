@@ -71,7 +71,8 @@ export async function postPublish(client: ApiClient, id: string): Promise<Studio
 export const reviewKeys = {
   inbox: ['review', 'inbox'] as const,
   version: (id: string) => ['review', 'version', id] as const,
-  diff: (id: string) => ['review', 'version', id, 'diff'] as const
+  // fuera de version(id): comentar, decidir o publicar no cambia el contenido, y releerla no debe esperar a la comparación
+  diff: (id: string) => ['review', 'diff', id] as const
 }
 
 export function useInbox() {
