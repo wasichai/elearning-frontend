@@ -215,6 +215,7 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
       code: 'edicion-samoa',
       status: 'PROGRAMADA',
       enrollmentOpen: false,
+      enrollmentStatus: 'CLOSED',
       timeZone: 'Pacific/Pago_Pago',
       startDate: '2027-01-04',
       endDate: '2027-01-29',

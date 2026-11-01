@@ -75,6 +75,19 @@ describe('CatalogPage', () => {
     expect(second.getByText('6 semanas · 72 h')).toBeInTheDocument()
   })
 
+  // RF-CAT-09: la tarjeta distingue la edición completa de la cerrada
+  it.each([
+    ['FULL', 'Edición completa'],
+    ['CLOSED', 'Inscripción cerrada']
+  ])('la próxima edición %s se anuncia como «%s»', async (enrollmentStatus, label) => {
+    const nextOffering = { ...courseSummary.nextOffering, enrollmentOpen: false, enrollmentStatus }
+    renderCatalog([{ path: COURSES, body: { ...coursePage, content: [{ ...courseSummary, nextOffering }] } }])
+
+    const item = within(within(await screen.findByRole('list')).getAllByRole('listitem')[0]!)
+    expect(item.getByText(label)).toBeInTheDocument()
+    expect(item.queryByText('Inscripción abierta')).not.toBeInTheDocument()
+  })
+
   it('pinta la carga mientras llega la primera respuesta', async () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 
