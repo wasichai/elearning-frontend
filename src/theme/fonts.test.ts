@@ -27,3 +27,17 @@ describe('letras de la app', () => {
     expect(/--font-read:\s*([^;]+);/.exec(theme)?.[1]).toMatch(/^'Literata', .*serif$/)
   })
 })
+
+describe('la celebración', () => {
+  it('el sello se anuda una sola vez: 900ms con ease-knot, sin repetirse', () => {
+    const theme = /@theme inline\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
+    expect(/--animate-seal:\s*([^;]+);/.exec(theme)?.[1]).toBe('seal 900ms cubic-bezier(0.34, 1.4, 0.64, 1) both')
+    expect(index).toMatch(/@keyframes seal\s*\{\s*from\s*\{\s*transform: scale\(0\.4\) rotate\(-30deg\);\s*opacity: 0;\s*\}\s*\}/)
+  })
+
+  it('el maíz es un token del tema, con respaldo para los temas de Wasichai', () => {
+    const theme = /@theme inline\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
+    expect(/--color-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--maiz, #d99a1e)')
+    expect(/--color-on-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--on-maiz, #1e2327)')
+  })
+})

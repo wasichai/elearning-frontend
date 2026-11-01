@@ -47,6 +47,21 @@ describe('CompletionPage', () => {
     expect(rules.getByRole('status')).toHaveTextContent('Aún te falta alguna regla.')
     expect(screen.getByText('Cuando cumplas todas las reglas podrás pedir aquí tu certificado.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Emitir mi certificado' })).not.toBeInTheDocument()
+    // sin cumplirlas no se celebra
+    expect(document.querySelector('[data-seal]')).toBeNull()
+  })
+
+  it('cumpliéndolas, el sello de maíz se anuda una vez, decorativo y quieto con movimiento reducido', async () => {
+    renderCompletion([
+      { path: CLASSROOM, body: assessmentClassroom },
+      { path: COMPLETION, body: completionMet }
+    ])
+
+    const rules = within(await screen.findByRole('region', { name: 'Para terminar el curso' }))
+    expect(rules.getByRole('status')).toHaveTextContent('Cumples todas las reglas: ya puedes pedir tu certificado.')
+    const seal = document.querySelector('[data-seal]')
+    expect(seal).toHaveAttribute('aria-hidden', 'true')
+    expect(seal).toHaveClass('animate-seal', 'motion-reduce:animate-none', 'bg-maiz', 'text-on-maiz')
   })
 
   it('cumpliéndolas, pide el certificado con el nombre (por defecto el de la cuenta) y enlaza a él (201)', async () => {

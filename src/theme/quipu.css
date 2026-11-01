@@ -42,6 +42,10 @@
   --border-control: #857a66;
   --placeholder: var(--ink-muted);
 
+  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  --maiz: #d99a1e;
+  --on-maiz: #1e2327;
+
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
   --radius: 6px;
   --radius-sm: 4px;
@@ -87,6 +91,10 @@
   --border-control: #6f797f;
   --placeholder: var(--ink-muted);
 
+  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  --maiz: #e8b04a;
+  --on-maiz: #1e2327;
+
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
   --radius: 6px;
   --radius-sm: 4px;
@@ -131,6 +139,10 @@
   --surface-raised: var(--surface);
   --border-control: #857559;
   --placeholder: var(--ink-muted);
+
+  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  --maiz: #d99a1e;
+  --on-maiz: #1e2327;
 
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
   --radius: 6px;

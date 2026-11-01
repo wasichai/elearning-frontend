@@ -102,6 +102,11 @@ describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
     expect(contrast(over(resolve(block, 'shell-muted'), shell, 0.7), shell)).toBeGreaterThanOrEqual(4.5)
   })
 
+  it('el maíz del sello lleva su icono a 3:1 o más (marca gráfica, WCAG 1.4.11)', () => {
+    expect(contrast(resolve(block, 'on-maiz'), resolve(block, 'maiz'))).toBeGreaterThanOrEqual(3)
+    expect(contrast(resolve(block, 'maiz'), resolve(block, 'surface'))).toBeGreaterThanOrEqual(1.5)
+  })
+
   it('el foco no es la marca', () => {
     expect(resolve(block, 'focus')).not.toBe(resolve(block, 'brand'))
   })
