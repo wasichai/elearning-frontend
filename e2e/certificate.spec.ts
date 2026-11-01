@@ -84,3 +84,33 @@ test('la verificación es pública: sin sesión, por código; uno desconocido se
   await expect(page.getByRole('heading', { level: 1, name: 'No hay ningún certificado con ese código' })).toBeVisible()
   expect(api.unexpected).toEqual([])
 })
+
+test('el certificado es un A4 apaisado en tema claro, aunque la página esté en oscuro, y se imprime en una sola hoja', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('elearning.theme', 'quipu-dark'))
+  await fakeApi(page, { certificateIssued: true })
+  await page.goto('/certificados/K7Q2-M9XW-4RTB')
+  const sheet = page.getByRole('article', { name: 'Rosa Quispe Mamani' })
+  await expect(sheet).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'quipu-dark')
+
+  // papel y tinta del tema claro de Quipu
+  expect(await sheet.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 253, 248)')
+  expect(await sheet.evaluate((element) => getComputedStyle(element).color)).toBe('rgb(30, 35, 39)')
+  const box = (await sheet.boundingBox())!
+  expect(box.width / box.height).toBeCloseTo(297 / 210, 1)
+
+  // el PDF de la impresión: una sola hoja A4 apaisada (841,89 × 595,28 pt)
+  await page.emulateMedia({ media: 'print' })
+  const pdf = (await page.pdf({ preferCSSPageSize: true })).toString('latin1')
+  expect(pdf.match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
+  const [, width, height] = /\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)\s*\]/.exec(pdf) ?? []
+  expect([Math.round(Number(width)), Math.round(Number(height))]).toEqual([842, 595])
+})
+
+test('en el móvil el certificado se lee en una columna, sin desbordar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await fakeApi(page, { certificateIssued: true })
+  await page.goto('/certificados/K7Q2-M9XW-4RTB')
+  await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})

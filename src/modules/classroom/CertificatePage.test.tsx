@@ -37,6 +37,11 @@ describe('CertificatePage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toHaveClass('font-read')
     expect(screen.getByRole('status')).toHaveTextContent('Certificado auténtico, emitido por esta plataforma.')
     expect(screen.getByText('aprobó el curso «Introducción al SGSPE».')).toHaveClass('font-read')
+    // el documento se fija al tema claro de Quipu, se vea la página como se vea, y tiene la proporción de un A4 apaisado
+    const sheet = screen.getByRole('article', { name: 'Rosa Quispe Mamani' })
+    expect(sheet).toHaveAttribute('data-theme', 'quipu')
+    expect(sheet).toHaveStyle({ colorScheme: 'light' })
+    expect(sheet).toHaveClass('bg-surface', 'sm:aspect-[297/210]')
     expect(screen.getByText('SGSPE-101 · versión 1')).toBeInTheDocument()
     expect(screen.getByText('7 sept – 16 oct 2026')).toBeInTheDocument()
     expect(screen.getByText('18 h')).toBeInTheDocument()
