@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
+import { useRefetchOnRevisit } from '../../shared/revisit'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
 import { OfferingDates, useProblemText } from './parts'
@@ -13,6 +14,7 @@ import { TEACHING_ROUTES } from './routes'
 export function OfferingsPage() {
   const { t } = useTranslation('teaching')
   const query = useOfferings()
+  useRefetchOnRevisit(query.refetch)
   const { title, description } = useProblemText(query.error, 'offerings')
   return (
     <>

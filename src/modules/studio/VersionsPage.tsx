@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
+import { useRefetchOnRevisit } from '../../shared/revisit'
 import { useVersions } from './api'
 import type { StudioVersion } from './contract'
 import { ImportLink } from './ImportLink'
@@ -14,6 +15,7 @@ import { STUDIO_ROUTES } from './routes'
 export function VersionsPage() {
   const { t } = useTranslation('studio')
   const query = useVersions()
+  useRefetchOnRevisit(query.refetch)
   const { title, description } = useProblemText(query.error, 'versions')
   return (
     <>
