@@ -4,7 +4,7 @@
 // meta refresh. DOMParser no ejecuta nada del documento. otra CSP del propio documento no la afloja: se aplican todas
 export const READING_CSP = "default-src 'none'; img-src data:; style-src 'unsafe-inline'"
 
-export function lockedReading(html: string, palette?: ReadingPalette): string {
+export function lockedReading(html: string, palette?: ReadingPalette, options?: ReadingOptions): string {
   const doc = new DOMParser().parseFromString(html, 'text/html')
   for (const meta of doc.querySelectorAll('meta[http-equiv]')) if (meta.getAttribute('http-equiv')?.trim().toLowerCase() === 'refresh') meta.remove()
   const csp = doc.createElement('meta')
@@ -14,7 +14,7 @@ export function lockedReading(html: string, palette?: ReadingPalette): string {
   // el estilo de lectura va justo detrás de la CSP, antes que cualquier estilo del autor, y con especificidad cero
   const style = doc.createElement('style')
   style.dataset.reading = ''
-  style.textContent = readingStyle(palette)
+  style.textContent = readingStyle(palette, options)
   csp.after(style)
   // con doctype sigue en modo estándar; sin él, en el mismo modo que tenía
   return `${doc.doctype ? '<!doctype html>' : ''}${doc.documentElement.outerHTML}`
@@ -32,6 +32,16 @@ export interface ReadingPalette {
   rule?: string
 }
 
+// lo que elige el estudiante en la barra de la lección: el tamaño del texto (17–23px, de 2 en 2) y, en el modo lectura
+// sobre un tema oscuro, un interlineado más abierto (34px sobre 19)
+export interface ReadingOptions {
+  size?: number
+  roomy?: boolean
+}
+
+export const READING_SIZES = [17, 19, 21, 23] as const
+export const DEFAULT_READING_SIZE = 19
+
 const COLOR = /^(?:#[\da-f]{3,8}|(?:rgba?|hsla?|oklch|oklab|lab|lch)\([\d\s.,%/-]+\))$/i
 
 function declaration(property: string, value: string | undefined): string {
@@ -42,8 +52,9 @@ function declaration(property: string, value: string | undefined): string {
 // tipografía de lectura larga del sistema Quipu: medida de 68 caracteres, 19/32, títulos con aire. todo dentro de
 // :where(), especificidad cero: cualquier estilo del autor gana. sin fuentes: la CSP no deja cargar ninguna, Literata
 // solo si está instalada
-export function readingStyle(palette?: ReadingPalette): string {
+export function readingStyle(palette?: ReadingPalette, options: ReadingOptions = {}): string {
   const p = palette ?? { colorScheme: 'light' }
+  const size = READING_SIZES.find((step) => step === options.size)
   return [
     `:where(html) { color-scheme: ${p.colorScheme === 'dark' ? 'dark' : 'light'}; ${declaration('background', p.background)} ${declaration('color', p.text)} }`,
     ":where(body) { box-sizing: border-box; max-width: 68ch; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; font: 400 19px/1.68 Literata, Georgia, 'Iowan Old Style', 'Times New Roman', serif; hyphens: auto; overflow-wrap: break-word; }",
@@ -60,6 +71,11 @@ export function readingStyle(palette?: ReadingPalette): string {
     `:where(th, td) { border-bottom: 1px solid; padding: 0.4em 0.6em; text-align: left; ${declaration('border-bottom-color', p.line)} }`,
     ':where(code, pre) { font-family: ui-monospace, Menlo, monospace; font-size: 0.88em; }',
     ':where(pre) { overflow: auto; }',
-    '@media (max-width: 640px) { :where(body) { font-size: 18px; padding: 2rem 1rem; } }'
-  ].join('\n')
+    '@media (max-width: 480px) { :where(body) { font-size: 18px; padding: 2rem 1rem; } }',
+    // después del móvil: el tamaño elegido manda en cualquier ancho (y el autor sigue ganando)
+    size === undefined ? '' : `:where(body) { font-size: ${size}px; }`,
+    options.roomy ? ':where(body) { line-height: 1.79; }' : ''
+  ]
+    .filter(Boolean)
+    .join('\n')
 }

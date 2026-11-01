@@ -1,16 +1,20 @@
 import { useWasichaiLinks } from '@wasichai/core'
+import { Button } from '@wasichai/ui'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { videoCompletion } from '../../config'
 import { formatNumber } from '../../shared/format'
+import { QUIPU_READING_THEME } from '../../theme/themes'
 import { lessonEvent, useLessonEvent } from './api'
 import { AssessmentLesson } from './Assessment'
 import { Completion } from './Completion'
 import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
 import { useOpenLabel } from './parts'
-import { Resources } from './Resources'
+import { isDarkTheme, useDocumentTheme } from './documentTheme'
+import { useReadingPreferences, type ReadingControls } from './readingPreferences'
+import { Resources, type ReadingSettings } from './Resources'
 import { Sessions } from './SessionsPage'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
@@ -42,8 +46,25 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const videoThreshold = videoCompletion()
   const videoWatched = useVideoWatched(lesson, done, completion.mutate)
   const upcoming = next ?? (pending && pending.lesson.id !== lesson.id ? pending : undefined)
+  // el modo lectura: sobre un tema claro, el papel sepia (quipu-lectura) en toda la lección; sobre uno oscuro se queda
+  // oscuro y abre el interlineado de la lectura (PantallaLeccion del sistema de diseño)
+  const readingControls = useReadingPreferences()
+  const dark = isDarkTheme(useDocumentTheme())
+  const hasReading = lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
+  const sepia = hasReading && readingControls.mode && !dark
+  const reading: ReadingSettings = {
+    size: readingControls.size,
+    roomy: readingControls.mode && dark,
+    theme: sepia ? QUIPU_READING_THEME : undefined
+  }
   return (
-    <article aria-labelledby={`lesson-${lesson.id}`} className="flex min-w-0 flex-col gap-6 lg:max-w-4xl">
+    <article
+      aria-labelledby={`lesson-${lesson.id}`}
+      data-theme={sepia ? QUIPU_READING_THEME.id : undefined}
+      style={sepia ? { colorScheme: QUIPU_READING_THEME.colorScheme } : undefined}
+      className={`flex min-w-0 flex-col gap-6 lg:max-w-4xl ${sepia ? '-m-4 rounded-xl bg-surface-muted p-4 text-ink sm:-m-6 sm:p-6' : ''}`}
+    >
+      {hasReading ? <ReadingTools controls={readingControls} /> : null}
       <header className="flex flex-col gap-1.5">
         <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('classroom.position', { unit: unit.order, lesson: lesson.order })}</p>
         <h2 id={`lesson-${lesson.id}`} ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-balance text-ink focus:outline-none">
@@ -67,7 +88,12 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
 
       {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
       {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
-        <Resources resources={lesson.resources} videoThreshold={videoThreshold} onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined} />
+        <Resources
+          resources={lesson.resources}
+          videoThreshold={videoThreshold}
+          onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
+          reading={reading}
+        />
       )}
 
       <Completion
@@ -84,6 +110,29 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
 
       <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
     </article>
+  )
+}
+
+// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (A−/A+, 17–23px)
+function ReadingTools({ controls }: { controls: ReadingControls }) {
+  const { t } = useTranslation('classroom')
+  return (
+    <div role="toolbar" aria-label={t('reading.tools')} className="flex flex-wrap items-center justify-end gap-2">
+      <Button variant={controls.mode ? 'primary' : 'secondary'} size="md" aria-pressed={controls.mode} onClick={controls.toggleMode}>
+        {t('reading.mode')}
+      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" aria-label={t('reading.smaller')} disabled={!controls.canShrink} onClick={controls.shrink}>
+          <span aria-hidden="true">{t('reading.smallerShort')}</span>
+        </Button>
+        <span className="min-w-12 text-center text-sm tabular-nums text-ink-muted" aria-live="polite">
+          {t('reading.size', { value: controls.shownSize })}
+        </span>
+        <Button variant="ghost" size="icon" aria-label={t('reading.larger')} disabled={!controls.canGrow} onClick={controls.grow}>
+          <span aria-hidden="true">{t('reading.largerShort')}</span>
+        </Button>
+      </div>
+    </div>
   )
 }
 

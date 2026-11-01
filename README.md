@@ -77,6 +77,12 @@ campos de 44px que escriben a 16px, un campo inválido con 2px de `danger` que n
 `radius-lg`. `quipu-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts`
 mide los controles en el navegador.
 
+El **modo lectura** de la lección es un tercer bloque, `quipu-lectura` (papel sepia, mismos pares AA), que no está en el
+selector: la lección lo pone como subárbol (`data-theme` en su contenedor) cuando el estudiante pulsa «Modo lectura» en
+la barra de la lección, donde también elige el tamaño de la lectura (A−/A+, de 17 a 23px). Sobre un tema oscuro la
+lección sigue oscura y la lectura abre el interlineado. La elección se guarda en este navegador (`<storagePrefix>.reading`)
+y la lectura del iframe recibe la paleta, el tamaño y el interlineado.
+
 ## Comandos
 
 | Comando          | Qué hace                                             |
