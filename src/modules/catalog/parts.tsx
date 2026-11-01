@@ -20,9 +20,13 @@ export function Fact({ label, children }: { label: string; children: ReactNode }
   )
 }
 
-// lo que la persona necesita saber de la edición: si puede inscribirse ya y, si no, por qué
-export function offeringState(offering: Pick<NextOffering, 'status' | 'enrollmentOpen'>): 'open' | 'closed' | 'running' | 'scheduled' {
+export type OfferingState = 'open' | 'closed' | 'full' | 'running' | 'scheduled'
+
+// lo que la persona necesita saber de la edición: si puede inscribirse ya y, si no, por qué. enrollmentOpen es
+// enrollmentStatus OPEN; FULL (RF-CAT-09) dice que el motivo es el cupo, y un backend anterior no lo manda
+export function offeringState(offering: Pick<NextOffering, 'status' | 'enrollmentOpen' | 'enrollmentStatus'>): OfferingState {
   if (offering.enrollmentOpen) return 'open'
+  if (offering.enrollmentStatus === 'FULL') return 'full'
   if (offering.status === 'INSCRIPCION_ABIERTA') return 'closed'
   return offering.status === 'EN_CURSO' ? 'running' : 'scheduled'
 }

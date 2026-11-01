@@ -115,7 +115,7 @@ describe('matricularse desde la ficha', () => {
   })
 
   it('solo las ediciones con la inscripción abierta ofrecen matricularse', async () => {
-    const closed = { ...courseDetail, offerings: [{ ...courseDetail.offerings[0]!, enrollmentOpen: false }] }
+    const closed = { ...courseDetail, offerings: [{ ...courseDetail.offerings[0]!, enrollmentOpen: false, enrollmentStatus: 'CLOSED' }] }
     fetchMock = mockFetch([{ path: COURSE, body: closed }])
     renderWithProviders(<CourseDetailPage />, { modules: [catalogModule(), classroomStub], route: '/cursos/srtm-anuncios', path: '/cursos/:slug' })
 
@@ -123,6 +123,27 @@ describe('matricularse desde la ficha', () => {
     expect(section.getByText('Inscripción cerrada')).toBeInTheDocument()
     expect(section.queryByRole('button')).not.toBeInTheDocument()
     expect(section.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  // RF-CAT-09: completa no es lo mismo que cerrada; tampoco se ofrece matricularse, ni a quien tiene sesión
+  it('una edición completa lo dice y no ofrece matricularse', async () => {
+    const full = { ...courseDetail.offerings[0]!, enrollmentOpen: false, enrollmentStatus: 'FULL', full: true }
+    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [full] } }])
+
+    const section = await offerings()
+    expect(section.getByText('Edición completa')).toBeInTheDocument()
+    expect(section.queryByText('Inscripción abierta')).not.toBeInTheDocument()
+    expect(section.queryByRole('button')).not.toBeInTheDocument()
+    expect(section.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('con un backend que aún no manda enrollmentStatus, decide enrollmentOpen', async () => {
+    const { enrollmentStatus: _status, full: _full, ...legacy } = courseDetail.offerings[0]!
+    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [legacy] } }])
+
+    const section = await offerings()
+    expect(section.getByText('Inscripción abierta')).toBeInTheDocument()
+    expect(section.getByRole('button', { name: ACTION })).toBeEnabled()
   })
 
   it('sin el módulo del aula registrado, la ficha no ofrece matricularse', async () => {

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { fakeApi } from './api'
+import { fakeApi, isCourseList } from './api'
 
 // matricularse desde la ficha pública: sin sesión lleva al inicio de sesión; con sesión matricula y abre el aula
 
@@ -52,4 +52,24 @@ test('una edición cerrada o sin cupo (409) se explica y la ficha sigue a la vis
   await expect(page).toHaveURL('/mis-cursos/mat-srtm-1')
   expect(api.enrollRequests).toHaveLength(2)
   expect(api.enrollRequests[0]?.idempotencyKey).not.toBe(api.enrollRequests[1]?.idempotencyKey)
+})
+
+// RF-CAT-09: la edición completa se anuncia en la tarjeta y en la ficha, el filtro «abierta» la deja fuera y no hay botón
+test('una edición completa se dice en el catálogo y en la ficha, sin ofrecer matricularse', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, enrolled: false, offeringFull: true })
+  await page.goto('/cursos')
+
+  const card = page.getByRole('region', { name: 'Resultados' }).getByRole('listitem').filter({ hasText: 'Licencias de anuncios con SRTM' })
+  await expect(card).toContainText('Edición completa')
+
+  await page.getByRole('combobox', { name: 'Inscripción' }).click()
+  await page.getByRole('option', { name: 'Con inscripción abierta' }).click()
+  await expect.poll(() => api.catalogRequests.filter(isCourseList).at(-1)?.searchParams.get('enrollmentOpen')).toBe('true')
+  await expect(card).toHaveCount(0)
+
+  await page.goto(`/cursos/${SLUG}`)
+  await expect(offerings(page).getByText('Edición completa')).toBeVisible()
+  await expect(offerings(page).getByRole('button')).toHaveCount(0)
+  expect(api.enrollRequests).toEqual([])
+  expect(api.unexpected).toEqual([])
 })

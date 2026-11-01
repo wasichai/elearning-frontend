@@ -70,6 +70,7 @@ const es = {
     state: {
       open: 'Inscripción abierta',
       closed: 'Inscripción cerrada',
+      full: 'Edición completa',
       running: 'En curso',
       scheduled: 'Inscripción aún no abierta'
     }
@@ -277,6 +278,7 @@ const en: typeof es = {
     state: {
       open: 'Enrollment open',
       closed: 'Enrollment closed',
+      full: 'Offering full',
       running: 'In progress',
       scheduled: 'Enrollment not open yet'
     }

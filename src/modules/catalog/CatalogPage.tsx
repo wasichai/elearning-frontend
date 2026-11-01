@@ -371,12 +371,13 @@ function CourseItem({ course }: { course: CourseSummary }) {
 function OfferingLine({ offering }: { offering: NextOffering | null }) {
   const { t, i18n } = useTranslation('catalog')
   if (!offering) return <p className="text-sm text-ink-muted">{t('offering.none')}</p>
+  const state = offeringState(offering)
   return (
     <p className="text-sm">
       <span className="text-ink-muted">{t('offering.next')} </span>
       <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, i18n.language)}</span>
       <span className="text-ink-muted"> · </span>
-      <span className={offering.enrollmentOpen ? 'font-medium text-success' : 'text-ink-muted'}>{t(`offering.state.${offeringState(offering)}`)}</span>
+      <span className={state === 'open' ? 'font-medium text-success' : 'text-ink-muted'}>{t(`offering.state.${state}`)}</span>
     </p>
   )
 }

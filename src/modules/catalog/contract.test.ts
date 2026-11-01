@@ -19,6 +19,26 @@ describe('contrato del catálogo', () => {
     expect(() => parseContract(coursePageSchema, 'courses', { ...coursePage, sortedBy: 'upcoming' })).not.toThrow()
   })
 
+  // RF-CAT-09: enrollmentStatus y full son campos añadidos
+  it('acepta una edición completa y lee su estado de inscripción', () => {
+    const offering = { ...courseDetail.offerings[0], enrollmentOpen: false, enrollmentStatus: 'FULL', full: true }
+    const parsed = parseContract(courseDetailSchema, 'course', { ...courseDetail, offerings: [offering] })
+    expect(parsed.offerings[0]).toMatchObject({ enrollmentStatus: 'FULL', full: true })
+    const nextOffering = { ...courseSummary.nextOffering, enrollmentOpen: false, enrollmentStatus: 'FULL' }
+    expect(parseContract(coursePageSchema, 'courses', { ...coursePage, content: [{ ...courseSummary, nextOffering }] }).content[0]!.nextOffering).toMatchObject(
+      { enrollmentStatus: 'FULL' }
+    )
+  })
+
+  it('acepta un backend anterior, sin enrollmentStatus ni full', () => {
+    const { enrollmentStatus: _status, full: _full, ...offering } = courseDetail.offerings[0]!
+    const { enrollmentStatus: _next, ...nextOffering } = courseSummary.nextOffering
+    expect(parseContract(courseDetailSchema, 'course', { ...courseDetail, offerings: [offering] }).offerings[0]!.enrollmentStatus).toBeUndefined()
+    expect(
+      parseContract(coursePageSchema, 'courses', { ...coursePage, content: [{ ...courseSummary, nextOffering }] }).content[0]!.nextOffering
+    ).not.toHaveProperty('enrollmentStatus')
+  })
+
   it('acepta un curso sin sistema de créditos y sin propuesta', () => {
     const credits = { system: null, approved: null, proposal: null }
     expect(parseContract(courseDetailSchema, 'course', { ...courseDetail, credits }).credits.system).toBeNull()
@@ -36,6 +56,11 @@ describe('contrato del catálogo', () => {
       'zona horaria inexistente',
       { ...coursePage, content: [{ ...courseSummary, nextOffering: { ...courseSummary.nextOffering, timeZone: 'America/Atlantis' } }] },
       'zona horaria'
+    ],
+    [
+      'estado de inscripción desconocido',
+      { ...coursePage, content: [{ ...courseSummary, nextOffering: { ...courseSummary.nextOffering, enrollmentStatus: 'WAITLIST' } }] },
+      'enrollmentStatus'
     ],
     ['horas como texto', { ...coursePage, content: [{ ...courseSummary, workload: { ...courseSummary.workload, totalHours: '48' } }] }, 'totalHours'],
     ['un HTML en vez de JSON', '<!doctype html>', 'expected object']

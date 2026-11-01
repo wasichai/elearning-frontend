@@ -5,16 +5,17 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { formatCivilRange } from '../../shared/format'
 import { useEnroll } from './api'
 import type { Offering } from './contract'
+import { offeringState } from './parts'
 import { CLASSROOM_ROUTE } from './routes'
 
-// matricularse desde la ficha, en una edición con la inscripción abierta. sin sesión, el camino es el inicio de sesión
+// matricularse desde la ficha, en una edición con la inscripción abierta (completa o cerrada, no se ofrece). sin sesión, el camino es el inicio de sesión
 // de Wasichai, que después vuelve a esta ficha (returnTo, @wasichai/core 1.5.0; lo valida LoginPage). con sesión
 // matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor.
 export function EnrollAction({ offering }: { offering: Offering }) {
   const { user } = useAuth()
   const links = useWasichaiLinks()
   // sin el módulo del aula no hay adónde llevar a la persona matriculada
-  if (!offering.enrollmentOpen || !links.has(CLASSROOM_ROUTE)) return null
+  if (offeringState(offering) !== 'open' || !links.has(CLASSROOM_ROUTE)) return null
   return user ? <EnrollButton offering={offering} /> : <SignInToEnroll />
 }
 

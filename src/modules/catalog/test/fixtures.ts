@@ -18,7 +18,8 @@ export const courseSummary = {
     startDate: '2026-11-09',
     endDate: '2026-12-04',
     timeZone: 'America/Lima',
-    enrollmentOpen: true
+    enrollmentOpen: true,
+    enrollmentStatus: 'OPEN'
   },
   illustrative: true
 }
@@ -125,6 +126,8 @@ export const courseDetail = {
       enrollmentFrom: '2026-10-15',
       enrollmentUntil: '2026-11-06',
       enrollmentOpen: true,
+      enrollmentStatus: 'OPEN',
+      full: false,
       capacity: 30,
       schedule: 'Martes y jueves, 18:00–20:00',
       teachers: [{ name: 'Ana Quispe', professionalTitle: 'Ing. de sistemas', role: 'TITULAR' }]

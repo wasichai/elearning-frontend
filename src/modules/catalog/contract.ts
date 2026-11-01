@@ -11,6 +11,8 @@ export const MODALITIES = ['ASINCRONA', 'SINCRONA', 'HIBRIDA', 'PRESENCIAL'] as 
 export const SORTS = ['upcoming', 'title', 'duration'] as const
 export const OFFERING_STATUSES = ['PROGRAMADA', 'INSCRIPCION_ABIERTA', 'EN_CURSO'] as const
 export const CREDIT_SYSTEMS = ['ECTS', 'SCH'] as const
+// si se puede uno inscribir hoy (RF-CAT-09, ADR-0023 del backend); propio del catálogo, no del modelo
+export const ENROLLMENT_STATUSES = ['OPEN', 'CLOSED', 'FULL'] as const
 
 export type Level = (typeof LEVELS)[number]
 export type Modality = (typeof MODALITIES)[number]
@@ -18,6 +20,9 @@ export type Sort = (typeof SORTS)[number]
 
 const hours = z.number().nonnegative()
 const lines = z.array(z.string())
+
+// campos añadidos (RF-CAT-09): opcionales, así un backend anterior que no los manda sigue valiendo
+const enrollmentStatus = z.enum(ENROLLMENT_STATUSES).optional()
 
 const category = z.object({ slug: z.string(), name: z.string() })
 
@@ -29,7 +34,8 @@ const nextOffering = z.object({
   startDate: civilDate,
   endDate: civilDate,
   timeZone,
-  enrollmentOpen: z.boolean()
+  enrollmentOpen: z.boolean(),
+  enrollmentStatus
 })
 
 const courseBase = z.object({
@@ -124,6 +130,9 @@ const offering = z.object({
   enrollmentFrom: civilDate.nullable(),
   enrollmentUntil: civilDate.nullable(),
   enrollmentOpen: z.boolean(),
+  enrollmentStatus,
+  // cupo agotado; sin capacity, siempre false
+  full: z.boolean().optional(),
   capacity: z.number().int().positive().nullable(),
   schedule: z.string().nullable(),
   teachers: z.array(offeringTeacher)

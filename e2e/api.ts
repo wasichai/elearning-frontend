@@ -76,6 +76,8 @@ export interface FakeApiOptions extends TeachingOptions {
   courseComplete?: boolean
   // el certificado del ejemplo ya emitido (para la verificación pública)
   certificateIssued?: boolean
+  // la edición de SRTM con el cupo agotado (RF-CAT-09): enrollmentStatus FULL en el listado y en la ficha
+  offeringFull?: boolean
 }
 
 export interface FakeApi {
@@ -103,10 +105,21 @@ export interface FakeApi {
   failOnce: (matches: (url: URL, method: string) => boolean, status: number, detail?: string) => void
 }
 
-function listCourses(url: URL): Reply {
+// el catálogo que sirve la simulación: el de los ejemplos o, con offeringFull, con la edición de SRTM completa
+type Catalog = { courses: typeof COURSES_IN_CATALOG; details: Record<string, unknown> }
+
+function catalogOf(options: FakeApiOptions): Catalog {
+  if (!options.offeringFull) return { courses: COURSES_IN_CATALOG, details: DETAILS }
+  const full = { enrollmentOpen: false, enrollmentStatus: 'FULL' }
+  const summary = { ...courseSummary, nextOffering: { ...courseSummary.nextOffering, ...full } }
+  const detail = { ...courseDetail, offerings: courseDetail.offerings.map((offering) => ({ ...offering, ...full, full: true })) }
+  return { courses: [summary, courseWithoutOffering], details: { [courseSummary.slug]: detail } }
+}
+
+function listCourses(catalog: Catalog, url: URL): Reply {
   const params = url.searchParams
   const q = params.get('q')?.toLowerCase()
-  const content = COURSES_IN_CATALOG.filter(
+  const content = catalog.courses.filter(
     (course) =>
       (!q || `${course.title} ${course.summary}`.toLowerCase().includes(q)) &&
       (!params.get('category') || course.category?.slug === params.get('category')) &&
@@ -114,7 +127,7 @@ function listCourses(url: URL): Reply {
       (!params.get('modality') || course.modality === params.get('modality')) &&
       (!params.get('minWeeks') || course.weeks >= Number(params.get('minWeeks'))) &&
       (!params.get('maxWeeks') || course.weeks <= Number(params.get('maxWeeks'))) &&
-      // el resumen solo trae la próxima edición; en los ejemplos es la única
+      // el resumen solo trae la próxima edición; en los ejemplos es la única. una completa no cuenta como abierta
       (!params.get('enrollmentOpen') || (course.nextOffering?.enrollmentOpen === true) === (params.get('enrollmentOpen') === 'true')) &&
       (!params.get('minAutonomousHours') || course.workload.autonomousHours >= Number(params.get('minAutonomousHours')))
   )
@@ -125,8 +138,8 @@ function listCourses(url: URL): Reply {
   }
 }
 
-function getCourse(slug: string): Reply {
-  const detail = DETAILS[slug]
+function getCourse(catalog: Catalog, slug: string): Reply {
+  const detail = catalog.details[slug]
   return detail ? { status: 200, body: detail } : { status: 404, body: problem(404, 'Curso no encontrado') }
 }
 
@@ -460,10 +473,10 @@ function simulatePlatform(method: string, url: URL, account: Account): Reply | u
   return undefined
 }
 
-function simulate(url: URL): Reply {
-  if (url.pathname === COURSES) return listCourses(url)
+function simulate(catalog: Catalog, url: URL): Reply {
+  if (url.pathname === COURSES) return listCourses(catalog, url)
   const slug = url.pathname.startsWith(`${COURSES}/`) ? url.pathname.slice(COURSES.length + 1) : undefined
-  if (slug && !slug.includes('/')) return getCourse(decodeURIComponent(slug))
+  if (slug && !slug.includes('/')) return getCourse(catalog, decodeURIComponent(slug))
   return { status: 404, body: problem(404, 'No existe') }
 }
 
@@ -473,6 +486,7 @@ function isCatalog(request: Request, url: URL): boolean {
 
 export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise<FakeApi> {
   const overrides: Override[] = []
+  const catalog = catalogOf(options)
   const state = classroomState(options)
   const teaching = teachingState(options)
   const studio = studioState()
@@ -536,7 +550,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
       publicCertificate(state, method, url) ??
       simulateClassroom(state, method, url, jsonBody(request)) ??
       simulateFile(method, url) ??
-      simulate(url)
+      simulate(catalog, url)
     if (reply.raw) return route.fulfill({ status: reply.status, contentType: reply.raw.contentType, body: reply.raw.body })
     await route.fulfill({
       status: reply.status,
