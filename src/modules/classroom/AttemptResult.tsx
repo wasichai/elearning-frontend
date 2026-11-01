@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatNumber } from '../../shared/format'
 import type { Answer, Attempt, AttemptResult, Question, QuestionResult } from './contract'
+import { StatusBadge } from './StatusBadge'
 
 // el resultado de un intento enviado: la nota (o que espera corrección), y cada pregunta con sus puntos, el comentario
 // del docente y, si la evaluación las muestra, las soluciones
@@ -40,7 +41,9 @@ function ResultSummary({ result, passingPercent }: { result: AttemptResult; pass
   if (result.pending || result.percent === null)
     return (
       <div role="status" className="flex flex-col gap-1 rounded-card border border-border bg-surface-muted px-5 py-4">
-        <p className="text-base font-semibold text-ink">{t('result.pending')}</p>
+        <p>
+          <StatusBadge state="review">{t('result.pending')}</StatusBadge>
+        </p>
         <p className="text-sm text-ink-muted">{t('result.pendingHint', score)}</p>
       </div>
     )
