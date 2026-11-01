@@ -3,9 +3,10 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { classroomMessages } from '../modules/classroom/i18n'
-import { QUIPU_DARK_THEME, QUIPU_SYSTEM_THEMES, QUIPU_THEME, QUIPU_THEMES } from './themes'
+import { QUIPU_DARK_THEME, QUIPU_READING_THEME, QUIPU_STYLED_THEMES, QUIPU_SYSTEM_THEMES, QUIPU_THEME, QUIPU_THEMES } from './themes'
 
-// el tema Quipu cumple el contrato de @wasichai/ui (todos los tokens) y WCAG 2.2 AA en sus dos variantes
+// el tema Quipu cumple el contrato de @wasichai/ui (todos los tokens) y WCAG 2.2 AA en sus dos variantes y en el modo
+// lectura (quipu-lectura, un subárbol de la lección)
 
 const quipu = readFileSync(join(import.meta.dirname, 'quipu.css'), 'utf8')
 const wasichai = readFileSync(createRequire(import.meta.url).resolve('@wasichai/ui/theme.css'), 'utf8')
@@ -79,7 +80,7 @@ function failing(block: Map<string, string>, pairs: [string, string[]][], min: n
   )
 }
 
-describe.each(QUIPU_THEMES.map((theme) => [theme.id]))('tema %s', (id) => {
+describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
   const block = tokens(quipu, `[data-theme='${id}']`)
 
   it('pone todos los tokens del tema claro de @wasichai/ui', () => {
@@ -103,6 +104,46 @@ describe.each(QUIPU_THEMES.map((theme) => [theme.id]))('tema %s', (id) => {
 
   it('el foco no es la marca', () => {
     expect(resolve(block, 'focus')).not.toBe(resolve(block, 'brand'))
+  })
+})
+
+// los valores del tema «lectura» de docs/design-system/tokens.json, con los nombres de @wasichai/ui
+const LECTURA: Record<string, string> = {
+  surface: '#f8f0df',
+  'surface-muted': '#f1e7d3',
+  border: '#dccdb0',
+  'border-control': '#857559',
+  'table-head': '#e8dcc4',
+  ink: '#2b241b',
+  'ink-muted': '#5a4f40',
+  brand: '#9c4224',
+  'brand-strong': '#83361c',
+  'brand-soft': '#ecd3bd',
+  danger: '#9a1f37',
+  'danger-soft': '#f0d2cc',
+  success: '#2b6340',
+  'success-soft': '#d6e2c9',
+  warning: '#7a4e00',
+  'warning-soft': '#f3dcae',
+  notice: '#2a5598',
+  'notice-soft': '#dcdfe0',
+  focus: '#1f50aa'
+}
+
+describe('modo lectura', () => {
+  it('es quipu-lectura, claro, y no se ofrece en el selector de tema', () => {
+    expect(QUIPU_READING_THEME).toEqual({ id: 'quipu-lectura', colorScheme: 'light' })
+    expect(QUIPU_THEMES.map((theme) => theme.id)).not.toContain(QUIPU_READING_THEME.id)
+  })
+
+  it('lleva el papel sepia y la tinta cálida del sistema de diseño', () => {
+    const block = tokens(quipu, "[data-theme='quipu-lectura']")
+    expect(Object.fromEntries(Object.keys(LECTURA).map((name) => [name, block.get(name)]))).toEqual(LECTURA)
+  })
+
+  it('el anillo de foco de Quipu vale también en la lectura', () => {
+    const scope = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')}) *:focus-visible`
+    expect(quipu).toContain(scope)
   })
 })
 

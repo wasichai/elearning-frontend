@@ -83,3 +83,45 @@ test('el tema claro de Wasichai no cambia: sus controles siguen a 36px', async (
   expect((await box(search)).height).toBe(36)
   expect(await style(search, 'font-size')).toBe('14px')
 })
+
+test('modo lectura: papel sepia en la lección y en el iframe, A+ y se recuerda al volver', async ({ page }) => {
+  await withTheme(page, 'quipu')
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
+  const frame = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
+  const background = () => frame.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)
+  const fontSize = () => frame.locator('body').evaluate((element) => getComputedStyle(element).fontSize)
+  await expect.poll(background).toBe('rgb(255, 253, 248)')
+  // en escritorio la lectura va a 19px aunque el iframe mida unos 640px
+  await expect.poll(fontSize).toBe('19px')
+
+  const tools = page.getByRole('toolbar', { name: 'Lectura' })
+  const toggle = tools.getByRole('button', { name: 'Modo lectura' })
+  await toggle.click()
+  await expect(page.getByRole('article', { name: 'Tipos de anuncio' })).toHaveAttribute('data-theme', 'quipu-lectura')
+  // surface de quipu-lectura
+  await expect.poll(background).toBe('rgb(248, 240, 223)')
+  // la hoja de controles sigue valiendo dentro del modo lectura
+  expect((await box(toggle)).height).toBe(44)
+
+  await tools.getByRole('button', { name: 'Texto más grande' }).click()
+  await expect.poll(fontSize).toBe('21px')
+
+  await page.reload()
+  await expect(page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(background).toBe('rgb(248, 240, 223)')
+  await expect.poll(fontSize).toBe('21px')
+})
+
+test('modo lectura en quipu-dark: sigue oscuro y abre el interlineado de la lectura', async ({ page }) => {
+  await withTheme(page, 'quipu-dark')
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
+  const frame = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
+  await page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' }).click()
+
+  await expect(page.getByRole('article', { name: 'Tipos de anuncio' })).not.toHaveAttribute('data-theme')
+  await expect.poll(() => frame.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(27, 32, 35)')
+  // 1,79 × 19px
+  await expect.poll(() => frame.locator('body').evaluate((element) => getComputedStyle(element).lineHeight)).toBe('34.01px')
+})

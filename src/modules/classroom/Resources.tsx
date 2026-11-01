@@ -1,10 +1,11 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { useMemo, useSyncExternalStore } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
-import { lockedReading, type ReadingPalette } from './reading'
+import { isDarkTheme, useDocumentTheme } from './documentTheme'
+import { lockedReading, type ReadingOptions, type ReadingPalette } from './reading'
 import { formatFileSize } from './parts'
 import { watchedEnough } from './video'
 
@@ -12,7 +13,19 @@ import { watchedEnough } from './video'
 // VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
 // onVideoWatched avisa cada vez que el reproductor dice que se vio lo bastante (umbral de RF-AUL-04 o fin): quien lo
 // recibe decide enviarlo una sola vez
-export function Resources({ resources, videoThreshold = 1, onVideoWatched }: { resources: Resource[]; videoThreshold?: number; onVideoWatched?: () => void }) {
+// reading: lo que la barra de la lección elige para la lectura HTML (tamaño, interlineado y el tema del modo lectura)
+export interface ReadingSettings extends ReadingOptions {
+  theme?: { id: string; colorScheme: 'light' | 'dark' }
+}
+
+interface ResourcesProps {
+  resources: Resource[]
+  videoThreshold?: number
+  onVideoWatched?: () => void
+  reading?: ReadingSettings
+}
+
+export function Resources({ resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
   const { t } = useTranslation('classroom')
   if (resources.length === 0) return <p className="text-sm text-ink-muted">{t('resource.none')}</p>
   return (
@@ -21,7 +34,14 @@ export function Resources({ resources, videoThreshold = 1, onVideoWatched }: { r
         <section key={resource.id} aria-label={resource.title} className="flex flex-col gap-3">
           <h3 className="text-base font-medium text-ink">{resource.title}</h3>
           {resource.file ? (
-            <ResourceBody type={resource.type} title={resource.title} file={resource.file} videoThreshold={videoThreshold} onVideoWatched={onVideoWatched} />
+            <ResourceBody
+              type={resource.type}
+              title={resource.title}
+              file={resource.file}
+              videoThreshold={videoThreshold}
+              onVideoWatched={onVideoWatched}
+              reading={reading}
+            />
           ) : (
             <NoFile />
           )}
@@ -42,10 +62,11 @@ interface BodyProps {
   file: ResourceFile
   videoThreshold: number
   onVideoWatched?: () => void
+  reading?: ReadingSettings
 }
 
-function ResourceBody({ type, title, file, videoThreshold, onVideoWatched }: BodyProps) {
-  if (type === 'HTML') return <HtmlResource title={title} file={file} />
+function ResourceBody({ type, title, file, videoThreshold, onVideoWatched, reading }: BodyProps) {
+  if (type === 'HTML') return <HtmlResource title={title} file={file} reading={reading} />
   if (type === 'VIDEO') return <VideoResource file={file} threshold={videoThreshold} onWatched={onVideoWatched} />
   return <DownloadResource file={file} />
 }
@@ -53,22 +74,39 @@ function ResourceBody({ type, title, file, videoThreshold, onVideoWatched }: Bod
 // el HTML de la lectura, en un iframe con sandbox vacío: sin scripts, sin formularios, sin ventanas, y con un origen
 // opaco (sin allow-same-origin), así ni el contenido ejecuta código ni toca la aplicación ni su sesión. sin saneador:
 // lockedReading solo le pone una CSP que no deja pedir nada fuera y le quita los meta refresh
-export function HtmlResource({ title, file }: { title: string; file: ResourceFile }) {
+export function HtmlResource({ title, file, reading = {} }: { title: string; file: ResourceFile; reading?: ReadingSettings }) {
   const { t } = useTranslation('classroom')
   const query = useFileText(file)
-  // la lectura se pinta con el tema de la página y se rehace cuando este cambia
+  // la lectura se pinta con el tema de donde está (el de la página o el del modo lectura de la lección) y se rehace
+  // cuando cambia. los tokens se leen del DOM ya pintado: por eso en un efecto de layout y no durante el render
   const theme = useDocumentTheme()
-  const reading = useMemo(() => (query.data === undefined ? undefined : lockedReading(query.data, documentPalette(theme))), [query.data, theme])
-  if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
-  if (reading === undefined) return <LoadingState label={t('resource.loading')} />
+  const host = useRef<HTMLDivElement>(null)
+  const [palette, setPalette] = useState<ReadingPalette>()
+  const colorScheme = reading.theme?.colorScheme ?? (isDarkTheme(theme) ? 'dark' : 'light')
+  useLayoutEffect(() => {
+    if (host.current) setPalette(paletteOf(host.current, colorScheme))
+  }, [theme, colorScheme, reading.theme?.id])
+  const { size, roomy } = reading
+  const html = useMemo(
+    () => (query.data === undefined || palette === undefined ? undefined : lockedReading(query.data, palette, { size, roomy })),
+    [query.data, palette, size, roomy]
+  )
   return (
-    <iframe
-      sandbox=""
-      srcDoc={reading}
-      title={title}
-      referrerPolicy="no-referrer"
-      className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-surface"
-    />
+    <div ref={host}>
+      {query.isError ? (
+        <FileProblem error={query.error} onRetry={() => void query.refetch()} />
+      ) : html === undefined ? (
+        <LoadingState label={t('resource.loading')} />
+      ) : (
+        <iframe
+          sandbox=""
+          srcDoc={html}
+          title={title}
+          referrerPolicy="no-referrer"
+          className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-surface"
+        />
+      )}
+    </div>
   )
 }
 
@@ -140,26 +178,12 @@ function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void 
   )
 }
 
-// el tema aplicado a la página (data-theme en <html>), al día: ThemeProvider lo escribe después de pintar los hijos,
-// por eso se observa el atributo en vez de leerlo durante el render
-function subscribeToTheme(onChange: () => void): () => void {
-  const observer = new MutationObserver(onChange)
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] })
-  return () => observer.disconnect()
-}
-
-const documentThemeSnapshot = () => `${document.documentElement.dataset.theme ?? ''}|${document.documentElement.style.colorScheme}`
-
-function useDocumentTheme(): string {
-  return useSyncExternalStore(subscribeToTheme, documentThemeSnapshot)
-}
-
-// los tokens del tema que usa la lectura, resueltos en la página
-function documentPalette(theme: string): ReadingPalette {
-  const css = getComputedStyle(document.documentElement)
+// los tokens del tema que usa la lectura, resueltos donde está la lectura (un subárbol con otro tema cuenta)
+function paletteOf(element: Element, colorScheme: 'light' | 'dark'): ReadingPalette {
+  const css = getComputedStyle(element)
   const token = (name: string) => css.getPropertyValue(`--${name}`).trim() || undefined
   return {
-    colorScheme: theme.endsWith('|dark') ? 'dark' : 'light',
+    colorScheme,
     background: token('surface'),
     text: token('ink'),
     muted: token('ink-muted'),

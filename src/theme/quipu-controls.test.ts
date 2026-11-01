@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { QUIPU_THEMES } from './themes'
+import { QUIPU_STYLED_THEMES } from './themes'
 
 // la hoja de controles del tema Quipu (quipu-controls.css): objetivos de 44px y campos de 16px sobre los componentes de
 // @wasichai/ui. como las hojas de tema de wasichai-ui (themes/antDesign.test.ts): cada regla vive en el scope de los dos
@@ -11,7 +11,8 @@ const read = (file: string) => readFileSync(join(import.meta.dirname, file), 'ut
 const css = read('quipu-controls.css')
 const quipu = read('quipu.css')
 
-const ANY = `:is(${QUIPU_THEMES.map((theme) => `[data-theme='${theme.id}']`).join(', ')})`
+// los dos temas del selector y el modo lectura de la lección
+const ANY = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')})`
 const SCOPE = `@scope (${ANY}) to ([data-theme]:not(${ANY}))`
 
 // los hooks públicos que esta hoja puede tocar (README de @wasichai/ui, «Styling hooks»)
@@ -124,12 +125,12 @@ describe('quipu-controls.css', () => {
     expect(code.match(/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi)).toBeNull()
     const used = [...new Set([...code.matchAll(/var\((--[a-z-]+)\)/g)].map(([, name]) => name!))]
     expect(used.length).toBeGreaterThan(0)
-    for (const theme of QUIPU_THEMES) {
-      const start = quipu.indexOf(`[data-theme='${theme.id}'] {`)
+    for (const id of QUIPU_STYLED_THEMES) {
+      const start = quipu.indexOf(`[data-theme='${id}'] {`)
       const block = quipu.slice(start, quipu.indexOf('}', start))
       expect(
         used.filter((name) => !block.includes(`${name}:`)),
-        theme.id
+        id
       ).toEqual([])
     }
   })

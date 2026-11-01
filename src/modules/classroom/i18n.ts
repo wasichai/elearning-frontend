@@ -9,6 +9,16 @@ const es = {
     quipu: 'Quipu',
     quipuDark: 'Quipu oscuro'
   },
+  // la barra de la lección: modo lectura y tamaño del texto de la lectura
+  reading: {
+    tools: 'Lectura',
+    mode: 'Modo lectura',
+    smaller: 'Texto más pequeño',
+    larger: 'Texto más grande',
+    smallerShort: 'A−',
+    largerShort: 'A+',
+    size: '{{value}} px'
+  },
   enrollments: {
     title: 'Mis cursos',
     subtitle: 'Los cursos en los que estás matriculado y por dónde vas.',
@@ -391,6 +401,15 @@ const en: typeof es = {
   theme: {
     quipu: 'Quipu',
     quipuDark: 'Quipu dark'
+  },
+  reading: {
+    tools: 'Reading',
+    mode: 'Reading mode',
+    smaller: 'Smaller text',
+    larger: 'Larger text',
+    smallerShort: 'A−',
+    largerShort: 'A+',
+    size: '{{value}} px'
   },
   enrollments: {
     title: 'My courses',

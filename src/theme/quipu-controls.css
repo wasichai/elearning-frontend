@@ -1,10 +1,10 @@
 /* hoja de controles del tema Quipu (docs/design-system: 3-accesibilidad.md y las guías Button, Field y Feedback):
    objetivos de 44px y campos de 16px sobre los componentes de @wasichai/ui, enganchada solo a sus data-slot públicos
-   (README de @wasichai/ui, «Styling hooks»). en el scope de los dos temas Quipu y nunca dentro de un subárbol con otro
+   (README de @wasichai/ui, «Styling hooks»). en el scope de los temas Quipu (también el modo lectura de la lección) y nunca dentro de un subárbol con otro
    tema. sin capa, gana a las utilidades de Tailwind y por eso también a las clases de quien usa el componente: pone
    solo lo que los tokens no alcanzan. lo que una clase debe poder pisar va en @layer base. sin colores propios: solo
    tokens de quipu.css. lo comprueba quipu-controls.test.ts; un e2e mide los controles en el navegador */
-@scope (:is([data-theme='quipu'], [data-theme='quipu-dark'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark']))) {
+@scope (:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura']))) {
   [data-slot='button'] {
     font-size: 15px;
     font-weight: 600;
@@ -77,7 +77,7 @@
 /* el ::after del botón sm se coloca respecto del botón. en la capa base: una clase de quien lo usa (absolute) gana, y
    el botón sigue siendo el bloque contenedor */
 @layer base {
-  @scope (:is([data-theme='quipu'], [data-theme='quipu-dark'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark']))) {
+  @scope (:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura']))) {
     [data-slot='button'][data-size='sm'] {
       position: relative;
     }

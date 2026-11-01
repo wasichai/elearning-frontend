@@ -75,4 +75,35 @@ describe('lockedReading', () => {
     expect(css).not.toContain('otro.example')
     expect(css).not.toMatch(/background:/)
   })
+
+  it('el tamaño elegido (17–23px) va tras la regla del móvil, así manda en cualquier ancho', () => {
+    const css = readingStyle({ colorScheme: 'light' }, { size: 21 })
+    const mobile = css.indexOf('@media')
+    const chosen = css.lastIndexOf(':where(body) { font-size: 21px; }')
+    expect(mobile).toBeGreaterThan(0)
+    expect(chosen).toBeGreaterThan(mobile)
+  })
+
+  // la media query mira el ancho del iframe, no el de la pantalla: en escritorio la lectura mide unos 640px y debe seguir a 19px
+  it('el cuerpo pasa a 18px solo en un iframe de teléfono (480px o menos)', () => {
+    const css = readingStyle()
+    expect(css).toContain('@media (max-width: 480px) { :where(body) { font-size: 18px;')
+    expect(css).toContain('font: 400 19px/1.68')
+  })
+
+  it('un tamaño fuera de la escala no se escribe', () => {
+    for (const size of [15, 20, 25, Number.NaN]) expect(readingStyle(undefined, { size })).not.toMatch(/font-size: (15|20|25|NaN)px/)
+  })
+
+  it('con interlineado amplio (modo lectura en oscuro) el cuerpo va a 34px sobre 19', () => {
+    expect(readingStyle(undefined, { roomy: true })).toContain(':where(body) { line-height: 1.79; }')
+    expect(readingStyle()).not.toContain('line-height: 1.79')
+  })
+
+  it('lockedReading pasa el tamaño y el interlineado al estilo de lectura', () => {
+    const doc = parse(lockedReading('<p>hola</p>', { colorScheme: 'dark' }, { size: 23, roomy: true }))
+    const style = doc.querySelector('style[data-reading]')?.textContent ?? ''
+    expect(style).toContain('font-size: 23px')
+    expect(style).toContain('line-height: 1.79')
+  })
 })
