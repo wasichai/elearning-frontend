@@ -22,6 +22,8 @@ import {
   enrollment,
   finishedEnrollment,
   gradedAttempt,
+  labClassroom,
+  labLesson,
   openAttempt,
   sessions,
   submission,
@@ -41,6 +43,15 @@ describe('contrato del aula', () => {
     const parsed = parseContract(classroomSchema, 'classroom', classroom)
     expect(parsed.units.flatMap((unit) => unit.lessons.map((l) => l.completion))).toEqual(['EXPLICIT', 'VIDEO_END', 'EXPLICIT', 'NOT_YET'])
     expect(parsed.units[1]?.lessons[0]?.resources[2]?.file).toBeNull()
+  })
+
+  it('acepta el laboratorio de una lección y lo exige completo', () => {
+    const lab = parseContract(classroomSchema, 'classroom', labClassroom).units[0]!.lessons[2]!.lab
+    expect(lab?.milestones).toEqual(['Abrir el entorno', 'Consultar el padrón', 'Redactar el informe'])
+    expect(lab?.environments.map((environment) => environment.id)).toEqual(['ent-1', 'ent-2'])
+    expect(parseContract(classroomSchema, 'classroom', classroom).units[0]!.lessons[0]!.lab).toBeUndefined()
+    const broken = withLesson({ lab: { ...labLesson.lab, milestones: 'Abrir el entorno' } })
+    expect(() => parseContract(classroomSchema, 'classroom', broken)).toThrow(ContractError)
   })
 
   it('acepta campos nuevos y un progreso sin marcas de tiempo todavía', () => {

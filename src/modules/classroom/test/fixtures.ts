@@ -433,3 +433,33 @@ export const certificate = {
   result: 'APROBADO',
   rules: completionMet.rules
 }
+
+// un aula con un laboratorio (RF-LAB-01): sus listas, un entorno https y otro que la interfaz no enlaza aunque llegue
+export const labLesson = {
+  id: 'lec-lab',
+  order: 3,
+  title: 'Práctica: el padrón a una fecha pasada',
+  type: 'LABORATORIO',
+  durationMinutes: 45,
+  summary: null,
+  completion: 'EXPLICIT',
+  progress: notStarted,
+  resources: [],
+  assessment: null,
+  lab: {
+    objective: 'Responder qué anuncios estaban vigentes el día de una inspección.',
+    requirements: ['Cuenta en el entorno de demostración'],
+    milestones: ['Abrir el entorno', 'Consultar el padrón', 'Redactar el informe'],
+    acceptanceCriteria: ['Cada estado justificado con su acto'],
+    deliverables: ['Informe en PDF'],
+    environments: [
+      { id: 'ent-1', title: 'Entorno de demostración', url: 'https://demo.example.org/padron' },
+      { id: 'ent-2', title: 'Entorno antiguo', url: 'http://demo.example.org/' }
+    ]
+  }
+}
+
+export const labClassroom = {
+  ...classroom,
+  units: [{ ...classroom.units[0]!, lessons: [...classroom.units[0]!.lessons, labLesson] }, classroom.units[1]!]
+}

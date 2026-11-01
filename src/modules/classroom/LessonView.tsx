@@ -10,6 +10,7 @@ import { lessonEvent, useLessonEvent } from './api'
 import { AssessmentLesson } from './Assessment'
 import { Completion } from './Completion'
 import { isDone, type Lesson } from './contract'
+import { Lab } from './Lab'
 import type { PlacedLesson } from './lessons'
 import { useOpenLabel } from './parts'
 import { isDarkTheme, useDocumentTheme } from './documentTheme'
@@ -80,6 +81,8 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         </div>
         {lesson.summary ? <p className="max-w-prose text-base text-ink">{lesson.summary}</p> : null}
       </header>
+
+      {lesson.lab ? <Lab lab={lesson.lab} /> : null}
 
       {lesson.assessment ? <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} /> : null}
 

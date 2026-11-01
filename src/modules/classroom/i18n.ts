@@ -310,6 +310,17 @@ const es = {
     EVALUACION: 'Evaluación',
     SESION: 'Sesión en vivo'
   },
+  lab: {
+    title: 'Laboratorio',
+    objective: 'Objetivo',
+    requirements: 'Requisitos',
+    milestones: 'Hitos',
+    acceptanceCriteria: 'Criterios de aceptación',
+    deliverables: 'Entregables',
+    environments: 'Entornos externos',
+    newTab: '{{title}} (se abre en otra pestaña)',
+    unsafe: 'Este enlace no es seguro y no se abre.'
+  },
   resource: {
     resources: 'Material de la lección',
     none: 'Esta lección no tiene material.',
@@ -701,6 +712,17 @@ const en: typeof es = {
     LABORATORIO: 'Lab',
     EVALUACION: 'Assessment',
     SESION: 'Live session'
+  },
+  lab: {
+    title: 'Lab',
+    objective: 'Objective',
+    requirements: 'Requirements',
+    milestones: 'Milestones',
+    acceptanceCriteria: 'Acceptance criteria',
+    deliverables: 'Deliverables',
+    environments: 'External environments',
+    newTab: '{{title}} (opens in a new tab)',
+    unsafe: 'This link is not safe and will not be opened.'
   },
   resource: {
     resources: 'Lesson materials',
