@@ -27,7 +27,12 @@
   [data-slot='button'][data-size='sm']::after {
     content: '';
     position: absolute;
-    inset: -4px;
+    /* 44px exactos, centrados: un inset se mediría desde la caja de relleno y un botón con borde se quedaría en 42px */
+    top: 50%;
+    left: 50%;
+    width: max(100% + 8px, 44px);
+    height: 44px;
+    transform: translate(-50%, -50%);
   }
 
   /* la librería apaga los eventos del puntero al deshabilitar, y con ellos el cursor: se devuelven para enseñarlo.

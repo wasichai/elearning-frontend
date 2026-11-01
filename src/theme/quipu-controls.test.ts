@@ -148,8 +148,11 @@ describe('quipu-controls.css', () => {
     const area = declared("[data-slot='button'][data-size='sm']::after")
     expect(area.get('content')).toBe("''")
     expect(area.get('position')).toBe('absolute')
-    // 36px + 4px arriba + 4px abajo
-    expect(area.get('inset')).toBe('-4px')
+    // 44px exactos, centrados en el botón: un inset se mediría desde la caja de relleno y un botón con borde se quedaría en 42px
+    expect(area.get('height')).toBe('44px')
+    expect(area.get('width')).toBe('max(100% + 8px, 44px)')
+    expect([area.get('top'), area.get('left'), area.get('transform')]).toEqual(['50%', '50%', 'translate(-50%, -50%)'])
+    expect(area.has('inset')).toBe(false)
     // el ::after se coloca respecto del botón; en la capa base, para que una clase de quien lo usa (absolute) gane
     expect(declared("[data-slot='button'][data-size='sm']", base).get('position')).toBe('relative')
   })
