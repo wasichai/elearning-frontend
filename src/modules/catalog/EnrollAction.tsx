@@ -48,15 +48,31 @@ function EnrollButton({ offering }: { offering: Offering }) {
   )
 }
 
-// por qué no se pudo, en palabras de la persona; el detalle del servidor (legible, docs/api/lms.md) lo completa en un 409
+// por qué no se pudo, en palabras de la persona. un 409 tiene varios motivos (cerrada, sin cupo, prerrequisito sin
+// cumplir: docs/api/lms.md) y solo el servidor sabe cuál: su detail legible es la causa; sin él, un texto que no la adivina
 function EnrollProblem({ error }: { error: unknown }) {
   const { t } = useTranslation('catalog')
   const status = error instanceof ApiError ? error.status : undefined
-  const message = status === 409 ? t('enroll.closed') : status === 404 ? t('enroll.unavailable') : status === 403 ? t('enroll.forbidden') : t('enroll.failed')
+  const message =
+    status === 409
+      ? (conflictDetail(error) ?? t('enroll.conflict'))
+      : status === 404
+        ? t('enroll.unavailable')
+        : status === 403
+          ? t('enroll.forbidden')
+          : t('enroll.failed')
   return (
-    <div role="alert" className="flex max-w-prose flex-col gap-0.5 text-sm">
-      <p className="text-danger">{message}</p>
-      {status === 409 && error instanceof ApiError && error.message ? <p className="text-ink-muted">{error.message}</p> : null}
-    </div>
+    <p role="alert" className="max-w-prose text-sm text-danger">
+      {message}
+    </p>
   )
+}
+
+// core pone en message el detail del problem+json; sin detail, el título o el estado HTTP («Conflict», «HTTP 409»), que no
+// explican nada a la persona
+const NO_DETAIL = /^(conflict|http 409)$/i
+
+function conflictDetail(error: unknown): string | undefined {
+  const message = error instanceof ApiError ? error.message.trim() : ''
+  return message && !NO_DETAIL.test(message) ? message : undefined
 }

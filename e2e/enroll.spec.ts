@@ -36,15 +36,17 @@ test('con sesión, «Matricularme» matricula y abre el aula de la matrícula', 
   expect(api.unexpected).toEqual([])
 })
 
-test('una edición cerrada o sin cupo (409) se explica y la ficha sigue a la vista', async ({ page }) => {
+// el 409 tiene varios motivos (cerrada, sin cupo, prerrequisito): la ficha dice el que da el servidor
+test('un 409 se explica con el motivo del servidor y la ficha sigue a la vista', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, enrolled: false })
-  api.failOnce((url) => url.pathname === '/api/lms/enrollments', 409)
+  const detail = 'Para matricularte en esta edición antes debes aprobar: PRE-X (Fundamentos)'
+  api.failOnce((url) => url.pathname === '/api/lms/enrollments', 409, detail)
   await page.goto(`/cursos/${SLUG}`)
 
   await offerings(page).getByRole('button', { name: ACTION }).click()
 
   const alert = offerings(page).getByRole('alert')
-  await expect(alert).toContainText('No pudimos matricularte: la inscripción de esta edición está cerrada o ya no quedan plazas.')
+  await expect(alert).toHaveText(detail)
   await expect(page).toHaveURL(`/cursos/${SLUG}`)
 
   // volver a intentarlo, ya con plaza, matricula

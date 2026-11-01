@@ -78,7 +78,7 @@ describe('matricularse desde la ficha', () => {
   })
 
   it.each([
-    [409, 'No pudimos matricularte: la inscripción de esta edición está cerrada o ya no quedan plazas.', 'No quedan plazas en esta edición.'],
+    [409, 'No quedan plazas en esta edición.', 'No quedan plazas en esta edición.'],
     [404, 'Esta edición ya no está disponible.', undefined],
     [403, 'Tu cuenta no puede matricularse en cursos. Consulta con tu institución.', undefined],
     [500, 'No pudimos matricularte. Inténtalo de nuevo.', undefined]
@@ -94,6 +94,33 @@ describe('matricularse desde la ficha', () => {
     else expect(alert).not.toHaveTextContent('No quedan plazas en esta edición.')
     expect(screen.getByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
     expect(section.getByRole('button', { name: ACTION })).toBeEnabled()
+  })
+
+  // RF-ACA-08: el 409 de un prerrequisito sin cumplir no se explica como cupo ni como inscripción cerrada
+  it('un 409 por prerrequisito muestra el motivo del servidor, sin culpar al cupo', async () => {
+    const detail = 'Para matricularte en esta edición antes debes aprobar: PRE-X (Fundamentos); PRE-Y (Normativa)'
+    renderCourse([{ method: 'POST', path: ENROLLMENTS, status: 409, body: problem(409, detail) }])
+
+    const section = await offerings()
+    await userEvent.click(section.getByRole('button', { name: ACTION }))
+
+    const alert = await section.findByRole('alert')
+    expect(alert).toHaveTextContent(detail)
+    expect(alert).not.toHaveTextContent(/plazas|cerrada/)
+    expect(section.getByRole('button', { name: ACTION })).toBeEnabled()
+  })
+
+  it.each([
+    ['solo con título', { type: 'about:blank', title: 'Conflict', status: 409 }],
+    ['sin cuerpo', '']
+  ])('un 409 sin detail (%s) dice un texto general que no adivina el motivo', async (_case, body) => {
+    renderCourse([{ method: 'POST', path: ENROLLMENTS, status: 409, body }])
+
+    const section = await offerings()
+    await userEvent.click(section.getByRole('button', { name: ACTION }))
+
+    const alert = await section.findByRole('alert')
+    expect(alert).toHaveTextContent(/^No pudimos matricularte en esta edición\.$/)
   })
 
   it('con la sesión caducada (401), core la cierra y el botón pasa a pedir el inicio de sesión', async () => {
