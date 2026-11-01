@@ -3,8 +3,9 @@ import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
-import { isDone, type Classroom, type Lesson, type Unit } from './contract'
+import type { Classroom, Lesson, Unit } from './contract'
 import { ProgressBar } from './parts'
+import { courseKnots, Knot, knotOf } from './Quipu'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 // la navegación lateral del aula: el progreso del curso, y las unidades con sus lecciones y su estado.
@@ -15,7 +16,7 @@ export function UnitNav({ classroom, units, currentLessonId }: { classroom: Clas
   const panelId = useId()
   return (
     <div className="flex flex-col gap-3">
-      <ProgressBar progress={classroom.progress} label={t('progress.course')} />
+      <ProgressBar progress={classroom.progress} label={t('progress.course')} knots={knotsMatching(classroom.progress.totalLessons, courseKnots(units))} />
       <button
         type="button"
         aria-expanded={open}
@@ -87,14 +88,15 @@ function LessonLink({ enrollmentId, lesson, current, onNavigate }: { enrollmentI
         current ? 'bg-brand-soft font-medium text-ink' : 'text-ink hover:bg-surface-muted'
       }`}
     >
-      <StatusMark status={status} />
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+        <Knot {...knotOf(lesson)} />
+      </span>
       <span className="flex-1">{lesson.title}</span> <span className="sr-only">{t(`lessonStatus.${status}`)}</span>
     </Link>
   )
 }
 
-// el estado de un vistazo: hueco sin empezar, borde de color empezada, relleno completada. el texto va aparte, para el lector
-function StatusMark({ status }: { status: Lesson['progress']['status'] }) {
-  const tone = isDone(status) ? 'border-brand bg-brand' : status === 'INICIADA' ? 'border-brand' : 'border-border-control'
-  return <span aria-hidden="true" data-status={status} className={`mt-1 size-2.5 shrink-0 rounded-full border-2 ${tone}`} />
+// los nudos del curso solo si son tantos como las lecciones que cuenta el servidor: si no, la barra (el progreso es honesto)
+function knotsMatching(total: number, knots: ReturnType<typeof courseKnots>) {
+  return knots.length === total ? knots : undefined
 }

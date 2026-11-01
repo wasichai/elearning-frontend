@@ -3,19 +3,22 @@ import { useTranslation } from 'react-i18next'
 import { formatCivilRange, formatNumber, timeZoneLabel } from '../../shared/format'
 import { problemKind } from '../../shared/ProblemState'
 import type { Enrollment, ProgressSummary } from './contract'
+import { MAX_KNOTS, Quipu, type KnotData } from './Quipu'
 
 // piezas que comparten «Mis cursos» y el aula
 
 export { WRAP } from '../../shared/buttons'
 
 // el avance como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina
-export function ProgressBar({ progress, label, size = 'md' }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md' }) {
+// con knots (y no más de MAX_KNOTS) la vista es el quipu en lugar de la línea: el progressbar y su texto no cambian
+export function ProgressBar({ progress, label, size = 'md', knots }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md'; knots?: KnotData[] }) {
   const { t, i18n } = useTranslation('classroom')
   const values = {
     completed: formatNumber(progress.completedLessons, i18n.language),
     total: formatNumber(progress.totalLessons, i18n.language),
     percent: formatNumber(progress.percent, i18n.language)
   }
+  const quipu = knots !== undefined && knots.length > 0 && knots.length <= MAX_KNOTS
   return (
     <div className="flex flex-col gap-1.5">
       <div
@@ -25,9 +28,9 @@ export function ProgressBar({ progress, label, size = 'md' }: { progress: Progre
         aria-valuemax={100}
         aria-valuenow={progress.percent}
         aria-valuetext={t('progress.valueText', values)}
-        className={`w-full overflow-hidden rounded-full bg-surface-muted ${size === 'sm' ? 'h-1' : 'h-1.5'}`}
+        className={quipu ? 'w-full' : `w-full overflow-hidden rounded-full bg-surface-muted ${size === 'sm' ? 'h-1' : 'h-1.5'}`}
       >
-        <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progress.percent}%` }} />
+        {quipu ? <Quipu knots={knots!} /> : <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progress.percent}%` }} />}
       </div>
       {size === 'md' ? (
         <p aria-hidden="true" className="text-xs text-ink-muted tabular-nums">

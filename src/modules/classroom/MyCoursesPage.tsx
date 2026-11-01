@@ -7,6 +7,7 @@ import { useRefetchOnRevisit } from '../../shared/revisit'
 import { useEnrollments } from './api'
 import type { Enrollment } from './contract'
 import { OfferingDates, ProgressBar, useProblemText } from './parts'
+import { summaryKnots } from './Quipu'
 import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 // «Mis cursos»: cada matrícula activa con su avance y un solo botón, el que lleva a la siguiente lección
@@ -96,7 +97,7 @@ function EnrollmentItem({ enrollment }: { enrollment: Enrollment }) {
           </Link>
         </p>
       ) : null}
-      <ProgressBar progress={enrollment.progress} label={t('progress.course')} />
+      <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink">{next ? t('enrollments.next', { lesson: next.title }) : t('enrollments.finished')}</p>
         {next ? (
