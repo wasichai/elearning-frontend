@@ -142,3 +142,25 @@ test('el certificado pone al titular en Literata, servida por la app', async ({ 
   // ninguna letra viene de fuera
   expect(new Set(fonts)).toEqual(new Set(['localhost:5180']))
 })
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`el sello de maíz al terminar el curso (${reducedMotion}): una animación, o ninguna con movimiento reducido`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion })
+    await withTheme(page, 'quipu')
+    await fakeApi(page, { signedIn: true, courseComplete: true })
+    await page.goto('/mis-cursos/mat-sgspe-1/finalizacion')
+    const seal = page.locator('[data-seal]')
+    await expect(seal).toBeVisible()
+
+    expect(await style(seal, 'background-color')).toBe('rgb(217, 154, 30)')
+    expect(await style(seal, 'animation-name')).toBe(reducedMotion === 'reduce' ? 'none' : 'seal')
+    if (reducedMotion === 'no-preference') expect(await style(seal, 'animation-iteration-count')).toBe('1')
+  })
+}
+
+test('sin cumplir las reglas no hay sello', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-sgspe-1/finalizacion')
+  await expect(page.getByRole('region', { name: 'Para terminar el curso' })).toContainText('1 de 3 lecciones')
+  await expect(page.locator('[data-seal]')).toHaveCount(0)
+})

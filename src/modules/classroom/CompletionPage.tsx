@@ -37,12 +37,34 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
           {t('completionPanel.rules')}
         </h2>
         {completion.rules.length === 0 ? <p className="text-sm text-ink-muted">{t('completionPanel.noRules')}</p> : <RuleList rules={completion.rules} />}
-        <p role="status" className={`text-sm font-medium ${completion.met ? 'text-success' : 'text-ink'}`}>
-          {completion.met ? t('completionPanel.met') : t('completionPanel.notMet')}
-        </p>
+        <div className="flex items-center gap-4">
+          {completion.met ? <Seal /> : null}
+          <p role="status" className={`text-sm font-medium ${completion.met ? 'text-success' : 'text-ink'}`}>
+            {completion.met ? t('completionPanel.met') : t('completionPanel.notMet')}
+          </p>
+        </div>
       </section>
       <CertificateSection classroom={classroom} met={completion.met} />
     </div>
+  )
+}
+
+// el sello de maíz (PantallaFinalizacion): se anuda una sola vez al cumplir todas las reglas; con movimiento reducido
+// aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio
+function Seal() {
+  return (
+    <span
+      aria-hidden="true"
+      data-seal=""
+      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full bg-maiz text-on-maiz motion-reduce:animate-none"
+    >
+      <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {/* un nudo sobre su cordón */}
+        <path d="M1.5 12h4M18.5 12h4" />
+        <circle cx="12" cy="12" r="6.5" />
+        <path d="m9 12.2 2.1 2.1 4-4.3" />
+      </svg>
+    </span>
   )
 }
 
