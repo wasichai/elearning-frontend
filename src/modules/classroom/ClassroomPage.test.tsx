@@ -43,7 +43,14 @@ describe('ClassroomPage: el aula', () => {
     expect(await screen.findByRole('heading', { level: 1, name: classroom.course.title })).toBeInTheDocument()
     expect(await lessonHeading('Recorrido por la pantalla')).toBeInTheDocument()
     expect(screen.getByText('Unidad 1 · Lección 2')).toBeInTheDocument()
-    expect(screen.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '33')
+    const progress = screen.getByRole('progressbar', { name: 'Progreso del curso' })
+    expect(progress).toHaveAttribute('aria-valuenow', '33')
+    // el quipu del curso: las lecciones que cuentan, con su tipo y su estado
+    expect([...progress.querySelectorAll('[data-knot]')].map((knot) => `${knot.getAttribute('data-knot')}:${knot.getAttribute('data-state')}`)).toEqual([
+      'lesson:done',
+      'lesson:todo',
+      'lesson:todo'
+    ])
 
     const nav = within(units())
     expect(nav.getByRole('heading', { level: 2, name: /^Unidad 1\. El trámite de anuncios/ })).toHaveTextContent('1 de 2 lecciones completadas')
@@ -51,6 +58,10 @@ describe('ClassroomPage: el aula', () => {
     expect(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
     expect(nav.getByRole('link', { name: 'Recorrido por la pantalla Sin empezar' })).toHaveAttribute('aria-current', 'page')
     expect(nav.getAllByRole('link')).toHaveLength(4)
+    // cada lección del temario lleva su nudo, decorativo: el estado viaja en el texto del enlace
+    const knot = nav.getByRole('link', { name: 'Tipos de anuncio Completada' }).querySelector('[data-knot]')
+    expect(knot).toHaveAttribute('data-state', 'done')
+    expect(knot).toHaveAttribute('aria-hidden', 'true')
     expect(nav.getAllByRole('link').filter((link) => link.hasAttribute('aria-current'))).toHaveLength(1)
   })
 

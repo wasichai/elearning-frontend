@@ -66,6 +66,10 @@ describe('la evaluación como lección', () => {
     expect(rules.getByText('70 %')).toBeInTheDocument()
     expect(rules.getByText('Aún sin intentos enviados')).toBeInTheDocument()
     expect(screen.getByText('Se completa al aprobar la evaluación.')).toBeInTheDocument()
+    // en el temario, la evaluación es un rombo y la sesión un doble anillo
+    const nav = screen.getByRole('navigation', { name: 'Unidades del curso' })
+    const knot = (name: RegExp) => within(nav).getByRole('link', { name }).querySelector('[data-knot]')?.getAttribute('data-knot')
+    expect([knot(/^Evaluación final/), knot(/^Sesión de consulta/)]).toEqual(['assessment', 'session'])
     // la evaluación sin material no dice «sin material»
     expect(screen.queryByText('Esta lección no tiene material.')).not.toBeInTheDocument()
 
