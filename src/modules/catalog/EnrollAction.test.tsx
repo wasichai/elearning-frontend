@@ -28,8 +28,8 @@ function Classroom() {
 let fetchMock: FetchMock
 afterEach(() => fetchMock?.restore())
 
-function renderCourse(routes: MockRoute[], { signedIn = true, modules = [catalogModule(), classroomStub] } = {}) {
-  fetchMock = mockFetch([{ path: COURSE, body: courseDetail }, ...routes])
+function renderCourse(routes: MockRoute[], { signedIn = true, modules = [catalogModule(), classroomStub], course = courseDetail as unknown } = {}) {
+  fetchMock = mockFetch([{ path: COURSE, body: course }, ...routes])
   return renderWithProviders(
     <Routes>
       <Route path="/cursos/:slug" element={<CourseDetailPage />} />
@@ -128,7 +128,7 @@ describe('matricularse desde la ficha', () => {
   // RF-CAT-09: completa no es lo mismo que cerrada; tampoco se ofrece matricularse, ni a quien tiene sesión
   it('una edición completa lo dice y no ofrece matricularse', async () => {
     const full = { ...courseDetail.offerings[0]!, enrollmentOpen: false, enrollmentStatus: 'FULL', full: true }
-    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [full] } }])
+    renderCourse([], { course: { ...courseDetail, offerings: [full] } })
 
     const section = await offerings()
     expect(section.getByText('Edición completa')).toBeInTheDocument()
@@ -139,7 +139,7 @@ describe('matricularse desde la ficha', () => {
 
   it('con un backend que aún no manda enrollmentStatus, decide enrollmentOpen', async () => {
     const { enrollmentStatus: _status, full: _full, ...legacy } = courseDetail.offerings[0]!
-    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [legacy] } }])
+    renderCourse([], { course: { ...courseDetail, offerings: [legacy] } })
 
     const section = await offerings()
     expect(section.getByText('Inscripción abierta')).toBeInTheDocument()
