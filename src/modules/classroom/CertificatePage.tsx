@@ -102,10 +102,10 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
         {appName ? <p className="text-sm font-semibold tracking-widest text-ink-muted uppercase">{appName}</p> : null}
         <p className="text-2xl font-semibold tracking-tight">{t('certificate.heading')}</p>
         <p className="text-sm text-ink-muted">{t('certificate.certifies')}</p>
-        <h1 id="certificate-holder" className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+        <h1 id="certificate-holder" className="font-read text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
           {certificate.holderName}
         </h1>
-        <p className="max-w-prose text-base">
+        <p className="max-w-prose font-read text-lg font-semibold">
           {t(certificate.result === 'APROBADO' ? 'certificate.passedCourse' : 'certificate.completedCourse', { course: certificate.course.title })}
         </p>
         <dl className="grid w-full max-w-xl gap-x-8 gap-y-3 text-left text-sm sm:grid-cols-2">

@@ -59,7 +59,9 @@ La app trae su propio tema, **Quipu** (`src/theme/`), según el contrato de tema
 tokens de Wasichai en dos bloques, `quipu` (claro) y `quipu-dark` (oscuro), y `themes.ts` los ofrece en `config.themes`.
 Un usuario nuevo entra en Quipu, claro u oscuro según su sistema; el claro y el oscuro de Wasichai siguen en el selector.
 El script de arranque de `index.html` aplica el tema guardado antes del bundle; un tema nuevo se añade allí también.
-La letra es Figtree (SIL OFL), servida por la app desde `src/theme/fonts/`. `quipu.test.ts` comprueba que cada bloque pone
+La letra de interfaz es Figtree y la de lectura, Literata (las dos SIL OFL, servidas por la app desde `src/theme/fonts/`):
+`font-read` (`--font-read` en `@theme`) la pone en los enunciados, en las respuestas de la corrección y en el certificado.
+La lectura HTML del iframe no la carga, porque su CSP no deja pedir fuentes. `quipu.test.ts` comprueba que cada bloque pone
 todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
 
 ## Tema

@@ -33,9 +33,10 @@ describe('CertificatePage', () => {
     const print = vi.spyOn(window, 'print').mockImplementation(() => {})
     renderCertificate([{ path: PUBLIC, body: certificate }])
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeInTheDocument()
+    // titular y curso en la letra de lectura (PantallaCertificado)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toHaveClass('font-read')
     expect(screen.getByRole('status')).toHaveTextContent('Certificado auténtico, emitido por esta plataforma.')
-    expect(screen.getByText('aprobó el curso «Introducción al SGSPE».')).toBeInTheDocument()
+    expect(screen.getByText('aprobó el curso «Introducción al SGSPE».')).toHaveClass('font-read')
     expect(screen.getByText('SGSPE-101 · versión 1')).toBeInTheDocument()
     expect(screen.getByText('7 sept – 16 oct 2026')).toBeInTheDocument()
     expect(screen.getByText('18 h')).toBeInTheDocument()

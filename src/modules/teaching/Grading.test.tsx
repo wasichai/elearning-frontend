@@ -90,7 +90,8 @@ describe('corregir un intento', () => {
     expect(single.getByText('2 de 2 puntos')).toBeInTheDocument()
     expect(single.queryByRole('form')).not.toBeInTheDocument()
     const open = within(screen.getByRole('article', { name: '2. Explica cómo se liquida.' }))
-    expect(open.getByText('Se aplica la tasa al área del anuncio.')).toBeInTheDocument()
+    // la respuesta del estudiante se lee como texto, en la letra de lectura (PantallaCorreccion)
+    expect(open.getByText('Se aplica la tasa al área del anuncio.')).toHaveClass('font-read')
     expect(open.getByText('Cita la ordenanza (2 pts)')).toBeInTheDocument()
   })
 

@@ -38,7 +38,7 @@ export function QuestionField({ question, answer, saved, disabled, onChange, onU
   const promptId = useId()
   return (
     <fieldset className="flex min-w-0 flex-col gap-3 rounded-card border border-border px-5 py-4" aria-describedby={`${promptId}-points`}>
-      <legend id={promptId} className="float-left w-full text-base font-medium text-ink">
+      <legend id={promptId} className="float-left w-full font-read text-lg leading-7 font-medium text-ink">
         {t('question.prompt', { order: question.order, prompt: question.prompt })}
       </legend>
       <p id={`${promptId}-points`} className="text-xs text-ink-muted">
