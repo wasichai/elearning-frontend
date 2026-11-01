@@ -1,6 +1,6 @@
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { foreignModuleImports, handWrittenText, literalLinks, offenders, sourceFiles } from '../../test/boundaries'
+import { foreignModuleImports, handWrittenText, literalLinks, offenders, smallButtons, sourceFiles } from '../../test/boundaries'
 
 // las fronteras del módulo (src/test/boundaries.ts): enlaces por clave de ruta, nada de otro módulo, textos por i18n
 
@@ -21,6 +21,11 @@ describe('fronteras del módulo catalog', () => {
     expect(offenders(MODULE_DIR, (file, source) => foreignModuleImports(file, source, MODULE_DIR))).toEqual([])
   })
 
+  // pantallas del estudiante, móvil primero: botones de 44px (el sm es para las tablas densas de docencia)
+  it('no usa botones sm', () => {
+    expect(offenders(MODULE_DIR, (_file, source) => smallButtons(source), /\.tsx$/)).toEqual([])
+  })
+
   it('no escribe texto visible en los componentes', () => {
     expect(offenders(MODULE_DIR, (_file, source) => handWrittenText(source), /\.tsx$/)).toEqual([])
   })
@@ -28,6 +33,13 @@ describe('fronteras del módulo catalog', () => {
 
 // las comprobaciones muerden: casos sintéticos que deben caer, y los que no
 describe('las comprobaciones de frontera detectan lo prohibido', () => {
+  it('botones sm: size="sm" en un componente', () => {
+    const bad = ['<Button size="sm">', '<Button variant="secondary" size=\'sm\' onClick={go}>', '<Button size={"sm"}>']
+    const good = ['<Button>', '<Button size="md">', '<Button size="icon">', '// el sm es para docencia']
+    expect(bad.map((line) => smallButtons(line).length)).toEqual([1, 1, 1])
+    expect(good.flatMap((line) => smallButtons(line))).toEqual([])
+  })
+
   it('URLs literales en to=, href= y navigate(', () => {
     const bad = [`<Link to="/cursos">`, `<Link to={'/cursos/' + slug}>`, 'navigate(`/cursos/${slug}`)', `<a href="cursos">`, `navigate( '/login' )`]
     const good = [

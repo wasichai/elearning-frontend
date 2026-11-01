@@ -50,11 +50,11 @@ test('quipu: un campo inválido lleva 2px de danger y no salta', async ({ page }
   expect(shadow).toBe(`${border} 0px 0px 0px 1px inset`)
 })
 
-test('quipu: el botón sm mide 36px a la vista y responde en 44px', async ({ page }) => {
+test('quipu: el botón sm (tabla de docencia) mide 36px a la vista y responde en 44px', async ({ page }) => {
   await withTheme(page, 'quipu')
-  await fakeApi(page, { signedIn: true, enrolled: false })
-  await page.goto('/cursos/srtm-anuncios')
-  const action = page.getByRole('button', { name: ACTION })
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto('/docencia/edicion-sgspe-2026-09/correccion')
+  const action = page.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' })
   // elementFromPoint solo ve lo que está en pantalla
   await action.scrollIntoViewIfNeeded()
   const { x, y, width, height } = await box(action)
@@ -71,6 +71,15 @@ test('quipu: el botón sm mide 36px a la vista y responde en 44px', async ({ pag
     )
   expect(await hit(y - 3)).toBe(true)
   expect(await hit(y + height + 3)).toBe(true)
+  // y no más: el área es de 44px exactos
+  expect(await hit(y - 5)).toBe(false)
+})
+
+test('quipu: «Matricularme», en una pantalla del estudiante, es un botón de 44px', async ({ page }) => {
+  await withTheme(page, 'quipu')
+  await fakeApi(page, { signedIn: true, enrolled: false })
+  await page.goto('/cursos/srtm-anuncios')
+  expect((await box(page.getByRole('button', { name: ACTION }))).height).toBe(44)
 })
 
 test('el tema claro de Wasichai no cambia: sus controles siguen a 36px', async ({ page }) => {

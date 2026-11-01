@@ -25,7 +25,7 @@ function SignInToEnroll() {
   // la ruta del router, no window.location: el router pone el basename
   const location = useLocation()
   return (
-    <Button asChild variant="secondary" size="sm" className="self-start">
+    <Button asChild variant="secondary" className="self-start">
       <Link to={links.login({ returnTo: location.pathname + location.search })}>{t('enroll.signIn')}</Link>
     </Button>
   )
@@ -40,7 +40,7 @@ function EnrollButton({ offering }: { offering: Offering }) {
   const onEnroll = () => enroll.mutate(offering.code, { onSuccess: (enrollment) => void navigate(links.to(CLASSROOM_ROUTE, { enrollmentId: enrollment.id })) })
   return (
     <div className="flex flex-col items-start gap-2">
-      <Button size="sm" onClick={onEnroll} disabled={enroll.isPending} aria-label={t('enroll.actionLabel', { dates })}>
+      <Button onClick={onEnroll} disabled={enroll.isPending} aria-label={t('enroll.actionLabel', { dates })}>
         {enroll.isPending ? t('enroll.enrolling') : t('enroll.action')}
       </Button>
       {enroll.error ? <EnrollProblem error={enroll.error} /> : null}

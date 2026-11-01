@@ -48,3 +48,10 @@ export function offenders(dir: string, check: (file: string, source: string) => 
     .filter((file) => extension.test(file))
     .flatMap((file) => check(file, readFileSync(file, 'utf8')).map((hit) => `${relative(dir, file)}: ${hit.trim()}`))
 }
+
+// size="sm", size='sm' o size={"sm"} en un botón: las pantallas del estudiante (móvil primero) usan botones de 44px; el sm
+// (36px) es para las tablas densas de docencia en escritorio (guía Button del sistema de diseño)
+const SMALL_BUTTON = /\bsize=\{?\s*["']sm["']\s*\}?/
+export function smallButtons(source: string): string[] {
+  return source.split('\n').filter((line) => SMALL_BUTTON.test(line))
+}

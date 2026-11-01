@@ -23,7 +23,7 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
   if (query.isError)
     return (
       <ProblemState title={title} description={description}>
-        <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
+        <Button variant="secondary" onClick={() => void query.refetch()}>
           {t('problem.retry')}
         </Button>
       </ProblemState>

@@ -37,7 +37,7 @@ function EnrollmentsProblem({ error, onRetry }: { error: unknown; onRetry: () =>
   const { title, description } = useProblemText(error, 'enrollments')
   return (
     <ProblemState title={title} description={description}>
-      <Button variant="secondary" size="sm" onClick={onRetry}>
+      <Button variant="secondary" onClick={onRetry}>
         {t('problem.retry')}
       </Button>
     </ProblemState>
@@ -54,7 +54,7 @@ function EnrollmentList({ enrollments }: { enrollments: Enrollment[] }) {
         <p className="text-sm text-ink-muted">{t('enrollments.emptyHint')}</p>
         {/* el catálogo es otro módulo: se enlaza por su clave de ruta, sin importarlo, y solo si está registrado */}
         {links.has(CATALOG_COURSES_ROUTE) ? (
-          <Button asChild variant="secondary" size="sm" className="mt-2">
+          <Button asChild variant="secondary" className="mt-2">
             <Link to={links.to(CATALOG_COURSES_ROUTE)}>{t('enrollments.toCatalog')}</Link>
           </Button>
         ) : null}
@@ -102,13 +102,13 @@ function EnrollmentItem({ enrollment }: { enrollment: Enrollment }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-ink">{next ? t('enrollments.next', { lesson: next.title }) : t('enrollments.finished')}</p>
         {next ? (
-          <Button asChild size="sm" className="self-start sm:self-auto">
+          <Button asChild className="self-start sm:self-auto">
             <Link to={links.to(CLASSROOM_ROUTES.classroom, params, { [LESSON_PARAM]: next.id })} aria-label={t('enrollments.continueLabel', { course })}>
               {t('enrollments.continue')}
             </Link>
           </Button>
         ) : (
-          <Button asChild variant="secondary" size="sm" className="self-start sm:self-auto">
+          <Button asChild variant="secondary" className="self-start sm:self-auto">
             <Link to={links.to(CLASSROOM_ROUTES.classroom, params)} aria-label={t('enrollments.reviewLabel', { course })}>
               {t('enrollments.review')}
             </Link>
