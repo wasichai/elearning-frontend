@@ -22,9 +22,10 @@ const es = {
     sort: 'Ordenar por',
     page: 'Página',
     size: 'Tamaño de página',
-    moreLegend: 'Duración, inscripción y horas',
+    moreLegend: 'Duración, inscripción, conocimientos previos y horas',
     duration: 'Duración',
     enrollmentOpen: 'Inscripción',
+    prerequisiteKnowledge: 'Conocimientos previos',
     minTheoryHours: 'Horas de teoría (mínimo)',
     minPracticeHours: 'Horas de práctica o laboratorio (mínimo)',
     minAutonomousHours: 'Horas de trabajo autónomo (mínimo)',
@@ -39,6 +40,9 @@ const es = {
   enrollmentFilter: {
     true: 'Con inscripción abierta',
     false: 'Sin inscripción abierta'
+  },
+  knowledgeFilter: {
+    none: 'Sin conocimientos previos'
   },
   sort: {
     upcoming: 'Próxima edición',
@@ -230,9 +234,10 @@ const en: typeof es = {
     sort: 'Sort by',
     page: 'Page',
     size: 'Page size',
-    moreLegend: 'Duration, enrollment and hours',
+    moreLegend: 'Duration, enrollment, prior knowledge and hours',
     duration: 'Duration',
     enrollmentOpen: 'Enrollment',
+    prerequisiteKnowledge: 'Prior knowledge',
     minTheoryHours: 'Theory hours (minimum)',
     minPracticeHours: 'Practice or lab hours (minimum)',
     minAutonomousHours: 'Self-study hours (minimum)',
@@ -247,6 +252,9 @@ const en: typeof es = {
   enrollmentFilter: {
     true: 'Open for enrollment',
     false: 'Not open for enrollment'
+  },
+  knowledgeFilter: {
+    none: 'No prior knowledge'
   },
   sort: {
     upcoming: 'Next offering',

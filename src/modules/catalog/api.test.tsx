@@ -29,6 +29,7 @@ describe('filtros en la URL', () => {
       minTheoryHours: '',
       minPracticeHours: '',
       minAutonomousHours: '',
+      prerequisiteKnowledge: '',
       sort: 'upcoming',
       page: 1
     })
@@ -57,6 +58,7 @@ describe('peticiones', () => {
       minWeeks: '12',
       enrollmentOpen: 'true',
       minPracticeHours: '6.5',
+      prerequisiteKnowledge: 'none',
       page: 2
     })
     const [base, query] = path.split('?')
@@ -71,6 +73,7 @@ describe('peticiones', () => {
       minWeeks: '12',
       enrollmentOpen: 'true',
       minPracticeHours: '6.5',
+      prerequisiteKnowledge: 'none',
       sort: 'upcoming',
       page: '1',
       size: '12'

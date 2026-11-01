@@ -26,6 +26,13 @@ const enrollmentStatus = z.enum(ENROLLMENT_STATUSES).optional()
 
 const category = z.object({ slug: z.string(), name: z.string() })
 
+// una clave del vocabulario de conocimientos previos (RF-CAT-08, ADR-0028 del backend). opcional como enrollmentStatus:
+// un backend anterior no la manda y vale como «ninguna»
+const knowledgeTag = z.object({ key: z.string(), name: z.string() })
+const knowledgeTags = z.array(knowledgeTag).optional().default([])
+// el valor del filtro para «sin conocimientos previos»: el backend no admite una clave con ese nombre
+export const NO_KNOWLEDGE = 'none'
+
 const summaryWorkload = z.object({ totalHours: hours, contactHours: hours, autonomousHours: hours })
 
 const nextOffering = z.object({
@@ -59,7 +66,13 @@ export const coursePageSchema = z.object({
   size: z.number().int().positive(),
   totalElements: z.number().int().nonnegative(),
   totalPages: z.number().int().nonnegative(),
-  facets: z.object({ categories: z.array(category.extend({ count: z.number().int().nonnegative() })) })
+  facets: z.object({
+    categories: z.array(category.extend({ count: z.number().int().nonnegative() })),
+    prerequisiteKnowledge: z
+      .array(knowledgeTag.extend({ count: z.number().int().nonnegative() }))
+      .optional()
+      .default([])
+  })
 })
 
 const weeklyHours = z.object({ theory: hours, practice: hours, supervised: hours, autonomous: hours })
@@ -147,6 +160,7 @@ const teacher = z.object({
 
 export const courseDetailSchema = courseBase.extend({
   prerequisiteKnowledge: z.string().nullable(),
+  prerequisiteKnowledgeTags: knowledgeTags,
   version: z.object({ number: z.number().int().positive(), publishedAt: z.iso.datetime().nullable() }),
   objectives: lines,
   learningOutcomes: lines,
