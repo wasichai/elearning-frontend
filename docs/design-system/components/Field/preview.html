@@ -1,0 +1,40 @@
+<!-- @dsCard group="Formularios" height=520 -->
+<!doctype html>
+<html lang="es-PE">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Field — Quipu</title></head>
+<body>
+
+<div class="wq-root wq-grid-2">
+  <div class="wq-stack">
+    <div class="wq-field">
+      <label class="wq-label" for="a">Correo institucional</label>
+      <input class="wq-input" id="a" type="email" placeholder="nombre@municipalidad.gob.pe" aria-describedby="a-h">
+      <span class="wq-hint" id="a-h">Te enviaremos aquí el certificado.</span>
+    </div>
+    <div class="wq-field is-invalid">
+      <label class="wq-label" for="b">DNI</label>
+      <input class="wq-input" id="b" value="4567812" aria-invalid="true" aria-describedby="b-e">
+      <span class="wq-error-msg" id="b-e"><span class="wq-i wq-i-alert " aria-hidden="true"></span> El DNI tiene 8 dígitos. Revisa si falta uno.</span>
+    </div>
+    <div class="wq-field">
+      <label class="wq-label" for="c">Código de edición</label>
+      <input class="wq-input" id="c" value="GPM-2026-II" disabled>
+      <span class="wq-hint">Lo asigna la coordinación; no se puede cambiar.</span>
+    </div>
+  </div>
+  <div class="wq-stack">
+    <div class="wq-field">
+      <label class="wq-label" for="d">Tu respuesta <span class="wq-opt">(mín. 150 palabras)</span></label>
+      <textarea class="wq-textarea" id="d" aria-describedby="d-c">El presupuesto participativo permite que la población priorice…</textarea>
+      <span class="wq-counter" id="d-c">12 / 150 palabras</span>
+    </div>
+    <fieldset class="wq-field" style="border:0;padding:0;margin:0">
+      <legend class="wq-label">Recordatorios</legend>
+      <label class="wq-choice"><input type="checkbox" checked> Avisarme 24 h antes de cada sesión en vivo</label>
+      <label class="wq-choice"><input type="checkbox"> Resumen semanal de mi avance</label>
+    </fieldset>
+  </div>
+</div>
+<script></script>
+</body>
+</html>

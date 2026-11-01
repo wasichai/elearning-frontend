@@ -53,6 +53,15 @@ Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`)
 formato de fechas, estado de error y la vista de diferencias entre versiones del estudio y la bandeja, con sus textos en
 `diffMessages`) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
 
+## Tema
+
+La app trae su propio tema, **Quipu** (`src/theme/`), según el contrato de temas de `@wasichai/ui`: `quipu.css` pone los
+tokens de Wasichai en dos bloques, `quipu` (claro) y `quipu-dark` (oscuro), y `themes.ts` los ofrece en `config.themes`.
+Un usuario nuevo entra en Quipu, claro u oscuro según su sistema; el claro y el oscuro de Wasichai siguen en el selector.
+El script de arranque de `index.html` aplica el tema guardado antes del bundle; un tema nuevo se añade allí también.
+La letra es Figtree (SIL OFL), servida por la app desde `src/theme/fonts/`. `quipu.test.ts` comprueba que cada bloque pone
+todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
+
 ## Comandos
 
 | Comando          | Qué hace                                             |

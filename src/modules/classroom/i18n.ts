@@ -4,6 +4,11 @@ const es = {
     group: 'Aprendizaje',
     myCourses: 'Mis cursos'
   },
+  // nombres de los temas Quipu en el selector de tema del shell (src/theme/themes.ts)
+  theme: {
+    quipu: 'Quipu',
+    quipuDark: 'Quipu oscuro'
+  },
   enrollments: {
     title: 'Mis cursos',
     subtitle: 'Los cursos en los que estás matriculado y por dónde vas.',
@@ -382,6 +387,10 @@ const en: typeof es = {
   nav: {
     group: 'Learning',
     myCourses: 'My courses'
+  },
+  theme: {
+    quipu: 'Quipu',
+    quipuDark: 'Quipu dark'
   },
   enrollments: {
     title: 'My courses',
