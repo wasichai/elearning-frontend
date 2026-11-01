@@ -315,7 +315,9 @@ describe('el intento abierto', () => {
       `POST ${ATTEMPT}/submit`
     ])
     // pendiente de corrección: sin nota todavía, con los puntos que ya hay
-    expect(screen.getAllByText('Pendiente de corrección').length).toBeGreaterThan(0)
+    // el resultado lo dice con la insignia de pendiente de corrección
+    const pending = screen.getAllByText('Pendiente de corrección').map((text) => text.closest('[data-slot="badge"]'))
+    expect(pending.some((badge) => badge?.getAttribute('data-state') === 'review')).toBe(true)
     expect(screen.getByText('Tu docente corregirá las preguntas que lo necesitan. Por ahora llevas 5 de 10 puntos.')).toBeInTheDocument()
   })
 

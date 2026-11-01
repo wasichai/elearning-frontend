@@ -69,6 +69,11 @@ describe('ClassroomPage: el aula', () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
 
     expect(await lessonHeading('Tipos de anuncio')).toBeInTheDocument()
+    // la cabecera dice el estado de la lección con una insignia de icono y palabra
+    const status = within(screen.getByRole('article', { name: 'Tipos de anuncio' }))
+      .getByText('Completada')
+      .closest('[data-slot="badge"]')
+    expect(status).toHaveAttribute('data-state', 'done')
     const frame = await screen.findByTitle('Tipos de anuncio (lectura)')
     expect(frame.tagName).toBe('IFRAME')
     expect(frame.getAttribute('sandbox')).toBe('')

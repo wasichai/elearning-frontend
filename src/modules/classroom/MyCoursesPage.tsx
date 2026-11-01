@@ -9,6 +9,7 @@ import type { Enrollment } from './contract'
 import { OfferingDates, ProgressBar, useProblemText } from './parts'
 import { summaryKnots } from './Quipu'
 import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
+import { StatusBadge } from './StatusBadge'
 
 // «Mis cursos»: cada matrícula activa con su avance y un solo botón, el que lleva a la siguiente lección
 export function MyCoursesPage() {
@@ -91,7 +92,7 @@ function EnrollmentItem({ enrollment }: { enrollment: Enrollment }) {
       </div>
       {enrollment.certificateCode ? (
         <p className="flex flex-wrap gap-x-3 text-sm">
-          <span className="font-medium text-success">{t('enrollments.certified')}</span>
+          <StatusBadge state="done">{t('enrollments.certified')}</StatusBadge>
           <Link to={links.to(CLASSROOM_ROUTES.certificate, { code: enrollment.certificateCode })} className="text-link underline-offset-4 hover:underline">
             {t('enrollments.certificate', { course })}
           </Link>

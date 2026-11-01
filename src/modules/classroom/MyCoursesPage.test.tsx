@@ -73,6 +73,15 @@ describe('MyCoursesPage', () => {
     expect(card.queryByRole('link', { name: /^Continuar/ })).not.toBeInTheDocument()
   })
 
+  it('con certificado lo dice con una insignia de completado y enlaza al certificado', async () => {
+    renderPage([{ path: ENROLLMENTS, body: [{ ...finishedEnrollment, certificateCode: 'K7Q2-M9XW-4RTB' }] }])
+
+    await screen.findByRole('heading', { level: 2, name: finishedEnrollment.course.title })
+    const card = within(item(finishedEnrollment.course.title))
+    expect(card.getByText('Certificado emitido').closest('[data-slot="badge"]')).toHaveAttribute('data-state', 'done')
+    expect(card.getByRole('link', { name: 'Ver el certificado de «Tributos locales»' })).toHaveAttribute('href', '/certificados/K7Q2-M9XW-4RTB')
+  })
+
   it('sin matrículas, lleva al catálogo', async () => {
     renderPage([{ path: ENROLLMENTS, body: [] }])
 

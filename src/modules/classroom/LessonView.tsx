@@ -15,6 +15,7 @@ import { useOpenLabel } from './parts'
 import { isDarkTheme, useDocumentTheme } from './documentTheme'
 import { useReadingPreferences, type ReadingControls } from './readingPreferences'
 import { Resources, type ReadingSettings } from './Resources'
+import { StatusBadge, statusOf } from './StatusBadge'
 import { Sessions } from './SessionsPage'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
@@ -70,10 +71,13 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         <h2 id={`lesson-${lesson.id}`} ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-balance text-ink focus:outline-none">
           {lesson.title}
         </h2>
-        <p className="text-sm text-ink-muted">
-          {lessonType(lesson.type)}
-          {lesson.durationMinutes === null ? null : ` · ${t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })}`}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <p className="text-sm text-ink-muted">
+            {lessonType(lesson.type)}
+            {lesson.durationMinutes === null ? null : ` · ${t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })}`}
+          </p>
+          <StatusBadge state={statusOf(lesson.progress.status)}>{t(`lessonStatus.${lesson.progress.status}`)}</StatusBadge>
+        </div>
         {lesson.summary ? <p className="max-w-prose text-base text-ink">{lesson.summary}</p> : null}
       </header>
 
