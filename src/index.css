@@ -22,6 +22,21 @@
   font-style: italic;
   font-display: swap;
 }
+/* la letra de lectura (Literata, SIL OFL): enunciados, respuestas en la corrección y el certificado. corte latin con el
+   eje de peso y sin cursiva. la lectura HTML del iframe no la carga: su CSP no deja pedir fuentes (reading.ts) */
+@font-face {
+  font-family: 'Literata';
+  src: url('./theme/fonts/Literata-wght-normal.woff2') format('woff2');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* la utilidad font-read, para leer texto largo dentro de la interfaz */
+@theme {
+  --font-read: 'Literata', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+}
+
 /* los paquetes @wasichai traen nombres de clase, no CSS: Tailwind los escanea para generarlas */
 @source '../node_modules/@wasichai';
 

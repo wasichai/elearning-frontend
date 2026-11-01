@@ -125,3 +125,20 @@ test('modo lectura en quipu-dark: sigue oscuro y abre el interlineado de la lect
   // 1,79 × 19px
   await expect.poll(() => frame.locator('body').evaluate((element) => getComputedStyle(element).lineHeight)).toBe('34.01px')
 })
+
+test('el certificado pone al titular en Literata, servida por la app', async ({ page }) => {
+  const fonts: string[] = []
+  page.on('request', (request) => {
+    if (request.resourceType() === 'font') fonts.push(new URL(request.url()).host)
+  })
+  await withTheme(page, 'quipu')
+  await fakeApi(page, { certificateIssued: true })
+  await page.goto('/certificados/K7Q2-M9XW-4RTB')
+  const holder = page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })
+  await expect(holder).toBeVisible()
+
+  expect(await style(holder, 'font-family')).toMatch(/^Literata,/)
+  await expect.poll(() => page.evaluate(async () => (await document.fonts.load('600 36px Literata')).length)).toBeGreaterThan(0)
+  // ninguna letra viene de fuera
+  expect(new Set(fonts)).toEqual(new Set(['localhost:5180']))
+})

@@ -150,6 +150,8 @@ describe('el intento abierto', () => {
     )
 
     const single = await screen.findByRole('group', { name: '1. ¿Quién otorga la licencia de anuncio?' })
+    // el enunciado se lee en la letra de lectura (Question del sistema de diseño)
+    expect(single.querySelector('legend')).toHaveClass('font-read')
     await userEvent.click(within(single).getByRole('radio', { name: 'La municipalidad' }))
     const multiple = screen.getByRole('group', { name: '2. ¿Qué tipos de anuncio existen?' })
     await userEvent.click(within(multiple).getByRole('checkbox', { name: 'Adosado' }))
@@ -366,7 +368,8 @@ describe('el resultado', () => {
     const tf = within(screen.getByRole('article', { name: '3. El SGSPE registra los expedientes.' }))
     expect(tf.getByText('0 de 1 puntos')).toBeInTheDocument()
     expect(tf.getByText('Incorrecta')).toBeInTheDocument()
-    expect(tf.getByText('Falso')).toBeInTheDocument()
+    // la respuesta dada, en la letra de lectura
+    expect(tf.getByText('Falso')).toHaveClass('font-read')
     expect(tf.getByText('Respuesta correcta: Verdadero')).toBeInTheDocument()
     const short = within(screen.getByRole('article', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }))
     expect(short.getByText('Respuestas aceptadas: SRTM · S.R.T.M.')).toBeInTheDocument()

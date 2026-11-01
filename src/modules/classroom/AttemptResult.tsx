@@ -72,7 +72,7 @@ function QuestionOutcome({ question, answer, outcome }: { question: Question; an
       <h4 className="text-base font-medium text-ink">{t('question.prompt', { order: question.order, prompt: question.prompt })}</h4>
       <p className="text-ink">
         <span className="text-ink-muted">{t('result.yourAnswer')} </span>
-        {given || t('result.noAnswer')}
+        {given ? <span className="font-read text-base">{given}</span> : t('result.noAnswer')}
       </p>
       <p className="flex flex-wrap gap-x-3">
         <span className="font-medium text-ink">

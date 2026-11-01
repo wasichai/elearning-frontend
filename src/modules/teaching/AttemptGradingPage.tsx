@@ -115,7 +115,7 @@ function QuestionReview({ code, attemptId, question, answer, outcome }: Question
       ) : (
         <p className="whitespace-pre-wrap text-ink">
           <span className="text-ink-muted">{t('grading.answer')} </span>
-          {given || t('grading.noAnswer')}
+          {given ? <span className="font-read text-base">{given}</span> : t('grading.noAnswer')}
         </p>
       )}
       {outcome?.solution ? (
