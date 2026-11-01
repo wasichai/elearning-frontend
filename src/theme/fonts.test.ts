@@ -41,3 +41,10 @@ describe('la celebración', () => {
     expect(/--color-on-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--on-maiz, #1e2327)')
   })
 })
+
+describe('la impresión', () => {
+  it('el certificado se imprime en un A4 apaisado sin márgenes de página: los pone el propio documento', () => {
+    const print = /@media print\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
+    expect(print).toMatch(/@page\s*\{\s*size: A4 landscape;\s*margin: 0;\s*\}/)
+  })
+})
