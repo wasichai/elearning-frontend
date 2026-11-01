@@ -221,6 +221,51 @@ describe('CatalogPage', () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ minAutonomousHours: '24' }))
   })
 
+  // RF-CAT-08: las claves salen de la faceta, con su recuento; «sin conocimientos previos» siempre está
+  it('los conocimientos previos salen de los facets y mandan la clave elegida o none', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+
+    const knowledge = screen.getByRole('combobox', { name: 'Conocimientos previos' })
+    expect(knowledge).toHaveTextContent('Cualquiera')
+    await user.click(knowledge)
+    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Cualquiera',
+      'Sin conocimientos previos',
+      'Hoja de cálculo (1)',
+      'Manejo de un navegador web (2)'
+    ])
+    await user.click(screen.getByRole('option', { name: 'Manejo de un navegador web (2)' }))
+    await waitFor(() => expect(lastQuery()).toMatchObject({ prerequisiteKnowledge: 'navegador-web' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/cursos?prerequisiteKnowledge=navegador-web')
+
+    await user.click(screen.getByRole('combobox', { name: 'Conocimientos previos' }))
+    await user.click(screen.getByRole('option', { name: 'Sin conocimientos previos' }))
+    await waitFor(() => expect(lastQuery()).toMatchObject({ prerequisiteKnowledge: 'none' }))
+  })
+
+  it('una clave de la URL sin cursos se ve tal cual y el estado vacío ofrece limpiarla', async () => {
+    const user = userEvent.setup()
+    renderCatalog(
+      [
+        { path: /prerequisiteKnowledge=astronomia/, body: { ...emptyPage, facets: { categories: [], prerequisiteKnowledge: [] } } },
+        { path: COURSES, body: coursePage }
+      ],
+      '/cursos?prerequisiteKnowledge=astronomia'
+    )
+
+    expect(await screen.findByText('Ningún curso coincide con la búsqueda')).toBeInTheDocument()
+    expect(lastQuery()).toMatchObject({ prerequisiteKnowledge: 'astronomia' })
+    expect(screen.getByRole('combobox', { name: 'Conocimientos previos' })).toHaveTextContent('astronomia')
+    const clear = screen.getAllByRole('button', { name: 'Limpiar filtros' })
+    await user.click(clear.at(-1)!)
+
+    expect(await screen.findByRole('list')).toBeInTheDocument()
+    expect(lastQuery().prerequisiteKnowledge).toBeUndefined()
+    expect(screen.getByRole('combobox', { name: 'Conocimientos previos' })).toHaveTextContent('Cualquiera')
+  })
+
   it('sin resultados por un filtro nuevo, el estado vacío ofrece limpiarlos y los campos se vacían', async () => {
     const user = userEvent.setup()
     renderCatalog(
@@ -392,7 +437,7 @@ describe('CatalogPage', () => {
     expect(screen.getByLabelText('Empieza desde')).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveFocus()
-    for (const name of ['Duración', 'Inscripción']) {
+    for (const name of ['Duración', 'Inscripción', 'Conocimientos previos']) {
       await user.tab()
       expect(screen.getByRole('combobox', { name })).toHaveFocus()
     }

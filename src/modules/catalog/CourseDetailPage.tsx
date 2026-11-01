@@ -1,6 +1,6 @@
 import { LoadingState, useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Table, Td, Th } from '@wasichai/ui'
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { catalogKeys, useCourse, useQueryProblem } from './api'
@@ -95,9 +95,9 @@ function CourseView({ course }: { course: CourseDetail }) {
           </Section>
         ) : null}
 
-        {course.requirements || course.prerequisiteKnowledge ? (
+        {course.requirements || course.prerequisiteKnowledge || course.prerequisiteKnowledgeTags.length > 0 ? (
           <Section title={t('detail.before')}>
-            <Prose title={t('detail.prerequisiteKnowledge')} text={course.prerequisiteKnowledge} />
+            <Knowledge tags={course.prerequisiteKnowledgeTags} text={course.prerequisiteKnowledge} />
             <Prose title={t('detail.requirements')} text={course.requirements} />
           </Section>
         ) : null}
@@ -173,6 +173,30 @@ function Prose({ title, text }: { title: string; text: string | null }) {
     <div className="flex flex-col gap-1.5 text-sm">
       <h3 className="font-medium text-ink">{title}</h3>
       <p className="max-w-prose whitespace-pre-line text-ink">{text}</p>
+    </div>
+  )
+}
+
+// RF-CAT-08: las claves que declaró la versión (las del filtro del catálogo) y, debajo, el texto libre del curso
+function Knowledge({ tags, text }: { tags: CourseDetail['prerequisiteKnowledgeTags']; text: string | null }) {
+  const { t } = useTranslation('catalog')
+  const id = useId()
+  if (!text && tags.length === 0) return null
+  return (
+    <div className="flex flex-col gap-1.5 text-sm">
+      <h3 id={id} className="font-medium text-ink">
+        {t('detail.prerequisiteKnowledge')}
+      </h3>
+      {tags.length > 0 ? (
+        <ul aria-labelledby={id} className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <li key={tag.key} className="rounded-full border border-border px-2.5 py-0.5 text-ink">
+              {tag.name}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {text ? <p className="max-w-prose whitespace-pre-line text-ink">{text}</p> : null}
     </div>
   )
 }

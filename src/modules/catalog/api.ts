@@ -25,6 +25,8 @@ export interface CatalogFilters {
   minTheoryHours: string
   minPracticeHours: string
   minAutonomousHours: string
+  // una clave de conocimientos previos o NO_KNOWLEDGE ('none'): sin ninguna declarada
+  prerequisiteKnowledge: string
   sort: string
   // 1 = primera página; la API cuenta desde 0
   page: number
@@ -42,6 +44,7 @@ const FILTER_KEYS = [
   'minTheoryHours',
   'minPracticeHours',
   'minAutonomousHours',
+  'prerequisiteKnowledge',
   'sort'
 ] as const
 
@@ -59,6 +62,7 @@ export function filtersFromSearch(params: URLSearchParams): CatalogFilters {
     minTheoryHours: params.get('minTheoryHours') ?? '',
     minPracticeHours: params.get('minPracticeHours') ?? '',
     minAutonomousHours: params.get('minAutonomousHours') ?? '',
+    prerequisiteKnowledge: params.get('prerequisiteKnowledge') ?? '',
     sort: params.get('sort') ?? DEFAULT_SORT,
     page: Number.isInteger(page) && page > 1 ? page : 1
   }
