@@ -1,0 +1,36 @@
+<!-- @dsCard group="Formularios" height=360 -->
+<!doctype html>
+<html lang="es-PE">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Select — Quipu</title></head>
+<body>
+
+<div class="wq-root wq-grid-2">
+  <div class="wq-stack">
+    <div class="wq-field">
+      <label class="wq-label" for="s1">Edición</label>
+      <div class="wq-select-wrap"><select class="wq-select" id="s1"><option>2026-II · ago–dic</option><option>2026-I · mar–jul</option></select></div>
+    </div>
+    <div class="wq-field is-invalid">
+      <label class="wq-label" for="s2">Motivo de la reprogramación</label>
+      <div class="wq-select-wrap"><select class="wq-select" id="s2" aria-invalid="true"><option>Elige un motivo</option></select></div>
+      <span class="wq-error-msg"><span class="wq-i wq-i-alert " aria-hidden="true"></span> Elige un motivo para avisar a los matriculados.</span>
+    </div>
+    <div class="wq-field">
+      <label class="wq-label" for="s3">Docente</label>
+      <div class="wq-select-wrap"><select class="wq-select" id="s3" disabled><option>Rosa Quispe Mamani</option></select></div>
+    </div>
+  </div>
+  <div class="wq-stack">
+    <span class="wq-label">Lista abierta (select personalizado)</span>
+    <div class="wq-menu" role="listbox" aria-label="Filtrar por estado">
+      <div class="wq-menu-item" role="option" aria-selected="true"><span class="wq-i wq-i-check wq-i--sm" aria-hidden="true"></span> Todos los estados</div>
+      <div class="wq-menu-item is-active" role="option"><span class="wq-i wq-i-half wq-i--sm" aria-hidden="true"></span> En curso</div>
+      <div class="wq-menu-item" role="option"><span class="wq-i wq-i-hourglass wq-i--sm" aria-hidden="true"></span> Pendiente de corrección</div>
+      <div class="wq-menu-item" role="option"><span class="wq-i wq-i-clock-x wq-i--sm" aria-hidden="true"></span> Vencido</div>
+      <div class="wq-menu-item" role="option" aria-disabled="true"><span class="wq-i wq-i-check-circle wq-i--sm" aria-hidden="true"></span> Completado (sin resultados)</div>
+    </div>
+  </div>
+</div>
+<script></script>
+</body>
+</html>

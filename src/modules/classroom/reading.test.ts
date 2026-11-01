@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lockedReading, READING_CSP } from './reading'
+import { lockedReading, READING_CSP, readingStyle } from './reading'
 
 const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html')
 
@@ -40,5 +40,39 @@ describe('lockedReading', () => {
     const html = lockedReading("<body><script>document.body.setAttribute('data-script', 'ran')</script></body>")
     expect(html).toContain('<script>')
     expect(document.body).not.toHaveAttribute('data-script')
+  })
+
+  it('pone el estilo de lectura justo detrás de la CSP, antes de los estilos del autor, que lo pisan', () => {
+    const doc = parse(lockedReading('<html><head><style>body { font-family: Arial }</style></head><body><p>hola</p></body></html>'))
+
+    const [csp, reading, author] = [...doc.head.children]
+    expect(csp?.getAttribute('http-equiv')).toBe('Content-Security-Policy')
+    expect(reading?.tagName).toBe('STYLE')
+    expect(reading?.hasAttribute('data-reading')).toBe(true)
+    expect(author?.textContent).toBe('body { font-family: Arial }')
+  })
+
+  it('el estilo de lectura tiene especificidad cero y la medida de lectura larga', () => {
+    const css = readingStyle()
+    const selectors = [...css.matchAll(/^\s*([^{@]+)\{/gm)].map((match) => match[1]!.trim())
+    expect(selectors.length).toBeGreaterThan(5)
+    expect(selectors.filter((selector) => !selector.startsWith(':where('))).toEqual([])
+    expect(css).toContain('max-width: 68ch')
+    expect(css).toContain('color-scheme: light')
+  })
+
+  it('pinta la lectura con los colores del tema que recibe', () => {
+    const css = readingStyle({ colorScheme: 'dark', background: '#1b2023', text: 'oklch(93% 0.008 265)', link: '#e58a63' })
+    expect(css).toContain('color-scheme: dark')
+    expect(css).toContain('background: #1b2023;')
+    expect(css).toContain('color: oklch(93% 0.008 265);')
+    expect(css).toContain('color: #e58a63;')
+  })
+
+  it('descarta un valor que no es un color, sin dejar cerrar la regla', () => {
+    const css = readingStyle({ colorScheme: 'light', background: 'red; } body { display: none', text: 'url(https://otro.example/x)' })
+    expect(css).not.toContain('display: none')
+    expect(css).not.toContain('otro.example')
+    expect(css).not.toMatch(/background:/)
   })
 })
