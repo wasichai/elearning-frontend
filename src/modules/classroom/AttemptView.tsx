@@ -35,7 +35,7 @@ function AttemptLoadProblem({ error, onRetry }: { error: unknown; onRetry: () =>
   if (kind === 'notFound') return <Alert tone="notice">{t('attempt.notFound')}</Alert>
   return (
     <ProblemState title={title} description={description}>
-      <Button variant="secondary" size="sm" onClick={onRetry}>
+      <Button variant="secondary" onClick={onRetry}>
         {t('problem.retry')}
       </Button>
     </ProblemState>

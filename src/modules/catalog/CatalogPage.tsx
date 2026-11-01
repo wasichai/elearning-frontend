@@ -144,7 +144,7 @@ function Filters({ filters, page, onChange, onClear }: FiltersProps) {
       <MoreFilters id={id} filters={filters} onChange={onChange} />
       {hasActiveFilters(filters) ? (
         <div>
-          <Button variant="ghost" size="sm" onClick={onClear}>
+          <Button variant="ghost" onClick={onClear}>
             {t('filters.clear')}
           </Button>
         </div>
@@ -300,7 +300,7 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     if (page.totalElements > 0)
       return (
         <EmptyState title={t('empty.pastLastPage')}>
-          <Button variant="secondary" size="sm" onClick={() => onPage(1)}>
+          <Button variant="secondary" onClick={() => onPage(1)}>
             {t('empty.firstPage')}
           </Button>
         </EmptyState>
@@ -308,7 +308,7 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     return hasActiveFilters(filters) ? (
       <EmptyState title={t('empty.filtered')}>
         <p>{t('empty.filteredHint')}</p>
-        <Button variant="secondary" size="sm" onClick={onClear}>
+        <Button variant="secondary" onClick={onClear}>
           {t('filters.clear')}
         </Button>
       </EmptyState>
@@ -413,11 +413,11 @@ function CatalogProblem({ error, onRetry, onClear }: { error: unknown; onRetry: 
   return (
     <ProblemState title={title} description={description} details={details}>
       {kind === 'invalid' ? (
-        <Button variant="secondary" size="sm" onClick={onClear}>
+        <Button variant="secondary" onClick={onClear}>
           {t('filters.clear')}
         </Button>
       ) : (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="secondary" onClick={onRetry}>
           {t('problem.retry')}
         </Button>
       )}

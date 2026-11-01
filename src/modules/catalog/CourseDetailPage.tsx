@@ -49,7 +49,7 @@ function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void
     )
   return (
     <ProblemState title={title} description={description}>
-      <Button variant="secondary" size="sm" onClick={onRetry}>
+      <Button variant="secondary" onClick={onRetry}>
         {t('problem.retry')}
       </Button>
       <BackToCatalog />

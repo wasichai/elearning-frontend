@@ -78,7 +78,7 @@ function UpcomingStep({ enrollmentId, upcoming, pending, focus }: { enrollmentId
     return (
       <div className="flex flex-col items-start gap-2 text-sm">
         <p className="text-ink">{t('completion.courseDone')}</p>
-        <Button asChild variant="secondary" size="sm">
+        <Button asChild variant="secondary">
           <Link ref={ref} to={links.to(CLASSROOM_ROUTES.enrollments)}>
             {t('completion.backToCourses')}
           </Link>

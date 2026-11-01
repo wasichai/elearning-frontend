@@ -142,7 +142,7 @@ function DownloadResource({ file, quiet = false }: { file: ResourceFile; quiet?:
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <Button
           variant={quiet ? 'ghost' : 'secondary'}
-          size="sm"
+
           onClick={() => void download()}
           disabled={pending}
           aria-label={t('resource.downloadLabel', { name: file.name, size })}
@@ -170,7 +170,7 @@ function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void 
     <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-danger">
       <span>{message}</span>
       {onRetry && !(error instanceof ForeignFileError) ? (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="secondary" onClick={onRetry}>
           {t('resource.retry')}
         </Button>
       ) : null}

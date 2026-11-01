@@ -53,7 +53,7 @@ function SubpageProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
   return (
     <div className="px-4 sm:px-8">
       <ProblemState title={title} description={description}>
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="secondary" onClick={onRetry}>
           {t('problem.retry')}
         </Button>
         {toCourses}
