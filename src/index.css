@@ -3,6 +3,8 @@
 @import '@wasichai/ui/theme.css';
 /* el tema Quipu de la app (src/theme/themes.ts lo ofrece en el selector) */
 @import './theme/quipu.css';
+/* sus controles: objetivos de 44px y campos de 16px, sobre los data-slot de @wasichai/ui */
+@import './theme/quipu-controls.css';
 
 /* la letra del tema Quipu, servida por la app (sin peticiones a terceros) */
 @font-face {

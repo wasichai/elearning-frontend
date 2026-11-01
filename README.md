@@ -71,6 +71,12 @@ El script de arranque de `index.html` aplica el tema guardado antes del bundle; 
 La letra es Figtree (SIL OFL), servida por la app desde `src/theme/fonts/`. `quipu.test.ts` comprueba que cada bloque pone
 todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
 
+`quipu-controls.css` da a los componentes de `@wasichai/ui` los objetivos de 44px del sistema de diseño, solo bajo los
+temas Quipu y solo por sus `data-slot` públicos: botones `md` e `icon` de 44px (`sm`, de 36px, con área táctil de 44px),
+campos de 44px que escriben a 16px, un campo inválido con 2px de `danger` que no salta, pestañas de 44px y alertas con
+`radius-lg`. `quipu-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts`
+mide los controles en el navegador.
+
 ## Comandos
 
 | Comando          | Qué hace                                             |
