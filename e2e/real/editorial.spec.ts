@@ -16,17 +16,19 @@ const REVIEWER = { email: 'revisor@demo.wasichai-learning.test', password: DEMO_
 // revisora de verdad (rol REVISOR), para la versión que se asigna a otra persona
 const OTHER_REVIEWER = { email: 'docente.revisor@demo.wasichai-learning.test', password: DEMO_PASSWORD }
 
-// SGSPE-101: su versión 1 está publicada y ningún otro recorrido real depende de sus ediciones. publicar una versión nueva
-// la vuelve la del catálogo, que deja de ofrecer las ediciones de la 1: con CORTO-101 o SRTM-ANU-101 rompería los demás
-const CODE = 'SGSPE-101'
-const COURSE = 'SGSPE: primeros pasos y gestión de compromisos'
-const LESSON = 'Iniciar sesión y qué hacer si falla'
+// TRAMITE-101, el curso de la demo solo para este recorrido (elearning-backend#224): versión 1 publicada y una edición
+// abierta. publicar una versión nueva la vuelve la del catálogo, que deja de ofrecer las ediciones de la 1: con un curso
+// de otro recorrido (CORTO-101, SRTM-ANU-101) los rompería
+const CODE = 'TRAMITE-101'
+const COURSE = 'Instrucciones claras para un trámite en línea'
+const LESSON = 'Qué pedir y en qué orden'
+const OFFERING = 'TRAMITE-101-A'
 
 // cada ejecución escribe sus propios textos: un reintento no confunde lo suyo con lo de la anterior
 const RUN = randomUUID().slice(0, 8)
-const EDITED = `Iniciar sesión y recuperar el acceso (${RUN})`
-const FINAL = `Entrar al portal y recuperar el acceso (${RUN})`
-const COMMENT = 'El título promete recuperar el acceso, pero la lección no dice a quién pedirlo.'
+const EDITED = `Qué pedir antes de empezar (${RUN})`
+const FINAL = `Primero los requisitos, después los pasos (${RUN})`
+const COMMENT = 'El título no dice que los requisitos van antes que los pasos, que es lo que enseña la lección.'
 const REASON = 'Ajusta el título de la lección 1.1 a lo que enseña.'
 
 interface Version {
@@ -59,11 +61,6 @@ const firstLesson = (version: VersionDetail) =>
     .sort((a, b) => a.order - b.order)[0]!
     .lessons.slice()
     .sort((a, b) => a.order - b.order)[0]!
-
-// hoy en Lima, más o menos días, como fecha ISO
-function limaDate(days: number): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date(Date.now() + days * 86_400_000))
-}
 
 // editar una lección es la pantalla de registros de Wasichai a la que lleva el estudio: cambia su título y guarda
 async function retitle(page: Page, current: string, next: string) {
@@ -108,28 +105,14 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
   const original = await json<VersionDetail>(await creatorApi.get(`/api/lms/studio/versions/${v1!.id}`), 200, 'GET la versión 1')
   expect(firstLesson(original).title).toBe(LESSON)
 
-  // quien cursa la versión 1: una edición abierta hoy, de usar y tirar (las de la demo para SGSPE-101 aún no abren)
-  const offering = `SGSPE-E2E-${RUN}`
-  await json(
-    await adminApi.post('/api/objects/edicion_curso/records', {
-      attributes: {
-        codigo: offering,
-        estado: 'INSCRIPCION_ABIERTA',
-        fecha_inicio: limaDate(7),
-        fecha_fin: limaDate(21),
-        zona_horaria: 'America/Lima',
-        inscripcion_desde: limaDate(-1),
-        inscripcion_hasta: limaDate(5),
-        capacidad: 5,
-        version_curso: v1!.id
-      }
-    }),
-    201,
-    'crear la edición de la versión 1'
-  )
+  // quien cursa la versión 1: un estudiante nuevo en la edición abierta de la demo
   const student = await newStudent(request)
   const studentApi = client(request, await token(request, student.email, student.password))
-  const enrollment = await json<{ id: string; version: number }>(await studentApi.post('/api/lms/enrollments', { offering }), 201, 'matricular en la versión 1')
+  const enrollment = await json<{ id: string; version: number }>(
+    await studentApi.post('/api/lms/enrollments', { offering: OFFERING }),
+    201,
+    'matricular en la versión 1'
+  )
   expect(enrollment.version).toBe(1)
 
   const learner = await browserFor(browser, baseURL, student)
@@ -308,7 +291,7 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
 
     await test.step('recorrido 12: el catálogo ofrece la versión nueva', async () => {
       const list = await json<{ content: { code: string; slug: string }[] }>(
-        await request.get(`${API_URL}/api/lms/public/catalog/courses?q=SGSPE`),
+        await request.get(`${API_URL}/api/lms/public/catalog/courses?q=Instrucciones`),
         200,
         'GET catálogo'
       )
