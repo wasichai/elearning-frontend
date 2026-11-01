@@ -122,7 +122,7 @@ const es = {
     actionLabel: 'Matricularme en la edición {{dates}}',
     enrolling: 'Matriculando…',
     signIn: 'Inicia sesión para matricularte',
-    closed: 'No pudimos matricularte: la inscripción de esta edición está cerrada o ya no quedan plazas.',
+    conflict: 'No pudimos matricularte en esta edición.',
     unavailable: 'Esta edición ya no está disponible.',
     forbidden: 'Tu cuenta no puede matricularse en cursos. Consulta con tu institución.',
     failed: 'No pudimos matricularte. Inténtalo de nuevo.'
@@ -330,7 +330,7 @@ const en: typeof es = {
     actionLabel: 'Enroll in the {{dates}} offering',
     enrolling: 'Enrolling…',
     signIn: 'Sign in to enroll',
-    closed: 'We could not enroll you: enrollment for this offering is closed or there are no seats left.',
+    conflict: 'We could not enroll you in this offering.',
     unavailable: 'This offering is no longer available.',
     forbidden: 'Your account cannot enroll in courses. Please ask your institution.',
     failed: 'We could not enroll you. Please try again.'
