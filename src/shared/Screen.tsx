@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
 import { useId } from 'react'
-import { Link } from 'react-router'
+import { Link, NavLink } from 'react-router'
 
 // el armazón común de las pantallas del LMS (UX-UI-IMPLEMENTATION.md). PageHeader de @wasichai/core es una barra de márgenes
 // fijos (px-8 también en un móvil), sin ruta ni alineación con el contenido: cuando @wasichai/core los ofrezca, esto se retira.
@@ -32,7 +32,7 @@ export function Breadcrumbs({ label, items }: { label: string; items: Crumb[] })
           <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1">
             {index > 0 ? <ChevronRight aria-hidden="true" className="size-3.5 shrink-0" /> : null}
             {item.to ? (
-              <Link to={item.to} className="inline-flex min-h-6 items-center rounded-sm text-link underline-offset-4 hover:underline">
+              <Link to={item.to} className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline sm:min-h-6">
                 {item.label}
               </Link>
             ) : (
@@ -43,6 +43,38 @@ export function Breadcrumbs({ label, items }: { label: string; items: Crumb[] })
           </li>
         ))}
       </ol>
+    </nav>
+  )
+}
+
+export interface SectionTab {
+  label: ReactNode
+  to: string
+  // solo activa con la ruta exacta, no con las que cuelgan de ella
+  end?: boolean
+}
+
+// las secciones de un recurso (un curso, una edición), por URL: se enlazan, se recargan y marcan dónde se está. van en children de
+// ScreenHeader. con desplazamiento propio si no caben: la página nunca desborda
+export function SectionTabs({ label, items }: { label: string; items: SectionTab[] }) {
+  return (
+    <nav aria-label={label} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
+      <div className="flex w-max gap-5">
+        {items.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `inline-flex min-h-11 shrink-0 items-center border-b-2 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+                isActive ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-muted hover:border-border-control hover:text-ink'
+              }`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </div>
     </nav>
   )
 }

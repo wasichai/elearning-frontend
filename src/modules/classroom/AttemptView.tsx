@@ -1,8 +1,9 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Alert, Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@wasichai/ui'
-import { ChevronLeft, ChevronRight, CircleAlert, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
 import { formatTime } from '../../shared/format'
 import { useAttempt, useSaveAnswers, useSubmitAttempt, useUploadSubmission, type AnswerInput } from './api'
@@ -446,22 +447,6 @@ function SubmitDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
-
-// un aviso con su icono y sobre su fondo: el color nunca va solo, y se distingue de las preguntas
-function Notice({ tone, title, children }: { tone: 'danger' | 'warning'; title?: string; children?: ReactNode }) {
-  const Icon = tone === 'danger' ? CircleAlert : TriangleAlert
-  return (
-    <Alert tone={tone} className={`rounded-lg border px-3 py-2 ${tone === 'danger' ? 'border-danger bg-danger-soft' : 'border-warning bg-warning-soft'}`}>
-      <span className="flex items-start gap-2">
-        <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-        <span className="min-w-0">
-          {title ? <strong className="block font-semibold">{title}</strong> : null}
-          {children}
-        </span>
-      </span>
-    </Alert>
   )
 }
 
