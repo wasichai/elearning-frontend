@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { enrollment, finishedEnrollment, otherEnrollment, sessions } from '../../../src/modules/classroom/test/fixtures'
+import { assessmentClassroom, classroom, enrollment, finishedEnrollment, otherEnrollment, sessions } from '../../../src/modules/classroom/test/fixtures'
 import { problem } from '../../../src/modules/catalog/test/fixtures'
 import { student, type Scenario } from '../scenario'
 
@@ -14,6 +14,25 @@ async function panelAt(page: Page, prepare?: () => Promise<unknown>) {
   await page.reload()
   await page.waitForLoadState('networkidle')
 }
+
+// el aula y sus secciones, con una respuesta propia sobre la simulación
+const fail = (status: number) => ({ status, contentType: 'application/problem+json', json: problem(status, 'Caído') })
+const CLASSROOM_SRTM = '**/api/lms/classroom/enrollments/mat-srtm-1'
+const CLASSROOM_SGSPE = '**/api/lms/classroom/enrollments/mat-sgspe-1'
+const SESSIONS_SGSPE = `${CLASSROOM_SGSPE}/sessions`
+const reloadWith = async (page: Page, prepare: () => Promise<unknown>) => {
+  await prepare()
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+}
+const hang = async (page: Page, url: string) => {
+  await page.route(url, () => undefined)
+  await page.reload({ waitUntil: 'load' })
+  await page.waitForTimeout(300)
+}
+const titled = (data: { course: object }) => ({ json: { ...data, course: { ...data.course, title: LONG_TITLE } } })
+const emptyCourse = { ...classroom, units: [], nextLesson: null, progress: { completedLessons: 0, totalLessons: 0, percent: 0 } }
+const LONG_TITLE = 'Procedimientos de fiscalización y determinación de deudas tributarias municipales para gestores de rentas'
 
 const certified = { ...finishedEnrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }
 const finished = { ...finishedEnrollment, id: 'mat-fin-1', status: 'FINALIZADA', course: { slug: 'catastro', code: 'CAT-1', title: 'Catastro urbano' } }
@@ -106,6 +125,26 @@ export const classroomScenarios: Scenario[] = [
     }
   },
   { name: 'student-course', path: '/mis-cursos/mat-srtm-1', api: student },
+  {
+    name: 'student-course-empty',
+    path: '/mis-cursos/mat-srtm-1',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(CLASSROOM_SRTM, (route) => route.fulfill({ json: emptyCourse })))
+  },
+  {
+    name: 'student-course-long-title',
+    path: '/mis-cursos/mat-srtm-1',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(CLASSROOM_SRTM, (route) => route.fulfill(titled(classroom))))
+  },
+  { name: 'student-course-loading', path: '/mis-cursos/mat-srtm-1', api: student, act: (page) => hang(page, CLASSROOM_SRTM) },
+  {
+    name: 'student-course-error',
+    path: '/mis-cursos/mat-srtm-1',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(CLASSROOM_SRTM, (route) => route.fulfill(fail(503))))
+  },
+  { name: 'student-course-missing', path: '/mis-cursos/de-otra-persona', api: student },
   { name: 'student-lesson', path: '/mis-cursos/mat-srtm-1?leccion=lec-html', api: student },
   {
     name: 'student-lesson-sepia',
@@ -129,7 +168,46 @@ export const classroomScenarios: Scenario[] = [
   { name: 'student-lesson-video', path: '/mis-cursos/mat-srtm-1?leccion=lec-video', api: student },
   { name: 'student-lesson-pdf', path: '/mis-cursos/mat-srtm-1?leccion=lec-pdf', api: student },
   { name: 'student-assessment', path: '/mis-cursos/mat-sgspe-1?leccion=lec-eva', api: student },
+  { name: 'student-lesson-session', path: '/mis-cursos/mat-sgspe-1?leccion=lec-sesion', api: student },
   { name: 'student-sessions', path: '/mis-cursos/mat-sgspe-1/sesiones', api: student },
+  {
+    name: 'student-sessions-empty',
+    path: '/mis-cursos/mat-sgspe-1/sesiones',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(SESSIONS_SGSPE, (route) => route.fulfill({ json: [] })))
+  },
+  {
+    name: 'student-sessions-error',
+    path: '/mis-cursos/mat-sgspe-1/sesiones',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(SESSIONS_SGSPE, (route) => route.fulfill(fail(503))))
+  },
+  { name: 'student-sessions-loading', path: '/mis-cursos/mat-sgspe-1/sesiones', api: student, act: (page) => hang(page, SESSIONS_SGSPE) },
+  {
+    // terminadas todas: «Próximas» lo dice y lo pasado se lee de lo reciente a lo antiguo
+    name: 'student-sessions-all-past',
+    path: '/mis-cursos/mat-sgspe-1/sesiones',
+    api: student,
+    act: (page) =>
+      reloadWith(page, async () => {
+        await page.clock.setFixedTime(new Date('2026-12-20T12:00:00Z'))
+      })
+  },
+  {
+    name: 'student-sessions-agenda',
+    path: '/mis-cursos/mat-sgspe-1/sesiones',
+    api: student,
+    act: (page) =>
+      reloadWith(page, async () => {
+        await page.clock.setFixedTime(new Date('2026-10-01T12:00:00Z'))
+      })
+  },
+  {
+    name: 'student-sessions-long-title',
+    path: '/mis-cursos/mat-sgspe-1/sesiones',
+    api: student,
+    act: (page) => reloadWith(page, () => page.route(CLASSROOM_SGSPE, (route) => route.fulfill(titled(assessmentClassroom))))
+  },
   { name: 'student-completion-pending', path: '/mis-cursos/mat-sgspe-1/finalizacion', api: student },
   { name: 'student-completion', path: '/mis-cursos/mat-sgspe-1/finalizacion', api: { ...student, courseComplete: true } },
   { name: 'certificate', path: '/certificados/K7Q2-M9XW-4RTB', api: { certificateIssued: true } },

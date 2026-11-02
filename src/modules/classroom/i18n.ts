@@ -113,11 +113,23 @@ const es = {
     steps: 'Lección anterior y siguiente',
     lessonMissing: 'Esa lección no está en este curso; te mostramos la siguiente por hacer.',
     empty: 'Este curso todavía no tiene lecciones.',
-    more: 'Más del curso',
+    emptyHint: 'Cuando se publiquen, las verás aquí.',
+    unitEmpty: 'Esta unidad todavía no tiene lecciones.',
     finished: 'Este curso está finalizado: puedes repasarlo, pero ya no se registra avance ni se empiezan intentos.'
   },
-  subpage: {
-    back: '← Volver al aula'
+  // el marco del curso: su ruta, sus pestañas y sus cifras
+  course: {
+    breadcrumbs: 'Ruta',
+    sections: 'Secciones del curso',
+    tabSessions: 'Sesiones',
+    tabCompletion: 'Finalización',
+    figures: 'Tu avance',
+    figureLessons_one: 'lección',
+    figureLessons_other: 'lecciones',
+    figureAssessments_one: 'evaluación aprobada',
+    figureAssessments_other: 'evaluaciones aprobadas',
+    figureAttendance_one: 'sesión con asistencia',
+    figureAttendance_other: 'sesiones con asistencia'
   },
   completion: {
     section: 'Tu avance en esta lección',
@@ -245,6 +257,10 @@ const es = {
     title: 'Sesiones en vivo',
     loading: 'Cargando las sesiones…',
     none: 'Este curso no tiene sesiones en vivo.',
+    noneHint: 'Si se programa alguna, la verás aquí con su día y su hora.',
+    upcoming: 'Próximas',
+    past: 'Pasadas',
+    noneUpcoming: 'No hay sesiones por delante.',
     noneForLesson: 'Esta lección aún no tiene sesión programada.',
     ofLesson: 'La sesión de esta lección',
     timeZone: 'Horas en {{zone}}',
@@ -559,11 +575,23 @@ const en: typeof es = {
     steps: 'Previous and next lesson',
     lessonMissing: 'That lesson is not part of this course; here is your next one.',
     empty: 'This course has no lessons yet.',
-    more: 'More from the course',
+    emptyHint: 'Once they are published, you will see them here.',
+    unitEmpty: 'This unit has no lessons yet.',
     finished: 'This course is finished: you can review it, but progress is no longer recorded and no new attempts can be started.'
   },
-  subpage: {
-    back: '← Back to the classroom'
+  // the course frame: its path, tabs and figures
+  course: {
+    breadcrumbs: 'Breadcrumb',
+    sections: 'Course sections',
+    tabSessions: 'Sessions',
+    tabCompletion: 'Completion',
+    figures: 'Your progress',
+    figureLessons_one: 'lesson',
+    figureLessons_other: 'lessons',
+    figureAssessments_one: 'assessment passed',
+    figureAssessments_other: 'assessments passed',
+    figureAttendance_one: 'session attended',
+    figureAttendance_other: 'sessions attended'
   },
   completion: {
     section: 'Your progress in this lesson',
@@ -691,6 +719,10 @@ const en: typeof es = {
     title: 'Live sessions',
     loading: 'Loading the sessions…',
     none: 'This course has no live sessions.',
+    noneHint: 'If one is scheduled, you will see it here with its day and time.',
+    upcoming: 'Upcoming',
+    past: 'Past',
+    noneUpcoming: 'There are no sessions ahead.',
     noneForLesson: 'This lesson has no session scheduled yet.',
     ofLesson: 'The session for this lesson',
     timeZone: 'Times in {{zone}}',

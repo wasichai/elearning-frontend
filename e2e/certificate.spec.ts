@@ -4,21 +4,25 @@ import { fakeApi } from './api'
 // sesiones, finalización y certificado (ADR-0016) con la API simulada
 
 test('las sesiones del curso: horas de Lima con su zona, estado, enlace https y asistencia', async ({ page }) => {
+  // las sesiones de los ejemplos tienen fecha fija: se mira la agenda antes de la primera, con todas por delante
+  await page.clock.setFixedTime(new Date('2026-09-01T12:00:00Z'))
   const api = await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-sgspe-1')
-  await page.getByRole('navigation', { name: 'Más del curso' }).getByRole('link', { name: 'Sesiones en vivo' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Secciones del curso' })
+  await tabs.getByRole('link', { name: 'Sesiones' }).click()
 
   await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1/sesiones')
   await expect(page.getByText(/^Horas en hora (estándar )?de Perú$/)).toBeVisible()
   const first = page.getByRole('article', { name: 'Presentación del curso' })
-  await expect(first).toContainText('8 de septiembre de 2026, 8:00')
+  await expect(page.getByRole('heading', { name: /^martes.*8 de septiembre de 2026$/ })).toBeVisible()
+  await expect(first).toContainText('8:00')
   await expect(first).toContainText('Reprogramada')
   await expect(first).toContainText('presente')
   await expect(first.getByRole('link', { name: /^Entrar a la sesión/ })).toHaveAttribute('href', 'https://meet.example/sgspe-1')
   const cancelled = page.getByRole('article', { name: 'Consulta de la unidad' })
   await expect(cancelled).toContainText('Cancelada')
   await expect(cancelled.getByRole('link', { name: /^Entrar/ })).toHaveCount(0)
-  await page.getByRole('link', { name: '← Volver al aula' }).click()
+  await tabs.getByRole('link', { name: 'Temario' }).click()
   await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1')
   expect(api.unexpected).toEqual([])
 })
@@ -37,7 +41,7 @@ test('sin cumplir las reglas no se puede pedir el certificado', async ({ page })
 test('recorrido: cumplir las reglas → pedir el certificado con el nombre → verlo, imprimirlo y encontrarlo en «Mis cursos»', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, courseComplete: true })
   await page.goto('/mis-cursos/mat-sgspe-1')
-  await page.getByRole('link', { name: 'Finalización y certificado' }).click()
+  await page.getByRole('navigation', { name: 'Secciones del curso' }).getByRole('link', { name: 'Finalización' }).click()
 
   await expect(page.getByText('Cumples todas las reglas: ya puedes pedir tu certificado.')).toBeVisible()
   const name = page.getByRole('textbox', { name: 'Nombre para el certificado' })
@@ -113,4 +117,20 @@ test('en el móvil el certificado se lee en una columna, sin desbordar', async (
   await page.goto('/certificados/K7Q2-M9XW-4RTB')
   await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('la agenda separa próximas y pasadas: a lo que terminó no se entra, y la cabecera da la asistencia', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-01T12:00:00Z'))
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-sgspe-1/sesiones')
+
+  await expect(page.getByRole('region', { name: 'Próximas' }).getByRole('article', { name: 'Recuperación de la consulta' })).toBeVisible()
+  const past = page.getByRole('region', { name: 'Pasadas' })
+  await expect(past.getByRole('article')).toHaveCount(2)
+  await expect(past.getByRole('link', { name: /^Entrar/ })).toHaveCount(0)
+  // la cancelada: tachada y con su palabra
+  const cancelled = past.getByRole('article', { name: 'Consulta de la unidad' })
+  await expect(cancelled.getByText('Cancelada')).toBeVisible()
+  await expect(cancelled.getByText('Consulta de la unidad')).toHaveCSS('text-decoration-line', 'line-through')
+  await expect(page.getByRole('list', { name: 'Tu avance' })).toContainText('1 de 2 sesiones con asistencia')
 })
