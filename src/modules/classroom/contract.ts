@@ -88,6 +88,17 @@ const resource = z.object({
   file: fileSchema.nullable()
 })
 
+// el laboratorio de una lección LABORATORIO (RF-LAB-01, ADR-0027 del backend): las listas ya vienen partidas por líneas.
+// url de un entorno: https público según el servidor (SafeLink); la interfaz igual solo enlaza https
+const labSchema = z.object({
+  objective: z.string().nullable(),
+  requirements: z.array(z.string()),
+  milestones: z.array(z.string()),
+  acceptanceCriteria: z.array(z.string()),
+  deliverables: z.array(z.string()),
+  environments: z.array(z.object({ id, title: z.string(), url: z.string() }))
+})
+
 // la evaluación de una lección, tal como la ve el estudiante: sus reglas y lo que lleva hecho. best es null sin ningún
 // intento enviado; mientras su mejor intento espera corrección, percent y passed son null (como en el resultado)
 export const assessmentSummarySchema = z
@@ -116,7 +127,9 @@ const lesson = z
     progress: lessonProgressSchema,
     resources: z.array(resource),
     // solo en una lección con evaluación (F3)
-    assessment: assessmentSummarySchema.nullish()
+    assessment: assessmentSummarySchema.nullish(),
+    // solo en una lección LABORATORIO
+    lab: labSchema.nullish()
   })
   // una lección que se completa al aprobar su evaluación tiene que traerla
   .refine((lesson) => lesson.completion !== 'ASSESSMENT' || lesson.assessment != null, { message: 'lección ASSESSMENT sin evaluación', path: ['assessment'] })
@@ -143,6 +156,8 @@ export type Lesson = z.infer<typeof lesson>
 export type Resource = z.infer<typeof resource>
 export type ResourceFile = FileRef
 export type AssessmentSummary = z.infer<typeof assessmentSummarySchema>
+export type Lab = z.infer<typeof labSchema>
+export type LabEnvironment = Lab['environments'][number]
 export type Submission = z.infer<typeof submissionSchema>
 
 // la finalización (ADR-0016): las reglas que declara la versión, cada una con si se cumple y su detalle legible
