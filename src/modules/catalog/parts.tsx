@@ -1,6 +1,7 @@
 import { Badge } from '@wasichai/ui'
-import type { ReactNode } from 'react'
+import { useCallback, useSyncExternalStore, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { StatusState } from '../../shared/StatusBadge'
 import type { NextOffering } from './contract'
 
 // piezas que comparten la lista y la ficha
@@ -29,6 +30,28 @@ export function offeringState(offering: Pick<NextOffering, 'status' | 'enrollmen
   if (offering.enrollmentStatus === 'FULL') return 'full'
   if (offering.status === 'INSCRIPCION_ABIERTA') return 'closed'
   return offering.status === 'EN_CURSO' ? 'running' : 'scheduled'
+}
+
+// abierta invita a avanzar; completa pide atención; en curso tiene su forma de siempre; el resto es información
+export const AVAILABILITY: Record<OfferingState, StatusState> = {
+  open: 'active',
+  full: 'warning',
+  running: 'active',
+  scheduled: 'todo',
+  closed: 'neutral'
+}
+
+// si la ventana cumple la consulta: para montar un control en un sitio u otro, sin duplicarlo en el DOM. sin matchMedia (jsdom) cuenta como ancha
+export function useMatchesWidth(query: string): boolean {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      const media = window.matchMedia?.(query)
+      media?.addEventListener('change', onChange)
+      return () => media?.removeEventListener('change', onChange)
+    },
+    [query]
+  )
+  return useSyncExternalStore(subscribe, () => window.matchMedia?.(query).matches ?? true)
 }
 
 // un vocabulario abierto del modelo (tipo de lección, rol docente): la traducción si existe; si no, el valor legible

@@ -56,6 +56,7 @@ describe('textos del catálogo', () => {
       ...MODALITIES.map((modality) => `modality.${modality}`),
       ...SORTS.map((sort) => `sort.${sort}`),
       ...['open', 'closed', 'full', 'running', 'scheduled'].map((state) => `offering.state.${state}`),
+      ...['closed', 'full', 'running', 'scheduled'].map((state) => `detail.offeringHint.${state}`),
       ...['theory', 'practice', 'supervised', 'autonomous'].map((row) => `workload.${row}`),
       ...DURATION_KEYS.map((key) => `duration.${key}`),
       ...['true', 'false'].map((option) => `enrollmentFilter.${option}`),

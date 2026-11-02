@@ -4,22 +4,13 @@ import { Link } from 'react-router'
 import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Skeleton } from '../../shared/Screen'
-import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
+import { StatusBadge } from '../../shared/StatusBadge'
 import type { CourseSummary, NextOffering } from './contract'
-import { IllustrativeMark, offeringState, type OfferingState } from './parts'
+import { AVAILABILITY, IllustrativeMark, offeringState } from './parts'
 import { CATALOG_ROUTES } from './routes'
 
 const BANNER_HEIGHT = 72
 const CARD = 'flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface'
-
-// abierta invita a avanzar; completa pide atención; en curso tiene su forma de siempre; el resto es información
-const AVAILABILITY: Record<OfferingState, StatusState> = {
-  open: 'active',
-  full: 'warning',
-  running: 'active',
-  scheduled: 'todo',
-  closed: 'neutral'
-}
 
 // un curso del catálogo (docs/design-system/components/CourseCard). toda la tarjeta enlaza a la ficha con el ::after del título:
 // así hay un solo interactivo y un solo nombre para el lector de pantalla. el anillo de foco lo dibuja la tarjeta, no el enlace

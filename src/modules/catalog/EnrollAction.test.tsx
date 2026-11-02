@@ -45,6 +45,146 @@ const offerings = async () => {
   return within(heading.closest('section')!)
 }
 
+const MY_ENROLLMENTS = '/lms/classroom/enrollments'
+const myEnrollment = (id: string, status = 'ACTIVA', code = 'edicion-srtm-2026-11', slug = 'srtm-anuncios') => ({
+  id,
+  status,
+  course: { slug },
+  offering: { code }
+})
+const second = { ...courseDetail.offerings[0]!, code: 'edicion-srtm-2027-01', startDate: '2027-01-11', endDate: '2027-02-05' }
+const SECOND_ACTION = /^Matricularme en la edición 11 ene\s–\s5 feb 2027$/
+
+function mockViewport(wide: boolean) {
+  const original = window.matchMedia
+  window.matchMedia = ((query: string) => ({
+    matches: wide,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  })) as unknown as typeof window.matchMedia
+  return () => {
+    window.matchMedia = original
+  }
+}
+
+describe('una sola acción principal', () => {
+  it('con dos ediciones abiertas, la primera es la primaria y la otra, secundaria', async () => {
+    renderCourse([], { course: { ...courseDetail, offerings: [courseDetail.offerings[0], second] } })
+
+    const section = await offerings()
+    expect(section.getByRole('button', { name: ACTION })).toHaveAttribute('data-variant', 'primary')
+    expect(section.getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
+  })
+
+  it('sin sesión, la entrada también es la única primaria', async () => {
+    renderCourse([], { signedIn: false })
+
+    const signIn = (await offerings()).getByRole('link', { name: 'Inicia sesión para matricularte' })
+    expect(signIn).toHaveAttribute('data-variant', 'primary')
+  })
+})
+
+describe('ya matriculada', () => {
+  it('su edición cambia a «Ir al curso», que abre el aula, y no se vuelve a matricular', async () => {
+    renderCourse([{ path: MY_ENROLLMENTS, body: [myEnrollment('mat-srtm-1'), myEnrollment('mat-otra', 'ACTIVA', 'otra', 'otro-curso')] }])
+
+    const section = await offerings()
+    const go = await section.findByRole('link', { name: 'Ir al curso' })
+    expect(go).toHaveAttribute('href', '/mis-cursos/mat-srtm-1')
+    expect(go).toHaveAttribute('data-variant', 'primary')
+    expect(section.getByText('Tienes matrícula')).toBeInTheDocument()
+    expect(section.queryByText('Inscripción abierta')).not.toBeInTheDocument()
+    expect(section.queryByRole('button', { name: ACTION })).not.toBeInTheDocument()
+  })
+
+  it('una matrícula finalizada también lleva al curso, y lo dice', async () => {
+    renderCourse([{ path: MY_ENROLLMENTS, body: [myEnrollment('mat-srtm-1', 'FINALIZADA')] }])
+
+    const section = await offerings()
+    expect(await section.findByText('Matrícula finalizada')).toBeInTheDocument()
+    expect(section.getByRole('link', { name: 'Ir al curso' })).toBeInTheDocument()
+  })
+
+  it('otra edición abierta del mismo curso queda como secundaria', async () => {
+    renderCourse([{ path: MY_ENROLLMENTS, body: [myEnrollment('mat-srtm-1')] }], {
+      course: { ...courseDetail, offerings: [courseDetail.offerings[0], second] }
+    })
+
+    const section = await offerings()
+    expect(await section.findByRole('link', { name: 'Ir al curso' })).toHaveAttribute('data-variant', 'primary')
+    expect(section.getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
+  })
+
+  it('con una matrícula en una edición que ya no se ofrece, lo avisa y lleva al curso', async () => {
+    renderCourse([{ path: MY_ENROLLMENTS, body: [myEnrollment('mat-vieja', 'ACTIVA', 'edicion-pasada')] }], { course: { ...courseDetail, offerings: [] } })
+
+    expect(await screen.findByText('Ya tienes matrícula en este curso.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir al curso' })).toHaveAttribute('href', '/mis-cursos/mat-vieja')
+  })
+
+  it('si la consulta de matrículas falla, no se explica nada y se ofrece matricularse', async () => {
+    renderCourse([{ path: MY_ENROLLMENTS, status: 403, body: problem(403, 'Sin permiso') }])
+
+    const section = await offerings()
+    await waitFor(() => expect(fetchMock.calls.some((call) => call.path === MY_ENROLLMENTS)).toBe(true))
+    expect(section.getByRole('button', { name: ACTION })).toBeEnabled()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('sin sesión no se pregunta por las matrículas', async () => {
+    renderCourse([], { signedIn: false })
+
+    await offerings()
+    expect(fetchMock.calls.some((call) => call.path === MY_ENROLLMENTS)).toBe(false)
+  })
+})
+
+describe('en una sola columna', () => {
+  let restore: () => void
+  afterEach(() => restore())
+  const footer = () => document.querySelector<HTMLElement>('[data-slot="course-action"]')
+
+  it('la acción va al pie, una sola vez, y el 409 se explica allí', async () => {
+    restore = mockViewport(false)
+    renderCourse([{ method: 'POST', path: ENROLLMENTS, status: 409, body: problem(409, 'No quedan plazas en esta edición.') }])
+
+    const section = await offerings()
+    expect(section.queryByRole('button', { name: ACTION })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: ACTION })).toHaveLength(1)
+    const bar = within(footer()!)
+    await userEvent.click(bar.getByRole('button', { name: ACTION }))
+    expect(await bar.findByRole('alert')).toHaveTextContent('No quedan plazas en esta edición.')
+  })
+
+  it('ya matriculada, el pie lleva «Ir al curso»', async () => {
+    restore = mockViewport(false)
+    renderCourse([{ path: MY_ENROLLMENTS, body: [myEnrollment('mat-srtm-1')] }])
+
+    await offerings()
+    expect(await within(footer()!).findByRole('link', { name: 'Ir al curso' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Ir al curso' })).toHaveLength(1)
+  })
+
+  it('sin nada que hacer no hay pie', async () => {
+    restore = mockViewport(false)
+    renderCourse([], {
+      course: { ...courseDetail, offerings: [{ ...courseDetail.offerings[0]!, enrollmentOpen: false, enrollmentStatus: 'FULL', full: true }] }
+    })
+
+    await offerings()
+    expect(footer()).toBeNull()
+  })
+
+  it('en dos columnas no hay pie: la acción va en su tarjeta', async () => {
+    restore = mockViewport(true)
+    renderCourse([])
+
+    expect((await offerings()).getByRole('button', { name: ACTION })).toBeInTheDocument()
+    expect(footer()).toBeNull()
+  })
+})
+
 describe('matricularse desde la ficha', () => {
   it('sin sesión, la edición abierta lleva al inicio de sesión de Wasichai, que vuelve a la ficha', async () => {
     renderCourse([], { signedIn: false })

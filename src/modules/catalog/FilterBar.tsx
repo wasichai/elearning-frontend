@@ -14,13 +14,14 @@ import {
 } from '@wasichai/ui'
 import type { TFunction } from 'i18next'
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react'
-import { useEffect, useId, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCivilDate } from '../../shared/format'
 import { PublicHeading } from '../../shared/PublicLayout'
 import { screenContainer } from '../../shared/Screen'
 import { DEFAULT_SORT, type CatalogFilters } from './api'
 import { LEVELS, MODALITIES, NO_KNOWLEDGE, SORTS, type CoursePage } from './contract'
+import { useMatchesWidth } from './parts'
 
 // Radix Select no admite el valor vacío: «todas» viaja como este centinela y en la URL es la ausencia del filtro
 const ALL = 'all'
@@ -215,17 +216,6 @@ function CategoryChips({ selected, page, onChange }: { selected: string; page: C
   )
 }
 
-function subscribeWide(onChange: () => void) {
-  const query = window.matchMedia?.(WIDE)
-  query?.addEventListener('change', onChange)
-  return () => query?.removeEventListener('change', onChange)
-}
-
-// si la ventana llega a tableta. sin matchMedia (jsdom) cuenta como ancha
-function useIsWide() {
-  return useSyncExternalStore(subscribeWide, () => window.matchMedia?.(WIDE).matches ?? true)
-}
-
 interface MoreFiltersProps {
   filters: CatalogFilters
   page: CoursePage | undefined
@@ -237,7 +227,7 @@ interface MoreFiltersProps {
 // el mismo formulario en un desplegable o en una hoja inferior: se monta uno u otro, nunca los dos
 function MoreFilters({ filters, page, busy, count, onChange }: MoreFiltersProps) {
   const { t } = useTranslation('catalog')
-  const wide = useIsWide()
+  const wide = useMatchesWidth(WIDE)
   const [sheetOpen, setSheetOpen] = useState(false)
   const label = (
     <>
