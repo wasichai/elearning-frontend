@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { parseContract } from '../../shared/contract'
 import { teachingModule } from './module'
-import { useActionError } from './parts'
+import { OFFERING_STATUSES } from '../../shared/contract'
+import { OfferingStatusBadge, useActionError } from './parts'
 
 // el texto de un fallo al guardar (RNF-UX-08): de un problem+json del servidor a una frase que se entiende
 
@@ -70,5 +71,20 @@ describe('useActionError: del ProblemDetail al mensaje', () => {
       'You are not allowed to do this. If you think you should be, ask the coordinators to check your assignment.'
     )
     expect(await explain(new TypeError('Failed to fetch'), 'en')).toBe('There is no connection to the server. Check your connection and try again.')
+  })
+})
+
+describe('la insignia de estado de una edición', () => {
+  it('cada estado se dice con su palabra, no solo con su color', async () => {
+    renderWithProviders(
+      <>
+        {OFFERING_STATUSES.map((status) => (
+          <OfferingStatusBadge key={status} status={status} />
+        ))}
+      </>,
+      { modules: [teachingModule()] }
+    )
+
+    for (const word of ['Programada', 'Inscripción abierta', 'En curso', 'Finalizada', 'Cancelada']) expect(await screen.findByText(word)).toBeInTheDocument()
   })
 })

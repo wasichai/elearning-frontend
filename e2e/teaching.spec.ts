@@ -28,6 +28,46 @@ test('un docente encuentra «Docencia» en el menú, abre su edición y ve a sus
   expect(api.unexpected).toEqual([])
 })
 
+// los ejemplos fijan sus fechas: la agenda y la antigüedad se miran con el reloj de la prueba
+const NOW = new Date('2026-11-02T15:00:00Z')
+
+test('el panel dice qué hay que hacer: cifras, bandeja con acceso directo y agenda', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.clock.setFixedTime(NOW)
+  await page.goto('/docencia')
+
+  const figures = page.getByRole('definition')
+  await expect(figures).toHaveText(['2', '1', '3'])
+
+  const agenda = page.getByRole('complementary', { name: 'Agenda' })
+  const session = agenda.getByRole('link', { name: /Presentación del curso/ })
+  await expect(session).toHaveAttribute('href', '/docencia/edicion-sgspe-2026-09/sesiones')
+  await expect(session).toContainText(/mar.*10.*nov/i)
+  await expect(agenda).not.toContainText('Consulta cancelada')
+
+  const tray = page.getByRole('region', { name: 'Por corregir' })
+  await expect(tray).toContainText('estudiante@demo.local')
+  await expect(tray).toContainText('Enviado hace 4 días')
+  await expect(page.locator('[data-variant="primary"]')).toHaveCount(1)
+  await tray.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' }).click()
+  await expect(page).toHaveURL('/docencia/edicion-sgspe-2026-09/correccion/int-1')
+  expect(api.teachingRequests).toContain('GET /api/lms/teaching/offerings/edicion-sgspe-2026-09/attempts')
+  expect(api.unexpected).toEqual([])
+})
+
+test('una cola que falla degrada solo la bandeja: lo dice y el resto del panel se ve', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.clock.setFixedTime(NOW)
+  await page.route('**/api/lms/teaching/offerings/*/attempts', (route) =>
+    route.fulfill({ status: 500, json: { status: 500, title: 'Error', detail: 'fallo' } })
+  )
+  await page.goto('/docencia')
+
+  await expect(page.getByRole('region', { name: 'Por corregir' }).getByRole('alert')).toContainText('No pudimos cargar la cola de corrección')
+  await expect(page.getByRole('complementary', { name: 'Agenda' })).toContainText('Presentación del curso')
+  await expect(page.getByRole('article')).toHaveCount(2)
+})
+
 test('un estudiante no ve «Docencia» en el menú', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   await page.goto('/')
@@ -43,6 +83,8 @@ test('sin ediciones asignadas, la página lo dice con claridad', async ({ page }
 
   await expect(page.getByText('No tienes ediciones asignadas')).toBeVisible()
   await expect(page.getByRole('article')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Ir a Mis cursos' }).click()
+  await expect(page).toHaveURL('/mis-cursos')
 })
 
 test('una edición ajena se explica: solo se ven las asignadas', async ({ page }) => {

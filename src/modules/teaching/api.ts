@@ -81,9 +81,13 @@ export async function postGrade(client: ApiClient, attemptId: string, grade: Gra
   return parseContract(attemptSchema, `POST teaching/attempts/${attemptId}/grades`, body)
 }
 
+// la cola y las sesiones de una edición también se leen en lote (el panel, con useQueries): la misma clave y la misma caché
+export function queueQuery(client: ApiClient, code: string) {
+  return { queryKey: teachingKeys.queue(code), queryFn: ({ signal }: { signal: AbortSignal }) => fetchQueue(client, code, signal), retry: retryNetwork }
+}
+
 export function useQueue(code: string) {
-  const client = useApiClient()
-  return useQuery({ queryKey: teachingKeys.queue(code), queryFn: ({ signal }) => fetchQueue(client, code, signal), retry: retryNetwork })
+  return useQuery(queueQuery(useApiClient(), code))
 }
 
 export function useTeachingAttempt(attemptId: string) {
@@ -168,9 +172,16 @@ export async function saveAttendance(client: ApiClient, sessionId: string, chang
   return parseContract(attendanceRowListSchema, `PUT teaching/sessions/${sessionId}/attendance`, body)
 }
 
+export function offeringSessionsQuery(client: ApiClient, code: string) {
+  return {
+    queryKey: teachingKeys.sessions(code),
+    queryFn: ({ signal }: { signal: AbortSignal }) => fetchOfferingSessions(client, code, signal),
+    retry: retryNetwork
+  }
+}
+
 export function useOfferingSessions(code: string) {
-  const client = useApiClient()
-  return useQuery({ queryKey: teachingKeys.sessions(code), queryFn: ({ signal }) => fetchOfferingSessions(client, code, signal), retry: retryNetwork })
+  return useQuery(offeringSessionsQuery(useApiClient(), code))
 }
 
 export function useAttendance(sessionId: string) {
