@@ -1,4 +1,5 @@
 import { ApiError } from '@wasichai/core'
+import { CircleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ContractError } from './contract'
 
@@ -25,20 +26,23 @@ interface ProblemStateProps {
   children?: ReactNode
 }
 
-// un error explicado: qué pasó, qué hacer, y la acción para hacerlo
+// un error explicado: qué pasó, qué hacer, y la acción para hacerlo. con icono y palabra: el color nunca va solo
 export function ProblemState({ title, description, details = [], children }: ProblemStateProps) {
   return (
-    <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose flex-col items-start gap-3 py-12 text-sm">
-      <p className="text-base font-semibold text-ink">{title}</p>
-      {description ? <p className="text-ink-muted">{description}</p> : null}
-      {details.length > 0 ? (
-        <ul className="list-disc pl-5 text-ink-muted">
-          {details.map((detail) => (
-            <li key={detail}>{detail}</li>
-          ))}
-        </ul>
-      ) : null}
-      {children ? <div className="flex flex-wrap gap-2">{children}</div> : null}
+    <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose gap-3 py-12 text-sm">
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-danger" />
+      <div className="flex min-w-0 flex-col items-start gap-3">
+        <p className="text-title-3 text-ink">{title}</p>
+        {description ? <p className="text-base text-ink-muted">{description}</p> : null}
+        {details.length > 0 ? (
+          <ul className="list-disc pl-5 text-ink-muted">
+            {details.map((detail) => (
+              <li key={detail}>{detail}</li>
+            ))}
+          </ul>
+        ) : null}
+        {children ? <div className="flex flex-wrap items-center gap-3">{children}</div> : null}
+      </div>
     </div>
   )
 }

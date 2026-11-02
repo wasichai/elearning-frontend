@@ -1,3 +1,4 @@
+import { BookOpen } from 'lucide-react'
 import type { WasichaiModule } from '@wasichai/core'
 import { classroomMessages } from './i18n'
 import { CLASSROOM_MODULE_ID } from './routes'
@@ -32,7 +33,7 @@ export function classroomModule(): WasichaiModule {
     ],
     // antes que los grupos de core (datos 10): para un estudiante, aprender es lo primero del menú
     navGroups: [{ id: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.group`, order: 5 }],
-    nav: [{ group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments' }],
+    nav: [{ group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments', icon: BookOpen }],
     i18n: classroomMessages
   }
 }

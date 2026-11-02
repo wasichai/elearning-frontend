@@ -426,6 +426,8 @@ describe('CatalogPage', () => {
     await user.tab()
     expect(screen.getByRole('link', { name: 'Aula Abierta' })).toHaveFocus()
     await user.tab()
+    expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveFocus()
+    await user.tab()
     expect(screen.getByRole('searchbox', { name: 'Buscar cursos' })).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('button', { name: 'Buscar' })).toHaveFocus()
