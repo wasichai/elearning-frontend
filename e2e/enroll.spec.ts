@@ -36,6 +36,31 @@ test('con sesión, «Matricularme» matricula y abre el aula de la matrícula', 
   expect(api.unexpected).toEqual([])
 })
 
+test('quien ya está matriculada ve «Ir al curso», que abre su aula, y no se matricula de nuevo', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await page.goto(`/cursos/${SLUG}`)
+
+  await expect(offerings(page).getByText('Tienes matrícula')).toBeVisible()
+  await expect(offerings(page).getByRole('button', { name: ACTION })).toHaveCount(0)
+  await offerings(page).getByRole('link', { name: 'Ir al curso' }).click()
+
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1')
+  expect(api.enrollRequests).toEqual([])
+  expect(api.unexpected).toEqual([])
+})
+
+test('en dos columnas, las ediciones se quedan a la vista al bajar por el contenido', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, enrolled: false })
+  await page.setViewportSize({ width: 1280, height: 700 })
+  await page.goto(`/cursos/${SLUG}`)
+  const action = offerings(page).getByRole('button', { name: ACTION })
+  await expect(action).toBeInViewport()
+
+  await page.getByRole('heading', { level: 2, name: 'Datos del curso' }).scrollIntoViewIfNeeded()
+  await expect(page.getByRole('heading', { level: 2, name: 'Datos del curso' })).toBeInViewport()
+  await expect(action).toBeInViewport()
+})
+
 // el 409 tiene varios motivos (cerrada, sin cupo, prerrequisito): la ficha dice el que da el servidor
 test('un 409 se explica con el motivo del servidor y la ficha sigue a la vista', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, enrolled: false })

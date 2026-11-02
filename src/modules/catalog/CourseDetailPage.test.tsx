@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { Route, Routes } from 'react-router'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { CourseDetailPage, LONG_SYLLABUS } from './CourseDetailPage'
+import { CourseDetailPage } from './CourseDetailPage'
 import { catalogModule } from './module'
 import { courseDetail, problem } from './test/fixtures'
 
@@ -46,6 +46,49 @@ describe('CourseDetailPage', () => {
     expect(within(firstUnit).queryByText(/h estimadas/)).not.toBeInTheDocument()
     expect(within(firstUnit).queryByText(/\bmin\b/)).toBeInTheDocument()
     expect(within(firstUnit).getByText(courseDetail.units[0]!.lessons[0]!.title).nextSibling?.textContent).not.toMatch(/min/)
+  })
+
+  it('pinta el hueco de la ficha mientras carga, con su aviso', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando el curso…')
+    expect(document.querySelector('[data-slot="course-skeleton"]')).not.toBeNull()
+    expect(await screen.findByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="course-skeleton"]')).toBeNull()
+  })
+
+  it('la cabecera lleva la banda del curso y los hechos del contrato', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+
+    expect(await screen.findAllByRole('heading', { level: 1 })).toHaveLength(1)
+    expect(document.querySelector('[data-slot="cord-banner"]')).not.toBeNull()
+    for (const [label, value] of [
+      ['Duración', '6 semanas · 216 h'],
+      ['Créditos', '8 ECTS, propuesta'],
+      ['Modalidad', 'Asíncrona'],
+      ['Nivel', 'Inicial'],
+      ['Idioma', 'español']
+    ]) {
+      const term = screen.getAllByText(label!, { selector: 'dt' }).find((dt) => dt.nextElementSibling?.textContent === value)
+      expect(term, `${label}: ${value}`).toBeDefined()
+    }
+    // la categoría, sin mayúsculas sostenidas
+    expect(screen.getByText('Gestión municipal')).not.toHaveClass('uppercase')
+  })
+
+  it('con créditos aprobados, la cabecera da la cifra aprobada; sin sistema, no habla de ellos', async () => {
+    renderCourse([{ path: COURSE, body: { ...courseDetail, credits: { ...courseDetail.credits, approved: 7.5 } } }])
+    expect(await screen.findByText('7,5 ECTS')).toBeInTheDocument()
+    expect(screen.queryByText(/propuesta/)).not.toBeInTheDocument()
+  })
+
+  it('«Cómo se calculó» se conserva, abajo y plegado, junto a la carga de trabajo', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    const how = within(section('Carga de trabajo y créditos')).getByText('Cómo se calculó')
+    expect(how.tagName).toBe('SUMMARY')
+    expect(how.closest('details')).not.toHaveAttribute('open')
   })
 
   it('pinta la ficha completa', async () => {
@@ -149,24 +192,49 @@ describe('CourseDetailPage', () => {
     expect(screen.queryByText(/crédito/i)).not.toBeInTheDocument()
   })
 
-  it('un temario largo pliega las lecciones de cada unidad en un desplegable nativo', async () => {
+  it('el temario abre solo la primera unidad, en un desplegable nativo, con sus contadores y sin avance', async () => {
     const user = userEvent.setup()
-    const lessons = Array.from({ length: LONG_SYLLABUS + 1 }, (_, index) => ({
-      ...courseDetail.units[0]!.lessons[0]!,
-      order: index + 1,
-      title: `Lección ${index + 1}`
-    }))
-    renderCourse([{ path: COURSE, body: { ...courseDetail, units: [{ ...courseDetail.units[0], lessons }] } }])
+    const second = {
+      ...courseDetail.units[0]!,
+      order: 2,
+      title: 'La liquidación',
+      estimatedHours: null,
+      lessons: [{ ...courseDetail.units[0]!.lessons[0]!, order: 1, title: 'Emitir la liquidación', type: 'EVALUACION', durationMinutes: null }]
+    }
+    renderCourse([{ path: COURSE, body: { ...courseDetail, units: [second, courseDetail.units[0]] } }])
 
-    const lesson = await screen.findByText('Lección 1')
+    // por orden de unidad, no por el de la respuesta
+    const first = await screen.findByText('Tipos de anuncio')
+    expect(first).toBeVisible()
+    const syllabus = within(section('Temario'))
+    expect(syllabus.getByText('2 unidades y 3 lecciones')).toBeInTheDocument()
+    expect(syllabus.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      'Unidad 1. El trámite de anuncios',
+      'Unidad 2. La liquidación'
+    ])
+
+    const lesson = syllabus.getByText('Emitir la liquidación')
     expect(lesson).not.toBeVisible()
+    expect(syllabus.getByText('1 lección')).toBeVisible()
 
     // <details>/<summary> nativo: el navegador lo abre con Enter o Espacio; jsdom solo implementa el clic
-    const toggle = screen.getByText(`Ver las ${LONG_SYLLABUS + 1} lecciones`)
-    expect(toggle.tagName).toBe('SUMMARY')
-    await user.click(toggle)
-
+    await user.click(syllabus.getByRole('heading', { level: 3, name: 'Unidad 2. La liquidación' }))
     expect(lesson).toBeVisible()
+    expect(syllabus.getByText('Evaluación')).toBeVisible()
+
+    // público: ni enlaces a las lecciones ni estados de avance
+    expect(syllabus.queryByRole('link')).not.toBeInTheDocument()
+    expect(syllabus.queryByText(/completada|pendiente/i)).not.toBeInTheDocument()
+  })
+
+  it('sin ediciones lo dice con un aviso, sin ofrecer «Avisarme» ni ninguna acción', async () => {
+    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [] } }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    const offerings = section('Ediciones')
+    expect(offerings).toHaveTextContent('Sin ediciones programadas por ahora')
+    expect(within(offerings).queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByText(/avisarme/i)).not.toBeInTheDocument()
   })
 
   it('un 404 es «Curso no encontrado» con vuelta al catálogo', async () => {
@@ -249,5 +317,6 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
     expect(within(second!).getByRole('heading', { level: 3 })).toHaveTextContent('Inscripción aún no abierta')
     expect(within(second!).getByText('hasta el 1 ene 2027')).toBeInTheDocument()
     expect(within(second!).getByText(/\(Pacific\/Pago_Pago\)$/)).toBeInTheDocument()
+    expect(within(second!).getByText('Esta edición todavía no admite matrículas.')).toBeInTheDocument()
   })
 })

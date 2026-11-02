@@ -3,7 +3,17 @@ import { useApiClient, type ApiClient } from '@wasichai/core'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { retryNetwork } from '../../shared/retry'
-import { coursePageSchema, courseDetailSchema, createdEnrollmentSchema, parseContract, type CourseDetail, type CoursePage, type Sort } from './contract'
+import {
+  coursePageSchema,
+  courseDetailSchema,
+  createdEnrollmentSchema,
+  myEnrollmentsSchema,
+  parseContract,
+  type CourseDetail,
+  type CoursePage,
+  type MyEnrollment,
+  type Sort
+} from './contract'
 
 // rutas de la API pública, relativas a apiBaseUrl (el cliente de @wasichai/core las completa)
 const COURSES_PATH = '/lms/public/catalog/courses'
@@ -164,7 +174,8 @@ export function useQueryProblem(query: ObservedQuery, queryKey: QueryKey): { pro
 export const catalogKeys = {
   all: ['catalog'] as const,
   courses: (filters: CatalogFilters) => ['catalog', 'courses', filters] as const,
-  course: (slug: string) => ['catalog', 'course', slug] as const
+  course: (slug: string) => ['catalog', 'course', slug] as const,
+  myEnrollments: ['catalog', 'my-enrollments'] as const
 }
 
 export function useCourses(filters: CatalogFilters) {
@@ -208,6 +219,7 @@ export function useCatalogFilters(): [CatalogFilters, (patch: Partial<CatalogFil
 // matricularse en una edición (con sesión). Idempotency-Key: si la red repite el envío, el servidor no matricula dos
 // veces; y si ya estaba matriculada, devuelve la misma matrícula (200)
 const ENROLLMENTS_PATH = '/lms/enrollments'
+const MY_ENROLLMENTS_PATH = '/lms/classroom/enrollments'
 
 export async function enroll(client: ApiClient, offering: string, idempotencyKey: string): Promise<{ id: string }> {
   const body = await client.request<unknown>(ENROLLMENTS_PATH, {
@@ -216,6 +228,20 @@ export async function enroll(client: ApiClient, offering: string, idempotencyKey
     body: JSON.stringify({ offering })
   })
   return parseContract(createdEnrollmentSchema, 'POST enrollments', body)
+}
+
+// las matrículas de la persona en un curso, para ofrecerle «Ir al curso». es una cortesía: si la consulta falla no se
+// explica nada, se ofrece matricularse y el servidor devuelve la matrícula que ya había (POST idempotente)
+export function useMyEnrollments(slug: string, enabled: boolean): MyEnrollment[] {
+  const client = useApiClient()
+  const query = useQuery({
+    queryKey: catalogKeys.myEnrollments,
+    queryFn: async ({ signal }) =>
+      parseContract(myEnrollmentsSchema, 'GET classroom/enrollments', await client.request<unknown>(MY_ENROLLMENTS_PATH, { signal })),
+    enabled,
+    retry: false
+  })
+  return enabled ? (query.data ?? []).filter((enrollment) => enrollment.course.slug === slug) : []
 }
 
 export function useEnroll() {

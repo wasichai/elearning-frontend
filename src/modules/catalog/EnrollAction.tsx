@@ -2,6 +2,7 @@ import { ApiError, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { WRAP } from '../../shared/buttons'
 import { formatCivilRange } from '../../shared/format'
 import { useEnroll } from './api'
 import type { Offering } from './contract'
@@ -11,27 +12,39 @@ import { CLASSROOM_ROUTE } from './routes'
 // matricularse desde la ficha, en una edición con la inscripción abierta (completa o cerrada, no se ofrece). sin sesión, el camino es el inicio de sesión
 // de Wasichai, que después vuelve a esta ficha (returnTo, @wasichai/core 1.5.0; lo valida LoginPage). con sesión
 // matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor.
-export function EnrollAction({ offering }: { offering: Offering }) {
+// solo una de la pantalla es la primaria: quien lo monta dice cuál (primary)
+export function EnrollAction({ offering, primary = true }: { offering: Offering; primary?: boolean }) {
   const { user } = useAuth()
   const links = useWasichaiLinks()
   // sin el módulo del aula no hay adónde llevar a la persona matriculada
   if (offeringState(offering) !== 'open' || !links.has(CLASSROOM_ROUTE)) return null
-  return user ? <EnrollButton offering={offering} /> : <SignInToEnroll />
+  return user ? <EnrollButton offering={offering} primary={primary} /> : <SignInToEnroll primary={primary} />
 }
 
-function SignInToEnroll() {
+// ya matriculada: la vuelta al aula de esa matrícula
+export function GoToCourse({ enrollmentId, primary = true }: { enrollmentId: string; primary?: boolean }) {
+  const { t } = useTranslation('catalog')
+  const links = useWasichaiLinks()
+  return (
+    <Button asChild variant={primary ? 'primary' : 'secondary'} className={`${WRAP} w-full`}>
+      <Link to={links.to(CLASSROOM_ROUTE, { enrollmentId })}>{t('enroll.goToCourse')}</Link>
+    </Button>
+  )
+}
+
+function SignInToEnroll({ primary }: { primary: boolean }) {
   const { t } = useTranslation('catalog')
   const links = useWasichaiLinks()
   // la ruta del router, no window.location: el router pone el basename
   const location = useLocation()
   return (
-    <Button asChild variant="secondary" className="self-start">
+    <Button asChild variant={primary ? 'primary' : 'secondary'} className={`${WRAP} w-full`}>
       <Link to={links.login({ returnTo: location.pathname + location.search })}>{t('enroll.signIn')}</Link>
     </Button>
   )
 }
 
-function EnrollButton({ offering }: { offering: Offering }) {
+function EnrollButton({ offering, primary }: { offering: Offering; primary: boolean }) {
   const { t, i18n } = useTranslation('catalog')
   const links = useWasichaiLinks()
   const navigate = useNavigate()
@@ -39,8 +52,14 @@ function EnrollButton({ offering }: { offering: Offering }) {
   const dates = formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, i18n.language)
   const onEnroll = () => enroll.mutate(offering.code, { onSuccess: (enrollment) => void navigate(links.to(CLASSROOM_ROUTE, { enrollmentId: enrollment.id })) })
   return (
-    <div className="flex flex-col items-start gap-2">
-      <Button onClick={onEnroll} disabled={enroll.isPending} aria-label={t('enroll.actionLabel', { dates })}>
+    <div className="flex flex-col gap-2">
+      <Button
+        variant={primary ? 'primary' : 'secondary'}
+        onClick={onEnroll}
+        disabled={enroll.isPending}
+        aria-label={t('enroll.actionLabel', { dates })}
+        className={`${WRAP} w-full`}
+      >
         {enroll.isPending ? t('enroll.enrolling') : t('enroll.action')}
       </Button>
       {enroll.error ? <EnrollProblem error={enroll.error} /> : null}

@@ -185,3 +185,9 @@ export type Credits = z.infer<typeof credits>
 // POST /lms/enrollments (aula del estudiante, docs/api/lms.md) devuelve la Enrollment entera, cuyo contrato valida el
 // módulo classroom. a la ficha solo le hace falta su id para abrir el aula
 export const createdEnrollmentSchema = z.object({ id: z.string().min(1) })
+
+// GET /lms/classroom/enrollments, las matrículas propias: a la ficha solo le hace falta saber si la persona ya está en este curso
+export const myEnrollmentsSchema = z.array(
+  z.object({ id: z.string().min(1), status: z.string(), course: z.object({ slug: z.string() }), offering: z.object({ code: z.string() }) })
+)
+export type MyEnrollment = z.infer<typeof myEnrollmentsSchema>[number]

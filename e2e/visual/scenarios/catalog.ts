@@ -1,6 +1,6 @@
 import type { Page, Route } from '@playwright/test'
-import { coursePage, courseSummary, courseWithoutOffering, problem } from '../../../src/modules/catalog/test/fixtures'
-import { isCourseList } from '../../api'
+import { courseDetail, coursePage, courseSummary, courseWithoutOffering, problem } from '../../../src/modules/catalog/test/fixtures'
+import { isCourse, isCourseList } from '../../api'
 import type { Scenario } from '../scenario'
 
 const CATEGORIES = [
@@ -65,14 +65,62 @@ const FULL_CATALOG = {
   facets: { ...coursePage.facets, categories: CATEGORIES }
 }
 
+const SRTM = isCourse(courseSummary.slug)
+const [OPEN_OFFERING] = courseDetail.offerings
+const lesson = courseDetail.units[0]!.lessons[0]!
+// una ficha larga, con todo lo que el contrato puede dar: varias unidades y ediciones en cada estado
+const FULL_COURSE = {
+  ...courseDetail,
+  units: [
+    ...courseDetail.units,
+    {
+      order: 2,
+      title: 'La solicitud en el sistema de rentas municipal, de principio a fin',
+      description: null,
+      objectives: [],
+      estimatedHours: 12,
+      lessons: [
+        { ...lesson, order: 1, title: 'Registrar una solicitud', type: 'LABORATORIO', durationMinutes: 45 },
+        { ...lesson, order: 2, title: 'Sesión de dudas', type: 'SESION', durationMinutes: 60 }
+      ]
+    },
+    {
+      order: 3,
+      title: 'Cierre',
+      description: 'Lo aprendido, en un caso real.',
+      objectives: [],
+      estimatedHours: null,
+      lessons: [{ ...lesson, order: 1, title: 'Caso práctico final', type: 'EVALUACION', durationMinutes: null }]
+    },
+    { order: 4, title: 'Unidad aún sin contenido', description: null, objectives: [], estimatedHours: null, lessons: [] }
+  ],
+  offerings: [
+    OPEN_OFFERING,
+    { ...OPEN_OFFERING, code: 'segunda', startDate: '2027-01-11', endDate: '2027-02-05', schedule: null, teachers: [] },
+    {
+      ...OPEN_OFFERING,
+      code: 'completa',
+      startDate: '2027-03-01',
+      endDate: '2027-03-26',
+      enrollmentOpen: false,
+      enrollmentStatus: 'FULL',
+      full: true,
+      teachers: []
+    }
+  ]
+}
+const NO_OFFERINGS = { ...courseDetail, offerings: [] }
+const CLOSED_OFFERING = { ...courseDetail, offerings: [{ ...OPEN_OFFERING, enrollmentOpen: false, enrollmentStatus: 'CLOSED' }] }
+
 // la API simulada ya respondió al abrir: esta ruta gana a la de fakeApi y la página vuelve a pedir el catálogo
-async function reloadWith(page: Page, reply: (route: Route) => Promise<void>) {
-  await page.route(isCourseList, reply)
+async function reloadWith(page: Page, reply: (route: Route) => Promise<void>, target: (url: URL) => boolean = isCourseList) {
+  await page.route(target, reply)
   await page.reload()
   await page.waitForLoadState('networkidle')
 }
 
 const withFullCatalog = (page: Page) => reloadWith(page, (route) => route.fulfill({ json: FULL_CATALOG }))
+const withCourse = (page: Page, course: unknown) => reloadWith(page, (route) => route.fulfill({ json: course }), SRTM)
 const openMoreFilters = (page: Page) => page.getByText('Más filtros').click()
 
 export const catalogScenarios: Scenario[] = [
@@ -121,6 +169,43 @@ export const catalogScenarios: Scenario[] = [
   },
   { name: 'catalog-empty', path: '/cursos?q=no-existe-ninguno' },
   { name: 'catalog-course', path: '/cursos/srtm-anuncios' },
+  { name: 'catalog-course-long', path: '/cursos/srtm-anuncios', act: (page) => withCourse(page, FULL_COURSE) },
+  { name: 'catalog-course-signed-in', path: '/cursos/srtm-anuncios', api: { signedIn: true, enrolled: false } },
+  { name: 'catalog-course-enrolled', path: '/cursos/srtm-anuncios', api: { signedIn: true } },
+  { name: 'catalog-course-no-offerings', path: '/cursos/srtm-anuncios', act: (page) => withCourse(page, NO_OFFERINGS) },
+  { name: 'catalog-course-closed', path: '/cursos/srtm-anuncios', act: (page) => withCourse(page, CLOSED_OFFERING) },
+  {
+    name: 'catalog-course-conflict',
+    path: '/cursos/srtm-anuncios',
+    api: { signedIn: true, enrolled: false },
+    act: async (page) => {
+      await page.route(
+        (url) => url.pathname === '/api/lms/enrollments',
+        (route) =>
+          route.fulfill({
+            status: 409,
+            contentType: 'application/problem+json',
+            json: problem(409, 'Para matricularte en esta edición antes debes aprobar: PRE-X (Fundamentos); PRE-Y (Normativa)')
+          })
+      )
+      await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
+      await page.getByRole('alert').waitFor()
+    }
+  },
+  {
+    name: 'catalog-course-loading',
+    path: '/cursos/srtm-anuncios',
+    act: async (page) => {
+      await page.route(SRTM, () => {})
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await page.getByRole('status').waitFor({ state: 'attached' })
+    }
+  },
+  {
+    name: 'catalog-course-error',
+    path: '/cursos/srtm-anuncios',
+    act: (page) => reloadWith(page, (route) => route.fulfill({ status: 503, json: problem(503, 'Fallo del servidor') }), SRTM)
+  },
   { name: 'catalog-course-full', path: '/cursos/srtm-anuncios', api: { offeringFull: true } },
   { name: 'catalog-course-missing', path: '/cursos/no-existe' }
 ]
