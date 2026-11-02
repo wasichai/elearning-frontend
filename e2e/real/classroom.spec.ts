@@ -110,7 +110,8 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
 
   await (await expandedUnits(page)).getByRole('link', { name: /^Consultar el padrón con filtros/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Consultar el padrón con filtros' })).toBeVisible()
-  await expect(page.getByText(/^Presentación · /)).toBeVisible()
+  // la misma línea sale en la fila del temario: se mira la de la lección
+  await expect(page.getByRole('article', { name: 'Consultar el padrón con filtros' }).getByText(/^Presentación · /)).toBeVisible()
   await expect(page.getByRole('region', { name: 'Consultar el padrón con filtros (presentación)' })).toBeVisible()
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: /^Descargar presentacion-padron-con-filtros\.pdf/ }).click()
