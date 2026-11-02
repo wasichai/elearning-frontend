@@ -92,6 +92,23 @@ describe('CourseDetailPage', () => {
     expect(within(section('Fuentes')).getByText('Manual de usuario SRTM, módulo de anuncios')).toBeInTheDocument()
   })
 
+  // RF-CAT-08: las claves que declaró la versión publicada, junto al texto libre
+  it('nombra los conocimientos previos declarados, y sin texto libre también abre «Antes de empezar»', async () => {
+    renderCourse([{ path: COURSE, body: { ...courseDetail, prerequisiteKnowledge: null, requirements: null } }])
+
+    expect(await screen.findByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
+    const before = within(section('Antes de empezar'))
+    expect(before.getByRole('list', { name: 'Conocimientos previos' })).toBeInTheDocument()
+    expect(before.getByRole('listitem')).toHaveTextContent('Hoja de cálculo')
+  })
+
+  it('sin conocimientos previos ni requisitos no hay «Antes de empezar»', async () => {
+    renderCourse([{ path: COURSE, body: { ...courseDetail, prerequisiteKnowledge: null, requirements: null, prerequisiteKnowledgeTags: [] } }])
+
+    expect(await screen.findByRole('heading', { level: 1, name: courseDetail.title })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 2, name: 'Antes de empezar' })).not.toBeInTheDocument()
+  })
+
   it('créditos propuestos: dice que no son oficiales y enseña el método solo bajo demanda', async () => {
     const user = userEvent.setup()
     renderCourse([{ path: COURSE, body: courseDetail }])

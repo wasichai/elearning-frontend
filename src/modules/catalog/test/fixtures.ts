@@ -49,6 +49,10 @@ export const coursePage = {
     categories: [
       { slug: 'gestion-municipal', name: 'Gestión municipal', count: 2 },
       { slug: 'programacion', name: 'Programación', count: 1 }
+    ],
+    prerequisiteKnowledge: [
+      { key: 'hoja-de-calculo', name: 'Hoja de cálculo', count: 1 },
+      { key: 'navegador-web', name: 'Manejo de un navegador web', count: 2 }
     ]
   }
 }
@@ -61,6 +65,7 @@ export const courseDetail = {
   ...summaryWithoutOffering,
   weeks: 6,
   prerequisiteKnowledge: 'Manejo básico de hoja de cálculo.',
+  prerequisiteKnowledgeTags: [{ key: 'hoja-de-calculo', name: 'Hoja de cálculo' }],
   version: { number: 1, publishedAt: '2026-10-20T15:00:00Z' },
   objectives: ['Registrar una solicitud de licencia', 'Emitir la liquidación'],
   learningOutcomes: ['Tramita una licencia de anuncio de principio a fin'],

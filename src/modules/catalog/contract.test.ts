@@ -39,6 +39,15 @@ describe('contrato del catálogo', () => {
     ).not.toHaveProperty('enrollmentStatus')
   })
 
+  // RF-CAT-08: las claves de conocimientos previos y su faceta son campos añadidos (ADR-0028 del backend)
+  it('acepta un backend anterior, sin claves de conocimientos previos, como «ninguna»', () => {
+    const { prerequisiteKnowledgeTags: _tags, ...detail } = courseDetail
+    expect(parseContract(courseDetailSchema, 'course', detail).prerequisiteKnowledgeTags).toEqual([])
+    const page = { ...coursePage, facets: { categories: coursePage.facets.categories } }
+    expect(parseContract(coursePageSchema, 'courses', page).facets.prerequisiteKnowledge).toEqual([])
+    expect(parseContract(courseDetailSchema, 'course', courseDetail).prerequisiteKnowledgeTags).toEqual([{ key: 'hoja-de-calculo', name: 'Hoja de cálculo' }])
+  })
+
   it('acepta un curso sin sistema de créditos y sin propuesta', () => {
     const credits = { system: null, approved: null, proposal: null }
     expect(parseContract(courseDetailSchema, 'course', { ...courseDetail, credits }).credits.system).toBeNull()

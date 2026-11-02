@@ -49,6 +49,23 @@ test('cada curso publicado abre su ficha completa', async ({ page }) => {
   }
 })
 
+// RF-CAT-08: la demo declara programacion-basica y json-y-api-rest en IA, navegador-web en SRTM y ninguna en los demás
+test('el filtro de conocimientos previos deja el curso que lo declara, y «sin conocimientos previos» los demás', async ({ page }) => {
+  await page.goto('/cursos')
+  await expect(courses(page)).toHaveCount(PUBLISHED.length)
+
+  await page.getByRole('combobox', { name: 'Conocimientos previos' }).click()
+  await page.getByRole('option', { name: 'Programación básica (1)' }).click()
+  await expect(page).toHaveURL(/prerequisiteKnowledge=programacion-basica/)
+  await expect(courses(page)).toHaveCount(1)
+  await expect(courses(page).getByRole('link', { name: PUBLISHED[2]!.title })).toBeVisible()
+
+  await page.getByRole('combobox', { name: 'Conocimientos previos' }).click()
+  await page.getByRole('option', { name: 'Sin conocimientos previos' }).click()
+  await expect(page).toHaveURL(/prerequisiteKnowledge=none/)
+  await expect(courses(page)).toHaveCount(3)
+})
+
 test('la ficha del curso de IA: 216 h y créditos ECTS propuestos', async ({ page }) => {
   await page.goto('/cursos')
   await courses(page).getByRole('link', { name: PUBLISHED[2]!.title }).click()

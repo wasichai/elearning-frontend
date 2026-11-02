@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
-import { LEVELS, MODALITIES, SORTS, type CoursePage, type CourseSummary, type NextOffering } from './contract'
+import { LEVELS, MODALITIES, NO_KNOWLEDGE, SORTS, type CoursePage, type CourseSummary, type NextOffering } from './contract'
 import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Fact, IllustrativeMark, offeringState } from './parts'
 import { ProblemState, useProblemText } from './ProblemState'
@@ -141,7 +141,7 @@ function Filters({ filters, page, onChange, onClear }: FiltersProps) {
           </Select>
         </div>
       </fieldset>
-      <MoreFilters id={id} filters={filters} onChange={onChange} />
+      <MoreFilters id={id} filters={filters} page={page} onChange={onChange} />
       {hasActiveFilters(filters) ? (
         <div>
           <Button variant="ghost" onClick={onClear}>
@@ -165,9 +165,22 @@ const CUSTOM_DURATION = 'custom'
 const ENROLLMENT_OPTIONS = ['true', 'false'] as const
 const HOUR_FILTERS = ['minTheoryHours', 'minPracticeHours', 'minAutonomousHours'] as const
 
-// RF-CAT-08: duración, inscripción abierta y horas por tipo. conocimientos previos no tiene filtro: es texto libre
-function MoreFilters({ id, filters, onChange }: { id: string; filters: CatalogFilters; onChange: (patch: Partial<CatalogFilters>) => void }) {
+interface MoreFiltersProps {
+  id: string
+  filters: CatalogFilters
+  page: CoursePage | undefined
+  onChange: (patch: Partial<CatalogFilters>) => void
+}
+
+// RF-CAT-08: duración, inscripción abierta, conocimientos previos y horas por tipo
+function MoreFilters({ id, filters, page, onChange }: MoreFiltersProps) {
   const { t } = useTranslation('catalog')
+  const knowledge: { key: string; name: string; count?: number }[] = page?.facets.prerequisiteKnowledge ?? []
+  // una clave de la URL que no viene en los facets (sin cursos, o escrita a mano) se ve tal cual, como la categoría
+  const knowledgeOptions =
+    filters.prerequisiteKnowledge && filters.prerequisiteKnowledge !== NO_KNOWLEDGE && !knowledge.some((option) => option.key === filters.prerequisiteKnowledge)
+      ? [...knowledge, { key: filters.prerequisiteKnowledge, name: filters.prerequisiteKnowledge }]
+      : knowledge
   const hasDuration = filters.minWeeks !== '' || filters.maxWeeks !== ''
   const preset = DURATIONS.find((duration) => duration.minWeeks === filters.minWeeks && duration.maxWeeks === filters.maxWeeks)
   const durationValue = preset ? preset.key : hasDuration ? CUSTOM_DURATION : ''
@@ -179,7 +192,7 @@ function MoreFilters({ id, filters, onChange }: { id: string; filters: CatalogFi
   }
 
   return (
-    <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-3">
       <legend className="sr-only">{t('filters.moreLegend')}</legend>
       <FilterSelect id={`${id}-duration`} label={t('filters.duration')} value={durationValue} onChange={chooseDuration}>
         {DURATIONS.map((duration) => (
@@ -200,6 +213,19 @@ function MoreFilters({ id, filters, onChange }: { id: string; filters: CatalogFi
         {ENROLLMENT_OPTIONS.map((option) => (
           <SelectItem key={option} value={option}>
             {t(`enrollmentFilter.${option}`)}
+          </SelectItem>
+        ))}
+      </FilterSelect>
+      <FilterSelect
+        id={`${id}-knowledge`}
+        label={t('filters.prerequisiteKnowledge')}
+        value={filters.prerequisiteKnowledge}
+        onChange={(prerequisiteKnowledge) => onChange({ prerequisiteKnowledge })}
+      >
+        <SelectItem value={NO_KNOWLEDGE}>{t('knowledgeFilter.none')}</SelectItem>
+        {knowledgeOptions.map((option) => (
+          <SelectItem key={option.key} value={option.key}>
+            {option.count === undefined ? option.name : t('filters.categoryOption', { name: option.name, count: option.count })}
           </SelectItem>
         ))}
       </FilterSelect>
@@ -394,6 +420,7 @@ const FILTER_LABELS: Record<string, string> = {
   minTheoryHours: 'filters.minTheoryHours',
   minPracticeHours: 'filters.minPracticeHours',
   minAutonomousHours: 'filters.minAutonomousHours',
+  prerequisiteKnowledge: 'filters.prerequisiteKnowledge',
   sort: 'filters.sort',
   page: 'filters.page',
   size: 'filters.size'
