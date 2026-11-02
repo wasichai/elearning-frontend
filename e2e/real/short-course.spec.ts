@@ -192,7 +192,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
 
   await test.step('recorrido 6: el estudiante ve su resultado, con el comentario y las soluciones', async () => {
     await page.goto(attemptUrl)
-    await expect(page.getByRole('status').filter({ hasText: '100 % · Aprobado' })).toBeVisible()
+    await expect(page.getByRole('status').filter({ hasText: 'Aprobada' }).getByRole('img', { name: 'Nota: 100 %' })).toBeVisible()
     await expect(page.getByRole('article', { name: OPEN_QUESTION })).toContainText('Claro y útil.')
     await expect(page.getByText('Respuesta correcta: Falso')).toBeVisible()
     await expect((await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${ASSESSMENT}.*Aprobada`) })).toBeVisible()

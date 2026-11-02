@@ -35,20 +35,19 @@ export function AssessmentLesson({ enrollmentId, lesson, timeZone }: { enrollmen
         title={lesson.assessment.title}
         maxAttempts={lesson.assessment.maxAttempts}
         timeZone={timeZone}
+        resultActions={<ResultActions enrollmentId={enrollmentId} lesson={lesson} />}
       />
     </div>
   )
 }
 
-const ATTEMPT_STATE: Partial<Record<KnotState, string>> = { used: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
-
-function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
+// empezar un intento, desde la ficha o desde un resultado: cuándo se puede, con su confirmación. el servidor manda; esto lo explica antes
+function useAttemptStart(enrollmentId: string, lesson: AssessedLesson) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const navigate = useNavigate()
   const start = useStartAttempt(enrollmentId)
   const [confirming, setConfirming] = useState(false)
-  const attemptsLabel = useId()
   // el aula ya está en la caché del marco: solo se lee su estado, sin otra petición
   const { data: classroom } = useQuery({ ...classroomQuery(useApiClient(), enrollmentId), refetchOnMount: false })
   const { assessment } = lesson
@@ -58,9 +57,73 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
   // el servidor solo deja escribir con la matrícula activa: aquí se explica antes de que responda 409
   const closed = classroom !== undefined && classroom.status !== 'ACTIVA'
   const canStart = !closed && !exhausted && open === null
-  const timed = assessment.timeLimitMinutes !== null
   const numbers = { number: formatNumber(assessment.attemptsUsed + 1, locale), max: formatNumber(assessment.maxAttempts, locale) }
   const attemptLink = (attemptId: string) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id, [ATTEMPT_PARAM]: attemptId })
+  // empezar gasta uno de los intentos y, con límite, pone en marcha un reloj que no se detiene: se confirma (RNF-UX-08)
+  const dialog = confirming ? (
+    <ConfirmDialog
+      variant="primary"
+      title={t('assessment.confirmTitle')}
+      description={
+        assessment.timeLimitMinutes === null
+          ? t('assessment.confirmUntimed', numbers)
+          : t('assessment.confirmTimed', { ...numbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
+      }
+      confirmLabel={t('assessment.confirmStart')}
+      cancelLabel={t('assessment.confirmCancel')}
+      onCancel={() => setConfirming(false)}
+      onConfirm={() => {
+        setConfirming(false)
+        start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })
+      }}
+    />
+  ) : null
+  const closedNotice = closed ? t(classroom.status === 'FINALIZADA' ? 'assessment.closedFinished' : 'assessment.closedInactive') : undefined
+  return { open, exhausted, closedNotice, canStart, numbers, attemptLink, start, ask: () => setConfirming(true), dialog }
+}
+
+// la salida de un resultado: dentro de ?intento= la lección oculta anterior y siguiente, así que aquí se dice adónde ir
+function ResultActions({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
+  const { t, i18n } = useTranslation('classroom')
+  const links = useWasichaiLinks()
+  const flow = useAttemptStart(enrollmentId, lesson)
+  const { assessment } = lesson
+  const left = assessment.maxAttempts - assessment.attemptsUsed
+  const note = flow.closedNotice
+    ? flow.closedNotice
+    : flow.exhausted
+      ? t('assessment.exhausted', { count: assessment.maxAttempts })
+      : flow.canStart
+        ? t('result.attemptsLeft', { count: left, value: formatNumber(left, i18n.language) })
+        : null
+  return (
+    <div className="flex flex-col gap-3">
+      {flow.start.error ? <AttemptActionProblem error={flow.start.error} /> : null}
+      <div className="flex flex-col gap-2 @lg:flex-row @lg:items-center @lg:gap-3">
+        <Button asChild className={`w-full @lg:w-auto ${WRAP} min-h-11`}>
+          <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId })}>{t('result.backToCourse')}</Link>
+        </Button>
+        {flow.canStart ? (
+          <Button variant="secondary" className={`w-full @lg:w-auto ${WRAP} min-h-11`} disabled={flow.start.isPending} onClick={flow.ask}>
+            {flow.start.isPending ? t('assessment.starting') : t('result.retry')}
+          </Button>
+        ) : null}
+        {note ? <p className="text-sm text-ink-muted">{note}</p> : null}
+      </div>
+      {flow.dialog}
+    </div>
+  )
+}
+
+const ATTEMPT_STATE: Partial<Record<KnotState, string>> = { used: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
+
+function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
+  const { t, i18n } = useTranslation('classroom')
+  const { open, exhausted, closedNotice, canStart, numbers, attemptLink, start, ask, dialog } = useAttemptStart(enrollmentId, lesson)
+  const attemptsLabel = useId()
+  const { assessment } = lesson
+  const locale = i18n.language
+  const timed = assessment.timeLimitMinutes !== null
   const knots = attemptKnots(assessment.maxAttempts, assessment.attemptsUsed - (open ? 1 : 0), open !== null)
   return (
     <section
@@ -109,8 +172,8 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
 
       {start.error ? <AttemptActionProblem error={start.error} /> : null}
 
-      {closed ? (
-        <Alert tone="notice">{t(classroom.status === 'FINALIZADA' ? 'assessment.closedFinished' : 'assessment.closedInactive')}</Alert>
+      {closedNotice ? (
+        <Alert tone="notice">{closedNotice}</Alert>
       ) : open ? (
         <div className="flex flex-col gap-3 @lg:flex-row @lg:items-center @lg:justify-between">
           <p className="text-sm text-ink-muted">{t(timed ? 'assessment.resumeTimed' : 'assessment.resumeHint')}</p>
@@ -121,7 +184,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
       ) : exhausted ? (
         <Alert tone="notice">{t('assessment.exhausted', { count: assessment.maxAttempts })}</Alert>
       ) : (
-        <Button className={`w-full self-start @lg:w-auto ${WRAP} min-h-11`} disabled={start.isPending} onClick={() => setConfirming(true)}>
+        <Button className={`w-full self-start @lg:w-auto ${WRAP} min-h-11`} disabled={start.isPending} onClick={ask}>
           {start.isPending ? t('assessment.starting') : t('assessment.startNumber', numbers)}
         </Button>
       )}
@@ -138,25 +201,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
         </div>
       ) : null}
 
-      {/* empezar gasta uno de los intentos y, con límite, pone en marcha un reloj que no se detiene: se confirma (RNF-UX-08) */}
-      {confirming ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('assessment.confirmTitle')}
-          description={
-            assessment.timeLimitMinutes === null
-              ? t('assessment.confirmUntimed', numbers)
-              : t('assessment.confirmTimed', { ...numbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
-          }
-          confirmLabel={t('assessment.confirmStart')}
-          cancelLabel={t('assessment.confirmCancel')}
-          onCancel={() => setConfirming(false)}
-          onConfirm={() => {
-            setConfirming(false)
-            start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })
-          }}
-        />
-      ) : null}
+      {dialog}
     </section>
   )
 }

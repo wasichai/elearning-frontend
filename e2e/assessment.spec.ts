@@ -112,6 +112,41 @@ async function start(page: Page) {
   await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
 }
 
+async function submitAttempt(page: Page) {
+  await page.getByRole('button', { name: 'Entregar' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()
+}
+
+test('desde el resultado se reintenta si quedan intentos y, con el último gastado, solo se sale al curso', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await start(page)
+  await page.getByRole('radio', { name: 'La municipalidad' }).check()
+  await submitAttempt(page)
+
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeFocused()
+  // dentro de ?intento= la lección no ofrece anterior ni siguiente: la salida está aquí
+  const back = page.getByRole('link', { name: 'Volver al curso' })
+  await expect(back).toBeInViewport()
+  await expect(page.getByText('Te queda 1 intento.')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Intentar de nuevo' }).click()
+  const dialog = page.getByRole('dialog', { name: '¿Comenzar el intento?' })
+  await expect(dialog).toContainText('Usarás el intento 2 de 2')
+  await dialog.getByRole('button', { name: 'Comenzar' }).click()
+  await expect(page.getByRole('heading', { level: 3, name: 'Intento 2' })).toBeFocused()
+  await expect(page).toHaveURL(`${LESSON}&intento=int-2`)
+
+  await submitAttempt(page)
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 2' })).toBeVisible()
+  await expect(page.getByText('Ya usaste tus 2 intentos.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Intentar de nuevo' })).toHaveCount(0)
+
+  await back.click()
+  await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1')
+  await expect(page.getByRole('heading', { level: 3, name: /^Resultado/ })).toHaveCount(0)
+  expect(api.unexpected).toEqual([])
+})
+
 // lo que recibe el foco no queda bajo la cabecera fija, y esta no se mete bajo la barra de la lección
 async function expectClearOfHeader(page: Page, target: ReturnType<Page['getByRole']>) {
   await expect(async () => {
@@ -234,6 +269,26 @@ test.describe('en un teléfono', () => {
     await index.getByRole('button', { name: 'Pregunta 1, respondida' }).click()
     const option = await page.locator('label:has(input[type=radio]):visible').first().boundingBox()
     expect(option!.height).toBeGreaterThanOrEqual(44)
+  })
+
+  test('el resultado: la nota y la salida arriba, sin desbordar y con objetivos de 44 px', async ({ page }) => {
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+    await page.getByRole('radio', { name: 'La municipalidad' }).check()
+    await page.getByRole('button', { name: 'Entregar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()
+    await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+
+    const summary = page.getByRole('status').filter({ has: page.getByRole('img') })
+    await expect(summary).toBeInViewport()
+    for (const name of ['Volver al curso', 'Intentar de nuevo']) {
+      const action = page.getByRole('main').getByText(name, { exact: true })
+      await expect(action).toBeInViewport()
+      const box = await action.boundingBox()
+      expect(box!.height).toBeGreaterThanOrEqual(44)
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(overflow).toBeLessThanOrEqual(0)
   })
 
   test('el intento cabe en el área del aula', async ({ page }) => {

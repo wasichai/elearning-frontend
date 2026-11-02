@@ -22,17 +22,28 @@ interface AttemptViewProps {
   maxAttempts: number
   // la zona de la edición, para escribir el plazo
   timeZone: string
+  // lo que se puede hacer al ver el resultado
+  resultActions: ReactNode
 }
 
 // un intento: abierto, se responde; enviado, se ve su resultado
-export function AttemptView({ enrollmentId, attemptId, passingPercent, title, maxAttempts, timeZone }: AttemptViewProps) {
+export function AttemptView({ enrollmentId, attemptId, passingPercent, title, maxAttempts, timeZone, resultActions }: AttemptViewProps) {
   const { t } = useTranslation('classroom')
   const query = useAttempt(attemptId)
   if (query.isError) return <AttemptLoadProblem error={query.error} onRetry={() => void query.refetch()} />
   if (!query.data) return <LoadingState label={t('attempt.loading')} />
   if (query.data.status === 'OPEN')
     return <AttemptForm key={query.data.id} enrollmentId={enrollmentId} attempt={query.data} title={title} maxAttempts={maxAttempts} timeZone={timeZone} />
-  return <AttemptResultView attempt={query.data} passingPercent={passingPercent} />
+  return (
+    <AttemptResultView
+      attempt={query.data}
+      passingPercent={passingPercent}
+      title={title}
+      maxAttempts={maxAttempts}
+      timeZone={timeZone}
+      actions={resultActions}
+    />
+  )
 }
 
 function AttemptLoadProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
