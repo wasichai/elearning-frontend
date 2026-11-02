@@ -4,9 +4,11 @@ import {
   classroom,
   enrollment,
   finishedEnrollment,
+  gradedAttempt,
   openAttempt,
   otherEnrollment,
-  sessions
+  sessions,
+  submittedAttempt
 } from '../../../src/modules/classroom/test/fixtures'
 import { problem } from '../../../src/modules/catalog/test/fixtures'
 import { student, type Scenario } from '../scenario'
@@ -70,6 +72,47 @@ const answerSome = async (page: Page) => {
   await page.getByRole('radio', { name: 'La municipalidad' }).check()
   await page.getByRole('button', { name: 'Pregunta 4, en blanco' }).click()
   await page.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }).fill('SRTM')
+}
+// el resultado de un intento, con el resumen de la evaluación que le corresponde
+const resultOf = (page: Page, attempt: object, summary: object, status?: string) =>
+  reloadWith(page, async () => {
+    await page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: summaryWith(summary, status) }))
+    await page.route('**/api/lms/classroom/attempts/int-1', (route) => route.fulfill({ json: attempt }))
+  })
+const passedSummary = { attemptsUsed: 1, best: { percent: 80, passed: true, pending: false } }
+// aprobada, la lección queda hecha y su pie ofrece la siguiente
+const passedResult = (page: Page) =>
+  reloadWith(page, async () => {
+    const copy = summaryWith(passedSummary)
+    copy.units[0]!.lessons[1]!.progress.status = 'APROBADA'
+    await page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: copy }))
+    await page.route('**/api/lms/classroom/attempts/int-1', (route) => route.fulfill({ json: gradedAttempt }))
+  })
+const toQuestion = async (page: Page, name: RegExp) => {
+  await page.getByRole('article', { name }).scrollIntoViewIfNeeded()
+  await page.waitForTimeout(100)
+}
+const failedSummary = { attemptsUsed: 1, best: { percent: 60, passed: false, pending: false } }
+const failedResult = { ...gradedAttempt.result, score: 6, percent: 60, passed: false }
+const failedAttempt = { ...gradedAttempt, result: failedResult }
+// lo más largo que puede llegar: nota con decimales, enunciado y respuesta sin espacios, comentario con varias líneas
+const longAttempt = {
+  ...gradedAttempt,
+  questions: gradedAttempt.questions.map((question) =>
+    question.id === 'p-open' ? { ...question, prompt: `${question.prompt} ${'Anticonstitucionalmente'.repeat(6)}` } : question
+  ),
+  answers: gradedAttempt.answers.map((answer) =>
+    answer.questionId === 'p-open' ? { ...answer, text: `Primero.\n${'Desproporcionadamente'.repeat(8)}` } : answer
+  ),
+  result: {
+    ...failedResult,
+    percent: 66.67,
+    questions: failedResult.questions.map((outcome) =>
+      outcome.questionId === 'p-open'
+        ? { ...outcome, comment: 'Falta citar la ordenanza.\nRevisa también el área gravada y la tasa vigente de este año.' }
+        : outcome
+    )
+  }
 }
 const startAttempt = async (page: Page) => {
   await page.getByRole('button', { name: /^Comenzar intento/ }).click()
@@ -284,6 +327,46 @@ export const classroomScenarios: Scenario[] = [
     act: (page) => reloadWith(page, () => page.route('**/api/lms/classroom/attempts/int-1', (route) => route.fulfill(fail(503))))
   },
   { name: 'student-attempt-loading', path: ATTEMPT, api: student, act: (page) => hang(page, '**/api/lms/classroom/attempts/int-1') },
+  // el resultado: sin intentos para ver solo la salida, y con reintento disponible
+  { name: 'student-result-passed', path: ATTEMPT, api: student, act: passedResult },
+  {
+    name: 'student-result-passed-end',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await passedResult(page)
+      await toQuestion(page, /^6\./)
+    }
+  },
+  { name: 'student-result-failed', path: ATTEMPT, api: student, act: (page) => resultOf(page, failedAttempt, { ...failedSummary, attemptsUsed: 2 }) },
+  { name: 'student-result-retry', path: ATTEMPT, api: student, act: (page) => resultOf(page, failedAttempt, failedSummary) },
+  {
+    name: 'student-result-pending',
+    path: ATTEMPT,
+    api: student,
+    act: (page) => resultOf(page, submittedAttempt, { attemptsUsed: 2, best: { percent: null, passed: null, pending: true } })
+  },
+  { name: 'student-result-finished', path: ATTEMPT, api: student, act: (page) => resultOf(page, failedAttempt, failedSummary, 'FINALIZADA') },
+  {
+    name: 'student-result-long',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await resultOf(page, longAttempt, failedSummary)
+      await toQuestion(page, /^5\./)
+    }
+  },
+  { name: 'student-result-long-top', path: ATTEMPT, api: student, act: (page) => resultOf(page, longAttempt, failedSummary) },
+  {
+    name: 'student-result-retry-dialog',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await resultOf(page, failedAttempt, failedSummary)
+      await page.getByRole('button', { name: 'Intentar de nuevo' }).click()
+      await page.getByRole('dialog').waitFor()
+    }
+  },
   { name: 'student-lesson-session', path: '/mis-cursos/mat-sgspe-1?leccion=lec-sesion', api: student },
   { name: 'student-sessions', path: '/mis-cursos/mat-sgspe-1/sesiones', api: student },
   {

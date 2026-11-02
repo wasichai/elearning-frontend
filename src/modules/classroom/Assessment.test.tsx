@@ -652,7 +652,8 @@ describe('el resultado', () => {
       '?leccion=lec-eva&intento=int-1'
     )
 
-    expect(await screen.findByText('80 % · Aprobado')).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: 'Nota: 80 %' })).toBeInTheDocument()
+    expect(within(screen.getByRole('status')).getByText('Aprobada')).toBeInTheDocument()
     expect(screen.getByText('8 de 10 puntos; se aprueba con 70 %.')).toBeInTheDocument()
     const tf = within(screen.getByRole('article', { name: '3. El SGSPE registra los expedientes.' }))
     expect(tf.getByText('0 de 1 puntos')).toBeInTheDocument()
@@ -681,9 +682,229 @@ describe('el resultado', () => {
       '?leccion=lec-eva&intento=int-1'
     )
 
-    await screen.findByText('80 % · Aprobado')
+    await screen.findByRole('img', { name: 'Nota: 80 %' })
     expect(screen.queryByText(/^Respuesta correcta/)).not.toBeInTheDocument()
     expect(screen.queryByText(/^Respuestas aceptadas/)).not.toBeInTheDocument()
+  })
+
+  const failedAttempt = (percent: number) => ({
+    ...gradedAttempt,
+    result: { ...gradedAttempt.result, score: 6, percent, passed: false }
+  })
+  const openResult = (body: unknown, classroom: unknown = assessmentClassroom, language?: string) =>
+    renderAssessment(
+      [
+        { path: CLASSROOM, body: classroom },
+        { path: ATTEMPT, body }
+      ],
+      '?leccion=lec-eva&intento=int-1',
+      {},
+      language
+    )
+
+  describe('el encabezado', () => {
+    it('aprobada: anillo con la nota, la palabra en musgo, el intento y la fecha', async () => {
+      openResult(gradedAttempt)
+
+      const ring = await screen.findByRole('img', { name: 'Nota: 80 %' })
+      expect(ring).toHaveTextContent('80 %')
+      const word = within(screen.getByRole('status')).getByText('Aprobada')
+      expect(word).toHaveClass('text-success')
+      expect(screen.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeInTheDocument()
+      expect(screen.getByText('de 2')).toBeInTheDocument()
+      // al entrar se desplaza hasta aquí: el título de la evaluación va con el resultado
+      expect(within(screen.getByRole('region', { name: 'Resultado del intento 1' })).getByText('Evaluación final')).toBeInTheDocument()
+      // en la zona de la edición (Lima)
+      expect(screen.getByText(/^Entregado el 28 oct 2026, 10:20$/)).toBeInTheDocument()
+      // el anillo dibuja la nota real: 80 % de la circunferencia
+      const arc = ring.querySelector<SVGCircleElement>('[data-arc]')!
+      const [filled, whole] = arc.getAttribute('stroke-dasharray')!.split(' ').map(Number)
+      expect(filled! / whole!).toBeCloseTo(0.8)
+    })
+
+    it('no aprobada: en warning y nunca en danger, con icono y palabra', async () => {
+      openResult(failedAttempt(60))
+
+      await screen.findByRole('img', { name: 'Nota: 60 %' })
+      const word = within(screen.getByRole('status')).getByText('No aprobada')
+      expect(word).toHaveClass('text-warning')
+      expect(word.querySelector('svg')).not.toBeNull()
+      expect(word).not.toHaveClass('text-danger')
+      expect(screen.getByText('6 de 10 puntos; se aprueba con 70 %.')).toBeInTheDocument()
+    })
+
+    it('la nota nunca se redondea hacia arriba: 69,999 no se lee como 70', async () => {
+      openResult(failedAttempt(69.999))
+
+      expect(await screen.findByRole('img', { name: 'Nota: 69,99 %' })).toHaveTextContent('69,99 %')
+    })
+
+    it('un 0 % no dibuja arco', async () => {
+      openResult(failedAttempt(0))
+
+      const ring = await screen.findByRole('img', { name: 'Nota: 0 %' })
+      expect(ring.querySelector('[data-arc]')).toBeNull()
+    })
+
+    it('pendiente: insignia, sin nota inventada y sin prometer un aviso que no existe', async () => {
+      openResult(submittedAttempt)
+
+      const ring = await screen.findByRole('img', { name: 'Aún sin nota' })
+      const summary = within(screen.getByRole('status'))
+      expect(summary.getByText('Pendiente de corrección').closest('[data-slot="badge"]')).toHaveAttribute('data-state', 'review')
+      expect(ring.querySelector('[data-arc]')).toBeNull()
+      expect(summary.getByText('Tu docente corregirá las preguntas que lo necesitan. Por ahora llevas 5 de 10 puntos.')).toBeInTheDocument()
+      expect(summary.getByText('Cuando termine, verás tu nota en esta evaluación.')).toBeInTheDocument()
+      expect(screen.queryByText(/avisar/i)).not.toBeInTheDocument()
+      expect(screen.queryByText('Aprobada')).not.toBeInTheDocument()
+      expect(screen.queryByText('No aprobada')).not.toBeInTheDocument()
+    })
+
+    it('en inglés', async () => {
+      openResult(failedAttempt(60), assessmentClassroom, 'en')
+
+      expect(await screen.findByRole('img', { name: 'Grade: 60%' })).toHaveTextContent('60%')
+      expect(within(screen.getByRole('status')).getByText('Not passed')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Back to the course' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+      expect(screen.getByText('You have 2 attempts left.')).toBeInTheDocument()
+    })
+  })
+
+  describe('el desglose', () => {
+    it('cada pregunta en su fila: enunciado de lectura, veredicto con icono y palabra, y comentario', async () => {
+      openResult(gradedAttempt)
+
+      expect(await screen.findByRole('heading', { level: 4, name: 'Pregunta por pregunta' })).toBeInTheDocument()
+      const rows = screen.getAllByRole('article').filter((row) => /^\d\./.test(row.getAttribute('aria-label') ?? ''))
+      expect(rows).toHaveLength(6)
+
+      const tf = within(screen.getByRole('article', { name: '3. El SGSPE registra los expedientes.' }))
+      expect(tf.getByRole('heading', { level: 5 })).toHaveClass('font-read')
+      const incorrect = tf.getByText('Incorrecta')
+      expect(incorrect).toHaveClass('text-warning')
+      expect(incorrect.querySelector('svg')).not.toBeNull()
+      const correct = within(screen.getByRole('article', { name: '1. ¿Quién otorga la licencia de anuncio?' })).getByText('Correcta')
+      expect(correct).toHaveClass('text-success')
+      expect(correct.querySelector('svg')).not.toBeNull()
+
+      const open = within(screen.getByRole('article', { name: '5. Explica cómo se liquida una licencia.' }))
+      expect(open.getByText('Comentario del docente')).toBeInTheDocument()
+      // sin veredicto en el contrato (corrección manual), no se deduce uno
+      expect(open.queryByText('Correcta')).not.toBeInTheDocument()
+      expect(open.queryByText('Incorrecta')).not.toBeInTheDocument()
+    })
+
+    it('pendiente: la pregunta lleva su insignia y cuánto vale, sin puntos inventados', async () => {
+      openResult(submittedAttempt)
+
+      const open = within(await screen.findByRole('article', { name: '5. Explica cómo se liquida una licencia.' }))
+      expect(open.getByText('Pendiente de corrección').closest('[data-slot="badge"]')).toHaveAttribute('data-state', 'review')
+      expect(open.getByText('Vale 2 puntos')).toBeInTheDocument()
+      expect(open.queryByText(/ de 2 puntos/)).not.toBeInTheDocument()
+    })
+
+    it('la nota de una pregunta tampoco se redondea hacia arriba', async () => {
+      const partial = structuredClone(gradedAttempt)
+      partial.result.questions[4] = { ...partial.result.questions[4]!, points: 1.999 }
+      openResult(partial)
+
+      const open = within(await screen.findByRole('article', { name: '5. Explica cómo se liquida una licencia.' }))
+      expect(open.getByText('1,99 de 2 puntos')).toBeInTheDocument()
+    })
+
+    it('sin respuesta lo dice, y una respuesta abierta conserva sus saltos de línea', async () => {
+      const answers = gradedAttempt.answers.map((answer) =>
+        answer.questionId === 'p-single'
+          ? { ...answer, optionIds: [], text: null }
+          : answer.questionId === 'p-open'
+            ? { ...answer, text: 'Primero\nDespués' }
+            : answer
+      )
+      openResult({ ...gradedAttempt, answers })
+
+      const single = within(await screen.findByRole('article', { name: '1. ¿Quién otorga la licencia de anuncio?' }))
+      expect(single.getByText('sin responder')).toBeInTheDocument()
+      const open = within(screen.getByRole('article', { name: '5. Explica cómo se liquida una licencia.' }))
+      expect(open.getByText(/^Primero/)).toHaveClass('whitespace-pre-wrap')
+    })
+  })
+
+  describe('las acciones', () => {
+    it('«Volver al curso» es la primaria y sale del intento; «Intentar de nuevo», la secundaria, dice cuántos quedan', async () => {
+      openResult(gradedAttempt, withAssessment({ attemptsUsed: 1 }))
+
+      const back = await screen.findByRole('link', { name: 'Volver al curso' })
+      expect(back).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1')
+      expect(back).toHaveAttribute('data-variant', 'primary')
+      expect(await screen.findByRole('button', { name: 'Intentar de nuevo' })).toHaveAttribute('data-variant', 'secondary')
+      expect(screen.getByText('Te queda 1 intento.')).toBeInTheDocument()
+    })
+
+    it('reintentar confirma como la evaluación, gasta el intento siguiente y lo abre', async () => {
+      const second = attempt({ id: 'int-2', number: 2 })
+      renderAssessment(
+        [
+          { path: CLASSROOM, body: withAssessment({ attemptsUsed: 1 }) },
+          { path: ATTEMPT, body: gradedAttempt },
+          { method: 'POST', path: ATTEMPTS, status: 201, body: second },
+          { path: '/lms/classroom/attempts/int-2', body: second }
+        ],
+        '?leccion=lec-eva&intento=int-1'
+      )
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Intentar de nuevo' }))
+      const dialog = within(await screen.findByRole('dialog', { name: '¿Comenzar el intento?' }))
+      expect(dialog.getByText(/^Usarás el intento 2 de 2/)).toBeInTheDocument()
+      expect(calls('POST', ATTEMPTS)).toEqual([])
+      await userEvent.click(dialog.getByRole('button', { name: 'Comenzar' }))
+
+      expect(await screen.findByRole('heading', { level: 3, name: 'Intento 2' })).toBeInTheDocument()
+      expect(calls('POST', ATTEMPTS)).toHaveLength(1)
+    })
+
+    it('un 409 al reintentar se explica con su detalle y deja salir', async () => {
+      renderAssessment(
+        [
+          { path: CLASSROOM, body: withAssessment({ attemptsUsed: 1 }) },
+          { path: ATTEMPT, body: gradedAttempt },
+          { method: 'POST', path: ATTEMPTS, status: 409, body: problem(409, 'Ya no quedan intentos') }
+        ],
+        '?leccion=lec-eva&intento=int-1'
+      )
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Intentar de nuevo' }))
+      await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Comenzar' }))
+
+      expect(await screen.findByText('El servidor dice: «Ya no quedan intentos». Te mostramos el estado actual.')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Volver al curso' })).toBeInTheDocument()
+    })
+
+    it('sin intentos restantes no aparece «Intentar de nuevo» y dice por qué', async () => {
+      openResult(failedAttempt(60), withAssessment({ attemptsUsed: 2 }))
+
+      expect(await screen.findByText('Ya usaste tus 2 intentos.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Intentar de nuevo' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Volver al curso' })).toBeInTheDocument()
+    })
+
+    it.each([
+      ['FINALIZADA', 'Este curso ya terminó: no se pueden comenzar ni seguir intentos.'],
+      ['RETIRADA', 'Tu matrícula ya no está activa: no se pueden comenzar ni seguir intentos.']
+    ])('con la matrícula %s no aparece «Intentar de nuevo», aunque queden intentos', async (status, message) => {
+      openResult(failedAttempt(60), { ...withAssessment({ attemptsUsed: 1 }), status })
+
+      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Intentar de nuevo' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Volver al curso' })).toBeInTheDocument()
+    })
+
+    it('con otro intento abierto no ofrece empezar uno más', async () => {
+      openResult(gradedAttempt, withAssessment({ attemptsUsed: 2, maxAttempts: 3, openAttemptId: 'int-2' }))
+
+      await screen.findByRole('link', { name: 'Volver al curso' })
+      expect(screen.queryByRole('button', { name: 'Intentar de nuevo' })).not.toBeInTheDocument()
+    })
   })
 })
 
