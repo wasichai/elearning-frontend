@@ -35,6 +35,49 @@ const es = {
     certified: 'Certificado emitido',
     certificate: 'Ver el certificado de «{{course}}»'
   },
+  // el panel del estudiante en «Mis cursos»
+  dashboard: {
+    greeting: 'Hola, {{name}}.',
+    week_one: 'Tienes {{count}} sesión en vivo en los próximos 7 días.',
+    week_other: 'Tienes {{count}} sesiones en vivo en los próximos 7 días.',
+    continue: 'Continuar aprendiendo',
+    otherInProgress: 'Otros cursos en curso',
+    inProgress: 'En curso',
+    completed: 'Completados',
+    withdrawn: 'Retirados',
+    withdrawnBadge: 'Retirada',
+    closed: 'Matrícula finalizada: puedes repasar el curso, pero ya no se registra avance.',
+    noLessons: 'Este curso todavía no tiene lecciones disponibles.',
+    rail: 'Tu resumen',
+    figures: {
+      inProgress: 'En curso',
+      completed: 'Completados'
+    },
+    loading: 'Cargando tu resumen…',
+    partial: 'Lo que ves puede estar incompleto.',
+    capped_one: 'Se revisa tu primer curso en curso.',
+    capped_other: 'Se revisan tus primeros {{count}} cursos en curso.',
+    sessions: {
+      title: 'Próximas sesiones',
+      none: 'Nada programado',
+      failed: 'No pudimos cargar tus próximas sesiones.',
+      retry: 'Reintentar las sesiones',
+      more_one: 'Y {{count}} sesión más en tus cursos.',
+      more_other: 'Y {{count}} sesiones más en tus cursos.'
+    },
+    assessments: {
+      title: 'Evaluaciones pendientes',
+      none: 'Nada pendiente',
+      failed: 'No pudimos cargar todas tus evaluaciones.',
+      retry: 'Reintentar las evaluaciones',
+      more_one: 'Y {{count}} evaluación más en tus cursos.',
+      more_other: 'Y {{count}} evaluaciones más en tus cursos.',
+      open: 'Intento abierto',
+      grading: 'En corrección',
+      attemptsLeft_one: 'Queda {{count}} intento',
+      attemptsLeft_other: 'Quedan {{count}} intentos'
+    }
+  },
   offering: {
     dates: 'Edición',
     timeZone: 'Fechas en {{zone}}',
@@ -438,6 +481,48 @@ const en: typeof es = {
     toCatalog: 'Browse the catalog',
     certified: 'Certificate issued',
     certificate: 'View the certificate for “{{course}}”'
+  },
+  dashboard: {
+    greeting: 'Hello, {{name}}.',
+    week_one: 'You have {{count}} live session in the next 7 days.',
+    week_other: 'You have {{count}} live sessions in the next 7 days.',
+    continue: 'Continue learning',
+    otherInProgress: 'Other courses in progress',
+    inProgress: 'In progress',
+    completed: 'Completed',
+    withdrawn: 'Withdrawn',
+    withdrawnBadge: 'Withdrawn',
+    closed: 'Enrollment finished: you can review the course, but progress is no longer recorded.',
+    noLessons: 'This course has no lessons available yet.',
+    rail: 'Your summary',
+    figures: {
+      inProgress: 'In progress',
+      completed: 'Completed'
+    },
+    loading: 'Loading your summary…',
+    partial: 'What you see may be incomplete.',
+    capped_one: 'Only your first course in progress is checked.',
+    capped_other: 'Only your first {{count}} courses in progress are checked.',
+    sessions: {
+      title: 'Upcoming sessions',
+      none: 'Nothing scheduled',
+      failed: 'We could not load your upcoming sessions.',
+      retry: 'Retry the sessions',
+      more_one: 'And {{count}} more session in your courses.',
+      more_other: 'And {{count}} more sessions in your courses.'
+    },
+    assessments: {
+      title: 'Pending assessments',
+      none: 'Nothing pending',
+      failed: 'We could not load all your assessments.',
+      retry: 'Retry the assessments',
+      more_one: 'And {{count}} more assessment in your courses.',
+      more_other: 'And {{count}} more assessments in your courses.',
+      open: 'Attempt open',
+      grading: 'Being graded',
+      attemptsLeft_one: '{{count}} attempt left',
+      attemptsLeft_other: '{{count}} attempts left'
+    }
   },
   offering: {
     dates: 'Offering',
