@@ -29,6 +29,14 @@ export function summaryKnots(progress: ProgressSummary): KnotData[] {
   return Array.from({ length: progress.totalLessons }, (_, index) => ({ kind: 'lesson', state: index < progress.completedLessons ? 'done' : 'todo' }))
 }
 
+// los intentos de una evaluación, en rombos: los ya usados, el abierto si lo hay y los que quedan libres
+export function attemptKnots(max: number, used: number, open: boolean): KnotData[] {
+  return Array.from({ length: max }, (_, index) => ({
+    kind: 'assessment',
+    state: index < used ? 'done' : open && index === used ? 'active' : 'todo'
+  }))
+}
+
 const SHAPE: Record<KnotKind, string> = {
   lesson: 'rounded-full',
   assessment: 'rounded-[3px] rotate-45 scale-[0.86]',

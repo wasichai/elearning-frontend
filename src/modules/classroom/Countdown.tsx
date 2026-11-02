@@ -1,3 +1,4 @@
+import { Clock } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatDateTime, timeZoneLabel } from '../../shared/format'
@@ -35,26 +36,38 @@ export function deadlineStage(ms: number): DeadlineStage {
   return 'plenty'
 }
 
-export function Countdown({ deadline, timeZone, now }: { deadline: string; timeZone: string; now: number }) {
-  const { t, i18n } = useTranslation('classroom')
+const STAGE_TONE: Record<DeadlineStage, string> = {
+  plenty: 'bg-surface-muted text-ink',
+  fiveMinutes: 'bg-warning-soft text-warning',
+  oneMinute: 'bg-danger-soft text-danger',
+  over: 'bg-danger-soft text-danger'
+}
+
+// el tiempo que queda, sin parpadeos: el tramo se dice con su tono y su palabra. el plazo lo pone el servidor; aquí solo se cuenta hasta él.
+// el lector de pantalla oye el paso a 5 minutos y a 1 minuto, una vez: el texto no cambia dentro del tramo. al acabarse lo dice el aviso del intento
+export function Countdown({ deadline, now }: { deadline: string; now: number }) {
+  const { t } = useTranslation('classroom')
   const remaining = Date.parse(deadline) - now
   const stage = deadlineStage(remaining)
-  const tone = stage === 'plenty' ? 'text-ink' : 'text-danger'
   return (
-    <div className="flex flex-col gap-0.5 rounded-md border border-border bg-surface px-4 py-2 text-sm">
-      <p className="flex items-baseline gap-2">
-        <span className="text-ink-muted">{t('attempt.timeLeft')}</span>
-        {/* role timer: el valor se lee al llegar a él, sin anunciar cada segundo */}
-        <span role="timer" aria-live="off" className={`font-semibold tabular-nums ${tone}`}>
+    <div data-stage={stage} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm ${STAGE_TONE[stage]}`}>
+      <Clock aria-hidden="true" className="size-4 shrink-0" />
+      {/* en poco ancho, la palabra debajo de la cifra: cabe junto a «Guardar» y «Entregar» a 360 px */}
+      <span className="flex flex-col leading-4 @2xl:flex-row @2xl:items-center @2xl:gap-1.5">
+        <span role="timer" aria-live="off" aria-label={t('attempt.timeLeft')} className="font-semibold tabular-nums">
           {formatRemaining(remaining)}
         </span>
-      </p>
-      <p className="text-xs text-ink-muted">
-        {t('attempt.deadline', { when: formatDateTime(deadline, i18n.language, timeZone), zone: timeZoneLabel(timeZone, i18n.language) })}
-      </p>
-      <p role="status" className="sr-only">
-        {stage === 'plenty' ? '' : t(`attempt.stage.${stage}`)}
-      </p>
+        {stage === 'plenty' ? null : <span className="text-xs font-medium">{t(`attempt.stageWord.${stage}`)}</span>}
+      </span>
+      <span role="status" aria-live="polite" className="sr-only">
+        {stage === 'fiveMinutes' || stage === 'oneMinute' ? t(`attempt.stage.${stage}`) : ''}
+      </span>
     </div>
   )
+}
+
+// el plazo con su fecha y la zona de la edición
+export function DeadlineNote({ deadline, timeZone }: { deadline: string; timeZone: string }) {
+  const { t, i18n } = useTranslation('classroom')
+  return <p>{t('attempt.deadline', { when: formatDateTime(deadline, i18n.language, timeZone), zone: timeZoneLabel(timeZone, i18n.language) })}</p>
 }

@@ -1,5 +1,13 @@
 import type { Page } from '@playwright/test'
-import { assessmentClassroom, classroom, enrollment, finishedEnrollment, otherEnrollment, sessions } from '../../../src/modules/classroom/test/fixtures'
+import {
+  assessmentClassroom,
+  classroom,
+  enrollment,
+  finishedEnrollment,
+  openAttempt,
+  otherEnrollment,
+  sessions
+} from '../../../src/modules/classroom/test/fixtures'
 import { problem } from '../../../src/modules/catalog/test/fixtures'
 import { student, type Scenario } from '../scenario'
 
@@ -40,6 +48,33 @@ const longTitle = {
   ...otherEnrollment,
   course: { ...otherEnrollment.course, title: 'Procedimientos de fiscalización y determinación de deudas tributarias municipales para gestores de rentas' },
   nextLesson: { id: 'lec-eva', title: 'Una lección con un título bastante largo para comprobar cómo baja de línea en el panel', unitOrder: 2, lessonOrder: 11 }
+}
+
+// la evaluación: el resumen con otros datos, y un intento abierto servido con el plazo a tantos minutos de ahora (null, sin límite)
+const ASSESSMENT = '/mis-cursos/mat-sgspe-1?leccion=lec-eva'
+const ATTEMPT = `${ASSESSMENT}&intento=int-1`
+const summaryWith = (patch: object, status = assessmentClassroom.status) => {
+  const copy = structuredClone(assessmentClassroom)
+  Object.assign(copy.units[0]!.lessons[1]!.assessment!, patch)
+  return { ...copy, status }
+}
+const withSummary = (page: Page, patch: object, status?: string) =>
+  reloadWith(page, () => page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: summaryWith(patch, status) })))
+const attemptIn = (page: Page, minutes: number | null) =>
+  reloadWith(page, () =>
+    page.route('**/api/lms/classroom/attempts/int-1', (route) =>
+      route.fulfill({ json: { ...openAttempt, deadline: minutes === null ? null : new Date(Date.now() + minutes * 60_000).toISOString() } })
+    )
+  )
+const answerSome = async (page: Page) => {
+  await page.getByRole('radio', { name: 'La municipalidad' }).check()
+  await page.getByRole('button', { name: 'Pregunta 4, en blanco' }).click()
+  await page.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }).fill('SRTM')
+}
+const startAttempt = async (page: Page) => {
+  await page.getByRole('button', { name: /^Comenzar intento/ }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Comenzar' }).click()
+  await page.getByRole('heading', { level: 3, name: 'Intento 1' }).waitFor()
 }
 
 export const classroomScenarios: Scenario[] = [
@@ -168,6 +203,87 @@ export const classroomScenarios: Scenario[] = [
   { name: 'student-lesson-video', path: '/mis-cursos/mat-srtm-1?leccion=lec-video', api: student },
   { name: 'student-lesson-pdf', path: '/mis-cursos/mat-srtm-1?leccion=lec-pdf', api: student },
   { name: 'student-assessment', path: '/mis-cursos/mat-sgspe-1?leccion=lec-eva', api: student },
+  { name: 'student-assessment-open', path: ASSESSMENT, api: student, act: (page) => withSummary(page, { attemptsUsed: 1, openAttemptId: 'int-1' }) },
+  {
+    name: 'student-assessment-exhausted',
+    path: ASSESSMENT,
+    api: student,
+    act: (page) => withSummary(page, { attemptsUsed: 2, best: { percent: 60, passed: false, pending: false } })
+  },
+  { name: 'student-assessment-finished', path: ASSESSMENT, api: student, act: (page) => withSummary(page, { attemptsUsed: 1 }, 'FINALIZADA') },
+  {
+    name: 'student-assessment-untimed',
+    path: ASSESSMENT,
+    api: student,
+    act: (page) => withSummary(page, { timeLimitMinutes: null, maxAttempts: 5, attemptsUsed: 3 })
+  },
+  { name: 'student-attempt', path: ASSESSMENT, api: student, act: startAttempt },
+  {
+    name: 'student-attempt-answered',
+    path: ASSESSMENT,
+    api: student,
+    act: async (page) => {
+      await startAttempt(page)
+      await answerSome(page)
+      await page.getByRole('button', { name: 'Guardar respuestas' }).click()
+      await page.getByText(/^Guardado \d/).waitFor()
+      await page.getByRole('button', { name: 'Pregunta 2, en blanco' }).click()
+      await page.getByRole('checkbox', { name: 'Adosado' }).check()
+    }
+  },
+  {
+    name: 'student-attempt-submit-dialog',
+    path: ASSESSMENT,
+    api: student,
+    act: async (page) => {
+      await startAttempt(page)
+      await answerSome(page)
+      await page.getByRole('button', { name: 'Entregar' }).click()
+      await page.getByRole('dialog').waitFor()
+    }
+  },
+  {
+    name: 'student-attempt-file',
+    path: ASSESSMENT,
+    api: student,
+    act: async (page) => {
+      await startAttempt(page)
+      await page.getByRole('button', { name: 'Pregunta 6, en blanco' }).click()
+    }
+  },
+  { name: 'student-attempt-last-five', path: ATTEMPT, api: student, act: (page) => attemptIn(page, 4.5) },
+  { name: 'student-attempt-last-minute', path: ATTEMPT, api: student, act: (page) => attemptIn(page, 0.75) },
+  { name: 'student-attempt-expired', path: ATTEMPT, api: student, act: (page) => attemptIn(page, -1) },
+  { name: 'student-attempt-untimed', path: ATTEMPT, api: student, act: (page) => attemptIn(page, null) },
+  {
+    name: 'student-attempt-save-failed',
+    path: ASSESSMENT,
+    api: student,
+    act: async (page) => {
+      await startAttempt(page)
+      await page.getByRole('radio', { name: 'La municipalidad' }).check()
+      await page.route('**/api/lms/classroom/attempts/*/answers', (route) => route.abort('internetdisconnected'))
+      await page.getByRole('button', { name: 'Guardar respuestas' }).click()
+      await page.getByRole('alert').waitFor()
+    }
+  },
+  {
+    name: 'student-attempt-offline',
+    path: ASSESSMENT,
+    api: student,
+    act: async (page) => {
+      await startAttempt(page)
+      await page.context().setOffline(true)
+      await page.getByRole('alert').waitFor()
+    }
+  },
+  {
+    name: 'student-attempt-error',
+    path: ATTEMPT,
+    api: student,
+    act: (page) => reloadWith(page, () => page.route('**/api/lms/classroom/attempts/int-1', (route) => route.fulfill(fail(503))))
+  },
+  { name: 'student-attempt-loading', path: ATTEMPT, api: student, act: (page) => hang(page, '**/api/lms/classroom/attempts/int-1') },
   { name: 'student-lesson-session', path: '/mis-cursos/mat-sgspe-1?leccion=lec-sesion', api: student },
   { name: 'student-sessions', path: '/mis-cursos/mat-sgspe-1/sesiones', api: student },
   {
