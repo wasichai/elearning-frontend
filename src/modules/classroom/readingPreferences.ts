@@ -8,6 +8,8 @@ import { DEFAULT_READING_SIZE, READING_SIZES } from './reading'
 export interface ReadingPreferences {
   mode: boolean
   size?: number
+  // en escritorio, el temario plegado para que la lectura ocupe la columna
+  syllabusHidden?: boolean
 }
 
 export interface ReadingControls extends ReadingPreferences {
@@ -15,6 +17,7 @@ export interface ReadingControls extends ReadingPreferences {
   canShrink: boolean
   canGrow: boolean
   toggleMode: () => void
+  toggleSyllabus: () => void
   shrink: () => void
   grow: () => void
 }
@@ -24,9 +27,9 @@ export function parseReadingPreferences(stored: string | null): ReadingPreferenc
   try {
     const value: unknown = stored === null ? null : JSON.parse(stored)
     if (typeof value !== 'object' || value === null) return { mode: false }
-    const { mode, size } = value as Record<string, unknown>
+    const { mode, size, syllabusHidden } = value as Record<string, unknown>
     const step = READING_SIZES.find((candidate) => candidate === size)
-    return { mode: mode === true, ...(step === undefined ? {} : { size: step }) }
+    return { mode: mode === true, ...(step === undefined ? {} : { size: step }), ...(syllabusHidden === true ? { syllabusHidden: true } : {}) }
   } catch {
     return { mode: false }
   }
@@ -68,6 +71,7 @@ export function useReadingPreferences(): ReadingControls {
     canShrink: index > 0,
     canGrow: index < READING_SIZES.length - 1,
     toggleMode: () => update({ ...preferences, mode: !preferences.mode }),
+    toggleSyllabus: () => update({ ...preferences, syllabusHidden: !preferences.syllabusHidden }),
     shrink: () => resize(-1),
     grow: () => resize(1)
   }

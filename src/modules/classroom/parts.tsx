@@ -9,6 +9,9 @@ import { MAX_KNOTS, Quipu, type KnotData } from './Quipu'
 
 export { WRAP } from '../../shared/buttons'
 
+// la columna de la lección: título, material y pie comparten borde, y caen sobre el texto de la lectura, centrada a 68ch en su iframe
+export const LESSON_COLUMN = 'mx-auto w-full max-w-[49.625rem] px-4 sm:px-6'
+
 // el avance como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina
 // con knots (y no más de MAX_KNOTS) la vista es el quipu en lugar de la línea: el progressbar y su texto no cambian
 export function ProgressBar({ progress, label, size = 'md', knots }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md'; knots?: KnotData[] }) {

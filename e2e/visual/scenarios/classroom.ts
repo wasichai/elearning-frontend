@@ -5,6 +5,25 @@ export const classroomScenarios: Scenario[] = [
   { name: 'student-courses-empty', path: '/mis-cursos', api: { ...student, enrolled: false } },
   { name: 'student-course', path: '/mis-cursos/mat-srtm-1', api: student },
   { name: 'student-lesson', path: '/mis-cursos/mat-srtm-1?leccion=lec-html', api: student },
+  {
+    name: 'student-lesson-sepia',
+    path: '/mis-cursos/mat-srtm-1?leccion=lec-html',
+    api: student,
+    act: async (page) => {
+      await page.getByRole('button', { name: 'Modo lectura' }).click()
+      await page.waitForTimeout(200)
+    }
+  },
+  {
+    name: 'student-lesson-syllabus',
+    path: '/mis-cursos/mat-srtm-1?leccion=lec-html',
+    api: student,
+    act: async (page) => {
+      const open = page.getByRole('button', { name: 'Temario' })
+      if (await open.isVisible()) await open.click()
+      await page.waitForTimeout(200)
+    }
+  },
   { name: 'student-lesson-video', path: '/mis-cursos/mat-srtm-1?leccion=lec-video', api: student },
   { name: 'student-lesson-pdf', path: '/mis-cursos/mat-srtm-1?leccion=lec-pdf', api: student },
   { name: 'student-assessment', path: '/mis-cursos/mat-sgspe-1?leccion=lec-eva', api: student },

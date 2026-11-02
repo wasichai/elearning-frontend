@@ -23,6 +23,7 @@ afterEach(() => {
   fetchMock?.restore()
   vi.restoreAllMocks()
   localStorage.removeItem('wasichai-test.token')
+  localStorage.removeItem('wasichai-test.reading')
 })
 
 function renderClassroom(routes: MockRoute[], route = '/mis-cursos/mat-srtm-1', served = DEFAULT_FILES) {
@@ -103,23 +104,56 @@ describe('ClassroomPage: el aula', () => {
     expect(steps.getByRole('link', { name: /Siguiente.*Cuestionario de la unidad/ })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-quiz')
   })
 
-  it('en el móvil las unidades se pliegan tras un botón que dice si están abiertas', async () => {
+  it('con un solo recurso su título no se repite a la vista, pero sigue siendo un encabezado', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    await lessonHeading('Tipos de anuncio')
+    expect(screen.getByRole('heading', { level: 3, name: 'Tipos de anuncio (lectura)' })).toHaveClass('sr-only')
+  })
+
+  it('en el móvil el temario se abre en una hoja que se cierra con Esc y devuelve el foco', async () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
 
-    const toggle = screen.getByRole('button', { name: 'Ver las unidades' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(units()).toHaveClass('hidden', 'lg:block')
-    expect(toggle).toHaveAttribute('aria-controls', units().id)
+    const open = screen.getByRole('button', { name: 'Temario' })
+    expect(open).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(open)
+    const sheet = await screen.findByRole('dialog', { name: 'Temario' })
+    expect(within(sheet).getByRole('navigation', { name: 'Unidades del curso' })).toBeInTheDocument()
 
-    await userEvent.click(toggle)
-    expect(screen.getByRole('button', { name: 'Ocultar las unidades' })).toHaveAttribute('aria-expanded', 'true')
-    expect(units()).not.toHaveClass('hidden')
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(open).toHaveFocus()
+  })
 
-    // elegir una lección vuelve a plegarlas
-    await userEvent.click(within(units()).getByRole('link', { name: /^Tipos de anuncio/ }))
-    expect(await lessonHeading('Tipos de anuncio')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Ver las unidades' })).toHaveAttribute('aria-expanded', 'false')
+  it('elegir una lección en la hoja la cierra y lleva el foco al título de la lección', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Temario' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Temario' })
+    await userEvent.click(within(sheet).getByRole('link', { name: /^Tipos de anuncio/ }))
+
+    const heading = await lessonHeading('Tipos de anuncio')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    await waitFor(() => expect(heading).toHaveFocus())
+  })
+
+  it('en escritorio el temario se pliega para dar la columna a la lectura, y se recuerda', async () => {
+    const first = renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+    expect(units()).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ocultar el temario' }))
+    expect(screen.queryByRole('navigation', { name: 'Unidades del curso' })).not.toBeInTheDocument()
+    const expand = screen.getByRole('button', { name: 'Mostrar el temario' })
+    expect(expand).toHaveAttribute('aria-expanded', 'false')
+
+    first.unmount()
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+    expect(screen.queryByRole('navigation', { name: 'Unidades del curso' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Mostrar el temario' }))
+    expect(units()).toBeInTheDocument()
   })
 
   it('el PDF y los tipos que no se muestran se descargan con la sesión; un recurso sin archivo lo dice', async () => {

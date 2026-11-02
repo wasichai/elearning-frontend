@@ -1,6 +1,7 @@
 import { useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { useEffect, useRef } from 'react'
+import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { videoCompletion } from '../../config'
@@ -12,9 +13,9 @@ import { Completion } from './Completion'
 import { isDone, type Lesson } from './contract'
 import { Lab } from './Lab'
 import type { PlacedLesson } from './lessons'
-import { useOpenLabel } from './parts'
+import { LESSON_COLUMN, useOpenLabel } from './parts'
 import { isDarkTheme, useDocumentTheme } from './documentTheme'
-import { useReadingPreferences, type ReadingControls } from './readingPreferences'
+import type { ReadingControls } from './readingPreferences'
 import { Resources, type ReadingSettings } from './Resources'
 import { StatusBadge, statusOf } from './StatusBadge'
 import { Sessions } from './SessionsPage'
@@ -29,10 +30,14 @@ interface LessonViewProps {
   next?: PlacedLesson
   // la siguiente por hacer según el servidor (nextLesson), por si al final del curso quedó una atrás
   pending?: PlacedLesson
+  // las herramientas de lectura las guarda el aula, que también pliega el temario con ellas
+  readingControls: ReadingControls
+  // los botones del temario, al principio de la barra de la lección
+  syllabusControls?: ReactNode
 }
 
 // la lección abierta: lectura amplia, su material y el paso siguiente
-export function LessonView({ enrollmentId, timeZone, placed, previous, next, pending }: LessonViewProps) {
+export function LessonView({ enrollmentId, timeZone, placed, previous, next, pending, readingControls, syllabusControls }: LessonViewProps) {
   const { t, i18n } = useTranslation('classroom')
   const lessonType = useOpenLabel('lessonType')
   const { lesson, unit } = placed
@@ -50,7 +55,6 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const upcoming = next ?? (pending && pending.lesson.id !== lesson.id ? pending : undefined)
   // el modo lectura: sobre un tema claro, el papel sepia (quipu-lectura) en toda la lección; sobre uno oscuro se queda
   // oscuro y abre el interlineado de la lectura (PantallaLeccion del sistema de diseño)
-  const readingControls = useReadingPreferences()
   const dark = isDarkTheme(useDocumentTheme())
   const hasReading = lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
   const sepia = hasReading && readingControls.mode && !dark
@@ -64,12 +68,20 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
       aria-labelledby={`lesson-${lesson.id}`}
       data-theme={sepia ? QUIPU_READING_THEME.id : undefined}
       style={sepia ? { colorScheme: QUIPU_READING_THEME.colorScheme } : undefined}
-      className={`flex min-w-0 flex-col gap-6 lg:max-w-4xl ${sepia ? '-m-4 rounded-xl bg-surface-muted p-4 text-ink sm:-m-6 sm:p-6' : ''}`}
+      className={`flex min-h-full min-w-0 flex-col text-ink ${hasReading ? 'bg-surface' : 'bg-surface-muted'}`}
     >
-      {hasReading ? <ReadingTools controls={readingControls} /> : null}
-      <header className="flex flex-col gap-1.5">
-        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('classroom.position', { unit: unit.order, lesson: lesson.order })}</p>
-        <h2 id={`lesson-${lesson.id}`} ref={heading} tabIndex={-1} className="text-2xl font-semibold tracking-tight text-balance text-ink focus:outline-none">
+      <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-2 border-b border-border bg-surface px-3 py-1.5 sm:px-4">
+        {syllabusControls}
+        {hasReading ? <ReadingTools controls={readingControls} /> : null}
+      </div>
+      <header className={`${LESSON_COLUMN} flex flex-col gap-2 pt-6 pb-5 lg:pt-10`}>
+        <p className="text-sm text-ink-muted">{t('classroom.position', { unit: unit.order, lesson: lesson.order })}</p>
+        <h2
+          id={`lesson-${lesson.id}`}
+          ref={heading}
+          tabIndex={-1}
+          className="font-read text-[28px]/[36px] font-medium tracking-tight text-balance text-ink focus:outline-none lg:text-read-title"
+        >
           {lesson.title}
         </h2>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -79,29 +91,41 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
           </p>
           <StatusBadge state={statusOf(lesson.progress.status)}>{t(`lessonStatus.${lesson.progress.status}`)}</StatusBadge>
         </div>
-        {lesson.summary ? <p className="max-w-prose text-base text-ink">{lesson.summary}</p> : null}
+        {lesson.summary ? <p className="mt-1 max-w-prose text-base text-ink-muted">{lesson.summary}</p> : null}
       </header>
 
-      {lesson.lab ? <Lab lab={lesson.lab} /> : null}
+      <div className="flex flex-1 flex-col gap-6">
+        {lesson.lab ? (
+          <div className={LESSON_COLUMN}>
+            <Lab lab={lesson.lab} />
+          </div>
+        ) : null}
 
-      {lesson.assessment ? <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} /> : null}
+        {lesson.assessment ? (
+          <div className={LESSON_COLUMN}>
+            <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} />
+          </div>
+        ) : null}
 
-      {lesson.completion === 'ATTENDANCE' ? (
-        <section aria-label={t('sessions.ofLesson')} className="flex flex-col gap-3">
-          <h3 className="text-base font-medium text-ink">{t('sessions.ofLesson')}</h3>
-          <Sessions enrollmentId={enrollmentId} lessonId={lesson.id} />
-        </section>
-      ) : null}
+        {lesson.completion === 'ATTENDANCE' ? (
+          <section aria-label={t('sessions.ofLesson')} className={`${LESSON_COLUMN} flex flex-col gap-3`}>
+            <h3 className="text-title-3 text-ink">{t('sessions.ofLesson')}</h3>
+            <Sessions enrollmentId={enrollmentId} lessonId={lesson.id} />
+          </section>
+        ) : null}
 
-      {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
-      {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
-        <Resources
-          resources={lesson.resources}
-          videoThreshold={videoThreshold}
-          onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
-          reading={reading}
-        />
-      )}
+        {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
+        {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
+          <Resources
+            resources={lesson.resources}
+            videoThreshold={videoThreshold}
+            onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
+            reading={reading}
+          />
+        )}
+
+        <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
+      </div>
 
       <Completion
         enrollmentId={enrollmentId}
@@ -113,9 +137,8 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         marking={ownEvent && completion.isPending}
         error={ownEvent ? completion.error : null}
         justCompleted={ownEvent && completion.isSuccess}
+        sticky={hasReading}
       />
-
-      <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
     </article>
   )
 }
@@ -124,21 +147,26 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
 function ReadingTools({ controls }: { controls: ReadingControls }) {
   const { t } = useTranslation('classroom')
   return (
-    <div role="toolbar" aria-label={t('reading.tools')} className="flex flex-wrap items-center justify-end gap-2">
-      <Button variant={controls.mode ? 'primary' : 'secondary'} size="md" aria-pressed={controls.mode} onClick={controls.toggleMode}>
-        {t('reading.mode')}
+    <div role="toolbar" aria-label={t('reading.tools')} className="ml-auto flex items-center gap-1">
+      <Button
+        variant="ghost"
+        aria-pressed={controls.mode}
+        aria-label={t('reading.mode')}
+        onClick={controls.toggleMode}
+        className={`gap-2 px-2.5 ${controls.mode ? 'bg-brand-soft text-brand-strong hover:bg-brand-soft' : ''}`}
+      >
+        <BookOpen aria-hidden="true" className="size-5" />
+        <span className="hidden sm:inline">{t('reading.mode')}</span>
       </Button>
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label={t('reading.smaller')} disabled={!controls.canShrink} onClick={controls.shrink}>
-          <span aria-hidden="true">{t('reading.smallerShort')}</span>
-        </Button>
-        <span className="min-w-12 text-center text-sm tabular-nums text-ink-muted" aria-live="polite">
-          {t('reading.size', { value: controls.shownSize })}
-        </span>
-        <Button variant="ghost" size="icon" aria-label={t('reading.larger')} disabled={!controls.canGrow} onClick={controls.grow}>
-          <span aria-hidden="true">{t('reading.largerShort')}</span>
-        </Button>
-      </div>
+      <Button variant="ghost" size="icon" aria-label={t('reading.smaller')} disabled={!controls.canShrink} onClick={controls.shrink}>
+        <span aria-hidden="true">{t('reading.smallerShort')}</span>
+      </Button>
+      <span className="min-w-11 text-center text-sm text-ink-muted tabular-nums" aria-live="polite">
+        {t('reading.size', { value: controls.shownSize })}
+      </span>
+      <Button variant="ghost" size="icon" aria-label={t('reading.larger')} disabled={!controls.canGrow} onClick={controls.grow}>
+        <span aria-hidden="true">{t('reading.largerShort')}</span>
+      </Button>
     </div>
   )
 }
@@ -148,22 +176,31 @@ function LessonSteps({ enrollmentId, previous, next }: { enrollmentId: string; p
   const links = useWasichaiLinks()
   const to = (placed: PlacedLesson) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: placed.lesson.id })
   if (!previous && !next) return null
+  const stepClass = 'flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 hover:bg-surface-muted'
   return (
-    <nav aria-label={t('classroom.steps')} className="flex flex-col gap-3 border-t border-border pt-4 text-sm sm:flex-row sm:justify-between">
+    <nav aria-label={t('classroom.steps')} className={`${LESSON_COLUMN} flex flex-col gap-3 pb-8 sm:flex-row`}>
       {previous ? (
-        <Link to={to(previous)} className="flex flex-col text-link underline-offset-4 hover:underline">
-          <span className="text-xs text-ink-muted">{t('classroom.previous')}</span>
-          <span>{previous.lesson.title}</span>
+        <Link to={to(previous)} className={stepClass}>
+          <ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
+          <span className="flex min-w-0 flex-col text-sm">
+            <span className="text-xs text-ink-muted">{t('classroom.previous')}</span>
+            <span className="truncate font-medium text-ink">{previous.lesson.title}</span>
+          </span>
         </Link>
       ) : (
-        <span />
+        <span className="hidden flex-1 sm:block" />
       )}
       {next ? (
-        <Link to={to(next)} className="flex flex-col text-link underline-offset-4 hover:underline sm:text-right">
-          <span className="text-xs text-ink-muted">{t('classroom.next')}</span>
-          <span>{next.lesson.title}</span>
+        <Link to={to(next)} className={`${stepClass} justify-end text-right`}>
+          <span className="flex min-w-0 flex-col text-sm">
+            <span className="text-xs text-ink-muted">{t('classroom.next')}</span>
+            <span className="truncate font-medium text-ink">{next.lesson.title}</span>
+          </span>
+          <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
         </Link>
-      ) : null}
+      ) : (
+        <span className="hidden flex-1 sm:block" />
+      )}
     </nav>
   )
 }
