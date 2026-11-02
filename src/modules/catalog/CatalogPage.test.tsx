@@ -41,6 +41,24 @@ function lastQuery(): Record<string, string> {
   return Object.fromEntries(new URL(call.url, 'http://localhost').searchParams)
 }
 
+// los filtros de segunda línea están plegados: como quien los usa, primero se abre «Más filtros»
+async function openMoreFilters(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText('Más filtros'))
+}
+
+function mockViewport(wide: boolean) {
+  const original = window.matchMedia
+  window.matchMedia = ((query: string) => ({
+    matches: wide,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {}
+  })) as unknown as typeof window.matchMedia
+  return () => {
+    window.matchMedia = original
+  }
+}
+
 describe('CatalogPage', () => {
   it('un curso sin resumen no deja un párrafo vacío ni «null»', async () => {
     renderCatalog([{ path: '/lms/public/catalog/courses', body: { ...coursePage, content: [{ ...courseSummary, summary: null }] } }])
@@ -49,7 +67,7 @@ describe('CatalogPage', () => {
     expect(screen.queryByText(/null|undefined/)).not.toBeInTheDocument()
   })
 
-  it('lista los cursos como una lista editorial', async () => {
+  it('lista los cursos como tarjetas con su banda, sus datos y un solo enlace', async () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 
     const list = await screen.findByRole('list')
@@ -73,6 +91,25 @@ describe('CatalogPage', () => {
     expect(second.getByText('Sin ediciones programadas por ahora')).toBeInTheDocument()
     expect(second.queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
     expect(second.getByText('6 semanas · 72 h')).toBeInTheDocument()
+
+    // cada curso tiene su banda de cordones, generada del slug; el enlace es lo único interactivo de la tarjeta
+    const banners = items.map((item) => item.querySelector('[data-slot="cord-banner"]')!.innerHTML)
+    expect(banners[0]).not.toEqual(banners[1])
+    expect(first.getAllByRole('link')).toHaveLength(1)
+    expect(first.queryByRole('button')).not.toBeInTheDocument()
+    // la categoría no va en mayúsculas sostenidas
+    expect(first.getByText('Gestión municipal')).not.toHaveClass('uppercase')
+    // la disponibilidad, en insignia con icono y palabra
+    expect(first.getByText('Inscripción abierta').closest('[data-state]')).toHaveAttribute('data-state', 'active')
+  })
+
+  it('la región de resultados lleva su título visible y el recuento', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }])
+
+    const region = await screen.findByRole('region', { name: 'Resultados' })
+    await within(region).findByRole('list')
+    expect(within(region).getByRole('heading', { level: 2, name: 'Resultados' })).not.toHaveClass('sr-only')
+    expect(within(region).getByRole('status')).toHaveTextContent('2 cursos')
   })
 
   // RF-CAT-09: la tarjeta distingue la edición completa de la cerrada
@@ -92,7 +129,11 @@ describe('CatalogPage', () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando cursos…')
+    // el hueco de las tarjetas, con su geometría, y todavía ninguna lista que anunciar
+    expect(document.querySelectorAll('[data-slot="course-card-skeleton"]').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
     expect(await screen.findByRole('list')).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="course-card-skeleton"]')).toBeNull()
   })
 
   it('buscar cambia la petición y la URL, y vuelve a la primera página', async () => {
@@ -111,6 +152,7 @@ describe('CatalogPage', () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     const level = screen.getByRole('combobox', { name: 'Nivel' })
     expect(level).toHaveTextContent('Cualquiera')
@@ -123,24 +165,191 @@ describe('CatalogPage', () => {
     expect(screen.getByRole('combobox', { name: 'Nivel' })).toHaveTextContent('Avanzado')
   })
 
-  it('las categorías salen de los facets, con su recuento', async () => {
+  it('las categorías salen de los facets, con su recuento, como botones que se pulsan', async () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?category=programacion&sort=title')
     await screen.findByRole('list')
 
     expect(lastQuery()).toMatchObject({ category: 'programacion', sort: 'title' })
-    const category = screen.getByRole('combobox', { name: 'Categoría' })
-    expect(category).toHaveTextContent('Programación (1)')
-    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveTextContent('Título')
+    const group = within(screen.getByRole('group', { name: 'Categoría' }))
+    expect(group.getAllByRole('button').map((chip) => chip.textContent)).toEqual(['Todas', 'Gestión municipal (2)', 'Programación (1)'])
+    expect(group.getByRole('button', { name: 'Programación (1)' })).toHaveAttribute('aria-pressed', 'true')
+    expect(group.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'false')
 
-    await user.click(category)
-    expect(screen.getAllByRole('option').map((option) => option.textContent)).toEqual(['Cualquiera', 'Gestión municipal (2)', 'Programación (1)'])
+    await user.click(group.getByRole('button', { name: 'Gestión municipal (2)' }))
+    await waitFor(() => expect(lastQuery()).toMatchObject({ category: 'gestion-municipal', sort: 'title' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/cursos?category=gestion-municipal&sort=title')
+    expect(group.getByRole('button', { name: 'Gestión municipal (2)' })).toHaveAttribute('aria-pressed', 'true')
+    expect(group.getByRole('button', { name: 'Programación (1)' })).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(group.getByRole('button', { name: 'Todas' }))
+    await waitFor(() => expect(lastQuery().category).toBeUndefined())
+    expect(group.getByRole('button', { name: 'Todas' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('pulsar la categoría elegida la quita, y una de la URL sin cursos se ve tal cual', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?category=astronomia')
+    await screen.findByRole('list')
+
+    const chip = within(screen.getByRole('group', { name: 'Categoría' })).getByRole('button', { name: 'astronomia' })
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+
+    await user.click(chip)
+    await waitFor(() => expect(lastQuery().category).toBeUndefined())
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/cursos$/)
+  })
+
+  it('«Más filtros» guarda todos los demás filtros y cuenta los activos', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?q=srtm&category=programacion&level=INICIAL&minWeeks=4&maxWeeks=6&sort=title')
+    await screen.findByRole('list')
+
+    // la búsqueda y la categoría ya están a la vista; el rango de semanas es un solo filtro
+    expect(screen.getByText('3 activos')).toBeInTheDocument()
+
+    await openMoreFilters(user)
+    for (const name of ['Nivel', 'Modalidad', 'Duración', 'Inscripción', 'Conocimientos previos', 'Ordenar por']) {
+      expect(screen.getByRole('combobox', { name })).toBeInTheDocument()
+    }
+    for (const label of ['Empieza desde', 'Horas de teoría (mínimo)', 'Horas de práctica o laboratorio (mínimo)', 'Horas de trabajo autónomo (mínimo)']) {
+      expect(screen.getByLabelText(label)).toBeInTheDocument()
+    }
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveTextContent('Título')
+  })
+
+  it('sin filtros activos, «Más filtros» no lleva contador ni hay nada que limpiar', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+
+    expect(screen.queryByText(/activos?$/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Filtros activos' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument()
+  })
+
+  it('cada filtro activo se ve con su nombre y su valor legibles', async () => {
+    renderCatalog(
+      [{ path: COURSES, body: coursePage }],
+      '/cursos?q=srtm&category=programacion&level=INICIAL&modality=HIBRIDA&startsFrom=2026-11-01&minWeeks=12&enrollmentOpen=true&minTheoryHours=10&prerequisiteKnowledge=none&sort=title'
+    )
+    await screen.findByRole('list')
+
+    const chips = within(screen.getByRole('group', { name: 'Filtros activos' })).getAllByRole('button')
+    expect(chips.map((chip) => chip.textContent)).toEqual([
+      'Búsqueda: srtm',
+      'Categoría: Programación',
+      'Nivel: Inicial',
+      'Modalidad: Híbrida',
+      'Empieza desde: 1 nov 2026',
+      'Duración: Semestral (12 a 26 semanas)',
+      'Con inscripción abierta',
+      'Sin conocimientos previos',
+      'Horas de teoría (mínimo): 10',
+      'Ordenar por: Título',
+      'Limpiar filtros'
+    ])
+  })
+
+  it('un valor de la URL que no se reconoce se ve tal cual, sin romper la página', async () => {
+    renderCatalog(
+      [{ path: COURSES, body: coursePage }],
+      '/cursos?level=EXPERTO&startsFrom=ayer&prerequisiteKnowledge=astronomia&enrollmentOpen=quiza&minWeeks=4&maxWeeks=6'
+    )
+    await screen.findByRole('list')
+
+    const group = within(screen.getByRole('group', { name: 'Filtros activos' }))
+    for (const text of ['Nivel: EXPERTO', 'Empieza desde: ayer', 'Conocimientos previos: astronomia', 'Inscripción: quiza', 'Duración: De 4 a 6 semanas']) {
+      expect(group.getByRole('button', { name: `Quitar filtro ${text}` })).toBeInTheDocument()
+    }
+  })
+
+  it('un filtro activo se quita solo, sin tocar los demás, y el foco pasa a los resultados', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?level=INICIAL&minWeeks=4&maxWeeks=6&sort=title&page=2')
+    await screen.findByRole('list')
+
+    await user.click(screen.getByRole('button', { name: 'Quitar filtro Duración: De 4 a 6 semanas' }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cursos\?level=INICIAL&sort=title$/))
+    await waitFor(() => expect(lastQuery()).toEqual({ level: 'INICIAL', sort: 'title', page: '0', size: '12' }))
+    expect(screen.getByRole('heading', { name: 'Resultados' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Quitar filtro Ordenar por: Título' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cursos\?level=INICIAL$/))
+
+    await user.click(screen.getByRole('button', { name: 'Quitar filtro Nivel: Inicial' }))
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cursos$/))
+    expect(screen.queryByRole('group', { name: 'Filtros activos' })).not.toBeInTheDocument()
+  })
+
+  it('«Limpiar filtros» los quita todos y deja el foco en los resultados, no en la nada', async () => {
+    const user = userEvent.setup()
+    renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?level=INICIAL&q=srtm')
+    await screen.findByRole('list')
+
+    await user.click(screen.getByRole('button', { name: 'Limpiar filtros' }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/cursos$/))
+    expect(screen.getByRole('heading', { name: 'Resultados' })).toHaveFocus()
+  })
+
+  describe('en un móvil', () => {
+    let restore: () => void
+    afterEach(() => restore())
+
+    it('«Más filtros» abre una hoja con los mismos controles, sin duplicarlos, y cierra enseñando cuántos cursos hay', async () => {
+      restore = mockViewport(false)
+      const user = userEvent.setup()
+      renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?level=INICIAL')
+      await screen.findByRole('list')
+
+      expect(document.querySelector('details')).toBeNull()
+      expect(screen.queryByRole('combobox', { name: 'Nivel' })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Más filtros 1 activo' }))
+
+      const sheet = within(await screen.findByRole('dialog', { name: 'Más filtros' }))
+      expect(screen.getAllByRole('combobox', { name: 'Nivel' })).toHaveLength(1)
+      expect(sheet.getByRole('combobox', { name: 'Nivel' })).toHaveTextContent('Inicial')
+      expect(sheet.getByRole('combobox', { name: 'Ordenar por' })).toBeInTheDocument()
+
+      await user.type(sheet.getByLabelText('Horas de teoría (mínimo)'), '10')
+      await user.click(sheet.getByRole('button', { name: 'Ver 2 cursos' }))
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      // salir del campo confirma: la hora escrita no se pierde al cerrar la hoja
+      await waitFor(() => expect(lastQuery()).toMatchObject({ level: 'INICIAL', minTheoryHours: '10' }))
+    })
+
+    it('la hoja no promete una cifra mientras llega la respuesta', async () => {
+      restore = mockViewport(false)
+      const user = userEvent.setup()
+      renderCatalog([{ path: COURSES, body: coursePage }], '/cursos')
+      await screen.findByRole('list')
+      // la respuesta con el filtro nuevo se queda en vuelo hasta que la prueba la suelta
+      let release = () => {}
+      const held = new Promise<void>((resolve) => (release = resolve))
+      const answer = globalThis.fetch
+      globalThis.fetch = async (...args) => {
+        await held
+        return answer(...args)
+      }
+      await user.click(screen.getByRole('button', { name: 'Más filtros' }))
+      const sheet = within(await screen.findByRole('dialog', { name: 'Más filtros' }))
+
+      await user.type(sheet.getByLabelText('Horas de teoría (mínimo)'), '10{Enter}')
+
+      expect(await sheet.findByRole('button', { name: 'Ver resultados' })).toBeInTheDocument()
+      release()
+      expect(await sheet.findByRole('button', { name: 'Ver 2 cursos' })).toBeInTheDocument()
+    })
   })
 
   it('«empieza desde» filtra por fecha', async () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     await user.type(screen.getByLabelText('Empieza desde'), '2026-11-01')
 
@@ -151,6 +360,7 @@ describe('CatalogPage', () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     const duration = screen.getByRole('combobox', { name: 'Duración' })
     expect(duration).toHaveTextContent('Cualquiera')
@@ -174,8 +384,10 @@ describe('CatalogPage', () => {
   })
 
   it('un rango de semanas escrito en la URL se ve tal cual en el selector', async () => {
+    const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }], '/cursos?minWeeks=4&maxWeeks=6')
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     expect(lastQuery()).toMatchObject({ minWeeks: '4', maxWeeks: '6' })
     expect(screen.getByRole('combobox', { name: 'Duración' })).toHaveTextContent('De 4 a 6 semanas')
@@ -185,6 +397,7 @@ describe('CatalogPage', () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     await user.click(screen.getByRole('combobox', { name: 'Inscripción' }))
     await user.click(screen.getByRole('option', { name: 'Con inscripción abierta' }))
@@ -197,6 +410,7 @@ describe('CatalogPage', () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
     const requests = () => fetchMock.calls.length
 
     const practice = screen.getByLabelText('Horas de práctica o laboratorio (mínimo)')
@@ -226,6 +440,7 @@ describe('CatalogPage', () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
 
     const knowledge = screen.getByRole('combobox', { name: 'Conocimientos previos' })
     expect(knowledge).toHaveTextContent('Cualquiera')
@@ -257,6 +472,7 @@ describe('CatalogPage', () => {
 
     expect(await screen.findByText('Ningún curso coincide con la búsqueda')).toBeInTheDocument()
     expect(lastQuery()).toMatchObject({ prerequisiteKnowledge: 'astronomia' })
+    await openMoreFilters(user)
     expect(screen.getByRole('combobox', { name: 'Conocimientos previos' })).toHaveTextContent('astronomia')
     const clear = screen.getAllByRole('button', { name: 'Limpiar filtros' })
     await user.click(clear.at(-1)!)
@@ -277,6 +493,7 @@ describe('CatalogPage', () => {
     )
 
     expect(await screen.findByText('Ningún curso coincide con la búsqueda')).toBeInTheDocument()
+    await openMoreFilters(user)
     expect(screen.getByLabelText('Horas de trabajo autónomo (mínimo)')).toHaveValue(500)
     expect(screen.getByRole('combobox', { name: 'Inscripción' })).toHaveTextContent('Con inscripción abierta')
     const clear = screen.getAllByRole('button', { name: 'Limpiar filtros' })
@@ -418,10 +635,12 @@ describe('CatalogPage', () => {
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 
-  it('se recorre con el teclado: búsqueda, filtros y enlace a la ficha', async () => {
+  it('se recorre con el teclado: búsqueda, categorías, más filtros y enlace a la ficha', async () => {
     const user = userEvent.setup()
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
+    await openMoreFilters(user)
+    ;(document.activeElement as HTMLElement).blur()
 
     await user.tab()
     expect(screen.getByRole('link', { name: 'Aula Abierta' })).toHaveFocus()
@@ -431,15 +650,19 @@ describe('CatalogPage', () => {
     expect(screen.getByRole('searchbox', { name: 'Buscar cursos' })).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('button', { name: 'Buscar' })).toHaveFocus()
-    for (const name of ['Categoría', 'Nivel', 'Modalidad']) {
+    for (const name of ['Todas', 'Gestión municipal (2)', 'Programación (1)']) {
+      await user.tab()
+      expect(screen.getByRole('button', { name })).toHaveFocus()
+    }
+    await user.tab()
+    expect(screen.getByText('Más filtros').closest('summary')).toHaveFocus()
+    for (const name of ['Nivel', 'Modalidad', 'Duración']) {
       await user.tab()
       expect(screen.getByRole('combobox', { name })).toHaveFocus()
     }
     await user.tab()
     expect(screen.getByLabelText('Empieza desde')).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveFocus()
-    for (const name of ['Duración', 'Inscripción', 'Conocimientos previos']) {
+    for (const name of ['Inscripción', 'Conocimientos previos']) {
       await user.tab()
       expect(screen.getByRole('combobox', { name })).toHaveFocus()
     }
@@ -447,6 +670,8 @@ describe('CatalogPage', () => {
       await user.tab()
       expect(screen.getByLabelText(label)).toHaveFocus()
     }
+    await user.tab()
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveFocus()
     await user.tab()
     expect(screen.getByRole('link', { name: courseSummary.title })).toHaveFocus()
 

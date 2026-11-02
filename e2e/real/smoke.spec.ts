@@ -54,6 +54,7 @@ test('el filtro de conocimientos previos deja el curso que lo declara, y «sin c
   await page.goto('/cursos')
   await expect(courses(page)).toHaveCount(PUBLISHED.length)
 
+  await page.getByText('Más filtros').click()
   await page.getByRole('combobox', { name: 'Conocimientos previos' }).click()
   await page.getByRole('option', { name: 'Programación básica (1)' }).click()
   await expect(page).toHaveURL(/prerequisiteKnowledge=programacion-basica/)

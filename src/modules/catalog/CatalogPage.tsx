@@ -1,18 +1,17 @@
-import { ApiError, EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
-import { Button, Input, Label, Pagination, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { ApiError, EmptyState } from '@wasichai/core'
+import { Button, Pagination } from '@wasichai/ui'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { PublicLayout } from '../../shared/PublicLayout'
+import { ScreenBody } from '../../shared/Screen'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
-import { LEVELS, MODALITIES, NO_KNOWLEDGE, SORTS, type CoursePage, type CourseSummary, type NextOffering } from './contract'
-import { formatCivilRange, formatNumber } from '../../shared/format'
-import { Fact, IllustrativeMark, offeringState } from './parts'
+import type { CoursePage } from './contract'
+import { CourseCard, CourseCardSkeleton } from './CourseCard'
+import { CatalogBand } from './FilterBar'
 import { ProblemState, useProblemText } from './ProblemState'
-import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
-import { CATALOG_ROUTES } from './routes'
 
-// Radix Select no admite el valor vacío: «todas» viaja como este centinela y en la URL es la ausencia del filtro
-const ALL = 'all'
+const GRID = 'grid gap-6 md:grid-cols-2 xl:grid-cols-3'
+const SKELETON_CARDS = Array.from({ length: 6 }, (_, index) => index)
 
 export function CatalogPage() {
   const { t } = useTranslation('catalog')
@@ -20,293 +19,49 @@ export function CatalogPage() {
   const query = useCourses(filters)
   const { problem, retry } = useQueryProblem(query, catalogKeys.courses(filters))
   const resultsHeading = useRef<HTMLHeadingElement>(null)
+  // el foco salta al principio de los resultados (y los lleva a la vista): al cambiar de página, y cuando desaparece el botón pulsado
+  const focusResults = () => resultsHeading.current?.focus()
 
   const goToPage = (page: number) => {
     update({ page })
-    // el foco salta al principio de la nueva página de resultados (y la lleva a la vista)
-    resultsHeading.current?.focus()
+    focusResults()
+  }
+  const removeFilter = (patch: Partial<CatalogFilters>) => {
+    update(patch)
+    focusResults()
+  }
+  const clearFilters = () => {
+    clear()
+    focusResults()
   }
 
   return (
-    <PublicLayout>
-      <PublicHeading title={t('catalog.title')} subtitle={t('catalog.subtitle')} />
-      <Filters filters={filters} page={query.data} onChange={update} onClear={clear} />
-      <section aria-labelledby="catalog-results" className="mt-8">
-        <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="sr-only">
-          {t('catalog.results')}
-        </h2>
-        {problem ? (
-          <CatalogProblem error={problem} onRetry={retry} onClear={clear} />
-        ) : query.data ? (
-          <Results page={query.data} filters={filters} busy={query.isPlaceholderData} onPage={goToPage} onClear={clear} />
-        ) : (
-          <LoadingState label={t('catalog.loading')} />
-        )}
-      </section>
-    </PublicLayout>
-  )
-}
-
-interface FiltersProps {
-  filters: CatalogFilters
-  page: CoursePage | undefined
-  onChange: (patch: Partial<CatalogFilters>) => void
-  onClear: () => void
-}
-
-function Filters({ filters, page, onChange, onClear }: FiltersProps) {
-  const { t } = useTranslation('catalog')
-  const id = useId()
-  // el texto se edita libre y se aplica al buscar; si la URL cambia (atrás, limpiar), el campo la sigue
-  const [text, setText] = useState(filters.q)
-  useEffect(() => setText(filters.q), [filters.q])
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault()
-    onChange({ q: text.trim() })
-  }
-
-  const categories: { slug: string; name: string; count?: number }[] = page?.facets.categories ?? []
-  // una categoría de la URL que no viene en los facets sigue visible en el selector (si no, quedaría en blanco)
-  const categoryOptions =
-    filters.category && !categories.some((category) => category.slug === filters.category)
-      ? [...categories, { slug: filters.category, name: filters.category }]
-      : categories
-
-  return (
-    <div className="flex flex-col gap-4">
-      <form role="search" onSubmit={submit} className="flex flex-col gap-1.5">
-        <Label htmlFor={`${id}-q`}>{t('filters.search')}</Label>
-        <div className="flex gap-2">
-          <Input
-            id={`${id}-q`}
-            type="search"
-            name="q"
-            maxLength={100}
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder={t('filters.searchPlaceholder')}
-          />
-          <Button type="submit">{t('filters.submit')}</Button>
-        </div>
-      </form>
-      <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <legend className="sr-only">{t('filters.legend')}</legend>
-        <FilterSelect id={`${id}-category`} label={t('filters.category')} value={filters.category} onChange={(category) => onChange({ category })}>
-          {categoryOptions.map((category) => (
-            <SelectItem key={category.slug} value={category.slug}>
-              {category.count === undefined ? category.name : t('filters.categoryOption', { name: category.name, count: category.count })}
-            </SelectItem>
-          ))}
-        </FilterSelect>
-        <FilterSelect id={`${id}-level`} label={t('filters.level')} value={filters.level} onChange={(level) => onChange({ level })}>
-          {LEVELS.map((level) => (
-            <SelectItem key={level} value={level}>
-              {t(`level.${level}`)}
-            </SelectItem>
-          ))}
-        </FilterSelect>
-        <FilterSelect id={`${id}-modality`} label={t('filters.modality')} value={filters.modality} onChange={(modality) => onChange({ modality })}>
-          {MODALITIES.map((modality) => (
-            <SelectItem key={modality} value={modality}>
-              {t(`modality.${modality}`)}
-            </SelectItem>
-          ))}
-        </FilterSelect>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-from`}>{t('filters.startsFrom')}</Label>
-          <Input
-            id={`${id}-from`}
-            type="date"
-            value={filters.startsFrom}
-            // a medio escribir, un campo de fecha vale '' y no es válido: solo una fecha completa o el borrado cambian la búsqueda
-            onChange={(event) => {
-              if (event.target.value !== '' || event.target.validity.valid) onChange({ startsFrom: event.target.value })
-            }}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${id}-sort`}>{t('filters.sort')}</Label>
-          <Select value={filters.sort} onValueChange={(sort) => onChange({ sort })}>
-            <SelectTrigger id={`${id}-sort`}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SORTS.map((sort) => (
-                <SelectItem key={sort} value={sort}>
-                  {t(`sort.${sort}`)}
-                </SelectItem>
+    <PublicLayout fullBleed>
+      <CatalogBand filters={filters} page={query.data} busy={query.isPlaceholderData} onChange={update} onRemove={removeFilter} onClear={clearFilters} />
+      <ScreenBody>
+        <section aria-labelledby="catalog-results" className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="text-title-3 text-ink">
+              {t('catalog.results')}
+            </h2>
+            <p role="status" className="text-sm text-ink-muted tabular-nums">
+              {problem ? null : query.data ? t('catalog.count', { count: query.data.totalElements }) : t('catalog.loading')}
+            </p>
+          </div>
+          {problem ? (
+            <CatalogProblem error={problem} onRetry={retry} onClear={clearFilters} />
+          ) : query.data ? (
+            <Results page={query.data} filters={filters} busy={query.isPlaceholderData} onPage={goToPage} onClear={clearFilters} />
+          ) : (
+            <div className={GRID}>
+              {SKELETON_CARDS.map((card) => (
+                <CourseCardSkeleton key={card} />
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </fieldset>
-      <MoreFilters id={id} filters={filters} page={page} onChange={onChange} />
-      {hasActiveFilters(filters) ? (
-        <div>
-          <Button variant="ghost" onClick={onClear}>
-            {t('filters.clear')}
-          </Button>
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-// duraciones del modelo (RF-ACA-05): de 1 a 8 semanas o semestral (12 a 26). en la URL son minWeeks y maxWeeks
-const DURATIONS = [
-  { key: 'upTo2', minWeeks: '', maxWeeks: '2' },
-  { key: 'from3to8', minWeeks: '3', maxWeeks: '8' },
-  { key: 'semester', minWeeks: '12', maxWeeks: '' }
-] as const
-export const DURATION_KEYS = DURATIONS.map((duration) => duration.key)
-// un rango de la URL que no es ninguno de los anteriores (editado a mano) se ve tal cual, como la categoría
-const CUSTOM_DURATION = 'custom'
-const ENROLLMENT_OPTIONS = ['true', 'false'] as const
-const HOUR_FILTERS = ['minTheoryHours', 'minPracticeHours', 'minAutonomousHours'] as const
-
-interface MoreFiltersProps {
-  id: string
-  filters: CatalogFilters
-  page: CoursePage | undefined
-  onChange: (patch: Partial<CatalogFilters>) => void
-}
-
-// RF-CAT-08: duración, inscripción abierta, conocimientos previos y horas por tipo
-function MoreFilters({ id, filters, page, onChange }: MoreFiltersProps) {
-  const { t } = useTranslation('catalog')
-  const knowledge: { key: string; name: string; count?: number }[] = page?.facets.prerequisiteKnowledge ?? []
-  // una clave de la URL que no viene en los facets (sin cursos, o escrita a mano) se ve tal cual, como la categoría
-  const knowledgeOptions =
-    filters.prerequisiteKnowledge && filters.prerequisiteKnowledge !== NO_KNOWLEDGE && !knowledge.some((option) => option.key === filters.prerequisiteKnowledge)
-      ? [...knowledge, { key: filters.prerequisiteKnowledge, name: filters.prerequisiteKnowledge }]
-      : knowledge
-  const hasDuration = filters.minWeeks !== '' || filters.maxWeeks !== ''
-  const preset = DURATIONS.find((duration) => duration.minWeeks === filters.minWeeks && duration.maxWeeks === filters.maxWeeks)
-  const durationValue = preset ? preset.key : hasDuration ? CUSTOM_DURATION : ''
-
-  const chooseDuration = (key: string) => {
-    if (key === CUSTOM_DURATION) return
-    const next = DURATIONS.find((duration) => duration.key === key)
-    onChange({ minWeeks: next?.minWeeks ?? '', maxWeeks: next?.maxWeeks ?? '' })
-  }
-
-  return (
-    <fieldset className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-      <legend className="sr-only">{t('filters.moreLegend')}</legend>
-      <FilterSelect id={`${id}-duration`} label={t('filters.duration')} value={durationValue} onChange={chooseDuration}>
-        {DURATIONS.map((duration) => (
-          <SelectItem key={duration.key} value={duration.key}>
-            {t(`duration.${duration.key}`)}
-          </SelectItem>
-        ))}
-        {durationValue === CUSTOM_DURATION ? (
-          <SelectItem value={CUSTOM_DURATION}>{t('duration.range', { min: filters.minWeeks || 1, max: filters.maxWeeks || 26 })}</SelectItem>
-        ) : null}
-      </FilterSelect>
-      <FilterSelect
-        id={`${id}-enrollment`}
-        label={t('filters.enrollmentOpen')}
-        value={filters.enrollmentOpen}
-        onChange={(enrollmentOpen) => onChange({ enrollmentOpen })}
-      >
-        {ENROLLMENT_OPTIONS.map((option) => (
-          <SelectItem key={option} value={option}>
-            {t(`enrollmentFilter.${option}`)}
-          </SelectItem>
-        ))}
-      </FilterSelect>
-      <FilterSelect
-        id={`${id}-knowledge`}
-        label={t('filters.prerequisiteKnowledge')}
-        value={filters.prerequisiteKnowledge}
-        onChange={(prerequisiteKnowledge) => onChange({ prerequisiteKnowledge })}
-      >
-        <SelectItem value={NO_KNOWLEDGE}>{t('knowledgeFilter.none')}</SelectItem>
-        {knowledgeOptions.map((option) => (
-          <SelectItem key={option.key} value={option.key}>
-            {option.count === undefined ? option.name : t('filters.categoryOption', { name: option.name, count: option.count })}
-          </SelectItem>
-        ))}
-      </FilterSelect>
-      {HOUR_FILTERS.map((name) => (
-        <HoursInput
-          key={name}
-          id={`${id}-${name}`}
-          label={t(`filters.${name}`)}
-          value={filters[name]}
-          onChange={(value) => onChange(hoursPatch(name, value))}
-        />
-      ))}
-    </fieldset>
-  )
-}
-
-function hoursPatch(name: (typeof HOUR_FILTERS)[number], value: string): Partial<CatalogFilters> {
-  const patch: Partial<CatalogFilters> = {}
-  patch[name] = value
-  return patch
-}
-
-interface HoursInputProps {
-  id: string
-  label: string
-  value: string
-  onChange: (value: string) => void
-}
-
-// el número se edita libre y se aplica al salir del campo o con Intro: a medio escribir («6.») no es un valor y no
-// conviene una petición por tecla. solo un valor válido (o el borrado) cambia la búsqueda; si la URL cambia, el campo la sigue
-function HoursInput({ id, label, value, onChange }: HoursInputProps) {
-  const [text, setText] = useState(value)
-  useEffect(() => setText(value), [value])
-  const commit = (input: HTMLInputElement) => {
-    if (input.validity.valid && input.value !== value) onChange(input.value)
-  }
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="number"
-        inputMode="decimal"
-        min={0}
-        max={10000}
-        step="any"
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={(event) => commit(event.currentTarget)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') commit(event.currentTarget)
-        }}
-      />
-    </div>
-  )
-}
-
-interface FilterSelectProps {
-  id: string
-  label: string
-  value: string
-  onChange: (value: string) => void
-  children: ReactNode
-}
-
-function FilterSelect({ id, label, value, onChange, children }: FilterSelectProps) {
-  const { t } = useTranslation('catalog')
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Select value={value || ALL} onValueChange={(next) => onChange(next === ALL ? '' : next)}>
-        <SelectTrigger id={id}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>{t('filters.all')}</SelectItem>
-          {children}
-        </SelectContent>
-      </Select>
-    </div>
+            </div>
+          )}
+        </section>
+      </ScreenBody>
+    </PublicLayout>
   )
 }
 
@@ -344,14 +99,11 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
   }
 
   return (
-    <div aria-busy={busy} className={busy ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
-      <p role="status" className="border-b border-border pb-3 text-sm text-ink-muted">
-        {t('catalog.count', { count: page.totalElements })}
-      </p>
-      <ol className="divide-y divide-border">
+    <div aria-busy={busy} className={`flex flex-col gap-6 transition-opacity ${busy ? 'opacity-60' : ''}`}>
+      <ol className={GRID}>
         {page.content.map((course) => (
-          <li key={course.slug}>
-            <CourseItem course={course} />
+          <li key={course.slug} className="min-w-0">
+            <CourseCard course={course} />
           </li>
         ))}
       </ol>
@@ -359,52 +111,6 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
         <Pagination page={page.page} totalPages={page.totalPages} totalElements={page.totalElements} onPage={(index) => onPage(index + 1)} />
       ) : null}
     </div>
-  )
-}
-
-function CourseItem({ course }: { course: CourseSummary }) {
-  const { t, i18n } = useTranslation('catalog')
-  const links = useWasichaiLinks()
-  return (
-    <article className="flex flex-col gap-2 py-6">
-      {course.category || course.illustrative ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-          {course.category ? <span className="font-medium uppercase tracking-wide">{course.category.name}</span> : null}
-          {course.illustrative ? <IllustrativeMark /> : null}
-        </div>
-      ) : null}
-      <h3 className="text-lg font-semibold leading-snug tracking-tight">
-        <Link
-          to={links.to(CATALOG_ROUTES.course, { slug: course.slug })}
-          className="rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-        >
-          {course.title}
-        </Link>
-      </h3>
-      {course.summary ? <p className="max-w-prose text-sm text-ink-muted">{course.summary}</p> : null}
-      <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-        <Fact label={t('course.level')}>{t(`level.${course.level}`)}</Fact>
-        <Fact label={t('course.modality')}>{t(`modality.${course.modality}`)}</Fact>
-        <Fact label={t('course.duration')}>
-          {t('course.durationValue', { count: course.weeks, hours: formatNumber(course.workload.totalHours, i18n.language) })}
-        </Fact>
-      </dl>
-      <OfferingLine offering={course.nextOffering} />
-    </article>
-  )
-}
-
-function OfferingLine({ offering }: { offering: NextOffering | null }) {
-  const { t, i18n } = useTranslation('catalog')
-  if (!offering) return <p className="text-sm text-ink-muted">{t('offering.none')}</p>
-  const state = offeringState(offering)
-  return (
-    <p className="text-sm">
-      <span className="text-ink-muted">{t('offering.next')} </span>
-      <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, i18n.language)}</span>
-      <span className="text-ink-muted"> · </span>
-      <span className={state === 'open' ? 'font-medium text-success' : 'text-ink-muted'}>{t(`offering.state.${state}`)}</span>
-    </p>
   )
 }
 
