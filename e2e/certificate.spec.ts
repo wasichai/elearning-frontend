@@ -53,7 +53,7 @@ test('recorrido: cumplir las reglas → pedir el certificado con el nombre → v
   await issue.getByRole('button', { name: 'Emitir' }).click()
 
   await expect(page.getByText('Certificado emitido a nombre de Rosa Quispe Mamani.')).toBeVisible()
-  await page.getByRole('link', { name: 'Ver e imprimir el certificado' }).click()
+  await page.getByRole('link', { name: 'Ver mi certificado' }).click()
   await expect(page).toHaveURL('/certificados/K7Q2-M9XW-4RTB')
   await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
   await expect(page.getByText('aprobó el curso «Introducción al SGSPE».')).toBeVisible()
@@ -64,6 +64,9 @@ test('recorrido: cumplir las reglas → pedir el certificado con el nombre → v
   await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Imprimir' })).toBeHidden()
   await expect(page.getByRole('banner')).toBeHidden()
+  // tampoco la banda de verificación ni el enlace: el papel es solo el documento
+  await expect(page.getByRole('status')).toBeHidden()
+  await expect(page.getByRole('link', { name: 'Verificar otro certificado' })).toBeHidden()
   await page.emulateMedia({ media: 'screen' })
 
   await page.goto('/mis-cursos')
@@ -81,11 +84,13 @@ test('la verificación es pública: sin sesión, por código; uno desconocido se
   await page.getByRole('textbox', { name: 'Código del certificado' }).fill('k7q2-m9xw-4rtb')
   await page.getByRole('button', { name: 'Verificar' }).click()
   await expect(page).toHaveURL('/certificados/K7Q2-M9XW-4RTB')
-  await expect(page.getByRole('status')).toHaveText('Certificado auténtico, emitido por esta plataforma.')
+  await expect(page.getByRole('status')).toContainText('Certificado válido')
   await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
 
   await page.goto('/certificados/NO-EXISTE')
-  await expect(page.getByRole('heading', { level: 1, name: 'No hay ningún certificado con ese código' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'No encontramos un certificado con el código NO-EXISTE' })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Código del certificado' })).toHaveValue('NO-EXISTE')
+  await expect(page.getByText('Certificado válido', { exact: true })).toHaveCount(0)
   expect(api.unexpected).toEqual([])
 })
 
@@ -105,18 +110,25 @@ test('el certificado es un A4 apaisado en tema claro, aunque la página esté en
 
   // el PDF de la impresión: una sola hoja A4 apaisada (841,89 × 595,28 pt)
   await page.emulateMedia({ media: 'print' })
-  const pdf = (await page.pdf({ preferCSSPageSize: true })).toString('latin1')
+  // el documento ocupa la hoja entera, sin márgenes de la página: A4 apaisado a 96 ppp
+  const printed = (await sheet.boundingBox())!
+  expect([printed.x, printed.y]).toEqual([0, 0])
+  // CERTIFICATE_PDF: deja el PDF en esa ruta para mirarlo
+  const pdf = (await page.pdf({ preferCSSPageSize: true, path: process.env.CERTIFICATE_PDF })).toString('latin1')
   expect(pdf.match(/\/Type\s*\/Page\b/g)).toHaveLength(1)
   const [, width, height] = /\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)\s*\]/.exec(pdf) ?? []
   expect([Math.round(Number(width)), Math.round(Number(height))]).toEqual([842, 595])
 })
 
 test('en el móvil el certificado se lee en una columna, sin desbordar', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await fakeApi(page, { certificateIssued: true })
-  await page.goto('/certificados/K7Q2-M9XW-4RTB')
-  await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  for (const width of [360, 390]) {
+    await page.setViewportSize({ width, height: 844 })
+    await fakeApi(page, { certificateIssued: true })
+    await page.goto('/certificados/K7Q2-M9XW-4RTB')
+    await expect(page.getByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toBeVisible()
+    await expect(page.getByRole('status')).toContainText('Certificado válido')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width)
+  }
 })
 
 test('la agenda separa próximas y pasadas: a lo que terminó no se entra, y la cabecera da la asistencia', async ({ page }) => {

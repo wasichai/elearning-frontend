@@ -409,7 +409,26 @@ export const classroomScenarios: Scenario[] = [
   },
   { name: 'student-completion-pending', path: '/mis-cursos/mat-sgspe-1/finalizacion', api: student },
   { name: 'student-completion', path: '/mis-cursos/mat-sgspe-1/finalizacion', api: { ...student, courseComplete: true } },
+  {
+    name: 'student-completion-issued',
+    path: '/mis-cursos/mat-sgspe-1/finalizacion',
+    api: { ...student, courseComplete: true, certificateIssued: true },
+    // la simulación no marca la matrícula como certificada: se añade el código a su respuesta
+    act: async (page) => {
+      const enrollment = await page.evaluate(() => fetch('/api/lms/classroom/enrollments/mat-sgspe-1').then((response) => response.json()))
+      await page.route('**/api/lms/classroom/enrollments/mat-sgspe-1', (route) =>
+        route.fulfill({ json: { ...enrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' } })
+      )
+      await page.reload({ waitUntil: 'networkidle' })
+    }
+  },
   { name: 'certificate', path: '/certificados/K7Q2-M9XW-4RTB', api: { certificateIssued: true } },
+  {
+    name: 'certificate-print',
+    path: '/certificados/K7Q2-M9XW-4RTB',
+    api: { certificateIssued: true },
+    act: (page) => page.emulateMedia({ media: 'print' })
+  },
   { name: 'certificate-missing', path: '/certificados/NO-EXISTE' },
   { name: 'certificate-verify', path: '/certificados' }
 ]

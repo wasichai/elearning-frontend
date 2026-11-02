@@ -214,7 +214,8 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
   await test.step('las reglas cumplidas, y pide su certificado con el nombre', async () => {
     await page.getByRole('navigation', { name: 'Secciones del curso' }).getByRole('link', { name: 'Finalización' }).click()
     await expect(page.getByText('Cumples todas las reglas: ya puedes pedir tu certificado.')).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Para terminar el curso' })).not.toContainText('(pendiente)')
+    await expect(page.getByRole('region', { name: /^Completaste / })).toBeVisible()
+    await expect(page.locator('[data-seal]')).toBeVisible()
     await page.getByRole('textbox', { name: 'Nombre para el certificado' }).fill(HOLDER)
     await page.getByRole('button', { name: 'Emitir mi certificado' }).click()
     await page
@@ -222,7 +223,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
       .getByRole('button', { name: 'Emitir' })
       .click()
     await expect(page.getByText(`Certificado emitido a nombre de ${HOLDER}.`)).toBeVisible()
-    await page.getByRole('link', { name: 'Ver e imprimir el certificado' }).click()
+    await page.getByRole('link', { name: 'Ver mi certificado' }).click()
     await expect(page).toHaveURL(/\/certificados\/[^/]+$/)
     await expect(page.getByRole('heading', { level: 1, name: HOLDER })).toBeVisible()
     code = decodeURIComponent(new URL(page.url()).pathname.split('/').pop()!)
@@ -240,7 +241,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
       await visitor.page.getByRole('textbox', { name: 'Código del certificado' }).fill(code.toLowerCase())
       await visitor.page.getByRole('button', { name: 'Verificar' }).click()
       await expect(visitor.page).toHaveURL(`/certificados/${code}`)
-      await expect(visitor.page.getByRole('status')).toHaveText('Certificado auténtico, emitido por esta plataforma.')
+      await expect(visitor.page.getByRole('status')).toContainText('Certificado válido')
       await expect(visitor.page.getByRole('heading', { level: 1, name: HOLDER })).toBeVisible()
       await expect(visitor.page.getByText(`aprobó el curso «${COURSE}».`)).toBeVisible()
       await visitor.page.emulateMedia({ media: 'print' })
@@ -248,7 +249,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
       await visitor.page.emulateMedia({ media: 'screen' })
 
       await visitor.page.goto('/certificados/NO-EXISTE-ESTE')
-      await expect(visitor.page.getByRole('heading', { level: 1, name: 'No hay ningún certificado con ese código' })).toBeVisible()
+      await expect(visitor.page.getByRole('heading', { level: 1, name: 'No encontramos un certificado con el código NO-EXISTE-ESTE' })).toBeVisible()
     } finally {
       await visitor.context.close()
     }
