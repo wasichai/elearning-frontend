@@ -14,6 +14,11 @@ const es = {
     empty: 'Aún no tienes versiones',
     emptyHint: 'Cuando crees o importes una versión de un curso, aparecerá aquí para editarla y enviarla a revisión.',
     name: '{{course}} — versión {{number}}',
+    number: 'Versión {{number}}',
+    newCourse: 'Nuevo curso',
+    newVersion: 'Nueva versión',
+    newVersionLabel: 'Nueva versión de {{course}}',
+    submitLabel: 'Enviar a revisión la versión {{number}} de {{course}}',
     updated: 'Actualizada el {{date}}',
     openComments_one: '{{value}} comentario por atender',
     openComments_other: '{{value}} comentarios por atender',
@@ -35,6 +40,12 @@ const es = {
   },
   version: {
     title: 'Versión',
+    breadcrumbs: 'Ruta',
+    rail: 'Estado y revisión de la versión',
+    path: 'Recorrido de la versión',
+    stepDone: 'hecho',
+    stepPending: 'pendiente',
+    readOnly: 'Solo lectura',
     subtitle: 'Versión {{number}} · {{code}}',
     loading: 'Cargando la versión…',
     state: 'Estado: {{status}}',
@@ -47,7 +58,7 @@ const es = {
       'Mientras la versión {{number}} esté en revisión no podrás editarla. El revisor puede aprobarla, pedirte cambios (vuelve a borrador) o rechazarla.',
     submitConfirm: 'Sí, enviar a revisión',
     cancel: 'Volver',
-    copy: 'Crear una versión nueva a partir de esta',
+    copy: 'Crear versión nueva',
     copying: 'Creando…',
     copyTitle: '¿Crear una versión nueva?',
     copyDescription:
@@ -66,7 +77,8 @@ const es = {
     assessment: 'con evaluación',
     resources_one: '{{value}} recurso',
     resources_other: '{{value}} recursos',
-    source: 'Fuente: {{ref}}'
+    source: 'Fuente: {{ref}}',
+    sourceToggle: 'Fuente técnica'
   },
   lessonType: {
     LECTURA: 'Lectura',
@@ -83,7 +95,11 @@ const es = {
     open_other: '{{value}} comentarios por atender',
     allResolved: 'Todos los comentarios están resueltos.',
     resolved: 'Resuelto',
-    pending: 'Por atender'
+    pending: 'Por atender',
+    of: 'Comentarios de {{name}}',
+    whole: 'Comentarios de toda la versión',
+    orphans: 'Comentarios de secciones que ya no están',
+    inSyllabus: 'Los de una unidad o una lección están junto a ella, en «Contenido».'
   },
   // las diferencias con la versión anterior (VersionDiffSection)
   diff: diffMessages.es,
@@ -153,6 +169,11 @@ const en: typeof es = {
     empty: 'You have no versions yet',
     emptyHint: 'When you create or import a version of a course, it will appear here to edit it and send it for review.',
     name: '{{course}} — version {{number}}',
+    number: 'Version {{number}}',
+    newCourse: 'New course',
+    newVersion: 'New version',
+    newVersionLabel: 'New version of {{course}}',
+    submitLabel: 'Send version {{number}} of {{course}} for review',
     updated: 'Updated on {{date}}',
     openComments_one: '{{value}} comment to address',
     openComments_other: '{{value}} comments to address',
@@ -174,6 +195,12 @@ const en: typeof es = {
   },
   version: {
     title: 'Version',
+    breadcrumbs: 'Breadcrumb',
+    rail: 'Version status and review',
+    path: 'Version path',
+    stepDone: 'done',
+    stepPending: 'pending',
+    readOnly: 'Read only',
     subtitle: 'Version {{number}} · {{code}}',
     loading: 'Loading the version…',
     state: 'Status: {{status}}',
@@ -186,7 +213,7 @@ const en: typeof es = {
       'While version {{number}} is in review you will not be able to edit it. The reviewer can approve it, request changes (it returns to draft) or reject it.',
     submitConfirm: 'Yes, send for review',
     cancel: 'Go back',
-    copy: 'Create a new version from this one',
+    copy: 'Create new version',
     copying: 'Creating…',
     copyTitle: 'Create a new version?',
     copyDescription:
@@ -205,7 +232,8 @@ const en: typeof es = {
     assessment: 'with assessment',
     resources_one: '{{value}} resource',
     resources_other: '{{value}} resources',
-    source: 'Source: {{ref}}'
+    source: 'Source: {{ref}}',
+    sourceToggle: 'Technical source'
   },
   lessonType: {
     LECTURA: 'Reading',
@@ -222,7 +250,11 @@ const en: typeof es = {
     open_other: '{{value}} comments to address',
     allResolved: 'All comments are resolved.',
     resolved: 'Resolved',
-    pending: 'To address'
+    pending: 'To address',
+    of: 'Comments on {{name}}',
+    whole: 'Comments on the whole version',
+    orphans: 'Comments on sections that no longer exist',
+    inSyllabus: 'Those on a unit or a lesson are next to it, under “Content”.'
   },
   diff: diffMessages.en,
   decisions: {

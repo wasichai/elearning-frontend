@@ -1,16 +1,20 @@
-import { LoadingState, PageHeader, useWasichaiLinks } from '@wasichai/core'
-import { Alert, Button, ConfirmDialog } from '@wasichai/ui'
-import { useState } from 'react'
+import { LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { Button } from '@wasichai/ui'
+import { ChevronRight, Circle, CircleCheck, CircleDot } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router'
-import { WRAP } from '../../shared/buttons'
+import { Link, useParams } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatDateTime, formatInstant, formatNumber } from '../../shared/format'
+import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
+import { Breadcrumbs, ScreenBody, ScreenHeader, Section } from '../../shared/Screen'
+import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { VersionDiffSection } from '../../shared/VersionDiff'
-import { useNewVersion, useSubmitVersion, useVersion, useVersionDiff } from './api'
-import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail } from './contract'
-import { BackToVersions, LINK, useActionError, useProblemText } from './parts'
+import { useSubmitVersion, useVersion, useVersionDiff } from './api'
+import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail, VersionStatus } from './contract'
+import { useProblemText, VERSION_BADGE } from './parts'
 import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
+import { NewVersionButton, SubmitVersionButton } from './VersionActions'
 
 // el contenido de la versión se edita en las pantallas de registros de Wasichai (core), que la guarda editorial del
 // servidor deja solo al autor y en borrador: aquí no se reimplementan formularios (CLAUDE.md, regla 7)
@@ -18,20 +22,42 @@ const VERSION_OBJECT = 'version_curso'
 const UNIT_OBJECT = 'unidad'
 const LESSON_OBJECT = 'leccion'
 
+// las secciones que comenta el revisor, como las escribe la bandeja (ReviewComment.section)
+const WHOLE_VERSION = 'version'
+const unitSection = (unit: number) => `unidad:${unit}`
+const lessonSection = (unit: number, lesson: number) => `unidad:${unit}/leccion:${lesson}`
+
+// el recorrido de una versión, de lo último a lo primero. retirada no está: se llega rechazando o tras publicar, y el contrato no dice cuál
+const PATH: VersionStatus[] = ['PUBLICADA', 'APROBADA', 'EN_REVISION', 'BORRADOR']
+
+const DECISION_BADGE: Record<ReviewDecision['decision'], StatusState> = { APROBAR: 'done', PEDIR_CAMBIOS: 'warning', RECHAZAR: 'overdue' }
+
 // una versión propia: su estado, su temario, lo que el revisor comentó y decidió, y lo que se puede hacer con ella
 export function VersionPage() {
   const { t } = useTranslation('studio')
+  const links = useWasichaiLinks()
   const { id = '' } = useParams()
   const query = useVersion(id)
   const version = query.data
   return (
     <>
-      <PageHeader
+      <ScreenHeader
+        width="wide"
         title={version?.course.title ?? t('version.title')}
         subtitle={version ? t('version.subtitle', { number: version.number, code: version.course.code }) : undefined}
+        breadcrumbs={
+          <Breadcrumbs
+            label={t('version.breadcrumbs')}
+            items={[
+              { label: t('versions.title'), to: links.to(STUDIO_ROUTES.versions) },
+              { label: version ? t('versions.number', { number: version.number }) : t('version.title') }
+            ]}
+          />
+        }
+        meta={version ? <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge> : undefined}
+        actions={version ? <Actions key={version.id} version={version} /> : undefined}
       />
-      <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 pt-6 pb-16 sm:px-8">
-        <BackToVersions />
+      <ScreenBody width="wide">
         {query.isError ? (
           <VersionProblem error={query.error} onRetry={() => void query.refetch()} />
         ) : version ? (
@@ -39,7 +65,7 @@ export function VersionPage() {
         ) : (
           <LoadingState label={t('version.loading')} />
         )}
-      </div>
+      </ScreenBody>
     </>
   )
 }
@@ -48,13 +74,7 @@ export function VersionPage() {
 function VersionProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('studio')
   const { kind, title, description } = useProblemText(error, 'version')
-  if (kind === 'notFound')
-    return (
-      <div role="alert" className="flex max-w-prose flex-col gap-2 py-6">
-        <p className="text-base font-semibold text-ink">{title}</p>
-        <p className="text-sm text-ink-muted">{t('problem.notFoundHint')}</p>
-      </div>
-    )
+  if (kind === 'notFound') return <ProblemState title={title} description={t('problem.notFoundHint')} />
   return (
     <ProblemState title={title} description={description}>
       <Button variant="secondary" size="sm" onClick={onRetry}>
@@ -64,139 +84,148 @@ function VersionProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
   )
 }
 
-function Version({ version }: { version: StudioVersionDetail }) {
-  const { t, i18n } = useTranslation('studio')
-  const diff = useVersionDiff(version.id)
-  const draft = version.status === 'BORRADOR'
-  return (
-    <>
-      <section aria-labelledby="version-state" className="flex flex-col gap-3">
-        <h2 id="version-state" className="text-lg font-semibold text-ink">
-          {t('version.state', { status: t(`status.${version.status}`) })}
-        </h2>
-        <p className="max-w-prose text-sm text-ink-muted">{t(`statusHint.${version.status}`)}</p>
-        {version.updatedAt ? (
-          <p className="text-sm text-ink-muted">{t('versions.updated', { date: formatInstant(version.updatedAt, i18n.language) })}</p>
-        ) : null}
-        <Actions version={version} />
-      </section>
-      <VersionDiffSection namespace={STUDIO_MODULE_ID} query={diff} />
-      <Syllabus units={version.units} draft={draft} />
-      <Comments comments={version.comments} />
-      <Decisions decisions={version.decisions} />
-    </>
-  )
-}
-
+// la siguiente acción, en la cabecera. una publicada o retirada solo tiene una salida; una en curso la ofrece sin prisa
 function Actions({ version }: { version: StudioVersionDetail }) {
   const { t } = useTranslation('studio')
   const links = useWasichaiLinks()
-  const navigate = useNavigate()
-  const describe = useActionError()
   const submit = useSubmitVersion(version.id)
-  const copy = useNewVersion(version.course.id)
-  const [asking, setAsking] = useState<'submit' | 'copy'>()
   const draft = version.status === 'BORRADOR'
+  const finished = version.status === 'PUBLICADA' || version.status === 'RETIRADA'
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-2 sm:items-end">
+      <div className="flex flex-wrap items-center gap-2">
         {draft ? (
           <>
-            <Link to={links.record(VERSION_OBJECT, version.id)} className={LINK}>
-              {t('version.edit')}
-            </Link>
-            <Button className={WRAP} disabled={submit.isPending} onClick={() => setAsking('submit')}>
-              {submit.isPending ? t('version.submitting') : t('version.submit')}
+            <Button asChild variant="secondary" className="min-h-11">
+              <Link to={links.record(VERSION_OBJECT, version.id)}>{t('version.edit')}</Link>
             </Button>
+            <SubmitVersionButton version={version} submit={submit} variant="primary" />
           </>
         ) : (
-          <Button variant="secondary" className={WRAP} disabled={copy.isPending} onClick={() => setAsking('copy')}>
-            {copy.isPending ? t('version.copying') : t('version.copy')}
-          </Button>
+          <NewVersionButton source={version} label={t('version.copy')} variant={finished ? 'primary' : 'secondary'} />
         )}
       </div>
-      <p role="status" className="text-sm text-success">
+      <p role="status" className="text-sm text-success empty:hidden">
         {submit.isSuccess ? t('version.submitted') : ''}
       </p>
-      {submit.error && !asking ? <Alert tone="danger">{describe(submit.error)}</Alert> : null}
-      {copy.error && !asking ? <Alert tone="danger">{describe(copy.error)}</Alert> : null}
-
-      {/* enviar deja la versión sin editar hasta que el revisor decida: se confirma (RNF-UX-08) */}
-      {asking === 'submit' ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('version.submitTitle')}
-          description={t('version.submitDescription', { number: version.number })}
-          confirmLabel={t('version.submitConfirm')}
-          cancelLabel={t('version.cancel')}
-          busy={submit.isPending}
-          error={submit.error ? describe(submit.error) : null}
-          onCancel={() => {
-            submit.reset()
-            setAsking(undefined)
-          }}
-          onConfirm={() => submit.mutate(undefined, { onSuccess: () => setAsking(undefined) })}
-        />
-      ) : null}
-      {asking === 'copy' ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('version.copyTitle')}
-          description={t('version.copyDescription', { number: version.number })}
-          confirmLabel={t('version.copyConfirm')}
-          cancelLabel={t('version.cancel')}
-          busy={copy.isPending}
-          error={copy.error ? describe(copy.error) : null}
-          onCancel={() => {
-            copy.reset()
-            setAsking(undefined)
-          }}
-          onConfirm={() =>
-            copy.mutate(version.id, {
-              onSuccess: (created) => {
-                setAsking(undefined)
-                void navigate(links.to(STUDIO_ROUTES.version, { id: created.id }))
-              }
-            })
-          }
-        />
-      ) : null}
     </div>
   )
 }
 
-function Syllabus({ units, draft }: { units: StudioUnit[]; draft: boolean }) {
+function Version({ version }: { version: StudioVersionDetail }) {
+  const { t } = useTranslation('studio')
+  const diff = useVersionDiff(version.id)
+  const draft = version.status === 'BORRADOR'
+  return (
+    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
+      <div className="flex min-w-0 flex-col gap-8">
+        {draft ? (
+          <p className="max-w-prose text-base text-ink-muted">{t('statusHint.BORRADOR')}</p>
+        ) : (
+          <Notice tone="notice" title={t('version.readOnly')}>
+            {t(`statusHint.${version.status}`)}
+          </Notice>
+        )}
+        <VersionDiffSection namespace={STUDIO_MODULE_ID} query={diff} />
+        <Syllabus version={version} draft={draft} />
+      </div>
+      <aside aria-label={t('version.rail')} className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-6">
+        <StatusLine version={version} />
+        <Comments version={version} />
+        <Decisions decisions={version.decisions} />
+      </aside>
+    </div>
+  )
+}
+
+// la línea de estados: dónde está la versión y qué le falta. lo pasado y lo pendiente se derivan de su estado; quién y cuándo, solo
+// donde el contrato lo da (su última actualización y, abajo, las decisiones)
+function StatusLine({ version }: { version: StudioVersionDetail }) {
+  const { t, i18n } = useTranslation('studio')
+  const updated = version.updatedAt ? t('versions.updated', { date: formatInstant(version.updatedAt, i18n.language) }) : null
+  const current = PATH.indexOf(version.status)
+  return (
+    <Section title={t('version.state', { status: t(`status.${version.status}`) })}>
+      {current === -1 ? (
+        updated ? (
+          <p className="text-sm text-ink-muted">{updated}</p>
+        ) : null
+      ) : (
+        <ol aria-label={t('version.path')} className="flex flex-col">
+          {PATH.map((status, index) => {
+            const isCurrent = index === current
+            const done = index > current
+            const Icon = isCurrent ? CircleDot : done ? CircleCheck : Circle
+            return (
+              <li key={status} aria-current={isCurrent ? 'step' : undefined} className="flex gap-2.5">
+                <span className="flex flex-col items-center">
+                  <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${isCurrent ? 'text-brand-strong' : done ? 'text-success' : 'text-ink-muted'}`} />
+                  {index < PATH.length - 1 ? (
+                    <span aria-hidden="true" className={`w-px grow ${done || isCurrent ? 'bg-border-control' : 'bg-border'}`} />
+                  ) : null}
+                </span>
+                <span className={`flex min-w-0 flex-col pb-3 text-sm ${isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
+                  <span>{t(`status.${status}`)}</span>
+                  {isCurrent ? (
+                    updated ? (
+                      <span className="font-normal text-ink-muted">{updated}</span>
+                    ) : null
+                  ) : (
+                    <span className="sr-only">{t(done ? 'version.stepDone' : 'version.stepPending')}</span>
+                  )}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </Section>
+  )
+}
+
+function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boolean }) {
   const { t } = useTranslation('studio')
   const links = useWasichaiLinks()
-  const sorted = [...units].sort((a, b) => a.order - b.order)
+  const sorted = [...version.units].sort((a, b) => a.order - b.order)
   return (
-    <section aria-labelledby="version-syllabus" className="flex flex-col gap-3">
-      <h2 id="version-syllabus" className="text-lg font-semibold text-ink">
-        {t('syllabus.title')}
-      </h2>
+    <Section title={t('syllabus.title')}>
       {sorted.length === 0 ? (
         <p className="text-sm text-ink-muted">{t('syllabus.empty')}</p>
       ) : (
-        <ol className="flex flex-col gap-4">
-          {sorted.map((unit) => (
+        <ol className="flex flex-col gap-6">
+          {sorted.map((unit: StudioUnit) => (
             <li key={unit.id} className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-baseline gap-x-3">
-                <h3 className="text-base font-semibold text-ink">{t('syllabus.unit', { order: unit.order, title: unit.title })}</h3>
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="min-w-0 text-base font-semibold text-ink [overflow-wrap:anywhere]">
+                  {t('syllabus.unit', { order: unit.order, title: unit.title })}
+                </h3>
                 {draft ? (
-                  <Link to={links.record(UNIT_OBJECT, unit.id)} className={LINK} aria-label={t('syllabus.editUnitLabel', { title: unit.title })}>
+                  <Link
+                    to={links.record(UNIT_OBJECT, unit.id)}
+                    className={`shrink-0 ${TEXT_LINK}`}
+                    aria-label={t('syllabus.editUnitLabel', { title: unit.title })}
+                  >
                     {t('syllabus.edit')}
                   </Link>
                 ) : null}
               </div>
+              <CommentList
+                comments={version.comments.filter((comment) => comment.section === unitSection(unit.order))}
+                label={t('comments.of', { name: unit.title })}
+              />
               {unit.lessons.length === 0 ? (
                 <p className="text-sm text-ink-muted">{t('syllabus.noLessons')}</p>
               ) : (
-                <ol className="flex flex-col gap-2 border-l border-border pl-4">
+                <ol className="flex flex-col divide-y divide-border border-y border-border">
                   {[...unit.lessons]
                     .sort((a, b) => a.order - b.order)
                     .map((lesson) => (
-                      <li key={lesson.id}>
-                        <LessonItem lesson={lesson} draft={draft} />
+                      <li key={lesson.id} className="py-3">
+                        <LessonItem
+                          lesson={lesson}
+                          draft={draft}
+                          comments={version.comments.filter((comment) => comment.section === lessonSection(unit.order, lesson.order))}
+                        />
                       </li>
                     ))}
                 </ol>
@@ -205,11 +234,11 @@ function Syllabus({ units, draft }: { units: StudioUnit[]; draft: boolean }) {
           ))}
         </ol>
       )}
-    </section>
+    </Section>
   )
 }
 
-function LessonItem({ lesson, draft }: { lesson: StudioLesson; draft: boolean }) {
+function LessonItem({ lesson, draft, comments }: { lesson: StudioLesson; draft: boolean; comments: ReviewComment[] }) {
   const { t, i18n } = useTranslation('studio')
   const links = useWasichaiLinks()
   const facts = [
@@ -218,30 +247,66 @@ function LessonItem({ lesson, draft }: { lesson: StudioLesson; draft: boolean })
     t('syllabus.resources', { count: lesson.resources, value: formatNumber(lesson.resources, i18n.language) })
   ]
   return (
-    <div className="flex flex-col gap-0.5 text-sm">
-      <div className="flex flex-wrap items-baseline gap-x-3">
-        <span className="font-medium text-ink">{t('syllabus.lesson', { order: lesson.order, title: lesson.title })}</span>
+    <div className="flex flex-col gap-1 text-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-medium text-ink [overflow-wrap:anywhere]">{t('syllabus.lesson', { order: lesson.order, title: lesson.title })}</span>
+          <span className="text-ink-muted">{facts.join(' · ')}</span>
+        </div>
         {draft ? (
-          <Link to={links.record(LESSON_OBJECT, lesson.id)} className={LINK} aria-label={t('syllabus.editLessonLabel', { title: lesson.title })}>
+          <Link
+            to={links.record(LESSON_OBJECT, lesson.id)}
+            className={`shrink-0 ${TEXT_LINK}`}
+            aria-label={t('syllabus.editLessonLabel', { title: lesson.title })}
+          >
             {t('syllabus.edit')}
           </Link>
         ) : null}
       </div>
-      <span className="text-ink-muted">{facts.join(' · ')}</span>
-      {lesson.sourceRef ? <span className="break-all text-xs text-ink-muted">{t('syllabus.source', { ref: lesson.sourceRef })}</span> : null}
+      {lesson.sourceRef ? (
+        <details className="group text-ink-muted">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-sm select-none hover:text-ink sm:min-h-6 [&::-webkit-details-marker]:hidden">
+            <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 transition-transform duration-[160ms] group-open:rotate-90" />
+            <span>{t('syllabus.sourceToggle')}</span>
+          </summary>
+          <p className="pl-[1.125rem] text-xs break-all">{t('syllabus.source', { ref: lesson.sourceRef })}</p>
+        </details>
+      ) : null}
+      <CommentList comments={comments} label={t('comments.of', { name: lesson.title })} />
     </div>
   )
 }
 
-// el texto de un comentario es del revisor: se pinta como texto, nunca como HTML
-function Comments({ comments }: { comments: ReviewComment[] }) {
+// el texto de un comentario es del revisor: se pinta como texto, nunca como HTML. su estado, con icono y palabra
+function CommentList({ comments, label }: { comments: ReviewComment[]; label: string }) {
   const { t, i18n } = useTranslation('studio')
-  const open = comments.filter((comment) => !comment.resolved).length
+  if (comments.length === 0) return null
   return (
-    <section aria-labelledby="version-comments" className="flex flex-col gap-3">
-      <h2 id="version-comments" className="text-lg font-semibold text-ink">
-        {t('comments.title')}
-      </h2>
+    <ul aria-label={label} className="mt-1 flex flex-col gap-2 border-l-2 border-border pl-3 text-sm">
+      {comments.map((comment) => (
+        <li key={comment.id} className="flex flex-col gap-1">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+            <StatusBadge state={comment.resolved ? 'done' : 'warning'}>{comment.resolved ? t('comments.resolved') : t('comments.pending')}</StatusBadge>
+            {comment.createdAt ? <span>{formatDateTime(comment.createdAt, i18n.language, localZone())}</span> : null}
+          </p>
+          <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{comment.text}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// cuántos quedan y, aquí, los que no tienen una sección en el temario: los de toda la versión y los de una sección que ya no está
+function Comments({ version }: { version: StudioVersionDetail }) {
+  const { t, i18n } = useTranslation('studio')
+  const { comments } = version
+  const open = comments.filter((comment) => !comment.resolved).length
+  const placed = new Set(version.units.flatMap((unit) => [unitSection(unit.order), ...unit.lessons.map((lesson) => lessonSection(unit.order, lesson.order))]))
+  const whole = comments.filter((comment) => comment.section === WHOLE_VERSION)
+  const orphans = comments.filter((comment) => comment.section !== WHOLE_VERSION && !placed.has(comment.section))
+  const inSyllabus = comments.length - whole.length - orphans.length
+  return (
+    <Section title={t('comments.title')}>
       {comments.length === 0 ? (
         <p className="text-sm text-ink-muted">{t('comments.empty')}</p>
       ) : (
@@ -249,49 +314,47 @@ function Comments({ comments }: { comments: ReviewComment[] }) {
           <p className="text-sm text-ink-muted">
             {open > 0 ? t('comments.open', { count: open, value: formatNumber(open, i18n.language) }) : t('comments.allResolved')}
           </p>
-          <ul className="flex flex-col gap-3">
-            {comments.map((comment) => (
-              <li key={comment.id} className="flex flex-col gap-1 rounded-md border border-border p-3 text-sm">
-                <p className="flex flex-wrap gap-x-2 text-xs text-ink-muted">
-                  <span className="font-mono">{comment.section}</span>
-                  {comment.createdAt ? <span>{formatDateTime(comment.createdAt, i18n.language, localZone())}</span> : null}
-                  <span className={comment.resolved ? 'text-success' : 'font-medium text-warning'}>
-                    {comment.resolved ? t('comments.resolved') : t('comments.pending')}
-                  </span>
-                </p>
-                <p className="whitespace-pre-line text-ink">{comment.text}</p>
-              </li>
-            ))}
-          </ul>
+          {inSyllabus > 0 ? <p className="text-sm text-ink-muted">{t('comments.inSyllabus')}</p> : null}
+          <LabeledComments comments={whole} label={t('comments.whole')} />
+          <LabeledComments comments={orphans} label={t('comments.orphans')} />
         </>
       )}
-    </section>
+    </Section>
   )
 }
 
+// fuera del temario nada dice de qué son: el nombre de la lista se ve
+function LabeledComments({ comments, label }: { comments: ReviewComment[]; label: string }) {
+  if (comments.length === 0) return null
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-sm font-medium text-ink">{label}</p>
+      <CommentList comments={comments} label={label} />
+    </div>
+  )
+}
+
+// la más reciente primero, como la línea de estados. el contrato identifica a quien decidió solo por su id: no se muestra
 function Decisions({ decisions }: { decisions: ReviewDecision[] }) {
   const { t, i18n } = useTranslation('studio')
   return (
-    <section aria-labelledby="version-decisions" className="flex flex-col gap-3">
-      <h2 id="version-decisions" className="text-lg font-semibold text-ink">
-        {t('decisions.title')}
-      </h2>
+    <Section title={t('decisions.title')}>
       {decisions.length === 0 ? (
         <p className="text-sm text-ink-muted">{t('decisions.empty')}</p>
       ) : (
         <ol className="flex flex-col gap-3">
-          {decisions.map((decision) => (
+          {[...decisions].reverse().map((decision) => (
             <li key={`${decision.at}-${decision.decision}`} className="flex flex-col gap-1 text-sm">
-              <p className="flex flex-wrap gap-x-2">
-                <span className="font-medium text-ink">{t(`decision.${decision.decision}`)}</span>
-                <span className="text-ink-muted">{formatDateTime(decision.at, i18n.language, localZone())}</span>
+              <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <StatusBadge state={DECISION_BADGE[decision.decision]}>{t(`decision.${decision.decision}`)}</StatusBadge>
+                <span className="text-xs text-ink-muted">{formatDateTime(decision.at, i18n.language, localZone())}</span>
               </p>
-              {decision.reason ? <p className="whitespace-pre-line text-ink">{decision.reason}</p> : null}
+              {decision.reason ? <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{decision.reason}</p> : null}
             </li>
           ))}
         </ol>
       )}
-    </section>
+    </Section>
   )
 }
 

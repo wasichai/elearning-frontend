@@ -142,7 +142,7 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       await page.getByRole('link', { name: `${COURSE} — versión 1`, exact: true }).click()
       await expect(page).toHaveURL(`/estudio/versiones/${v1!.id}`)
       await expect(page.getByRole('heading', { level: 2, name: 'Estado: Publicada' })).toBeVisible()
-      await page.getByRole('button', { name: 'Crear una versión nueva a partir de esta' }).click()
+      await page.getByRole('button', { name: 'Crear versión nueva' }).click()
       await page.getByRole('dialog', { name: '¿Crear una versión nueva?' }).getByRole('button', { name: 'Sí, crear el borrador' }).click()
 
       await expect(page).not.toHaveURL(`/estudio/versiones/${v1!.id}`)
@@ -237,7 +237,7 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       const { page } = creator
       await page.reload()
       await expect(page.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeVisible()
-      const comments = page.getByRole('region', { name: 'Comentarios de revisión' })
+      const comments = page.getByRole('list', { name: `Comentarios de ${EDITED}` })
       await expect(comments).toContainText(COMMENT)
       await expect(comments).toContainText('Por atender')
       const decisions = page.getByRole('region', { name: 'Decisiones del revisor' })
@@ -285,7 +285,7 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       }
       await creator.page.reload()
       await expect(creator.page.getByRole('heading', { level: 2, name: 'Estado: Publicada' })).toBeVisible()
-      await expect(creator.page.getByRole('button', { name: 'Crear una versión nueva a partir de esta' })).toBeVisible()
+      await expect(creator.page.getByRole('button', { name: 'Crear versión nueva' })).toBeVisible()
     })
 
     await test.step('recorrido 12: el catálogo ofrece la versión nueva', async () => {

@@ -2,9 +2,21 @@ import { ApiError, useWasichaiLinks } from '@wasichai/core'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { problemKind } from '../../shared/ProblemState'
+import type { StatusState } from '../../shared/StatusBadge'
+import type { VersionStatus } from './contract'
 import { STUDIO_ROUTES } from './routes'
 
 // piezas que comparten las páginas del estudio
+
+// el estado de una versión con la forma común: aún en manos de quien la escribe, esperando al revisor, aprobada a falta de publicar,
+// publicada y retirada. la palabra la pone status.* del módulo
+export const VERSION_BADGE: Record<VersionStatus, StatusState> = {
+  BORRADOR: 'todo',
+  EN_REVISION: 'review',
+  APROBADA: 'active',
+  PUBLICADA: 'done',
+  RETIRADA: 'neutral'
+}
 
 export type StudioResource = 'versions' | 'version'
 
