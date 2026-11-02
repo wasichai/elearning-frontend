@@ -191,14 +191,18 @@ test('las unidades se recorren con el teclado y el foco va a la lección abierta
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
-  test('las unidades se pliegan tras un botón y el aula no desborda su área', async ({ page }) => {
+  test('el temario se abre en una hoja inferior y el aula no desborda su área', async ({ page }) => {
     await fakeApi(page, { signedIn: true })
     await page.goto('/mis-cursos/mat-srtm-1')
     await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
 
+    // la lectura empieza en la primera mitad de la pantalla, no tras una columna de metadatos
+    const reading = await page.locator('iframe').boundingBox()
+    expect(reading?.y).toBeLessThan(844 / 2)
+
     const units = page.getByRole('navigation', { name: 'Unidades del curso' })
     await expect(units).toBeHidden()
-    await page.getByRole('button', { name: 'Ver las unidades' }).click()
+    await page.getByRole('button', { name: 'Temario' }).click()
     await expect(units).toBeVisible()
     await units.getByRole('link', { name: /^Guía de liquidación/ }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeVisible()

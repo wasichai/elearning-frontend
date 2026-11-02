@@ -1,12 +1,13 @@
 import { ApiError, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { CircleAlert, FileText } from 'lucide-react'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
 import { isDarkTheme, useDocumentTheme } from './documentTheme'
 import { lockedReading, type ReadingOptions, type ReadingPalette } from './reading'
-import { formatFileSize } from './parts'
+import { formatFileSize, LESSON_COLUMN } from './parts'
 import { watchedEnough } from './video'
 
 // el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en un iframe aislado,
@@ -27,12 +28,21 @@ interface ResourcesProps {
 
 export function Resources({ resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
   const { t } = useTranslation('classroom')
-  if (resources.length === 0) return <p className="text-sm text-ink-muted">{t('resource.none')}</p>
+  if (resources.length === 0) return <p className={`${LESSON_COLUMN} text-sm text-ink-muted`}>{t('resource.none')}</p>
+  // con un solo recurso, su título repetiría el de la lección: queda para quien navega por encabezados
+  const onlyOne = resources.length === 1
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6">
       {resources.map((resource) => (
-        <section key={resource.id} aria-label={resource.title} className="flex flex-col gap-3">
-          <h3 className="text-base font-medium text-ink">{resource.title}</h3>
+        // la lectura ocupa toda la columna y centra su propio texto; el resto va en la columna de la lección
+        <section
+          key={resource.id}
+          aria-label={resource.title}
+          className={`flex flex-col gap-3 ${resource.type === 'HTML' && resource.file ? '' : LESSON_COLUMN}`}
+        >
+          <h3 className={onlyOne ? 'sr-only' : resource.type === 'HTML' && resource.file ? `${LESSON_COLUMN} text-title-3 text-ink` : 'text-title-3 text-ink'}>
+            {resource.title}
+          </h3>
           {resource.file ? (
             <ResourceBody
               type={resource.type}
@@ -53,7 +63,7 @@ export function Resources({ resources, videoThreshold = 1, onVideoWatched, readi
 
 function NoFile() {
   const { t } = useTranslation('classroom')
-  return <p className="text-sm text-ink-muted">{t('resource.noFile')}</p>
+  return <p className="rounded-md border border-dashed border-border-control px-4 py-3 text-sm text-ink-muted">{t('resource.noFile')}</p>
 }
 
 interface BodyProps {
@@ -94,16 +104,21 @@ export function HtmlResource({ title, file, reading = {} }: { title: string; fil
   return (
     <div ref={host}>
       {query.isError ? (
-        <FileProblem error={query.error} onRetry={() => void query.refetch()} />
+        <div className={`${LESSON_COLUMN} py-8`}>
+          <FileProblem error={query.error} onRetry={() => void query.refetch()} />
+        </div>
       ) : html === undefined ? (
-        <LoadingState label={t('resource.loading')} />
+        <div className="flex min-h-96 items-center justify-center">
+          <LoadingState label={t('resource.loading')} />
+        </div>
       ) : (
         <iframe
           sandbox=""
           srcDoc={html}
           title={title}
           referrerPolicy="no-referrer"
-          className="h-[75vh] min-h-96 w-full rounded-md border border-border bg-surface"
+          // la lectura llena la ventana bajo la barra de la lección y sobre su pie: sin scripts no puede medir su propio alto
+          className="block h-[calc(100dvh-11rem)] min-h-96 w-full border-b border-border bg-surface lg:h-[calc(100dvh-7.5rem)]"
         />
       )}
     </div>
@@ -126,7 +141,7 @@ function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; thr
         src={source}
         onTimeUpdate={onWatched ? (event) => watchedEnough(event.currentTarget, threshold) && onWatched() : undefined}
         onEnded={onWatched}
-        className="aspect-video w-full rounded-md bg-ink"
+        className="aspect-video w-full rounded-lg bg-ink"
       />
       <DownloadResource file={file} quiet />
     </div>
@@ -138,20 +153,22 @@ function DownloadResource({ file, quiet = false }: { file: ResourceFile; quiet?:
   const { download, pending, error } = useDownload(file)
   const size = formatFileSize(file.size, i18n.language)
   return (
-    <div className="flex flex-col items-start gap-2">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="flex flex-col gap-2">
+      <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 ${quiet ? '' : 'rounded-lg border border-border bg-surface p-3'}`}>
+        <span aria-hidden="true" className="flex min-w-0 items-center gap-2.5 text-sm break-all text-ink">
+          <FileText className="size-5 shrink-0 text-ink-muted" />
+          <span>
+            {file.name} <span className="whitespace-nowrap text-ink-muted">{size}</span>
+          </span>
+        </span>
         <Button
           variant={quiet ? 'ghost' : 'secondary'}
-
           onClick={() => void download()}
           disabled={pending}
           aria-label={t('resource.downloadLabel', { name: file.name, size })}
         >
           {pending ? t('resource.downloading') : t('resource.download')}
         </Button>
-        <span aria-hidden="true" className="text-sm break-all text-ink-muted">
-          {file.name} · {size}
-        </span>
       </div>
       {error ? <FileProblem error={error} /> : null}
     </div>
@@ -167,8 +184,9 @@ function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void 
         ? t('resource.failedStatus', { status: error.status })
         : t('resource.failed')
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-danger">
-      <span>{message}</span>
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
+      <CircleAlert aria-hidden="true" className="size-5 shrink-0" />
+      <span className="min-w-0 flex-1">{message}</span>
       {onRetry && !(error instanceof ForeignFileError) ? (
         <Button variant="secondary" onClick={onRetry}>
           {t('resource.retry')}
