@@ -107,6 +107,12 @@ describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
     expect(contrast(resolve(block, 'maiz'), resolve(block, 'surface'))).toBeGreaterThanOrEqual(1.5)
   })
 
+  it('el bloque de finalización (ink sobre maiz-soft) llega a AA y el sello se distingue de él', () => {
+    expect(contrast(resolve(block, 'ink'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(resolve(block, 'ink-muted'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(resolve(block, 'maiz'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(1.5)
+  })
+
   it('el foco no es la marca', () => {
     expect(resolve(block, 'focus')).not.toBe(resolve(block, 'brand'))
   })

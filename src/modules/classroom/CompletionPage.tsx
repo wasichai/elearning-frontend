@@ -56,11 +56,11 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
   )
 }
 
-// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. maíz solo aquí, con on-maiz encima
+// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. maíz solo aquí: el bloque en maiz-soft y el sello en maiz
 function Achievement({ classroom, rules }: { classroom: Classroom; rules: CompletionRule[] }) {
   const { t } = useTranslation('classroom')
   return (
-    <section aria-labelledby="completion-achievement" className="flex flex-col gap-4 rounded-lg bg-maiz p-5 text-on-maiz sm:flex-row sm:items-start sm:gap-5">
+    <section aria-labelledby="completion-achievement" className="flex flex-col gap-4 rounded-lg bg-maiz-soft p-5 text-ink sm:flex-row sm:items-start sm:gap-5">
       <Seal />
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
@@ -85,14 +85,13 @@ function Achievement({ classroom, rules }: { classroom: Classroom; rules: Comple
 }
 
 // el sello de maíz (PantallaFinalizacion): se anuda una sola vez al cumplir todas las reglas; con movimiento reducido
-// aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio. sobre el bloque de
-// maíz se distingue por su borde
+// aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio.
 function Seal() {
   return (
     <span
       aria-hidden="true"
       data-seal=""
-      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full border-2 border-on-maiz bg-maiz text-on-maiz motion-reduce:animate-none"
+      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full bg-maiz text-on-maiz motion-reduce:animate-none"
     >
       <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         {/* un nudo sobre su cordón */}

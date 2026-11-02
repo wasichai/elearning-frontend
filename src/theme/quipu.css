@@ -42,8 +42,9 @@
   --border-control: #857a66;
   --placeholder: var(--ink-muted);
 
-  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  /* maíz: solo la celebración. maiz, el relleno del sello, con su icono en on-maiz; maiz-soft, el fondo del bloque, con texto en ink */
   --maiz: #d99a1e;
+  --maiz-soft: #f8e9c4;
   --on-maiz: #1e2327;
 
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
@@ -91,8 +92,9 @@
   --border-control: #6f797f;
   --placeholder: var(--ink-muted);
 
-  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  /* maíz: solo la celebración. maiz, el relleno del sello, con su icono en on-maiz; maiz-soft, el fondo del bloque, con texto en ink */
   --maiz: #e8b04a;
+  --maiz-soft: #382c12;
   --on-maiz: #1e2327;
 
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
@@ -140,8 +142,9 @@
   --border-control: #857559;
   --placeholder: var(--ink-muted);
 
-  /* maíz: solo la celebración (el sello de la finalización), como relleno con su icono en on-maiz */
+  /* maíz: solo la celebración. maiz, el relleno del sello, con su icono en on-maiz; maiz-soft, el fondo del bloque, con texto en ink */
   --maiz: #d99a1e;
+  --maiz-soft: #f1dfb4;
   --on-maiz: #1e2327;
 
   --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;

@@ -38,6 +38,7 @@
 @theme inline {
   --color-maiz: var(--maiz, #d99a1e);
   --color-on-maiz: var(--on-maiz, #1e2327);
+  --color-maiz-soft: var(--maiz-soft, var(--warning-soft));
   --animate-seal: seal 900ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
 
   @keyframes seal {

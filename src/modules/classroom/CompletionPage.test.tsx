@@ -67,8 +67,8 @@ describe('CompletionPage', () => {
 
     const achievement = await screen.findByRole('region', { name: 'Completaste «Introducción al SGSPE»' })
     expect(within(achievement).getByRole('status')).toHaveTextContent('Cumples todas las reglas: ya puedes pedir tu certificado.')
-    // maíz con on-maiz encima, y las cifras del servidor como premio
-    expect(achievement).toHaveClass('bg-maiz', 'text-on-maiz')
+    // el bloque en maiz-soft con su texto en ink, y las cifras del servidor como premio
+    expect(achievement).toHaveClass('bg-maiz-soft', 'text-ink')
     for (const rule of completionMet.rules) expect(within(achievement).getByText(rule.detail)).toBeInTheDocument()
     expect(within(achievement).getByText(completionMet.rules[0]!.detail).previousElementSibling).toHaveTextContent('Completar todas las lecciones')
     const seal = document.querySelector('[data-seal]')
