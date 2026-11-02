@@ -1,3 +1,4 @@
+import { PenLine } from 'lucide-react'
 import type { CallerPermissions, WasichaiModule } from '@wasichai/core'
 import { studioMessages } from './i18n'
 import { STUDIO_MODULE_ID } from './routes'
@@ -24,7 +25,7 @@ export function studioModule(): WasichaiModule {
     ],
     // tras «Docencia» (6) y antes que los grupos de core (datos 10)
     navGroups: [{ id: 'studio', labelKey: `${STUDIO_MODULE_ID}:nav.group`, order: 7 }],
-    nav: [{ group: 'studio', labelKey: `${STUDIO_MODULE_ID}:nav.versions`, order: 10, route: 'versions', visible: canAuthor }],
+    nav: [{ group: 'studio', labelKey: `${STUDIO_MODULE_ID}:nav.versions`, order: 10, route: 'versions', visible: canAuthor, icon: PenLine }],
     i18n: studioMessages
   }
 }

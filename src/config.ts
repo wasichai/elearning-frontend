@@ -33,6 +33,8 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
   return {
     apiBaseUrl: '/api',
     appName: appName(env),
+    // sin el lema por defecto de Wasichai, que habla de otro producto; el nombre basta
+    appTagline: '',
     storagePrefix: 'elearning',
     languages: ['es', 'en'],
     timeZone: 'America/Lima',

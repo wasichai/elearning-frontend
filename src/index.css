@@ -48,9 +48,58 @@
   }
 }
 
-/* la utilidad font-read, para leer texto largo dentro de la interfaz */
+/* la utilidad font-read, para leer texto largo dentro de la interfaz, y las escalas de docs/design-system/tokens.json que
+   @wasichai/ui no trae: text-title-1, text-read-body, shadow-1, max-w-measure… aditivas: no tocan colores ni temas.
+   ojo: cn() de @wasichai/ui no conoce estas utilidades de texto y puede quitarlas junto a un color: en un componente de
+   la librería, ponlas en un elemento propio */
 @theme {
   --font-read: 'Literata', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+
+  --text-display: 40px;
+  --text-display--line-height: 44px;
+  --text-display--font-weight: 650;
+  --text-display--letter-spacing: -0.02em;
+  --text-title-1: 30px;
+  --text-title-1--line-height: 36px;
+  --text-title-1--font-weight: 650;
+  --text-title-1--letter-spacing: -0.015em;
+  --text-title-2: 23px;
+  --text-title-2--line-height: 30px;
+  --text-title-2--font-weight: 600;
+  --text-title-2--letter-spacing: -0.01em;
+  --text-title-3: 18px;
+  --text-title-3--line-height: 26px;
+  --text-title-3--font-weight: 600;
+  --text-numeral: 28px;
+  --text-numeral--line-height: 32px;
+  --text-numeral--font-weight: 650;
+  --text-read-title: 36px;
+  --text-read-title--line-height: 44px;
+  --text-read-title--font-weight: 500;
+  --text-read-h2: 26px;
+  --text-read-h2--line-height: 34px;
+  --text-read-h2--font-weight: 600;
+  --text-read-body: 19px;
+  --text-read-body--line-height: 32px;
+  --text-read-body-sm: 17px;
+  --text-read-body-sm--line-height: 28px;
+
+  --shadow-1: 0 1px 2px rgb(60 44 20 / 8%), 0 0 0 1px rgb(60 44 20 / 4%);
+  --shadow-2: 0 4px 12px rgb(60 44 20 / 10%), 0 1px 3px rgb(60 44 20 / 8%);
+
+  --container-measure: 68ch;
+}
+
+/* con movimiento reducido, nada se desplaza ni rebota (3-accesibilidad.md) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* los paquetes @wasichai traen nombres de clase, no CSS: Tailwind los escanea para generarlas */

@@ -1,3 +1,4 @@
+import { GraduationCap } from 'lucide-react'
 import type { CallerPermissions, WasichaiModule } from '@wasichai/core'
 import { teachingMessages } from './i18n'
 import { TEACHING_MODULE_ID } from './routes'
@@ -47,7 +48,7 @@ export function teachingModule(): WasichaiModule {
     ],
     // tras «Aprendizaje» (5) y antes que los grupos de core (datos 10)
     navGroups: [{ id: 'teaching', labelKey: `${TEACHING_MODULE_ID}:nav.group`, order: 6 }],
-    nav: [{ group: 'teaching', labelKey: `${TEACHING_MODULE_ID}:nav.offerings`, order: 10, route: 'offerings', visible: canTeach }],
+    nav: [{ group: 'teaching', labelKey: `${TEACHING_MODULE_ID}:nav.offerings`, order: 10, route: 'offerings', visible: canTeach, icon: GraduationCap }],
     i18n: teachingMessages
   }
 }

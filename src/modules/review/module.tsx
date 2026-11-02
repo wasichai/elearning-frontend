@@ -1,3 +1,4 @@
+import { ClipboardCheck } from 'lucide-react'
 import type { WasichaiModule } from '@wasichai/core'
 import { reviewMessages } from './i18n'
 import { canReview } from './permissions'
@@ -21,7 +22,7 @@ export function reviewModule(): WasichaiModule {
     ],
     // tras «Docencia» (6) y antes que los grupos de core (datos 10)
     navGroups: [{ id: 'review', labelKey: `${REVIEW_MODULE_ID}:nav.group`, order: 8 }],
-    nav: [{ group: 'review', labelKey: `${REVIEW_MODULE_ID}:nav.inbox`, order: 10, route: 'inbox', visible: canReview }],
+    nav: [{ group: 'review', labelKey: `${REVIEW_MODULE_ID}:nav.inbox`, order: 10, route: 'inbox', visible: canReview, icon: ClipboardCheck }],
     i18n: reviewMessages
   }
 }

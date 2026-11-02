@@ -21,6 +21,7 @@ describe('createConfig', () => {
     expect(resolveConfig(config)).toEqual({
       apiBaseUrl: '/api',
       appName: 'Aula Abierta',
+      appTagline: '',
       storagePrefix: 'elearning',
       languages: ['es', 'en'],
       timeZone: 'America/Lima',
