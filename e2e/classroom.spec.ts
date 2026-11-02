@@ -1,9 +1,13 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { fakeApi } from './api'
 
 // el aula del estudiante con la API simulada y una sesión de estudiante
 
 const COURSE = 'Licencias de anuncios con SRTM'
+
+// la unidad plegada se abre pulsando su cabecera: sus lecciones no están en el árbol hasta entonces
+const openUnit = (page: Page, name: RegExp) => page.getByRole('navigation', { name: 'Unidades del curso' }).locator('summary').filter({ hasText: name }).click()
+const toMyCourses = (page: Page) => page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis cursos' })
 
 test('«Mis cursos» está en el menú y lleva a la siguiente lección con «Continuar»', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true })
@@ -87,7 +91,11 @@ test('una unidad se recorre entera solo con «Siguiente»: cada lección abierta
   // la última del curso no tiene «Siguiente»
   await expect(steps.getByRole('link', { name: /^Siguiente/ })).toHaveCount(0)
   await expect(steps.getByRole('link', { name: 'Anterior Guía de liquidación' })).toBeVisible()
+  // la unidad abierta siguió a la lección; la primera se plegó
+  await expect(units.getByRole('link', { name: /^Tipos de anuncio/ })).toHaveCount(0)
+  await openUnit(page, /^Unidad 1\./)
   // pasar de lección no completa nada: abrirlas solo las inicia
+  await expect(units.getByRole('link', { name: /Empezada$/ })).toHaveCount(4)
   await expect(units.getByRole('link', { name: /Completada$/ })).toHaveCount(0)
   expect(api.unexpected).toEqual([])
 })
@@ -98,7 +106,7 @@ test('«Mis cursos» muestra el avance que guardó el servidor', async ({ page }
   await page.getByRole('button', { name: 'Marcar como completada' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
 
-  await page.getByRole('link', { name: '← Mis cursos' }).click()
+  await toMyCourses(page).click()
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '33')
   await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
@@ -119,7 +127,7 @@ test('entrar desde el panel inicia la lección una sola vez y al volver se ve lo
 
   await page.getByRole('button', { name: 'Marcar como completada' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
-  await page.getByRole('link', { name: '← Mis cursos' }).click()
+  await toMyCourses(page).click()
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '33')
   await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
 
@@ -261,6 +269,7 @@ test('el PDF se descarga con su nombre y el vídeo se reproduce desde memoria', 
   await page.getByRole('button', { name: /^Descargar guia-liquidacion\.pdf/ }).click()
   expect((await download).suggestedFilename()).toBe('guia-liquidacion.pdf')
 
+  await openUnit(page, /^Unidad 1\./)
   await page
     .getByRole('navigation', { name: 'Unidades del curso' })
     .getByRole('link', { name: /^Recorrido por la pantalla/ })
@@ -274,8 +283,14 @@ test('las unidades se recorren con el teclado y el foco va a la lección abierta
   await page.goto('/mis-cursos/mat-srtm-1')
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
 
-  const target = page.getByRole('navigation', { name: 'Unidades del curso' }).getByRole('link', { name: /^Guía de liquidación/ })
-  for (let i = 0; i < 40 && !(await target.evaluate((element) => element === document.activeElement)); i++) await page.keyboard.press('Tab')
+  // la unidad plegada se abre con el teclado, y sus lecciones entran en el orden de tabulación
+  const units = page.getByRole('navigation', { name: 'Unidades del curso' })
+  const closed = units.locator('summary').filter({ hasText: /^Unidad 2\./ })
+  for (let i = 0; i < 40 && !(await closed.evaluate((element) => element === document.activeElement)); i++) await page.keyboard.press('Tab')
+  await expect(closed).toBeFocused()
+  await page.keyboard.press('Enter')
+  const target = units.getByRole('link', { name: /^Guía de liquidación/ })
+  await page.keyboard.press('Tab')
   await expect(target).toBeFocused()
   await page.keyboard.press('Enter')
 
@@ -300,6 +315,7 @@ test.describe('en un teléfono', () => {
     await expect(units).toBeHidden()
     await page.getByRole('button', { name: 'Temario' }).click()
     await expect(units).toBeVisible()
+    await openUnit(page, /^Unidad 2\./)
     await units.getByRole('link', { name: /^Guía de liquidación/ }).click()
     await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeVisible()
     await expect(units).toBeHidden()
@@ -314,3 +330,46 @@ test.describe('en un teléfono', () => {
     expect(wider).toEqual([])
   })
 })
+
+test('las pestañas del curso cambian de sección por URL, y volver a Temario no cambia la lección abierta', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-video')
+  const tabs = page.getByRole('navigation', { name: 'Secciones del curso' })
+  await expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('aria-current', 'page')
+
+  await tabs.getByRole('link', { name: 'Temario' }).click()
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-video')
+  await expect(page.getByRole('heading', { level: 2, name: 'Recorrido por la pantalla' })).toBeVisible()
+
+  await tabs.getByRole('link', { name: 'Sesiones' }).click()
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1/sesiones')
+  await expect(tabs.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('list', { name: 'Tu avance' })).toBeVisible()
+
+  await tabs.getByRole('link', { name: 'Finalización' }).click()
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1/finalizacion')
+  await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
+  await expect(page.locator('h1')).toHaveCount(1)
+  expect(api.unexpected).toEqual([])
+})
+
+test('las filas del temario y las pestañas tienen objetivos de 44 px o más', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1')
+  const units = page.getByRole('navigation', { name: 'Unidades del curso' })
+  for (const row of await units.getByRole('link').all()) expect((await row.boundingBox())?.height).toBeGreaterThanOrEqual(48)
+  for (const summary of await units.locator('summary').all()) expect((await summary.boundingBox())?.height).toBeGreaterThanOrEqual(48)
+  for (const tab of await page.getByRole('navigation', { name: 'Secciones del curso' }).getByRole('link').all())
+    expect((await tab.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+})
+
+for (const width of [360, 390, 1024, 1440, 1920])
+  for (const path of ['/mis-cursos/mat-sgspe-1', '/mis-cursos/mat-sgspe-1/sesiones', '/mis-cursos/mat-sgspe-1/finalizacion'])
+    test(`${path} no desborda en horizontal a ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await fakeApi(page, { signedIn: true })
+      await page.goto(path)
+      await expect(page.getByRole('navigation', { name: 'Secciones del curso' })).toBeVisible()
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow).toBeLessThanOrEqual(0)
+    })

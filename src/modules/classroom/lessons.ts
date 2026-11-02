@@ -1,3 +1,4 @@
+import { attended, type Session } from '../../shared/sessions'
 import type { Classroom, Lesson, Unit } from './contract'
 
 // el recorrido del curso en orden (unidad, lección), como lo cuenta el servidor para nextLesson
@@ -25,4 +26,23 @@ export function neighbours(path: PlacedLesson[], lessonId: string): { previous?:
   const index = path.findIndex((placed) => placed.lesson.id === lessonId)
   if (index < 0) return {}
   return { previous: path[index - 1], next: path[index + 1] }
+}
+
+// una cifra de avance: cuántas de cuántas
+export interface Figure {
+  completed: number
+  total: number
+}
+
+// las mismas cuentas que la regla de finalización del servidor (CompletionService): lo que dice la cabecera no contradice a «Finalización».
+// todas las evaluaciones de las lecciones; aprobada solo si su mejor intento lo está (uno esperando corrección todavía no)
+export function assessmentFigure(units: Pick<Unit, 'lessons'>[]): Figure {
+  const assessments = units.flatMap((unit) => unit.lessons.flatMap((lesson) => lesson.assessment ?? []))
+  return { completed: assessments.filter((assessment) => assessment.best?.passed === true).length, total: assessments.length }
+}
+
+// el aula no da la asistencia por matrícula: sale de las sesiones de quien mira. toda sesión no cancelada cuenta, también las futuras
+export function attendanceFigure(sessions: Session[]): Figure {
+  const held = sessions.filter((session) => session.status !== 'CANCELADA')
+  return { completed: held.filter((session) => attended(session.attendance)).length, total: held.length }
 }

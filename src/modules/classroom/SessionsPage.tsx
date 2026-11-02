@@ -1,5 +1,6 @@
-import { LoadingState } from '@wasichai/core'
+import { EmptyState, LoadingState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { CalendarDays } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ProblemState } from '../../shared/ProblemState'
 import { useSessions } from './api'
@@ -27,6 +28,13 @@ export function Sessions({ enrollmentId, lessonId }: { enrollmentId: string; les
     )
   if (!query.data) return <LoadingState label={t('sessions.loading')} />
   const sessions = lessonId ? query.data.filter((session) => session.lessonId === lessonId) : query.data
-  if (sessions.length === 0) return <p className="text-sm text-ink-muted">{lessonId ? t('sessions.noneForLesson') : t('sessions.none')}</p>
-  return <SessionList enrollmentId={enrollmentId} sessions={sessions} lessonLinks={!lessonId} />
+  if (sessions.length === 0)
+    return lessonId ? (
+      <p className="text-sm text-ink-muted">{t('sessions.noneForLesson')}</p>
+    ) : (
+      <EmptyState title={t('sessions.none')} icon={CalendarDays}>
+        <p>{t('sessions.noneHint')}</p>
+      </EmptyState>
+    )
+  return <SessionList enrollmentId={enrollmentId} sessions={sessions} headingLevel={lessonId ? 4 : 3} lessonLinks={!lessonId} />
 }

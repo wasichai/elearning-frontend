@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { classroomModule } from './module'
 import { serveFiles, type ServedFile } from '../../test/files'
-import { classroom, lessonHtml, problem } from './test/fixtures'
+import { assessmentClassroom, classroom, lessonHtml, problem, sessions } from './test/fixtures'
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'
 const FILES = '/api/objects/version_recurso/records'
@@ -36,6 +36,12 @@ function renderClassroom(routes: MockRoute[], route = '/mis-cursos/mat-srtm-1', 
 
 const units = () => screen.getByRole('navigation', { name: 'Unidades del curso' })
 const lessonHeading = (name: string) => screen.findByRole('heading', { level: 2, name })
+const unitOf = (name: string) =>
+  within(units())
+    .getByText(new RegExp(`^${name}\\.`))
+    .closest('details')!
+// abre una unidad plegada, como quien pulsa su cabecera
+const openUnit = (name: string) => userEvent.click(within(units()).getByText(new RegExp(`^${name}\\.`)))
 
 describe('ClassroomPage: el aula', () => {
   it('sin ?leccion abre la siguiente por hacer, con las unidades, su avance y el estado de cada lección', async () => {
@@ -58,12 +64,91 @@ describe('ClassroomPage: el aula', () => {
     expect(nav.getByRole('heading', { level: 2, name: /^Unidad 2\. La liquidación/ })).toHaveTextContent('0 de 1 lecciones completadas')
     expect(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
     expect(nav.getByRole('link', { name: 'Recorrido por la pantalla Sin empezar' })).toHaveAttribute('aria-current', 'page')
-    expect(nav.getAllByRole('link')).toHaveLength(4)
+    // solo la unidad de la lección abierta está desplegada
+    expect(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).toBeVisible()
+    expect(unitOf('Unidad 1')).toHaveAttribute('open')
+    expect(unitOf('Unidad 2')).not.toHaveAttribute('open')
     // cada lección del temario lleva su nudo, decorativo: el estado viaja en el texto del enlace
     const knot = nav.getByRole('link', { name: 'Tipos de anuncio Completada' }).querySelector('[data-knot]')
     expect(knot).toHaveAttribute('data-state', 'done')
     expect(knot).toHaveAttribute('aria-hidden', 'true')
     expect(nav.getAllByRole('link').filter((link) => link.hasAttribute('aria-current'))).toHaveLength(1)
+  })
+
+  it('la cabecera lleva a «Mis cursos» y las pestañas son las secciones del curso, por URL', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    await lessonHeading('Tipos de anuncio')
+
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByRole('link', { name: 'Mis cursos' })).toHaveAttribute('href', '/mis-cursos')
+    const tabs = within(screen.getByRole('navigation', { name: 'Secciones del curso' }))
+    // Temario es donde se está: conserva la lección abierta, volver a pulsarlo no salta a otra
+    expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('aria-current', 'page')
+    expect(tabs.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/sesiones')
+    expect(tabs.getByRole('link', { name: 'Sesiones' })).not.toHaveAttribute('aria-current')
+    expect(tabs.getByRole('link', { name: 'Finalización' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/finalizacion')
+  })
+
+  it('con el certificado emitido la pestaña de finalización lo dice', async () => {
+    renderClassroom([{ path: CLASSROOM, body: { ...classroom, certificateCode: 'K7Q2-M9XW-4RTB' } }])
+    await lessonHeading('Recorrido por la pantalla')
+    expect(within(screen.getByRole('navigation', { name: 'Secciones del curso' })).getByRole('link', { name: 'Tu certificado' })).toBeInTheDocument()
+  })
+
+  it('el temario da tipo y duración de cada lección y la fila dice su estado con palabra', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+
+    const nav = within(units())
+    const read = nav.getByRole('link', { name: 'Tipos de anuncio Completada' })
+    expect(read).toHaveAccessibleDescription('Lectura · 30 min')
+    expect(within(read).getByText('Completada')).not.toHaveClass('sr-only')
+    expect(read.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    // sin duración, solo el tipo
+    await openUnit('Unidad 2')
+    expect(nav.getByRole('link', { name: 'Guía de liquidación Sin empezar' })).toHaveAccessibleDescription('Presentación')
+    // el usuario puede plegar la unidad actual: nada la vuelve a abrir mientras siga en esa lección
+    await openUnit('Unidad 1')
+    expect(unitOf('Unidad 1')).not.toHaveAttribute('open')
+  })
+
+  it('el panel del temario resume el avance: lecciones, evaluaciones y fechas; la asistencia sale de las sesiones', async () => {
+    renderClassroom([
+      { path: CLASSROOM, body: { ...assessmentClassroom, id: 'mat-srtm-1' } },
+      { path: `${CLASSROOM}/sessions`, body: sessions }
+    ])
+    await lessonHeading('Evaluación final')
+
+    expect(screen.getByText('1 de 3 lecciones · 33 %')).toBeInTheDocument()
+    const figures = within(screen.getByRole('list', { name: 'Tu avance' }))
+    expect(figures.getByText('0 de 1')).toBeInTheDocument()
+    expect(figures.getByText('evaluación aprobada')).toBeInTheDocument()
+    expect(await figures.findByText('1 de 2')).toBeInTheDocument()
+    expect(figures.getByText('sesiones con asistencia')).toBeInTheDocument()
+  })
+
+  it('si no se pueden leer las sesiones, la asistencia no se inventa ni molesta', async () => {
+    renderClassroom([
+      { path: CLASSROOM, body: { ...assessmentClassroom, id: 'mat-srtm-1' } },
+      { path: `${CLASSROOM}/sessions`, status: 500, body: problem(500, 'fallo') }
+    ])
+    await lessonHeading('Evaluación final')
+    await waitFor(() => expect(fetchMock.calls.some((call) => call.path.endsWith('/sessions'))).toBe(true))
+    expect(screen.queryByText('sesiones con asistencia')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('un curso sin lecciones lo dice con su estado vacío, con la cabecera completa', async () => {
+    renderClassroom([{ path: CLASSROOM, body: { ...classroom, units: [], nextLesson: null, progress: { completedLessons: 0, totalLessons: 0, percent: 0 } } }])
+
+    expect(await screen.findByRole('heading', { level: 1, name: classroom.course.title })).toBeInTheDocument()
+    expect(screen.getByText('Este curso todavía no tiene lecciones.')).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Secciones del curso' })).getByRole('link', { name: 'Temario' })).toHaveAttribute(
+      'href',
+      '/mis-cursos/mat-srtm-1'
+    )
+    // 0 de 0 no es una cifra
+    expect(screen.queryByRole('list', { name: 'Tu avance' })).not.toBeInTheDocument()
   })
 
   it('la lección HTML se baja con la sesión y se muestra en un iframe aislado: sandbox vacío, sin scripts ni mismo origen', async () => {
@@ -91,12 +176,16 @@ describe('ClassroomPage: el aula', () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
 
+    await openUnit('Unidad 2')
     await userEvent.click(within(units()).getByRole('link', { name: /^Guía de liquidación/ }))
 
     const heading = await lessonHeading('Guía de liquidación')
     expect(heading).toHaveFocus()
     expect(screen.getByText('Unidad 2 · Lección 1')).toBeInTheDocument()
     expect(within(units()).getByRole('link', { name: /^Guía de liquidación/ })).toHaveAttribute('aria-current', 'page')
+    // la unidad abierta sigue a la lección: la de antes se pliega
+    expect(unitOf('Unidad 2')).toHaveAttribute('open')
+    expect(unitOf('Unidad 1')).not.toHaveAttribute('open')
 
     // anterior y siguiente al pie de la lección
     const steps = within(screen.getByRole('navigation', { name: 'Lección anterior y siguiente' }))

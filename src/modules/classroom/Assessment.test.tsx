@@ -48,6 +48,8 @@ function renderAssessment(routes: MockRoute[], query = '?leccion=lec-eva', serve
 
 const calls = (method: string, path: string) => fetchMock.calls.filter((call) => call.method === method && call.path === path)
 const panel = () => screen.findByRole('region', { name: 'Evaluación final' })
+// las preguntas son grupos, y las unidades plegables del temario (details) también: se cuentan las de la lección
+const lessonArticle = () => screen.getByRole('article', { name: 'Evaluación final' })
 
 describe('la evaluación como lección', () => {
   it('muestra sus reglas, cómo se completa y empieza un intento que se abre en la misma lección', async () => {
@@ -87,7 +89,7 @@ describe('la evaluación como lección', () => {
     await waitFor(() => expect(heading).toHaveFocus())
     expect(calls('POST', ATTEMPTS)).toHaveLength(1)
     expect(screen.getByRole('link', { name: '← Volver a la evaluación' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1?leccion=lec-eva')
-    expect(screen.getAllByRole('group')).toHaveLength(6)
+    expect(within(lessonArticle()).getAllByRole('group')).toHaveLength(6)
   })
 
   it('con un intento abierto ofrece retomarlo', async () => {
@@ -428,7 +430,7 @@ describe('errores del intento', () => {
     )
 
     expect(await screen.findByText('No pudimos leer la respuesta del servidor')).toBeInTheDocument()
-    expect(screen.queryByRole('group')).not.toBeInTheDocument()
+    expect(within(lessonArticle()).queryByRole('group')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 
