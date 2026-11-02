@@ -1,5 +1,5 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { API_URL, newStudent, signIn } from './helpers'
+import { expect, test, type APIRequestContext } from '@playwright/test'
+import { API_URL, expandedUnits, newStudent, signIn } from './helpers'
 
 // recorridos 1–4 del aula contra el backend de verdad (perfil dev con los datos de demostración aplicados; README,
 // «Humo contra el backend real»): iniciar sesión, matricularse desde la ficha, abrir la unidad y sus recursos, completar
@@ -18,8 +18,6 @@ async function srtmSlug(request: APIRequestContext): Promise<string> {
   return course!.slug
 }
 
-const units = (page: Page) => page.getByRole('navigation', { name: 'Unidades del curso' })
-
 test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conserva su progreso', async ({ page, request }) => {
   const student = await newStudent(request)
   const slug = await srtmSlug(request)
@@ -32,9 +30,7 @@ test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conse
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
 
   // 3. abrir la unidad y su lectura: el HTML del servidor, en el iframe aislado
-  await units(page)
-    .getByRole('link', { name: /^Lo que necesita para entrar/ })
-    .click()
+  await (await expandedUnits(page)).getByRole('link', { name: /^Lo que necesita para entrar/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Lo que necesita para entrar' })).toBeVisible()
   const reading = page.frameLocator('iframe[title="Entrar y salir del portal (lectura)"]')
   await expect(reading.getByRole('heading', { level: 1, name: 'Entrar y salir del portal' })).toBeVisible()
@@ -46,7 +42,7 @@ test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conse
   await page.reload()
   await expect(page.getByRole('heading', { level: 2, name: 'Lo que necesita para entrar' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Marcar como completada' })).toHaveCount(0)
-  await expect(units(page).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
+  await expect((await expandedUnits(page)).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
   await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).not.toHaveAttribute('aria-valuenow', '0')
 })
 
@@ -58,9 +54,7 @@ test('tras completar una lección, «Continuar» lleva a la siguiente pendiente 
   await page.goto(`/cursos/${slug}`)
   await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
   await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
-  await units(page)
-    .getByRole('link', { name: /^Lo que necesita para entrar/ })
-    .click()
+  await (await expandedUnits(page)).getByRole('link', { name: /^Lo que necesita para entrar/ }).click()
   await page.getByRole('button', { name: 'Marcar como completada' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
   await page.context().close()
@@ -73,7 +67,7 @@ test('tras completar una lección, «Continuar» lleva a la siguiente pendiente 
     const card = elsewhere.getByRole('article').filter({ has: elsewhere.getByRole('heading', { name: COURSE }) })
     await card.getByRole('link', { name: /^Continuar «/ }).click()
     await expect(elsewhere.getByRole('heading', { level: 2, name: 'Ingresar y resolver un ingreso fallido' })).toBeVisible()
-    await expect(units(elsewhere).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
+    await expect((await expandedUnits(elsewhere)).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
   } finally {
     await other.close()
   }
@@ -87,16 +81,12 @@ test('la guía PDF se descarga y el vídeo completa su lección al terminar', as
   await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
   await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
 
-  await units(page)
-    .getByRole('link', { name: /^Cómo se deduce el estado/ })
-    .click()
+  await (await expandedUnits(page)).getByRole('link', { name: /^Cómo se deduce el estado/ }).click()
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: /^Descargar guia-estados-del-anuncio\.pdf/ }).click()
   expect((await downloading).suggestedFilename()).toBe('guia-estados-del-anuncio.pdf')
 
-  await units(page)
-    .getByRole('link', { name: /^Recorrido en vídeo/ })
-    .click()
+  await (await expandedUnits(page)).getByRole('link', { name: /^Recorrido en vídeo/ }).click()
   await expect(page.getByRole('button', { name: 'Marcar como completada' })).toHaveCount(0)
   const video = page.locator('video')
   await expect(video).toHaveAttribute('src', /^blob:/)
@@ -106,7 +96,7 @@ test('la guía PDF se descarga y el vídeo completa su lección al terminar', as
   })
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible({ timeout: 20_000 })
   await page.reload()
-  await expect(units(page).getByRole('link', { name: /^Recorrido en vídeo.*Completada/ })).toBeVisible()
+  await expect((await expandedUnits(page)).getByRole('link', { name: /^Recorrido en vídeo.*Completada/ })).toBeVisible()
 })
 
 // RF-AUL-03: la presentación de la demo; la interfaz la ofrece como descarga (ADR-0012 del backend) y se completa al marcarla
@@ -118,9 +108,7 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
   await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
   await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
 
-  await units(page)
-    .getByRole('link', { name: /^Consultar el padrón con filtros/ })
-    .click()
+  await (await expandedUnits(page)).getByRole('link', { name: /^Consultar el padrón con filtros/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Consultar el padrón con filtros' })).toBeVisible()
   await expect(page.getByText(/^Presentación · /)).toBeVisible()
   await expect(page.getByRole('region', { name: 'Consultar el padrón con filtros (presentación)' })).toBeVisible()

@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { API_URL, browserFor, newStudent, signIn, token } from './helpers'
+import { API_URL, browserFor, expandedUnits, newStudent, signIn, token } from './helpers'
 
 // el curso corto de punta a punta contra el backend de verdad (CORTO-101, ADR-0016), en el navegador. son los recorridos
 // 5 (evaluación), 6 (resultado), 7 (el docente ve lo permitido) y 13 (sin permiso no puede), hasta el certificado
@@ -19,8 +19,6 @@ const ASSESSMENT = 'Evaluación: reescribir un mensaje'
 const SESSION_LESSON = 'Sesión de revisión en grupo'
 const OPEN_QUESTION = '3. Reescribe «Operación inválida» para que ayude a quien lo lee.'
 const HOLDER = 'Rosa Quispe Mamani'
-
-const units = (page: Page) => page.getByRole('navigation', { name: 'Unidades del curso' })
 
 async function shortCourseSlug(request: APIRequestContext): Promise<string> {
   const response = await request.get(`${API_URL}/api/lms/public/catalog/courses?q=mensajes`)
@@ -54,16 +52,12 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     await enroll(page, slug)
     await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
 
-    await units(page)
-      .getByRole('link', { name: new RegExp(`^${READING}`) })
-      .click()
+    await (await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${READING}`) }).click()
     await expect(page.getByRole('heading', { level: 2, name: READING })).toBeVisible()
     await page.getByRole('button', { name: 'Marcar como completada' }).click()
     await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
 
-    await units(page)
-      .getByRole('link', { name: new RegExp(`^${ASSESSMENT}`) })
-      .click()
+    await (await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${ASSESSMENT}`) }).click()
     await expect(page.getByText('Se completa al aprobar la evaluación.')).toBeVisible()
     await page.getByRole('button', { name: 'Empezar el intento' }).click()
     await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
@@ -201,14 +195,14 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     await expect(page.getByRole('status').filter({ hasText: '100 % · Aprobado' })).toBeVisible()
     await expect(page.getByRole('article', { name: OPEN_QUESTION })).toContainText('Claro y útil.')
     await expect(page.getByText('Respuesta correcta: Falso')).toBeVisible()
-    await expect(units(page).getByRole('link', { name: new RegExp(`^${ASSESSMENT}.*Aprobada`) })).toBeVisible()
-    await expect(units(page).getByRole('link', { name: new RegExp(`^${SESSION_LESSON}.*Completada`) })).toBeVisible()
+    await expect((await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${ASSESSMENT}.*Aprobada`) })).toBeVisible()
+    await expect((await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${SESSION_LESSON}.*Completada`) })).toBeVisible()
     await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '100')
   })
 
   let code = ''
   await test.step('las reglas cumplidas, y pide su certificado con el nombre', async () => {
-    await page.getByRole('navigation', { name: 'Más del curso' }).getByRole('link', { name: 'Finalización y certificado' }).click()
+    await page.getByRole('navigation', { name: 'Secciones del curso' }).getByRole('link', { name: 'Finalización' }).click()
     await expect(page.getByText('Cumples todas las reglas: ya puedes pedir tu certificado.')).toBeVisible()
     await expect(page.getByRole('region', { name: 'Para terminar el curso' })).not.toContainText('(pendiente)')
     await page.getByRole('textbox', { name: 'Nombre para el certificado' }).fill(HOLDER)

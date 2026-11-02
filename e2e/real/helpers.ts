@@ -47,3 +47,13 @@ export async function browserFor(browser: Browser, baseURL: string | undefined, 
   if (account) await signIn(page, account)
   return { context, page }
 }
+
+// el temario: solo la unidad de la lección abierta está desplegada y las demás no tienen enlaces hasta abrirlas. despliega todas, como
+// haría quien busca una lección de otra unidad, y devuelve la navegación
+export async function expandedUnits(page: Page) {
+  const units = page.getByRole('navigation', { name: 'Unidades del curso' })
+  await units.locator('summary').first().waitFor()
+  const closed = units.locator('details:not([open]) > summary')
+  while ((await closed.count()) > 0) await closed.first().click()
+  return units
+}
