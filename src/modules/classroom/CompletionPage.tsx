@@ -4,11 +4,12 @@ import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ProblemState } from '../../shared/ProblemState'
+import { StatusBadge } from '../../shared/StatusBadge'
 import { useCompletion, useRequestCertificate } from './api'
 import { HOLDER_NAME_MAX, type Certificate, type Classroom, type CompletionRule } from './contract'
 import { CourseSubpage } from './CourseSubpage'
 import { useProblemText, WRAP } from './parts'
-import { CLASSROOM_ROUTES } from './routes'
+import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 // la finalización de una matrícula (ADR-0016): las reglas de la versión, cuáles se cumplen, y el certificado
 export function CompletionPage() {
@@ -30,33 +31,68 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
     )
   if (!query.data) return <LoadingState label={t('completionPanel.loading')} />
   const completion = query.data
+  // sin reglas declaradas se puede pedir el certificado, pero no hay logro que contar: cumplir «nada» no se celebra
+  const celebrate = completion.met && completion.rules.length > 0
   return (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="completion-rules" className="flex flex-col gap-3">
-        <h2 id="completion-rules" className="text-lg font-semibold text-ink">
-          {t('completionPanel.rules')}
-        </h2>
-        {completion.rules.length === 0 ? <p className="text-sm text-ink-muted">{t('completionPanel.noRules')}</p> : <RuleList rules={completion.rules} />}
-        <div className="flex items-center gap-4">
-          {completion.met ? <Seal /> : null}
-          <p role="status" className={`text-sm font-medium ${completion.met ? 'text-success' : 'text-ink'}`}>
-            {completion.met ? t('completionPanel.met') : t('completionPanel.notMet')}
+      {celebrate ? (
+        <Achievement classroom={classroom} rules={completion.rules} />
+      ) : (
+        <section aria-labelledby="completion-rules" className="flex flex-col gap-3">
+          <h2 id="completion-rules" className="text-title-3 text-ink">
+            {t('completionPanel.rules')}
+          </h2>
+          <p role="status" className="text-sm font-medium text-ink">
+            {completion.met
+              ? t('completionPanel.met')
+              : t('completionPanel.notMet', { missing: completion.rules.filter((rule) => !rule.met).length, count: completion.rules.length })}
           </p>
-        </div>
-      </section>
+          {completion.rules.length === 0 ? <p className="text-sm text-ink-muted">{t('completionPanel.noRules')}</p> : <RuleList rules={completion.rules} />}
+          {completion.met ? null : <NextStep classroom={classroom} />}
+        </section>
+      )}
       <CertificateSection classroom={classroom} met={completion.met} />
     </div>
   )
 }
 
+// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. maíz solo aquí, con on-maiz encima
+function Achievement({ classroom, rules }: { classroom: Classroom; rules: CompletionRule[] }) {
+  const { t } = useTranslation('classroom')
+  return (
+    <section aria-labelledby="completion-achievement" className="flex flex-col gap-4 rounded-lg bg-maiz p-5 text-on-maiz sm:flex-row sm:items-start sm:gap-5">
+      <Seal />
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 id="completion-achievement" className="text-title-3 text-balance">
+            {t('completionPanel.achieved', { course: classroom.course.title })}
+          </h2>
+          <p role="status" className="text-sm">
+            {t(classroom.certificateCode ? 'completionPanel.metIssued' : 'completionPanel.met')}
+          </p>
+        </div>
+        <dl className="flex flex-col gap-1 text-sm">
+          {rules.map((rule) => (
+            <div key={rule.rule} className="flex flex-col sm:flex-row sm:gap-3">
+              <dt>{t(`completionPanel.rule.${rule.rule}`)}</dt>
+              <dd className="font-semibold tabular-nums">{rule.detail}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
+}
+
 // el sello de maíz (PantallaFinalizacion): se anuda una sola vez al cumplir todas las reglas; con movimiento reducido
-// aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio
+// aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio. sobre el bloque de
+// maíz se distingue por su borde
 function Seal() {
   return (
     <span
       aria-hidden="true"
       data-seal=""
-      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full bg-maiz text-on-maiz motion-reduce:animate-none"
+      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full border-2 border-on-maiz bg-maiz text-on-maiz motion-reduce:animate-none"
     >
       <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         {/* un nudo sobre su cordón */}
@@ -68,25 +104,36 @@ function Seal() {
   )
 }
 
-export function RuleList({ rules }: { rules: CompletionRule[] }) {
+// lo que falta, primero; lo cumplido, después. cada regla con su estado y el detalle que da el servidor
+function RuleList({ rules }: { rules: CompletionRule[] }) {
   const { t } = useTranslation('classroom')
+  const ordered = [...rules.filter((rule) => !rule.met), ...rules.filter((rule) => rule.met)]
   return (
-    <ul className="flex flex-col gap-2">
-      {rules.map((rule) => (
-        <li key={rule.rule} className="flex items-start gap-3 rounded-md border border-border px-4 py-3 text-sm">
-          <span aria-hidden="true" className={`mt-0.5 font-semibold ${rule.met ? 'text-success' : 'text-ink-muted'}`}>
-            {rule.met ? '✓' : '○'}
-          </span>
-          <span className="flex flex-col">
-            <span className="font-medium text-ink">
-              {t(`completionPanel.rule.${rule.rule}`)}
-              <span className="sr-only"> {rule.met ? t('completionPanel.ruleMet') : t('completionPanel.rulePending')}</span>
-            </span>
-            <span className="text-ink-muted">{rule.detail}</span>
-          </span>
+    <ul className="flex flex-col divide-y divide-border border-y border-border">
+      {ordered.map((rule) => (
+        <li key={rule.rule} className="flex flex-col items-start gap-1.5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 flex-col">
+            <span className="font-medium text-ink">{t(`completionPanel.rule.${rule.rule}`)}</span>
+            <span className="text-ink-muted tabular-nums">{rule.detail}</span>
+          </div>
+          <StatusBadge state={rule.met ? 'done' : 'todo'}>{t(rule.met ? 'completionPanel.ruleMet' : 'completionPanel.rulePending')}</StatusBadge>
         </li>
       ))}
     </ul>
+  )
+}
+
+// con lecciones por hacer, la siguiente acción es seguir con el curso
+function NextStep({ classroom }: { classroom: Classroom }) {
+  const { t } = useTranslation('classroom')
+  const links = useWasichaiLinks()
+  if (!classroom.nextLesson) return null
+  return (
+    <Button asChild className={`self-start ${WRAP}`}>
+      <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: classroom.id }, { [LESSON_PARAM]: classroom.nextLesson.id })}>
+        {t('completionPanel.continue', { lesson: classroom.nextLesson.title })}
+      </Link>
+    </Button>
   )
 }
 
@@ -109,8 +156,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
   )
   if (code)
     return (
-      <section aria-labelledby="certificate-issued" className="flex flex-col gap-3 rounded-card border border-border bg-surface-muted px-5 py-4">
-        <h2 id="certificate-issued" className="text-lg font-semibold text-ink">
+      <section aria-labelledby="certificate-issued" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
+        <h2 id="certificate-issued" className="text-title-3 text-ink">
           {t('certificate.issuedTitle')}
         </h2>
         {issued ? (
@@ -120,7 +167,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
               : t('certificate.alreadyIssued', { name: issued.holderName })}
           </p>
         ) : null}
-        <p className="text-sm text-ink-muted">{t('certificate.code', { code })}</p>
+        <p className="text-sm text-ink-muted">{t('certificate.shareHint')}</p>
+        <p className="font-mono text-sm tracking-wider break-all text-ink">{t('certificate.code', { code })}</p>
         {certificateLink(code)}
       </section>
     )
@@ -135,8 +183,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
     setConfirming(holderName)
   }
   return (
-    <section aria-labelledby="certificate-request" className="flex flex-col gap-3 rounded-card border border-border px-5 py-4">
-      <h2 id="certificate-request" className="text-lg font-semibold text-ink">
+    <section aria-labelledby="certificate-request" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
+      <h2 id="certificate-request" className="text-title-3 text-ink">
         {t('certificate.requestTitle')}
       </h2>
       {met ? (

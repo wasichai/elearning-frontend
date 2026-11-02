@@ -342,18 +342,23 @@ const es = {
     loading: 'Cargando las reglas de finalización…',
     rules: 'Para terminar el curso',
     noRules: 'Este curso no declara reglas de finalización.',
+    achieved: 'Completaste «{{course}}»',
     met: 'Cumples todas las reglas: ya puedes pedir tu certificado.',
-    notMet: 'Aún te falta alguna regla.',
+    metIssued: 'Cumples todas las reglas y tu certificado ya está emitido.',
+    notMet_one: 'Te falta cumplir {{missing}} de {{count}} regla.',
+    notMet_other: 'Te falta cumplir {{missing}} de {{count}} reglas.',
+    continue: 'Continuar con «{{lesson}}»',
     rule: {
       LESSONS: 'Completar todas las lecciones',
       ASSESSMENTS: 'Aprobar todas las evaluaciones',
       ATTENDANCE: 'Asistencia mínima a las sesiones'
     },
-    ruleMet: '(cumplida)',
-    rulePending: '(pendiente)'
+    ruleMet: 'Cumplida',
+    rulePending: 'Pendiente'
   },
   certificate: {
-    view: 'Ver e imprimir el certificado',
+    view: 'Ver mi certificado',
+    shareHint: 'Cualquiera puede verificarlo con este código.',
     issuedTitle: 'Tu certificado',
     issued: 'Certificado emitido a nombre de {{name}}.',
     alreadyIssued: 'Ya tenías un certificado emitido a nombre de {{name}}; es el mismo, no se emite otro.',
@@ -386,7 +391,8 @@ const es = {
     rule: '{{rule}}: {{detail}}',
     verifyCode: 'Código {{code}}',
     verifyAt: 'Verificable en {{url}}',
-    print: 'Imprimir'
+    print: 'Imprimir',
+    printHint: 'Para tenerlo en PDF, elige «Guardar como PDF» en el diálogo de impresión.'
   },
   verify: {
     title: 'Verificar un certificado',
@@ -394,10 +400,17 @@ const es = {
     code: 'Código del certificado',
     placeholder: 'XXXX-XXXX-XXXX',
     submit: 'Verificar',
-    notFound: 'No hay ningún certificado con ese código',
-    notFoundHint: 'Revisa el código «{{code}}»: puede tener un error de escritura.',
+    notFound: 'No encontramos un certificado con el código {{code}}',
+    notFoundHint: 'Revisa que esté completo y vuelve a intentarlo.',
     loading: 'Verificando el certificado…',
-    valid: 'Certificado auténtico, emitido por esta plataforma.',
+    valid: 'Certificado válido',
+    meaningTitle: 'Qué significa verificar',
+    meaning:
+      'El código corresponde a un certificado emitido por esta plataforma, con los datos que se registraron al emitirlo. No comprueba la identidad de quien lo presenta.',
+    meaningGeneral:
+      'Un certificado válido corresponde a un código emitido por esta plataforma, con los datos que se registraron al emitirlo. Verificar no comprueba la identidad de quien lo presenta.',
+    holder: 'A nombre de',
+    codeLabel: 'Código',
     another: 'Verificar otro certificado'
   },
   lessonStatus: {
@@ -848,18 +861,23 @@ const en: typeof es = {
     loading: 'Loading the completion rules…',
     rules: 'To finish the course',
     noRules: 'This course declares no completion rules.',
+    achieved: 'You completed “{{course}}”',
     met: 'You meet every rule: you can now request your certificate.',
-    notMet: 'Some rule is still pending.',
+    metIssued: 'You meet every rule and your certificate has been issued.',
+    notMet_one: 'You still have to meet {{missing}} of {{count}} rule.',
+    notMet_other: 'You still have to meet {{missing}} of {{count}} rules.',
+    continue: 'Continue with “{{lesson}}”',
     rule: {
       LESSONS: 'Complete every lesson',
       ASSESSMENTS: 'Pass every assessment',
       ATTENDANCE: 'Minimum session attendance'
     },
-    ruleMet: '(met)',
-    rulePending: '(pending)'
+    ruleMet: 'Met',
+    rulePending: 'Pending'
   },
   certificate: {
-    view: 'View and print the certificate',
+    view: 'View my certificate',
+    shareHint: 'Anyone can verify it with this code.',
     issuedTitle: 'Your certificate',
     issued: 'Certificate issued to {{name}}.',
     alreadyIssued: 'You already had a certificate issued to {{name}}; it is the same one, no new one is issued.',
@@ -892,7 +910,8 @@ const en: typeof es = {
     rule: '{{rule}}: {{detail}}',
     verifyCode: 'Code {{code}}',
     verifyAt: 'Verify at {{url}}',
-    print: 'Print'
+    print: 'Print',
+    printHint: 'To get a PDF, choose “Save as PDF” in the print dialog.'
   },
   verify: {
     title: 'Verify a certificate',
@@ -900,10 +919,17 @@ const en: typeof es = {
     code: 'Certificate code',
     placeholder: 'XXXX-XXXX-XXXX',
     submit: 'Verify',
-    notFound: 'There is no certificate with that code',
-    notFoundHint: 'Check the code “{{code}}”: it may contain a typo.',
+    notFound: 'We could not find a certificate with the code {{code}}',
+    notFoundHint: 'Check that it is complete and try again.',
     loading: 'Verifying the certificate…',
-    valid: 'Genuine certificate, issued by this platform.',
+    valid: 'Valid certificate',
+    meaningTitle: 'What verifying means',
+    meaning:
+      'The code matches a certificate issued by this platform, with the details recorded when it was issued. It does not check the identity of the person presenting it.',
+    meaningGeneral:
+      'A valid certificate matches a code issued by this platform, with the details recorded when it was issued. Verifying does not check the identity of the person presenting it.',
+    holder: 'Issued to',
+    codeLabel: 'Code',
     another: 'Verify another certificate'
   },
   lessonStatus: {

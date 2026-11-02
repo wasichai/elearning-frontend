@@ -41,10 +41,18 @@ describe('CompletionPage', () => {
     ])
 
     const rules = within(await screen.findByRole('region', { name: 'Para terminar el curso' }))
-    expect(rules.getByText('Completar todas las lecciones')).toHaveTextContent('Completar todas las lecciones (pendiente)')
+    const row = (rule: string) => within(rules.getByText(rule).closest('li')!)
+    expect(row('Completar todas las lecciones').getByText('Pendiente')).toBeInTheDocument()
     expect(rules.getByText('1 de 3 lecciones')).toBeInTheDocument()
-    expect(rules.getByText('Asistencia mínima a las sesiones')).toHaveTextContent('(cumplida)')
-    expect(rules.getByRole('status')).toHaveTextContent('Aún te falta alguna regla.')
+    expect(row('Asistencia mínima a las sesiones').getByText('Cumplida')).toBeInTheDocument()
+    expect(rules.getByRole('status')).toHaveTextContent('Te falta cumplir 2 de 3 reglas.')
+    // lo que falta, primero
+    expect(rules.getAllByRole('listitem').at(-1)).toHaveTextContent('Asistencia mínima a las sesiones')
+    // la siguiente acción, una sola: seguir con el curso
+    expect(rules.getByRole('link', { name: `Continuar con «${assessmentClassroom.nextLesson!.title}»` })).toHaveAttribute(
+      'href',
+      `/mis-cursos/mat-sgspe-1?leccion=${assessmentClassroom.nextLesson!.id}`
+    )
     expect(screen.getByText('Cuando cumplas todas las reglas podrás pedir aquí tu certificado.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Emitir mi certificado' })).not.toBeInTheDocument()
     // sin cumplirlas no se celebra
@@ -57,11 +65,32 @@ describe('CompletionPage', () => {
       { path: COMPLETION, body: completionMet }
     ])
 
-    const rules = within(await screen.findByRole('region', { name: 'Para terminar el curso' }))
-    expect(rules.getByRole('status')).toHaveTextContent('Cumples todas las reglas: ya puedes pedir tu certificado.')
+    const achievement = await screen.findByRole('region', { name: 'Completaste «Introducción al SGSPE»' })
+    expect(within(achievement).getByRole('status')).toHaveTextContent('Cumples todas las reglas: ya puedes pedir tu certificado.')
+    // maíz con on-maiz encima, y las cifras del servidor como premio
+    expect(achievement).toHaveClass('bg-maiz', 'text-on-maiz')
+    for (const rule of completionMet.rules) expect(within(achievement).getByText(rule.detail)).toBeInTheDocument()
+    expect(within(achievement).getByText(completionMet.rules[0]!.detail).previousElementSibling).toHaveTextContent('Completar todas las lecciones')
     const seal = document.querySelector('[data-seal]')
     expect(seal).toHaveAttribute('aria-hidden', 'true')
     expect(seal).toHaveClass('animate-seal', 'motion-reduce:animate-none', 'bg-maiz', 'text-on-maiz')
+    // sin adjetivos, y la única primaria es emitir
+    expect(screen.queryByText(/felicidades|increíble/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Para terminar el curso' })).not.toBeInTheDocument()
+    expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Emitir mi certificado' })).toHaveAttribute('data-variant', 'primary')
+  })
+
+  it('sin reglas declaradas deja pedir el certificado, pero no celebra', async () => {
+    renderCompletion([
+      { path: CLASSROOM, body: assessmentClassroom },
+      { path: COMPLETION, body: { met: true, rules: [] } }
+    ])
+
+    const rules = within(await screen.findByRole('region', { name: 'Para terminar el curso' }))
+    expect(rules.getByText('Este curso no declara reglas de finalización.')).toBeInTheDocument()
+    expect(document.querySelector('[data-seal]')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Emitir mi certificado' })).toBeInTheDocument()
   })
 
   it('cumpliéndolas, pide el certificado con el nombre (por defecto el de la cuenta) y enlaza a él (201)', async () => {
@@ -84,7 +113,8 @@ describe('CompletionPage', () => {
     expect(await screen.findByText('Certificado emitido a nombre de Rosa Quispe Mamani.')).toBeInTheDocument()
     expect(posts()[0]?.body).toEqual({ holderName: 'Rosa Quispe Mamani' })
     expect(screen.getByText('Código de verificación: K7Q2-M9XW-4RTB')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Ver e imprimir el certificado' })).toHaveAttribute('href', '/certificados/K7Q2-M9XW-4RTB')
+    expect(screen.getByText('Cualquiera puede verificarlo con este código.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver mi certificado' })).toHaveAttribute('href', '/certificados/K7Q2-M9XW-4RTB')
   })
 
   it('si ya estaba emitido (200) con otro nombre, lo dice: no se emite otro', async () => {
@@ -167,8 +197,13 @@ describe('CompletionPage', () => {
       { path: COMPLETION, body: completionMet }
     ])
 
-    expect(await screen.findByRole('link', { name: 'Ver e imprimir el certificado' })).toHaveAttribute('href', '/certificados/K7Q2-M9XW-4RTB')
+    const view = await screen.findByRole('link', { name: 'Ver mi certificado' })
+    expect(view).toHaveAttribute('href', '/certificados/K7Q2-M9XW-4RTB')
+    expect(view).toHaveAttribute('data-variant', 'primary')
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-seal]')).not.toBeNull()
+    // ya no invita a pedir lo que ya tiene
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('Cumples todas las reglas y tu certificado ya está emitido.')
   })
 
   it('una finalización fuera de contrato o un error se explican', async () => {

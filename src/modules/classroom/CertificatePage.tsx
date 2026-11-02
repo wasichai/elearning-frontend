@@ -1,11 +1,14 @@
 import { LoadingState, useAppTitle, useWasichaiLinks } from '@wasichai/core'
 import { Button, Input, Label } from '@wasichai/ui'
+import { ShieldCheck } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatCivilRange, formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
+import { ScreenBody, Section, screenContainer } from '../../shared/Screen'
 import { usePublicCertificate } from './api'
 import type { Certificate } from './contract'
 import { useProblemText } from './parts'
@@ -18,19 +21,36 @@ import { QUIPU_THEME } from '../../theme/themes'
 export function VerifyPage() {
   const { t } = useTranslation('classroom')
   return (
-    <PublicLayout>
-      <PublicHeading title={t('verify.title')} subtitle={t('verify.subtitle')} />
-      <VerifyForm />
+    <PublicLayout fullBleed>
+      <div className="border-b border-border bg-surface">
+        <div className={`${screenContainer()} pb-6`}>
+          <PublicHeading title={t('verify.title')} subtitle={t('verify.subtitle')} />
+          <VerifyForm />
+        </div>
+      </div>
+      <ScreenBody>
+        <VerifyMeaning />
+      </ScreenBody>
     </PublicLayout>
   )
 }
 
-function VerifyForm() {
+// qué comprueba y qué no comprueba la verificación: el certificado queda congelado al emitirse; nada dice de quien lo presenta
+function VerifyMeaning() {
+  const { t } = useTranslation('classroom')
+  return (
+    <Section title={t('verify.meaningTitle')}>
+      <p className="max-w-prose text-sm text-ink">{t('verify.meaningGeneral')}</p>
+    </Section>
+  )
+}
+
+function VerifyForm({ initial = '' }: { initial?: string }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const navigate = useNavigate()
   const codeId = useId()
-  const [code, setCode] = useState('')
+  const [code, setCode] = useState(initial)
   return (
     <form
       role="search"
@@ -69,19 +89,34 @@ export function CertificatePage() {
     body =
       kind === 'notFound' ? (
         <>
-          <PublicHeading title={t('verify.notFound')} subtitle={t('verify.notFoundHint', { code })} />
-          <VerifyForm />
+          <div className="border-b border-border bg-surface">
+            <div className={`${screenContainer()} pb-6 [overflow-wrap:anywhere]`}>
+              <PublicHeading title={t('verify.notFound', { code })} subtitle={t('verify.notFoundHint')} />
+              {/* el código escrito, a mano para corregirlo. con la clave: al probar otro, el campo empieza por él */}
+              <VerifyForm key={code} initial={code} />
+            </div>
+          </div>
+          <ScreenBody>
+            <VerifyMeaning />
+          </ScreenBody>
         </>
       ) : (
-        <ProblemState title={title} description={description}>
-          <Button variant="secondary" onClick={() => void query.refetch()}>
-            {t('problem.retry')}
-          </Button>
-        </ProblemState>
+        <div className={screenContainer()}>
+          <ProblemState title={title} description={description}>
+            <Button variant="secondary" onClick={() => void query.refetch()}>
+              {t('problem.retry')}
+            </Button>
+          </ProblemState>
+        </div>
       )
-  else if (!query.data) body = <LoadingState label={t('verify.loading')} />
+  else if (!query.data)
+    body = (
+      <div className={screenContainer()}>
+        <LoadingState label={t('verify.loading')} />
+      </div>
+    )
   else body = <CertificateView certificate={query.data} />
-  return <PublicLayout>{body}</PublicLayout>
+  return <PublicLayout fullBleed>{body}</PublicLayout>
 }
 
 function CertificateView({ certificate }: { certificate: Certificate }) {
@@ -92,49 +127,85 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
   const zone = certificate.offering.timeZone
   useDocumentTitle(t('certificate.documentTitle', { name: certificate.holderName, course: certificate.course.title }))
   return (
-    <div className="flex flex-col gap-6 pt-10 print:pt-0">
-      <p role="status" className="text-sm font-medium text-success print:hidden">
-        {t('verify.valid')}
-      </p>
-      {/* el documento: siempre en el tema claro de Quipu, se vea la página como se vea, para que en pantalla y en papel sea el
+    <>
+      <VerificationBand certificate={certificate} />
+      <div className={`${screenContainer()} flex flex-col gap-6 py-6 pb-16 print:p-0`}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 print:hidden">
+          <Button onClick={() => window.print()}>{t('certificate.print')}</Button>
+          <p className="max-w-prose text-sm text-ink-muted">{t('certificate.printHint')}</p>
+        </div>
+        {/* el documento: siempre en el tema claro de Quipu, se vea la página como se vea, para que en pantalla y en papel sea el
           mismo; con la proporción de un A4 apaisado desde tableta (en el móvil, una columna) y la hoja entera al imprimir */}
-      <article
-        aria-labelledby="certificate-holder"
-        data-theme={QUIPU_THEME.id}
-        style={{ colorScheme: QUIPU_THEME.colorScheme }}
-        className="flex flex-col items-center justify-center gap-5 rounded-card border-2 border-border bg-surface px-6 py-10 text-center text-ink sm:aspect-[297/210] sm:px-12 print:fixed print:inset-0 print:aspect-auto print:rounded-none print:border-0 print:px-[18mm] print:py-[14mm] print:[print-color-adjust:exact]"
-      >
-        {appName ? <p className="text-sm font-semibold tracking-widest text-ink-muted uppercase">{appName}</p> : null}
-        <p className="text-2xl font-semibold tracking-tight">{t('certificate.heading')}</p>
-        <p className="text-sm text-ink-muted">{t('certificate.certifies')}</p>
-        <h1 id="certificate-holder" className="font-read text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-          {certificate.holderName}
-        </h1>
-        <p className="max-w-prose font-read text-lg font-semibold">
-          {t(certificate.result === 'APROBADO' ? 'certificate.passedCourse' : 'certificate.completedCourse', { course: certificate.course.title })}
-        </p>
-        <dl className="grid w-full max-w-xl gap-x-8 gap-y-3 text-left text-sm sm:grid-cols-2">
-          <Fact label={t('certificate.courseCode')}>{t('certificate.courseVersion', { code: certificate.course.code, version: certificate.version })}</Fact>
-          <Fact label={t('certificate.offering')}>{formatCivilRange(certificate.offering.startDate, certificate.offering.endDate, zone, locale)}</Fact>
-          <Fact label={t('certificate.hours')}>{t('certificate.hoursValue', { value: formatNumber(certificate.totalHours, locale) })}</Fact>
-          <Fact label={t('certificate.issuedAt')}>{formatInstant(certificate.issuedAt, locale, zone)}</Fact>
-        </dl>
-        {certificate.rules.length > 0 ? (
-          <ul className="flex w-full max-w-xl flex-col gap-1 text-left text-sm text-ink-muted">
-            {certificate.rules.map((rule) => (
-              <li key={rule.rule}>{t('certificate.rule', { rule: t(`completionPanel.rule.${rule.rule}`), detail: rule.detail })}</li>
-            ))}
-          </ul>
-        ) : null}
-        <p className="pt-2 font-mono text-sm tracking-wider">{t('certificate.verifyCode', { code: certificate.code })}</p>
-        <p className="text-xs text-ink-muted">{t('certificate.verifyAt', { url: window.location.href })}</p>
-      </article>
-      <div className="flex flex-wrap items-center gap-3 print:hidden">
-        <Button onClick={() => window.print()}>{t('certificate.print')}</Button>
-        <Link to={links.to(CLASSROOM_ROUTES.verify)} className="text-sm text-link underline-offset-4 hover:underline">
+        <article
+          aria-labelledby="certificate-holder"
+          data-theme={QUIPU_THEME.id}
+          style={{ colorScheme: QUIPU_THEME.colorScheme }}
+          className="flex flex-col items-center justify-center gap-5 rounded-card border-2 border-border bg-surface px-6 py-10 text-center text-ink sm:aspect-[297/210] sm:px-12 print:fixed print:inset-0 print:aspect-auto print:rounded-none print:border-0 print:px-[18mm] print:py-[14mm] print:[print-color-adjust:exact]"
+        >
+          {appName ? <p className="text-sm font-semibold tracking-widest text-ink-muted uppercase">{appName}</p> : null}
+          <p className="text-2xl font-semibold tracking-tight">{t('certificate.heading')}</p>
+          <p className="text-sm text-ink-muted">{t('certificate.certifies')}</p>
+          <h1 id="certificate-holder" className="font-read text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+            {certificate.holderName}
+          </h1>
+          <p className="max-w-prose font-read text-lg font-semibold">
+            {t(certificate.result === 'APROBADO' ? 'certificate.passedCourse' : 'certificate.completedCourse', { course: certificate.course.title })}
+          </p>
+          <dl className="grid w-full max-w-xl gap-x-8 gap-y-3 text-left text-sm sm:grid-cols-2">
+            <Fact label={t('certificate.courseCode')}>{t('certificate.courseVersion', { code: certificate.course.code, version: certificate.version })}</Fact>
+            <Fact label={t('certificate.offering')}>{formatCivilRange(certificate.offering.startDate, certificate.offering.endDate, zone, locale)}</Fact>
+            <Fact label={t('certificate.hours')}>{t('certificate.hoursValue', { value: formatNumber(certificate.totalHours, locale) })}</Fact>
+            <Fact label={t('certificate.issuedAt')}>{formatInstant(certificate.issuedAt, locale, zone)}</Fact>
+          </dl>
+          {certificate.rules.length > 0 ? (
+            <ul className="flex w-full max-w-xl flex-col gap-1 text-left text-sm text-ink-muted">
+              {certificate.rules.map((rule) => (
+                <li key={rule.rule}>{t('certificate.rule', { rule: t(`completionPanel.rule.${rule.rule}`), detail: rule.detail })}</li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="pt-2 font-mono text-sm tracking-wider">{t('certificate.verifyCode', { code: certificate.code })}</p>
+          <p className="text-xs text-ink-muted">{t('certificate.verifyAt', { url: window.location.href })}</p>
+        </article>
+        <Link to={links.to(CLASSROOM_ROUTES.verify)} className={`${TEXT_LINK} self-start print:hidden`}>
           {t('verify.another')}
         </Link>
       </div>
+    </>
+  )
+}
+
+// el resultado de la verificación, con icono y palabra, a todo el ancho y fuera del papel: al imprimir no sale
+function VerificationBand({ certificate }: { certificate: Certificate }) {
+  const { t, i18n } = useTranslation('classroom')
+  return (
+    <div className="border-b border-success bg-success-soft print:hidden">
+      <div className={`${screenContainer()} flex flex-col gap-3 py-5`}>
+        <div role="status" className="flex items-start gap-3">
+          <ShieldCheck aria-hidden="true" className="size-6 shrink-0 text-success" />
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-title-3 text-success">{t('verify.valid')}</p>
+            <p className="max-w-prose text-sm text-ink">{t('verify.meaning')}</p>
+          </div>
+        </div>
+        <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 sm:pl-9 lg:grid-cols-4">
+          <BandFact label={t('verify.holder')}>{certificate.holderName}</BandFact>
+          <BandFact label={t('certificate.courseCode')}>{certificate.course.title}</BandFact>
+          <BandFact label={t('verify.codeLabel')}>
+            <span className="font-mono tracking-wider break-all">{certificate.code}</span>
+          </BandFact>
+          <BandFact label={t('certificate.issuedAt')}>{formatInstant(certificate.issuedAt, i18n.language, certificate.offering.timeZone)}</BandFact>
+        </dl>
+      </div>
+    </div>
+  )
+}
+
+function BandFact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col">
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className="font-medium text-ink">{children}</dd>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { Route, Routes } from 'react-router'
@@ -35,7 +35,16 @@ describe('CertificatePage', () => {
 
     // titular y curso en la letra de lectura (PantallaCertificado)
     expect(await screen.findByRole('heading', { level: 1, name: 'Rosa Quispe Mamani' })).toHaveClass('font-read')
-    expect(screen.getByRole('status')).toHaveTextContent('Certificado auténtico, emitido por esta plataforma.')
+    // la banda de verificación: icono y palabra, qué significa, a quién, qué curso y el código; fuera del papel
+    const band = screen.getByRole('status')
+    expect(band).toHaveTextContent('Certificado válido')
+    expect(band).toHaveTextContent('No comprueba la identidad de quien lo presenta.')
+    expect(band.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    const facts = within(band.parentElement!)
+    expect(facts.getByText('Rosa Quispe Mamani')).toBeInTheDocument()
+    expect(facts.getByText('Introducción al SGSPE')).toBeInTheDocument()
+    expect(facts.getByText('K7Q2-M9XW-4RTB')).toHaveClass('font-mono')
+    expect(band.parentElement!.parentElement).toHaveClass('print:hidden')
     expect(screen.getByText('aprobó el curso «Introducción al SGSPE».')).toHaveClass('font-read')
     // el documento se fija al tema claro de Quipu, se vea la página como se vea, y tiene la proporción de un A4 apaisado
     const sheet = screen.getByRole('article', { name: 'Rosa Quispe Mamani' })
@@ -54,15 +63,21 @@ describe('CertificatePage', () => {
     expect(print).toHaveBeenCalledTimes(1)
     // al imprimir solo queda el certificado
     expect(screen.getByRole('button', { name: 'Imprimir' }).parentElement).toHaveClass('print:hidden')
+    // no hay descarga propia: el PDF sale del diálogo de impresión, y se dice así
+    expect(screen.getByText('Para tenerlo en PDF, elige «Guardar como PDF» en el diálogo de impresión.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /descargar/i })).not.toBeInTheDocument()
   })
 
   it('un código desconocido (404) es la respuesta de la verificación, con el formulario para otro', async () => {
     renderCertificate([{ path: /^\/lms\/public\/certificates\//, status: 404, body: problem(404, 'No existe') }], '/certificados/MAL-CODIGO')
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'No hay ningún certificado con ese código' })).toBeInTheDocument()
-    expect(screen.getByText('Revisa el código «MAL-CODIGO»: puede tener un error de escritura.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'No encontramos un certificado con el código MAL-CODIGO' })).toBeInTheDocument()
+    expect(screen.getByText('Revisa que esté completo y vuelve a intentarlo.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Código del certificado' })).toBeInTheDocument()
+    // volver a intentarlo, con lo escrito a mano para corregirlo
+    expect(screen.getByRole('textbox', { name: 'Código del certificado' })).toHaveValue('MAL-CODIGO')
+    expect(screen.getByRole('heading', { level: 2, name: 'Qué significa verificar' })).toBeInTheDocument()
+    expect(screen.queryByText('Certificado válido')).not.toBeInTheDocument()
   })
 
   it('un certificado fuera de contrato o un error del servidor se explican y dejan reintentar', async () => {
