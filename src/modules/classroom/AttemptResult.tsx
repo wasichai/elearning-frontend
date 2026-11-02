@@ -153,7 +153,11 @@ function QuestionOutcome({ question, answer, outcome }: { question: Question; an
           <>
             {outcome.correct === null ? null : <Verdict correct={outcome.correct} />}
             <span className="font-medium text-ink tabular-nums">
-              {t('result.questionPoints', { points: formatEarned(outcome.points, locale), max: formatNumber(outcome.maxPoints, locale) })}
+              {t('result.questionPoints', {
+                count: outcome.maxPoints,
+                points: formatEarned(outcome.points, locale),
+                max: formatNumber(outcome.maxPoints, locale)
+              })}
             </span>
           </>
         )}

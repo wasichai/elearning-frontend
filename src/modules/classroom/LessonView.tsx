@@ -130,18 +130,21 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         {inAttempt ? null : <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />}
       </div>
 
-      <Completion
-        enrollmentId={enrollmentId}
-        lesson={lesson}
-        upcoming={upcoming}
-        upcomingIsPending={!next && upcoming !== undefined}
-        videoThreshold={videoThreshold}
-        onMarkComplete={markComplete}
-        marking={ownEvent && completion.isPending}
-        error={ownEvent ? completion.error : null}
-        justCompleted={ownEvent && completion.isSuccess}
-        sticky={hasReading}
-      />
+      {/* dentro de un intento manda su cabecera, o las acciones del resultado: una sola acción principal */}
+      {inAttempt ? null : (
+        <Completion
+          enrollmentId={enrollmentId}
+          lesson={lesson}
+          upcoming={upcoming}
+          upcomingIsPending={!next && upcoming !== undefined}
+          videoThreshold={videoThreshold}
+          onMarkComplete={markComplete}
+          marking={ownEvent && completion.isPending}
+          error={ownEvent ? completion.error : null}
+          justCompleted={ownEvent && completion.isSuccess}
+          sticky={hasReading}
+        />
+      )}
     </article>
   )
 }

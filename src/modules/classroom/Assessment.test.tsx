@@ -656,7 +656,7 @@ describe('el resultado', () => {
     expect(within(screen.getByRole('status')).getByText('Aprobada')).toBeInTheDocument()
     expect(screen.getByText('8 de 10 puntos; se aprueba con 70 %.')).toBeInTheDocument()
     const tf = within(screen.getByRole('article', { name: '3. El SGSPE registra los expedientes.' }))
-    expect(tf.getByText('0 de 1 puntos')).toBeInTheDocument()
+    expect(tf.getByText('0 de 1 punto')).toBeInTheDocument()
     expect(tf.getByText('Incorrecta')).toBeInTheDocument()
     // la respuesta dada, en la letra de lectura
     expect(tf.getByText('Falso')).toHaveClass('font-read')
