@@ -1,10 +1,8 @@
-import { ApiError, useWasichaiLinks } from '@wasichai/core'
+import { ApiError } from '@wasichai/core'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
 import { problemKind } from '../../shared/ProblemState'
 import type { StatusState } from '../../shared/StatusBadge'
 import type { VersionStatus } from './contract'
-import { STUDIO_ROUTES } from './routes'
 
 // piezas que comparten las páginas del estudio
 
@@ -45,16 +43,4 @@ export function useActionError() {
     if (error.status === 404) return t('action.notFound')
     return t('action.failedStatus', { status: error.status })
   }
-}
-
-export const LINK = 'text-sm text-link underline-offset-4 hover:underline'
-
-export function BackToVersions() {
-  const { t } = useTranslation('studio')
-  const links = useWasichaiLinks()
-  return (
-    <Link to={links.to(STUDIO_ROUTES.versions)} className={`self-start ${LINK}`}>
-      {t('versions.back')}
-    </Link>
-  )
 }

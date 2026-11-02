@@ -1,43 +1,125 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ApiError, LoadingState, PageHeader, useWasichaiLinks } from '@wasichai/core'
+import { ApiError, LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
+import { Circle, CircleAlert, CircleCheck, CircleDot, CircleX, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { WRAP } from '../../shared/buttons'
 import { formatNumber } from '../../shared/format'
+import { Notice } from '../../shared/Notice'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
+import { Breadcrumbs, ScreenBody, ScreenHeader, Section, Stat, StatList } from '../../shared/Screen'
 import { studioKeys } from './api'
-import { IMPORT_PROBLEM_KINDS, SHA_PATTERN, type ImportJob, type ImportProblem, type ImportReport, type ImportSource } from './contract'
+import {
+  IMPORT_PROBLEM_KINDS,
+  SHA_PATTERN,
+  type ImportJob,
+  type ImportProblem,
+  type ImportProblemKind,
+  type ImportReport,
+  type ImportSource,
+  type ImportStatus
+} from './contract'
 import { IMPORT_POLL_MS, isFinished, isValidPath, MAX_PATH, sourceRef, useImportCourses, useImportJob, useImportSources, useStartImport } from './importApi'
-import { BackToVersions, LINK } from './parts'
 import { STUDIO_ROUTES } from './routes'
+
+// lo escrito en el formulario: vive en la página para que un fallo deje volver a intentarlo sin perderlo
+interface ImportDraft {
+  // por posición: un mismo repositorio puede estar permitido en más de un commit
+  selected: number
+  typedSha: string
+  path: string
+  courseId: string
+}
+
+const EMPTY_DRAFT: ImportDraft = { selected: 0, typedSha: '', path: '', courseId: '' }
 
 // importar un manual AsciiDoc a un borrador (ADR-0018 §5): orígenes permitidos, el formulario, el estado del trabajo y su
 // informe. pollInterval solo lo cambian las pruebas
 export function ImportPage({ pollInterval = IMPORT_POLL_MS }: { pollInterval?: number }) {
   const { t } = useTranslation('studio')
+  const links = useWasichaiLinks()
   const sources = useImportSources()
   const [jobId, setJobId] = useState<string | null>(null)
+  const [draft, setDraft] = useState(EMPTY_DRAFT)
   return (
     <>
-      <PageHeader title={t('import.title')} subtitle={t('import.subtitle')} />
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pt-6 pb-16 sm:px-8">
-        <BackToVersions />
+      <ScreenHeader
+        width="reading"
+        title={t('import.title')}
+        subtitle={t('import.subtitle')}
+        breadcrumbs={
+          <Breadcrumbs
+            label={t('version.breadcrumbs')}
+            items={[{ label: t('versions.title'), to: links.to(STUDIO_ROUTES.versions) }, { label: t('import.title') }]}
+          />
+        }
+      />
+      <ScreenBody width="reading">
         {jobId ? (
-          <JobPanel id={jobId} interval={pollInterval} onAnother={() => setJobId(null)} />
+          <JobPanel
+            id={jobId}
+            interval={pollInterval}
+            onRetry={() => setJobId(null)}
+            onAnother={() => {
+              setDraft(EMPTY_DRAFT)
+              setJobId(null)
+            }}
+          />
         ) : sources.isError ? (
           <SourcesProblem error={sources.error} onRetry={() => void sources.refetch()} />
         ) : sources.data ? (
           <>
+            {sources.data.length === 0 ? null : <ImportSteps stage="form" />}
             <Sources sources={sources.data} />
-            {sources.data.length === 0 ? null : <ImportForm sources={sources.data} onStarted={setJobId} />}
+            {sources.data.length === 0 ? null : <ImportForm sources={sources.data} draft={draft} onChange={setDraft} onStarted={setJobId} />}
           </>
         ) : (
           <LoadingState label={t('import.loading')} />
         )}
-      </div>
+      </ScreenBody>
     </>
+  )
+}
+
+const STEPS = ['source', 'queue', 'run', 'result'] as const
+
+// en qué paso va: el formulario y los estados del trabajo, tal cual. sin porcentajes: el contrato no los da
+const STEP_OF: Record<ImportStatus | 'form', number> = { form: 0, PENDIENTE: 1, EN_CURSO: 2, HECHO: 3, FALLIDO: 3 }
+
+// icono y palabra en cada paso; lo que ya pasó o falta, también en palabra para quien no ve el icono
+function ImportSteps({ stage }: { stage: ImportStatus | 'form' }) {
+  const { t } = useTranslation('studio')
+  const current = STEP_OF[stage]
+  const failed = stage === 'FALLIDO'
+  const finished = stage === 'HECHO'
+  const working = stage === 'PENDIENTE' || stage === 'EN_CURSO'
+  return (
+    <ol aria-label={t('import.steps.label')} className="grid grid-cols-4 gap-2">
+      {STEPS.map((step, index) => {
+        const isCurrent = index === current
+        const done = index < current || (isCurrent && finished)
+        const failedHere = isCurrent && failed
+        const Icon: LucideIcon = failedHere ? CircleX : done ? CircleCheck : isCurrent ? (working ? LoaderCircle : CircleDot) : Circle
+        const tone = failedHere ? 'text-danger' : done ? 'text-success' : isCurrent ? 'text-brand-strong' : 'text-ink-muted'
+        return (
+          <li
+            key={step}
+            aria-current={isCurrent ? 'step' : undefined}
+            className={`flex min-w-0 flex-col gap-1 border-t-2 pt-2 text-sm ${isCurrent ? 'border-current font-semibold text-ink' : 'border-border text-ink-muted'}`}
+          >
+            <Icon aria-hidden="true" className={`size-4 shrink-0 ${tone} ${isCurrent && working ? 'animate-spin motion-reduce:animate-none' : ''}`} />
+            <span>{failedHere ? t('import.steps.failed') : t(`import.steps.${step}`)}</span>
+            {done ? (
+              <span className="sr-only">{t('import.steps.done')}</span>
+            ) : !isCurrent ? (
+              <span className="sr-only">{t('import.steps.pending')}</span>
+            ) : null}
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -64,42 +146,61 @@ function SourcesProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
 function Sources({ sources }: { sources: ImportSource[] }) {
   const { t } = useTranslation('studio')
   return (
-    <section aria-labelledby="import-sources" className="flex flex-col gap-2">
-      <h2 id="import-sources" className="text-lg font-semibold text-ink">
-        {t('import.sources.title')}
-      </h2>
+    <Section title={t('import.sources.title')} description={sources.length > 0 ? t('import.sources.hint') : undefined}>
       {sources.length === 0 ? (
         <div className="flex max-w-prose flex-col gap-1">
           <p className="text-base font-semibold text-ink">{t('import.sources.empty')}</p>
           <p className="text-sm text-ink-muted">{t('import.sources.emptyHint')}</p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-1 text-sm">
+        <ul className="flex flex-col divide-y divide-border border-y border-border text-sm">
           {sources.map((source) => (
-            <li key={`${source.repository}@${source.sha ?? ''}`} className="flex flex-wrap gap-x-2">
-              <span className="font-mono text-ink">{source.repository}</span>
+            <li key={`${source.repository}@${source.sha ?? ''}`} className="flex flex-wrap gap-x-3 gap-y-0.5 py-2">
+              <span className="font-mono break-all text-ink">{source.repository}</span>
               <span className="break-all text-ink-muted">{source.sha ? t('import.sources.pinned', { sha: source.sha }) : t('import.sources.anyCommit')}</span>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Section>
   )
 }
 
-type FieldErrors = { sha?: string; path?: string; course?: string }
+type FieldErrors = { sha?: string | undefined; path?: string | undefined; course?: string | undefined }
 
-function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted: (jobId: string) => void }) {
+// la ayuda de un campo o, si no vale, por qué: con icono, el color nunca va solo
+function FieldHelp({ id, error, hint }: { id: string; error?: string | undefined; hint?: string | undefined }) {
+  if (error)
+    return (
+      <p id={id} className="flex items-start gap-1.5 text-sm text-danger">
+        <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+        <span className="min-w-0">{error}</span>
+      </p>
+    )
+  return hint ? (
+    <p id={id} className="text-sm text-ink-muted">
+      {hint}
+    </p>
+  ) : null
+}
+
+function ImportForm({
+  sources,
+  draft,
+  onChange,
+  onStarted
+}: {
+  sources: ImportSource[]
+  draft: ImportDraft
+  onChange: (draft: ImportDraft) => void
+  onStarted: (jobId: string) => void
+}) {
   const { t } = useTranslation('studio')
   const id = useId()
   const courses = useImportCourses()
   const start = useStartImport()
   const describe = useStartError()
-  // por posición: un mismo repositorio puede estar permitido en más de un commit
-  const [selected, setSelected] = useState(0)
-  const [typedSha, setTypedSha] = useState('')
-  const [path, setPath] = useState('')
-  const [courseId, setCourseId] = useState('')
+  const { selected, typedSha, path, courseId } = draft
   const [errors, setErrors] = useState<FieldErrors>({})
   const source = sources[selected] ?? sources[0]!
   const sha = source.sha ?? typedSha.trim().toLowerCase()
@@ -114,19 +215,26 @@ function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted
       ...(courseId ? {} : { course: t('import.form.courseRequired') })
     }
     setErrors(found)
-    if (Object.keys(found).length > 0) return
+    const first = found.sha ? 'sha' : found.path ? 'path' : found.course ? 'course' : null
+    if (first) {
+      document.getElementById(`${id}-${first}`)?.focus()
+      return
+    }
     start.mutate({ source: sourceRef(source.repository, sha, cleanPath), courseId }, { onSuccess: (job) => onStarted(job.id) })
   }
 
   return (
-    <section aria-labelledby="import-form" className="flex flex-col gap-4">
-      <h2 id="import-form" className="text-lg font-semibold text-ink">
-        {t('import.form.title')}
-      </h2>
+    <Section title={t('import.form.title')}>
       <form noValidate onSubmit={submit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={`${id}-repository`}>{t('import.form.repository')}</Label>
-          <Select value={String(selected)} onValueChange={(value) => setSelected(Number(value))}>
+          <Select
+            value={String(sources[selected] ? selected : 0)}
+            onValueChange={(value) => {
+              setErrors({ ...errors, sha: undefined })
+              onChange({ ...draft, selected: Number(value) })
+            }}
+          >
             <SelectTrigger id={`${id}-repository`}>
               <SelectValue />
             </SelectTrigger>
@@ -151,12 +259,13 @@ function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted
             autoComplete="off"
             spellCheck={false}
             aria-invalid={errors.sha ? true : undefined}
-            aria-describedby={`${id}-sha-hint`}
-            onChange={(event) => setTypedSha(event.target.value)}
+            aria-describedby={`${id}-sha-help`}
+            onChange={(event) => {
+              setErrors({ ...errors, sha: undefined })
+              onChange({ ...draft, typedSha: event.target.value })
+            }}
           />
-          <p id={`${id}-sha-hint`} className={errors.sha ? 'text-sm text-danger' : 'text-sm text-ink-muted'}>
-            {errors.sha ?? (source.sha ? t('import.form.shaPinned') : t('import.form.shaHint'))}
-          </p>
+          <FieldHelp id={`${id}-sha-help`} error={errors.sha} hint={source.sha ? t('import.form.shaPinned') : t('import.form.shaHint')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -169,12 +278,13 @@ function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted
             autoComplete="off"
             spellCheck={false}
             aria-invalid={errors.path ? true : undefined}
-            aria-describedby={`${id}-path-hint`}
-            onChange={(event) => setPath(event.target.value)}
+            aria-describedby={`${id}-path-help`}
+            onChange={(event) => {
+              setErrors({ ...errors, path: undefined })
+              onChange({ ...draft, path: event.target.value })
+            }}
           />
-          <p id={`${id}-path-hint`} className={errors.path ? 'text-sm text-danger' : 'text-sm text-ink-muted'}>
-            {errors.path ?? t('import.form.pathHint')}
-          </p>
+          <FieldHelp id={`${id}-path-help`} error={errors.path} hint={t('import.form.pathHint')} />
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -182,15 +292,26 @@ function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted
           {courses.isError ? (
             <div className="flex flex-wrap items-center gap-3">
               <Alert tone="danger">{t('import.form.coursesFailed')}</Alert>
-              <Button variant="secondary" size="sm" onClick={() => void courses.refetch()}>
+              <Button type="button" variant="secondary" size="sm" onClick={() => void courses.refetch()}>
                 {t('problem.retry')}
               </Button>
             </div>
           ) : courses.data && courses.data.length === 0 ? (
             <p className="text-sm text-ink-muted">{t('import.form.coursesEmpty')}</p>
           ) : (
-            <Select value={courseId} onValueChange={setCourseId} disabled={!courses.data}>
-              <SelectTrigger id={`${id}-course`} aria-invalid={errors.course ? true : undefined} aria-describedby={`${id}-course-error`}>
+            <Select
+              value={courseId}
+              onValueChange={(value) => {
+                setErrors({ ...errors, course: undefined })
+                onChange({ ...draft, courseId: value })
+              }}
+              disabled={!courses.data}
+            >
+              <SelectTrigger
+                id={`${id}-course`}
+                aria-invalid={errors.course ? true : undefined}
+                aria-describedby={errors.course ? `${id}-course-help` : undefined}
+              >
                 <SelectValue placeholder={courses.data ? t('import.form.coursePlaceholder') : t('import.form.coursesLoading')} />
               </SelectTrigger>
               <SelectContent>
@@ -202,21 +323,19 @@ function ImportForm({ sources, onStarted }: { sources: ImportSource[]; onStarted
               </SelectContent>
             </Select>
           )}
-          <p id={`${id}-course-error`} className="text-sm text-danger">
-            {errors.course ?? ''}
-          </p>
+          <FieldHelp id={`${id}-course-help`} error={errors.course} />
         </div>
 
         {ready ? (
           <p className="text-sm break-all text-ink-muted">{t('import.form.preview', { source: sourceRef(source.repository, sha, cleanPath) })}</p>
         ) : null}
         <p className="max-w-prose text-sm text-ink-muted">{t('import.form.note')}</p>
-        {start.error ? <Alert tone="danger">{describe(start.error)}</Alert> : null}
+        {start.error ? <Notice tone="danger">{describe(start.error)}</Notice> : null}
         <Button type="submit" className={`self-start ${WRAP}`} disabled={start.isPending}>
           {start.isPending ? t('import.form.submitting') : t('import.form.submit')}
         </Button>
       </form>
-    </section>
+    </Section>
   )
 }
 
@@ -233,12 +352,14 @@ function useStartError() {
       })
     if (error.status === 403) return t('import.error.refused')
     if (error.status === 404) return t('import.error.courseNotFound')
+    if (error.status === 429) return t('import.error.tooMany')
     return t('import.error.failed', { status: error.status })
   }
 }
 
-function JobPanel({ id, interval, onAnother }: { id: string; interval: number; onAnother: () => void }) {
+function JobPanel({ id, interval, onRetry, onAnother }: { id: string; interval: number; onRetry: () => void; onAnother: () => void }) {
   const { t } = useTranslation('studio')
+  const links = useWasichaiLinks()
   const queryClient = useQueryClient()
   const query = useImportJob(id, interval)
   const job = query.data
@@ -247,43 +368,53 @@ function JobPanel({ id, interval, onAnother }: { id: string; interval: number; o
   useEffect(() => {
     if (status === 'HECHO') void queryClient.invalidateQueries({ queryKey: studioKeys.versions })
   }, [status, queryClient])
+  const lost = query.isError && problemKind(query.error) === 'notFound'
   return (
-    <section aria-labelledby="import-job" className="flex flex-col gap-4">
-      <h2 id="import-job" className="text-lg font-semibold text-ink">
-        {t('import.job.title')}
-      </h2>
-      <p role="status" className="text-base font-semibold text-ink">
-        {job ? t(`import.status.${job.status}`) : t('import.job.loading')}
-      </p>
-      {job ? <JobState job={job} /> : null}
-      {query.isError ? <JobProblem error={query.error} onRetry={() => void query.refetch()} /> : null}
+    <>
+      {status ? <ImportSteps stage={status} /> : null}
+      <Section title={t('import.job.title')}>
+        {/* solo la palabra del estado: si no cambia, el DOM no cambia y una consulta más no se anuncia */}
+        <p role="status" aria-live="polite" className="text-base font-semibold text-ink">
+          {job ? t(`import.status.${job.status}`) : t('import.job.loading')}
+        </p>
+        {job ? <JobState job={job} /> : null}
+        {query.isError ? <JobProblem error={query.error} onRetry={() => void query.refetch()} /> : null}
+        {isFinished(status) || lost ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {status === 'HECHO' && job?.versionId ? (
+              <Button asChild variant="primary" className="min-h-11">
+                <Link to={links.to(STUDIO_ROUTES.version, { id: job.versionId })}>{t('import.job.openDraft')}</Link>
+              </Button>
+            ) : null}
+            {status === 'FALLIDO' ? (
+              <Button variant="primary" className={WRAP} onClick={onRetry}>
+                {t('import.job.retry')}
+              </Button>
+            ) : null}
+            <Button variant="secondary" className={WRAP} onClick={onAnother}>
+              {t('import.job.another')}
+            </Button>
+          </div>
+        ) : null}
+      </Section>
       {job?.report ? <Report report={job.report} /> : null}
-      {isFinished(status) || (query.isError && problemKind(query.error) === 'notFound') ? (
-        <Button variant="secondary" className={`self-start ${WRAP}`} onClick={onAnother}>
-          {t('import.job.another')}
-        </Button>
-      ) : null}
-    </section>
+    </>
   )
 }
 
 function JobState({ job }: { job: ImportJob }) {
   const { t } = useTranslation('studio')
-  const links = useWasichaiLinks()
   return (
     <div className="flex flex-col gap-2">
       <p className="max-w-prose text-sm text-ink-muted">{t(`import.statusHint.${job.status}`)}</p>
       {!isFinished(job.status) && job.error ? <p className="text-sm break-all text-ink-muted">{t('import.job.transient', { error: job.error })}</p> : null}
       {job.status === 'FALLIDO' ? (
         <>
-          <Alert tone="danger">{t('import.job.failed', { error: job.error ?? t('import.job.noReason') })}</Alert>
+          <Notice tone="danger">
+            <span className="[overflow-wrap:anywhere]">{t('import.job.failed', { error: job.error ?? t('import.job.noReason') })}</span>
+          </Notice>
           <p className="max-w-prose text-sm text-ink-muted">{t('import.job.failedHint')}</p>
         </>
-      ) : null}
-      {job.status === 'HECHO' && job.versionId ? (
-        <Link to={links.to(STUDIO_ROUTES.version, { id: job.versionId })} className={`self-start ${LINK}`}>
-          {t('import.job.openDraft')}
-        </Link>
       ) : null}
     </div>
   )
@@ -294,13 +425,7 @@ function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void })
   const { t } = useTranslation('studio')
   const kind = problemKind(error)
   const status = error instanceof ApiError ? error.status : undefined
-  if (kind === 'notFound')
-    return (
-      <div role="alert" className="flex max-w-prose flex-col gap-2">
-        <p className="text-base font-semibold text-ink">{t('import.job.notFound')}</p>
-        <p className="text-sm text-ink-muted">{t('import.job.notFoundHint')}</p>
-      </div>
-    )
+  if (kind === 'notFound') return <ProblemState title={t('import.job.notFound')} description={t('import.job.notFoundHint')} />
   return (
     <ProblemState
       title={t(`import.problem.${kind}`)}
@@ -313,68 +438,122 @@ function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void })
   )
 }
 
-const COUNTS = ['files', 'includes', 'sections', 'images', 'units', 'lessons'] as const
+const COUNTS = ['units', 'lessons', 'sections', 'files', 'includes', 'images'] as const
 
-// el informe: lo que se leyó y lo que no se resolvió, agrupado por tipo en el orden del contrato. origin y detail vienen
-// del manual (dato no confiable): se pintan como texto
+type Severity = 'gap' | 'check'
+
+// la gravedad no viene en el contrato: se deriva del tipo según lo que hace el analizador del servidor. «gap»: no se leyó esa parte
+// del manual, así que al temario le pueden faltar unidades o lecciones. «check»: el temario se leyó; queda algo que revisar
+const SEVERITY: Record<ImportProblemKind, Severity> = {
+  MISSING_INCLUDE: 'gap',
+  INCLUDE_OUTSIDE_ROOT: 'gap',
+  INCLUDE_CYCLE: 'gap',
+  INCLUDE_TOO_DEEP: 'gap',
+  UNRESOLVED_ATTRIBUTE: 'gap',
+  FILE_TOO_LARGE: 'gap',
+  UNSUPPORTED_INCLUDE_OPTION: 'check',
+  MISSING_IMAGE: 'check',
+  IMAGE_OUTSIDE_ROOT: 'check',
+  BROKEN_REFERENCE: 'check',
+  DUPLICATE_ANCHOR: 'check'
+}
+
+const SEVERITIES: Severity[] = ['gap', 'check']
+const SEVERITY_ICON: Record<Severity, LucideIcon> = { gap: CircleAlert, check: TriangleAlert }
+const SEVERITY_TONE: Record<Severity, string> = { gap: 'text-danger', check: 'text-warning' }
+
+// el informe: primero lo que pide atención y las cifras; después cada aviso, lo más grave primero. origin y detail vienen del manual
+// (dato no confiable): se pintan como texto
 function Report({ report }: { report: ImportReport }) {
   const { t, i18n } = useTranslation('studio')
   const locale = i18n.language
-  const groups = IMPORT_PROBLEM_KINDS.map((kind) => ({ kind, problems: report.problems.filter((problem) => problem.kind === kind) })).filter(
-    (group) => group.problems.length > 0
-  )
+  const groups = SEVERITIES.flatMap((severity) =>
+    IMPORT_PROBLEM_KINDS.filter((kind) => SEVERITY[kind] === severity).map((kind) => ({
+      kind,
+      severity,
+      problems: report.problems.filter((problem) => problem.kind === kind)
+    }))
+  ).filter((group) => group.problems.length > 0)
+  const partial = report.problems.length < report.problemCount
   return (
-    <section aria-labelledby="import-report" className="flex flex-col gap-3">
-      <h2 id="import-report" className="text-lg font-semibold text-ink">
-        {t('import.report.title')}
-      </h2>
+    <Section title={t('import.report.title')}>
       <p className="text-sm break-all text-ink-muted">{t('import.report.source', { source: report.source })}</p>
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-        {COUNTS.map((count) => (
-          <div key={count} className="flex justify-between gap-2">
-            <dt className="text-ink-muted">{t(`import.report.${count}`)}</dt>
-            <dd className="font-medium text-ink">{formatNumber(report[count], locale)}</dd>
-          </div>
-        ))}
-      </dl>
       {report.problemCount === 0 ? (
-        <p className="text-sm text-success">{t('import.report.noProblems')}</p>
+        <Notice tone="success">{t('import.report.noProblems')}</Notice>
       ) : (
         <>
-          <p className="text-sm text-warning">
+          <p className="text-sm text-ink">
             {t('import.report.problems', { count: report.problemCount, value: formatNumber(report.problemCount, locale) })}
-            {report.problems.length < report.problemCount
+            {partial
               ? ` ${t('import.report.truncated', { shown: formatNumber(report.problems.length, locale), total: formatNumber(report.problemCount, locale) })}`
               : null}
           </p>
-          {groups.map((group) => (
-            <div key={group.kind} className="flex flex-col gap-1">
-              <h3 className="text-base font-semibold text-ink">
-                {t('import.report.group', { kind: t(`import.kind.${group.kind}`), value: formatNumber(group.problems.length, locale) })}
-              </h3>
-              <ul className="flex flex-col gap-1 border-l border-border pl-4 text-sm">
-                {group.problems.map((problem, index) => (
-                  <li key={`${problem.origin}:${problem.line}:${index}`}>
-                    <ProblemItem problem={problem} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div role="group" aria-label={t('import.report.bySeverity')}>
+            <StatList>
+              {SEVERITIES.map((severity) => (
+                <Stat
+                  key={severity}
+                  icon={SEVERITY_ICON[severity]}
+                  label={t(`import.severity.${severity}`)}
+                  value={formatNumber(report.problems.filter((problem) => SEVERITY[problem.kind] === severity).length, locale)}
+                />
+              ))}
+            </StatList>
+          </div>
+          {partial ? <p className="text-sm text-ink-muted">{t('import.report.partial')}</p> : null}
         </>
       )}
-    </section>
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-1 border-y border-border py-3 text-sm sm:grid-cols-3">
+        {COUNTS.map((count) => (
+          <div key={count} className="flex justify-between gap-2">
+            <dt className="text-ink-muted">{t(`import.report.${count}`)}</dt>
+            <dd className="font-medium text-ink tabular-nums">{formatNumber(report[count], locale)}</dd>
+          </div>
+        ))}
+      </dl>
+      {groups.map((group) => (
+        <ProblemGroup key={group.kind} {...group} />
+      ))}
+    </Section>
   )
 }
 
+function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind; severity: Severity; problems: ImportProblem[] }) {
+  const { t, i18n } = useTranslation('studio')
+  const Icon = SEVERITY_ICON[severity]
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+        <h3 className="text-base font-semibold text-ink">
+          {t('import.report.group', { kind: t(`import.kind.${kind}`), value: formatNumber(problems.length, i18n.language) })}
+        </h3>
+        <span className={`inline-flex items-center gap-1 text-sm ${SEVERITY_TONE[severity]}`}>
+          <Icon aria-hidden="true" className="size-4 shrink-0" />
+          {t(`import.severity.${severity}`)}
+        </span>
+      </div>
+      <ul className="flex flex-col divide-y divide-border border-l-2 border-border pl-3 text-sm">
+        {problems.map((problem, index) => (
+          <li key={`${problem.origin}:${problem.line}:${index}`} className="py-1.5">
+            <ProblemItem problem={problem} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+// el origen es repo@sha:ruta y la fuente ya se ve arriba: basta el archivo. con otra forma, tal cual
+const ORIGIN = /^[^/\s@:]+\/[^/\s@:]+@[0-9a-f]{40}:(.+)$/
+const fileOf = (origin: string) => ORIGIN.exec(origin)?.[1] ?? origin
+
 function ProblemItem({ problem }: { problem: ImportProblem }) {
   const { t } = useTranslation('studio')
+  const origin = fileOf(problem.origin)
   return (
     <div className="flex flex-col">
       <span className="font-mono text-xs break-all text-ink-muted">
-        {problem.line === 0
-          ? t('import.report.wholeFile', { origin: problem.origin })
-          : t('import.report.line', { origin: problem.origin, line: problem.line })}
+        {problem.line === 0 ? t('import.report.wholeFile', { origin }) : t('import.report.line', { origin, line: problem.line })}
       </span>
       <span className="break-all text-ink">{problem.detail}</span>
     </div>

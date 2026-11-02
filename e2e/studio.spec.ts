@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fakeApi } from './api'
+import { failedJob } from '../src/modules/studio/test/importFixtures'
 import { fullDiff } from './visual/scenarios/studio'
 
 // el estudio del creador (ADR-0018) con la API simulada: sus versiones, qué cambió cada una respecto de la anterior,
@@ -120,6 +121,7 @@ test('un creador importa un manual: encola, sigue el trabajo, lee el informe y a
   // el sondeo es cada pocos segundos: PENDIENTE, EN_CURSO y HECHO
   await expect(page.getByRole('heading', { level: 2, name: 'Estado de la importación' })).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'Importación terminada' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('list', { name: 'Pasos de la importación' }).locator('[aria-current="step"]')).toContainText('Resultado')
   const report = page.getByRole('region', { name: 'Informe' })
   await expect(report.getByRole('heading', { level: 3 })).toHaveText(['Inclusión que no existe (1)', 'Imagen que no existe (2)'])
   await page.getByRole('link', { name: 'Abrir el borrador' }).click()
@@ -148,6 +150,28 @@ test('si el servidor no permite el origen (403), la importación lo explica', as
 
   await expect(page.getByRole('alert')).toContainText('no están entre los orígenes permitidos')
   await expect(page.getByRole('button', { name: 'Importar como borrador' })).toBeEnabled()
+})
+
+test('una importación fallida deja volver al formulario con lo escrito', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.route('**/api/lms/studio/import', (route) =>
+    route.request().method() === 'POST' ? route.fulfill({ status: 202, json: failedJob }) : route.fallback()
+  )
+  await page.route(`**/api/lms/studio/import/${failedJob.id}`, (route) => route.fulfill({ json: failedJob }))
+  await page.goto('/estudio/importar')
+
+  await page.getByLabel('Commit').fill(IMPORT_SHA)
+  await page.getByLabel('Ruta del maestro').fill('manual/maestro.adoc')
+  await page.getByRole('combobox', { name: 'Curso' }).click()
+  await page.getByRole('option', { name: 'Introducción al SGSPE (SGSPE-101)' }).click()
+  await page.getByRole('button', { name: 'Importar como borrador' }).click()
+
+  await expect(page.getByRole('status').filter({ hasText: 'La importación falló' })).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('does not exist at this commit')
+  await page.getByRole('button', { name: 'Revisar y reintentar' }).click()
+  await expect(page.getByLabel('Commit')).toHaveValue(IMPORT_SHA)
+  await expect(page.getByLabel('Ruta del maestro')).toHaveValue('manual/maestro.adoc')
+  await expect(page.getByRole('combobox', { name: 'Curso' })).toContainText('Introducción al SGSPE (SGSPE-101)')
 })
 
 test('a quien no puede importar (403), la página de importación se lo explica', async ({ page }) => {

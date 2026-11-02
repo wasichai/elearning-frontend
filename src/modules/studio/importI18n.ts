@@ -9,6 +9,7 @@ const es = {
     title: 'Orígenes permitidos',
     anyCommit: 'cualquier commit',
     pinned: 'solo el commit {{sha}}',
+    hint: 'Solo se importa de estos repositorios. Los decide quien administra el servidor.',
     empty: 'No hay orígenes permitidos',
     emptyHint: 'Quien administra el servidor decide de qué repositorios se importa. Pídele que añada el del manual.'
   },
@@ -37,9 +38,10 @@ const es = {
   error: {
     invalid: 'El servidor rechazó la fuente o el curso: {{detail}}',
     refused:
-      'El servidor no lo permitió: el repositorio o el commit no están entre los orígenes permitidos, o no tienes permiso para importar (crear versiones, unidades y lecciones).',
+      'El servidor no lo permitió: el repositorio o el commit no están entre los orígenes permitidos, o no tienes permiso para importar (crear versiones, unidades y lecciones). Elige uno de la lista «Orígenes permitidos»; si el manual está en otro, pide a quien administra el servidor que lo añada.',
     courseNotFound: 'El curso elegido ya no existe. Elige otro.',
     network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    tooMany: 'Tienes demasiados trabajos en marcha. Espera a que termine alguno e inténtalo de nuevo.',
     failed: 'No pudimos encolar la importación (error {{status}}). Inténtalo de nuevo.',
     unexpected: 'No pudimos encolar la importación. Inténtalo de nuevo.'
   },
@@ -50,8 +52,9 @@ const es = {
     FALLIDO: 'La importación falló'
   },
   statusHint: {
-    PENDIENTE: 'El trabajo espera su turno. Esta página lo consulta cada pocos segundos; puedes quedarte aquí.',
-    EN_CURSO: 'Se está leyendo el manual y creando el borrador.',
+    PENDIENTE:
+      'El trabajo espera su turno. Esta página consulta su estado cada pocos segundos. Si sales, el trabajo sigue, pero no podrás volver a este informe.',
+    EN_CURSO: 'Se está leyendo el manual y creando el borrador. Si sales, el trabajo sigue, pero no podrás volver a este informe.',
     HECHO: 'El borrador está listo: revísalo y edítalo antes de enviarlo a revisión.',
     FALLIDO: 'No se creó ningún borrador.'
   },
@@ -64,6 +67,7 @@ const es = {
     failedHint:
       'Suele pasar si el maestro no existe en ese commit, el origen dejó de estar permitido, el curso desapareció o el manual tiene demasiados archivos. Corrígelo e importa de nuevo.',
     openDraft: 'Abrir el borrador',
+    retry: 'Revisar y reintentar',
     another: 'Importar otro manual',
     notFound: 'Esta importación no está entre las tuyas',
     notFoundHint: 'Solo quien pidió una importación puede seguirla.'
@@ -81,9 +85,25 @@ const es = {
     problems_one: '{{value}} problema. Un problema no detiene la importación: revisa esa parte en el borrador.',
     problems_other: '{{value}} problemas. Un problema no detiene la importación: revisa esas partes en el borrador.',
     truncated: 'Se muestran {{shown}} de {{total}}.',
+    bySeverity: 'Problemas por gravedad',
+    partial: 'Las cifras por gravedad cuentan solo los que se muestran.',
     group: '{{kind}} ({{value}})',
     line: '{{origin}}, línea {{line}}',
     wholeFile: '{{origin}}, el archivo entero'
+  },
+  severity: {
+    gap: 'Puede faltar temario',
+    check: 'A revisar'
+  },
+  steps: {
+    label: 'Pasos de la importación',
+    source: 'Origen',
+    queue: 'Cola',
+    run: 'Lectura',
+    result: 'Resultado',
+    failed: 'Falló',
+    done: 'hecho',
+    pending: 'pendiente'
   },
   kind: {
     MISSING_INCLUDE: 'Inclusión que no existe',
@@ -120,6 +140,7 @@ const en: typeof es = {
     title: 'Allowed sources',
     anyCommit: 'any commit',
     pinned: 'only commit {{sha}}',
+    hint: 'Importing only works from these repositories. Whoever runs the server decides them.',
     empty: 'There are no allowed sources',
     emptyHint: 'Whoever runs the server decides which repositories can be imported. Ask them to add the one with the manual.'
   },
@@ -148,9 +169,10 @@ const en: typeof es = {
   error: {
     invalid: 'The server rejected the source or the course: {{detail}}',
     refused:
-      'The server did not allow it: the repository or the commit are not among the allowed sources, or you are not allowed to import (create versions, units and lessons).',
+      'The server did not allow it: the repository or the commit are not among the allowed sources, or you are not allowed to import (create versions, units and lessons). Choose one from the “Allowed sources” list; if the manual is elsewhere, ask whoever runs the server to add it.',
     courseNotFound: 'The chosen course no longer exists. Choose another one.',
     network: 'There is no connection to the server. Check your connection and try again.',
+    tooMany: 'You have too many jobs running. Wait for one to finish and try again.',
     failed: 'We could not queue the import (error {{status}}). Please try again.',
     unexpected: 'We could not queue the import. Please try again.'
   },
@@ -161,8 +183,9 @@ const en: typeof es = {
     FALLIDO: 'The import failed'
   },
   statusHint: {
-    PENDIENTE: 'The job is waiting for its turn. This page checks it every few seconds; you can stay here.',
-    EN_CURSO: 'The manual is being read and the draft created.',
+    PENDIENTE:
+      'The job is waiting for its turn. This page checks its status every few seconds. If you leave, the job continues, but you will not be able to come back to this report.',
+    EN_CURSO: 'The manual is being read and the draft created. If you leave, the job continues, but you will not be able to come back to this report.',
     HECHO: 'The draft is ready: review and edit it before sending it for review.',
     FALLIDO: 'No draft was created.'
   },
@@ -175,6 +198,7 @@ const en: typeof es = {
     failedHint:
       'This usually happens when the master file does not exist at that commit, the source is no longer allowed, the course was removed or the manual has too many files. Fix it and import again.',
     openDraft: 'Open the draft',
+    retry: 'Review and try again',
     another: 'Import another manual',
     notFound: 'This import is not among yours',
     notFoundHint: 'Only the person who requested an import can follow it.'
@@ -192,9 +216,25 @@ const en: typeof es = {
     problems_one: '{{value}} problem. A problem does not stop the import: check that part in the draft.',
     problems_other: '{{value}} problems. A problem does not stop the import: check those parts in the draft.',
     truncated: 'Showing {{shown}} of {{total}}.',
+    bySeverity: 'Problems by severity',
+    partial: 'The figures by severity only count the ones shown.',
     group: '{{kind}} ({{value}})',
     line: '{{origin}}, line {{line}}',
     wholeFile: '{{origin}}, the whole file'
+  },
+  severity: {
+    gap: 'Syllabus may be incomplete',
+    check: 'To check'
+  },
+  steps: {
+    label: 'Import steps',
+    source: 'Source',
+    queue: 'Queue',
+    run: 'Reading',
+    result: 'Result',
+    failed: 'Failed',
+    done: 'done',
+    pending: 'pending'
   },
   kind: {
     MISSING_INCLUDE: 'Missing include',

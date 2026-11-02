@@ -51,6 +51,11 @@ const baseRoutes = (...more: MockRoute[]): MockRoute[] => [...more, { path: SOUR
 
 const calls = (method: string, path: string) => fetchMock.calls.filter((call) => call.method === method && call.path.split('?')[0] === path)
 
+const currentStep = () =>
+  within(screen.getByRole('list', { name: 'Pasos de la importación' }))
+    .getAllByRole('listitem')
+    .find((step) => step.getAttribute('aria-current') === 'step')
+
 async function choose(user: UserEvent, label: string, option: string) {
   const box = screen.getByRole('combobox', { name: label })
   await waitFor(() => expect(box).toBeEnabled())
@@ -77,7 +82,8 @@ describe('ImportPage: el formulario', () => {
       `wasichai/manual-srtmsolo el commit ${PINNED_SHA}`
     ])
     expect(screen.getByLabelText('Commit')).not.toHaveAttribute('readonly')
-    expect(screen.getByRole('link', { name: '← Mis versiones' })).toHaveAttribute('href', '/estudio')
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByRole('link', { name: 'Mis versiones' })).toHaveAttribute('href', '/estudio')
+    expect(currentStep()).toHaveTextContent(/^Origen/)
 
     await choose(user, 'Repositorio', 'wasichai/manual-srtm')
     expect(screen.getByLabelText('Commit')).toHaveValue(PINNED_SHA)
@@ -101,6 +107,63 @@ describe('ImportPage: el formulario', () => {
     expect(screen.getByText(/^Escribe una ruta dentro del repositorio/)).toBeInTheDocument()
     expect(screen.getByText('Elige el curso al que irá el borrador.')).toBeInTheDocument()
     expect(calls('POST', IMPORT)).toHaveLength(0)
+    // cada error, con su icono, ligado a su campo, y el foco en el primero
+    const message = screen.getByText('Escribe el commit completo: 40 caracteres entre 0-9 y a-f.').closest('p')!
+    expect(message.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getByLabelText('Commit')).toHaveAttribute('aria-describedby', message.id)
+    expect(screen.getByLabelText('Commit')).toHaveFocus()
+    expect(screen.getByRole('combobox', { name: 'Curso' })).toHaveAttribute('aria-invalid', 'true')
+
+    // al corregir un campo su error se va; el de los otros sigue
+    await user.type(screen.getByLabelText('Ruta del maestro'), 'x')
+    expect(screen.queryByText(/^Escribe una ruta dentro del repositorio/)).not.toBeInTheDocument()
+    expect(screen.getByText('Escribe el commit completo: 40 caracteres entre 0-9 y a-f.')).toBeInTheDocument()
+  })
+
+  it('los pasos siguen el estado real del trabajo y solo se anuncia el cambio de estado, no cada consulta', async () => {
+    const user = userEvent.setup()
+    const transient = { ...runningJob, error: 'GitHub respondió 502' }
+    renderImport(
+      baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(pendingJob, pendingJob, runningJob, transient, transient, doneJob))
+    )
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    const live = await screen.findByRole('status')
+    expect(live).toHaveAttribute('aria-live', 'polite')
+    expect(live).toHaveTextContent(/^En cola$/)
+    expect(currentStep()).toHaveTextContent(/^Cola/)
+    const changes: string[] = []
+    const observer = new MutationObserver(() => changes.push(live.textContent ?? ''))
+    observer.observe(live, { childList: true, characterData: true, subtree: true })
+
+    expect(await screen.findByText('Importando')).toBe(live)
+    expect(currentStep()).toHaveTextContent(/^Lectura/)
+    // un fallo pasajero se ve, pero no se anuncia
+    await screen.findByText(/^Último fallo pasajero/)
+    expect(live).toHaveTextContent(/^Importando$/)
+
+    await screen.findByText('Importación terminada')
+    expect(screen.getByRole('status')).toBe(live)
+    expect(currentStep()).toHaveTextContent(/^Resultado/)
+    observer.disconnect()
+    expect(changes).toEqual(['Importando', 'Importación terminada'])
+    // lo que ya pasó se dice también con palabras
+    const steps = within(screen.getByRole('list', { name: 'Pasos de la importación' })).getAllByRole('listitem')
+    expect(steps[0]).toHaveTextContent('hecho')
+    expect(steps[2]).toHaveTextContent('hecho')
+    // abrir el borrador es la primaria; otro manual, no
+    expect(screen.getByRole('link', { name: 'Abrir el borrador' })).toHaveAttribute('data-variant', 'primary')
+    expect(screen.getByRole('button', { name: 'Importar otro manual' })).toHaveAttribute('data-variant', 'secondary')
+  })
+
+  it('demasiados trabajos activos (429) dice qué hacer', async () => {
+    const user = userEvent.setup()
+    renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 429, body: problem(429, 'Too many') }))
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Tienes demasiados trabajos en marcha. Espera a que termine alguno e inténtalo de nuevo.')
   })
 
   it('encola con la fuente completa, sigue el trabajo hasta HECHO y deja de consultar', async () => {
@@ -147,7 +210,7 @@ describe('ImportPage: el formulario', () => {
       'sha must be a full 40-character lower-case commit id',
       'El servidor rechazó la fuente o el curso: sha must be a full 40-character lower-case commit id'
     ],
-    [403, 'Origen no permitido', 'El servidor no lo permitió: el repositorio o el commit no están entre los orígenes permitidos'],
+    [403, 'Origen no permitido', /El servidor no lo permitió: el repositorio o el commit no están entre los orígenes permitidos.*Elige uno de la lista/],
     [404, 'Curso no encontrado', 'El curso elegido ya no existe. Elige otro.'],
     [500, 'fallo', 'No pudimos encolar la importación (error 500). Inténtalo de nuevo.']
   ])('un %i al encolar se explica y deja el formulario', async (status, detail, text) => {
@@ -164,7 +227,7 @@ describe('ImportPage: el formulario', () => {
 })
 
 describe('ImportPage: el resultado', () => {
-  it('el informe agrupa los problemas por tipo, traducidos, con su archivo y su línea', async () => {
+  it('el informe pone primero lo que puede dejar el temario incompleto, con cifras y la ubicación de cada aviso', async () => {
     const user = userEvent.setup()
     renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(doneJob)))
     await fillForm(user)
@@ -178,8 +241,15 @@ describe('ImportPage: el resultado', () => {
       'Inclusión que no existe (1)',
       'Imagen que no existe (2)'
     ])
-    expect(report.getByText(`wasichai/manual-sgspe@${ANY_SHA}:manual/acceso.adoc, línea 12`)).toBeInTheDocument()
-    expect(report.getByText(`wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc, el archivo entero`)).toBeInTheDocument()
+    // el resumen, antes que las cifras de lectura, y cada grupo con su gravedad en palabra
+    const summary = within(report.getByRole('group', { name: 'Problemas por gravedad' }))
+    expect(summary.getByText('Puede faltar temario').closest('div')).toHaveTextContent(/^Puede faltar temario1$/)
+    expect(summary.getByText('A revisar').closest('div')).toHaveTextContent(/^A revisar2$/)
+    expect(report.getByText('Inclusión que no existe (1)').parentElement).toHaveTextContent('Puede faltar temario')
+    expect(report.getByText('Imagen que no existe (2)').parentElement).toHaveTextContent('A revisar')
+    // la fuente completa va una vez; en cada aviso, su archivo y su línea
+    expect(report.getByText('manual/acceso.adoc, línea 12')).toBeInTheDocument()
+    expect(report.getByText('manual/pagos.adoc, el archivo entero')).toBeInTheDocument()
     expect(report.getByText('img/portal.png')).toBeInTheDocument()
   })
 
@@ -190,6 +260,7 @@ describe('ImportPage: el resultado', () => {
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
     expect(await screen.findByText(/^812 problemas\..*Se muestran 3 de 812\.$/)).toBeInTheDocument()
+    expect(screen.getByText('Las cifras por gravedad cuentan solo los que se muestran.')).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()
 
@@ -198,6 +269,41 @@ describe('ImportPage: el resultado', () => {
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
     expect(await screen.findByText('Sin problemas: todo se resolvió.')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Problemas por gravedad' })).not.toBeInTheDocument()
+  })
+
+  it('un origen con otra forma se muestra tal cual, como texto', async () => {
+    const user = userEvent.setup()
+    const odd = {
+      ...doneJob,
+      report: { ...importReport, problemCount: 1, problems: [{ kind: 'BROKEN_REFERENCE', origin: 'otro<b>origen', line: 3, detail: 'x' }] }
+    }
+    renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(odd)))
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    expect(await screen.findByText('otro<b>origen, línea 3')).toBeInTheDocument()
+  })
+
+  it('un fallo deja volver al formulario con lo escrito; «otro manual» empieza de cero', async () => {
+    const user = userEvent.setup()
+    renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(failedJob)))
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    await screen.findByText('La importación falló')
+    expect(currentStep()).toHaveTextContent(/^Falló/)
+    await user.click(screen.getByRole('button', { name: 'Revisar y reintentar' }))
+    expect(await screen.findByLabelText('Commit')).toHaveValue(ANY_SHA)
+    expect(screen.getByLabelText('Ruta del maestro')).toHaveValue('manual/maestro.adoc')
+    expect(screen.getByRole('combobox', { name: 'Curso' })).toHaveTextContent('Introducción al SGSPE (SGSPE-101)')
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+    await waitFor(() => expect(calls('POST', IMPORT)).toHaveLength(2))
+    expect(calls('POST', IMPORT)[1]?.body).toEqual({ source: SOURCE, courseId: COURSE_ID })
+
+    await user.click(await screen.findByRole('button', { name: 'Importar otro manual' }))
+    expect(await screen.findByLabelText('Commit')).toHaveValue('')
+    expect(screen.getByLabelText('Ruta del maestro')).toHaveValue('')
   })
 
   it('si falla, explica el motivo y no ofrece borrador', async () => {
