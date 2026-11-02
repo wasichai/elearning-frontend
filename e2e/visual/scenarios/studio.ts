@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { draftDetail, draftVersion, publishedDetail, publishedVersion } from '../../../src/modules/studio/test/fixtures'
+import { doneJob, failedJob, IMPORT_JOB_ID, importReport, pendingJob, runningJob, ANY_SHA, SOURCE } from '../../../src/modules/studio/test/importFixtures'
 import { creator, type Scenario } from '../scenario'
 
 const DRAFT = 'a1b2c3d4-0000-4000-8000-000000000002'
@@ -110,6 +111,50 @@ const returned = {
   decisions: [publishedDetail.decisions[0]]
 }
 
+const IMPORT_PATH = '/estudio/importar'
+const IMPORT_SOURCES = '**/api/lms/studio/import/sources'
+const IMPORT = '**/api/lms/studio/import'
+const importJob = `**/api/lms/studio/import/${IMPORT_JOB_ID}`
+
+// rellena el formulario, en español o en inglés
+async function fillImport(page: Page, path = 'manual/maestro.adoc'): Promise<void> {
+  await page.getByLabel('Commit').fill(ANY_SHA)
+  await page.getByLabel(/Ruta del maestro|Master file path/).fill(path)
+  await page.getByRole('combobox', { name: /^(Curso|Course)$/ }).click()
+  await page.getByRole('option').first().click()
+}
+
+const submitImport = (page: Page) => page.getByRole('button', { name: /Importar como borrador|Import as a draft/ }).click()
+
+// el trabajo en el estado que se quiere ver, y una ventana alta para ver el informe entero
+const importedAs = (job: unknown) => async (page: Page) => {
+  await page.route(IMPORT, (route) => (route.request().method() === 'POST' ? route.fulfill({ status: 202, json: pendingJob }) : route.fallback()))
+  await page.route(importJob, (route) => route.fulfill({ json: job }))
+  await fillImport(page)
+  await submitImport(page)
+  await page.getByRole('heading', { level: 2, name: /Estado de la importación|Import status/ }).waitFor()
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 1500 })
+  await page.waitForTimeout(100)
+}
+
+// un informe con todas las gravedades, recortado y con rutas larguísimas
+const severeReport = {
+  ...importReport,
+  problemCount: 812,
+  problems: [
+    ...importReport.problems,
+    {
+      kind: 'FILE_TOO_LARGE',
+      origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/${'capitulo-muy-largo/'.repeat(6)}anexo.adoc`,
+      line: 0,
+      detail: 'manual/anexo.adoc'
+    },
+    { kind: 'INCLUDE_CYCLE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`, line: 3, detail: 'manual/a.adoc -> manual/b.adoc -> manual/a.adoc' },
+    { kind: 'BROKEN_REFERENCE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc`, line: 44, detail: 'seccion-inexistente' },
+    { kind: 'UNRESOLVED_ATTRIBUTE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`, line: 9, detail: `{${'atributo-sin-valor-'.repeat(8)}}` }
+  ]
+}
+
 const withDiff = (status: number, body: unknown) => async (page: Page) => {
   await page.route(DIFF, (route) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }))
   await page.reload({ waitUntil: 'networkidle' })
@@ -127,7 +172,54 @@ export const studioScenarios: Scenario[] = [
       await page.setViewportSize({ width: page.viewportSize()!.width, height: 1500 })
     }
   },
-  { name: 'studio-import', path: '/estudio/importar', api: creator },
+  { name: 'studio-import', path: IMPORT_PATH, api: creator },
+  {
+    name: 'studio-import-invalid',
+    path: IMPORT_PATH,
+    api: creator,
+    act: async (page) => {
+      await page.getByLabel('Commit').fill('4f2a9c1')
+      await page.getByLabel(/Ruta del maestro|Master file path/).fill('../secreto.adoc')
+      await submitImport(page)
+    }
+  },
+  {
+    name: 'studio-import-refused',
+    path: IMPORT_PATH,
+    api: creator,
+    act: async (page) => {
+      await page.route(IMPORT, (route) =>
+        route.request().method() === 'POST' ? route.fulfill({ status: 403, json: { title: 'Forbidden', status: 403 } }) : route.fallback()
+      )
+      await fillImport(page)
+      await submitImport(page)
+      await page.getByRole('alert').waitFor()
+      await page.setViewportSize({ width: page.viewportSize()!.width, height: 1300 })
+    }
+  },
+  { name: 'studio-import-pending', path: IMPORT_PATH, api: creator, act: importedAs(pendingJob) },
+  { name: 'studio-import-running', path: IMPORT_PATH, api: creator, act: importedAs({ ...runningJob, error: 'GitHub respondió 502' }) },
+  { name: 'studio-import-done', path: IMPORT_PATH, api: creator, act: importedAs(doneJob) },
+  { name: 'studio-import-severe', path: IMPORT_PATH, api: creator, act: importedAs({ ...doneJob, report: severeReport }) },
+  {
+    name: 'studio-import-clean',
+    path: IMPORT_PATH,
+    api: creator,
+    act: importedAs({ ...doneJob, report: { ...importReport, source: SOURCE, problemCount: 0, problems: [] } })
+  },
+  { name: 'studio-import-failed', path: IMPORT_PATH, api: creator, act: importedAs(failedJob) },
+  { name: 'studio-import-forbidden', path: IMPORT_PATH, api: creator, act: reloadedWith(IMPORT_SOURCES, 403, { title: 'Forbidden', status: 403 }) },
+  { name: 'studio-import-no-sources', path: IMPORT_PATH, api: creator, act: reloadedWith(IMPORT_SOURCES, 200, []) },
+  {
+    name: 'studio-import-loading',
+    path: IMPORT_PATH,
+    api: creator,
+    act: async (page) => {
+      await page.route(IMPORT_SOURCES, () => {})
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await page.getByText(/Cargando los orígenes|Loading the allowed/).waitFor()
+    }
+  },
   { name: 'studio-many', path: '/estudio', api: creator, act: reloadedWith(VERSIONS, 200, manyVersions) },
   { name: 'studio-empty', path: '/estudio', api: creator, act: reloadedWith(VERSIONS, 200, []) },
   { name: 'studio-error', path: '/estudio', api: creator, act: reloadedWith(VERSIONS, 500, { title: 'Internal Server Error', status: 500 }) },

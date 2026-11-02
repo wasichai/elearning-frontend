@@ -21,8 +21,7 @@ const es = {
     submitLabel: 'Enviar a revisión la versión {{number}} de {{course}}',
     updated: 'Actualizada el {{date}}',
     openComments_one: '{{value}} comentario por atender',
-    openComments_other: '{{value}} comentarios por atender',
-    back: '← Mis versiones'
+    openComments_other: '{{value}} comentarios por atender'
   },
   status: {
     BORRADOR: 'Borrador',
@@ -176,8 +175,7 @@ const en: typeof es = {
     submitLabel: 'Send version {{number}} of {{course}} for review',
     updated: 'Updated on {{date}}',
     openComments_one: '{{value}} comment to address',
-    openComments_other: '{{value}} comments to address',
-    back: '← My versions'
+    openComments_other: '{{value}} comments to address'
   },
   status: {
     BORRADOR: 'Draft',
