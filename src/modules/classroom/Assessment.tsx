@@ -40,7 +40,7 @@ export function AssessmentLesson({ enrollmentId, lesson, timeZone }: { enrollmen
   )
 }
 
-const ATTEMPT_STATE: Record<KnotState, string> = { done: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
+const ATTEMPT_STATE: Partial<Record<KnotState, string>> = { used: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
 
 function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
   const { t, i18n } = useTranslation('classroom')
@@ -101,7 +101,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
           {knots.map((knot, index) => (
             <li key={index} className="inline-flex items-center gap-2">
               <Knot {...knot} />
-              <span>{t('assessment.knot', { number: formatNumber(index + 1, locale), state: t(ATTEMPT_STATE[knot.state]) })}</span>
+              <span>{t('assessment.knot', { number: formatNumber(index + 1, locale), state: t(ATTEMPT_STATE[knot.state] ?? 'assessment.knotFree') })}</span>
             </li>
           ))}
         </ul>

@@ -20,9 +20,9 @@ describe('attemptKnots', () => {
   const states = (max: number, used: number, open: boolean) => attemptKnots(max, used, open).map((knot) => `${knot.kind}:${knot.state}`)
 
   it('en rombos: los usados, el abierto y los libres', () => {
-    expect(states(3, 1, false)).toEqual(['assessment:done', 'assessment:todo', 'assessment:todo'])
-    expect(states(3, 1, true)).toEqual(['assessment:done', 'assessment:active', 'assessment:todo'])
-    expect(states(2, 2, false)).toEqual(['assessment:done', 'assessment:done'])
+    expect(states(3, 1, false)).toEqual(['assessment:used', 'assessment:todo', 'assessment:todo'])
+    expect(states(3, 1, true)).toEqual(['assessment:used', 'assessment:active', 'assessment:todo'])
+    expect(states(2, 2, false)).toEqual(['assessment:used', 'assessment:used'])
   })
 })
 

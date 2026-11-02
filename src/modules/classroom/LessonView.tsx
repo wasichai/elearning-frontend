@@ -3,7 +3,7 @@ import { Button } from '@wasichai/ui'
 import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { videoCompletion } from '../../config'
 import { formatNumber } from '../../shared/format'
 import { QUIPU_READING_THEME } from '../../theme/themes'
@@ -19,7 +19,7 @@ import type { ReadingControls } from './readingPreferences'
 import { Resources, type ReadingSettings } from './Resources'
 import { StatusBadge, statusOf } from './StatusBadge'
 import { Sessions } from './SessionsPage'
-import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
+import { ATTEMPT_PARAM, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 interface LessonViewProps {
   enrollmentId: string
@@ -41,6 +41,9 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const { t, i18n } = useTranslation('classroom')
   const lessonType = useOpenLabel('lessonType')
   const { lesson, unit } = placed
+  // dentro de un intento no se ofrece ir a otra lección de un toque: lo que no se ha guardado se perdería
+  const [search] = useSearchParams()
+  const inAttempt = search.has(ATTEMPT_PARAM)
   const heading = useFocusOnChange(lesson.id)
   useStartLesson(enrollmentId, lesson)
   const completion = useLessonEvent(enrollmentId)
@@ -124,7 +127,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
           />
         )}
 
-        <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
+        {inAttempt ? null : <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />}
       </div>
 
       <Completion

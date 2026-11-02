@@ -152,7 +152,7 @@ describe('la ficha previa', () => {
 
     const rules = within(await panel())
     const list = rules.getByRole('list', { name: 'Intentos' })
-    expect(knots(list)).toEqual(['done', 'todo', 'todo'])
+    expect(knots(list)).toEqual(['used', 'todo', 'todo'])
     expect(
       within(list)
         .getAllByRole('listitem')
@@ -185,7 +185,7 @@ describe('la ficha previa', () => {
     renderAssessment([{ path: CLASSROOM, body: withAssessment({ attemptsUsed: 2, maxAttempts: 3, openAttemptId: 'int-2' }) }])
 
     const list = within(await panel()).getByRole('list', { name: 'Intentos' })
-    expect(knots(list)).toEqual(['done', 'active', 'todo'])
+    expect(knots(list)).toEqual(['used', 'active', 'todo'])
     expect(
       within(list)
         .getAllByRole('listitem')
@@ -410,6 +410,13 @@ describe('el intento abierto', () => {
       expect(header.getByRole('button', { name: 'Entregar' })).toBeInTheDocument()
       expect(screen.queryByRole('timer')).not.toBeInTheDocument()
       expect(screen.getByText('Sin límite de tiempo')).toBeInTheDocument()
+    })
+
+    it('dentro del intento no se ofrece ir a otra lección de un toque', async () => {
+      open()
+
+      await index()
+      expect(screen.queryByRole('navigation', { name: 'Lección anterior y siguiente' })).not.toBeInTheDocument()
     })
 
     it('cada pregunta del índice se nombra con su estado y cambia al responderla', async () => {
