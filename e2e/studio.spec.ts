@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fakeApi } from './api'
+import { fullDiff } from './visual/scenarios/studio'
 
 // el estudio del creador (ADR-0018) con la API simulada: sus versiones, qué cambió cada una respecto de la anterior,
 // enviar un borrador a revisión y crear una versión nueva a partir de la publicada
@@ -30,8 +31,12 @@ test('un creador encuentra «Mis versiones» en el menú y envía su borrador a 
   // qué cambió respecto de la versión 1: la lección nueva y el título de la unidad 2; lo igual, plegado
   const diff = page.getByRole('region', { name: 'Cambios', exact: true })
   await expect(diff).toContainText('Comparada con la versión 1.')
+  await expect(diff.getByRole('group', { name: 'Resumen de cambios' })).toContainText('Añadidas11 lección')
+  await expect(diff.getByRole('list', { name: 'Leyenda' }).getByRole('listitem')).toHaveCount(3)
+  await expect(diff.getByRole('deletion')).toHaveText('Liquidación')
+  await expect(diff.getByRole('insertion')).toHaveText('Liquidaciones')
   await expect(diff).toContainText('AñadidaLección 1.2. Recorrido por el portal')
-  await expect(diff).toContainText('CambiadaUnidad 2. LiquidacionesAntes: «Liquidación»Cambió: título')
+  await expect(diff).toContainText('CambiadaUnidad 2. LiquidacionesCambió: títuloAntes: LiquidaciónAhora: Liquidaciones')
   await expect(diff.getByText('1 lección sin cambios', { exact: true }).first()).toBeVisible()
   await expect(diff.getByText('Lección 2.1. Evaluación final')).toBeHidden()
   await page.getByRole('button', { name: 'Enviar a revisión' }).click()
@@ -147,4 +152,26 @@ test('a quien no puede importar (403), la página de importación se lo explica'
 
   await expect(page.getByRole('alert')).toContainText('No puedes importar manuales')
   await expect(page.getByLabel('Commit')).toHaveCount(0)
+})
+
+test('la comparación no desborda a 360 con títulos muy largos y sus plegados se abren con el teclado', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.route(`**/api/lms/studio/versions/${DRAFT}/diff`, (route) => route.fulfill({ json: fullDiff }))
+  await page.goto(`/estudio/versiones/${DRAFT}`)
+
+  const diff = page.getByRole('region', { name: 'Cambios', exact: true })
+  await expect(diff.getByRole('group', { name: 'Resumen de cambios' })).toContainText('Cambiadas52 unidades y 3 lecciones')
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(0)
+  const sectionBox = (await diff.boundingBox())!
+  expect(sectionBox.x + sectionBox.width).toBeLessThanOrEqual(360)
+
+  const folded = diff.getByText('Lección 1.1. Entrar al portal')
+  await expect(folded).toBeHidden()
+  const summary = diff.locator('summary').filter({ hasText: '1 lección sin cambios' })
+  expect((await summary.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await summary.focus()
+  await page.keyboard.press('Enter')
+  await expect(folded).toBeVisible()
 })

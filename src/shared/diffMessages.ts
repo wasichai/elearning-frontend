@@ -11,8 +11,22 @@ const es = {
   changed: 'Lo que cambió',
   unit: 'Unidad {{order}}. {{title}}',
   lesson: 'Lección {{unit}}.{{order}}. {{title}}',
-  previousTitle: 'Antes: «{{title}}»',
+  before: 'Antes:',
+  now: 'Ahora:',
   fields: 'Cambió: {{fields}}',
+  ownLessons: 'sus lecciones',
+  otherFields: 'otros datos',
+  summary: 'Resumen de cambios',
+  legend: 'Leyenda',
+  units_one: '{{value}} unidad',
+  units_other: '{{value}} unidades',
+  lessons_one: '{{value}} lección',
+  lessons_other: '{{value}} lecciones',
+  total: {
+    ADDED: 'Añadidas',
+    CHANGED: 'Cambiadas',
+    REMOVED: 'Quitadas'
+  },
   sameUnits_one: '{{value}} unidad sin cambios',
   sameUnits_other: '{{value}} unidades sin cambios',
   sameLessons_one: '{{value}} lección sin cambios',
@@ -24,7 +38,7 @@ const es = {
     CHANGED: 'Cambiada',
     SAME: 'Sin cambios'
   },
-  // los campos de unidad y leccion en model/model.json del backend; uno que no esté aquí se muestra tal cual
+  // los campos de unidad y leccion en model/model.json del backend, más recursos y entornos; uno que no esté aquí se nombra otherFields
   field: {
     titulo: 'título',
     descripcion: 'descripción',
@@ -34,7 +48,13 @@ const es = {
     duracion_minutos: 'duración',
     resumen: 'resumen',
     referencia_fuente: 'fuente',
-    recursos: 'recursos'
+    recursos: 'recursos',
+    objetivo: 'objetivo',
+    requisitos: 'requisitos',
+    hitos: 'hitos',
+    criterios_aceptacion: 'criterios de aceptación',
+    entregables: 'entregables',
+    entornos: 'entornos'
   }
 }
 
@@ -50,8 +70,22 @@ const en: typeof es = {
   changed: 'What changed',
   unit: 'Unit {{order}}. {{title}}',
   lesson: 'Lesson {{unit}}.{{order}}. {{title}}',
-  previousTitle: 'Before: “{{title}}”',
+  before: 'Before:',
+  now: 'Now:',
   fields: 'Changed: {{fields}}',
+  ownLessons: 'its lessons',
+  otherFields: 'other data',
+  summary: 'Summary of changes',
+  legend: 'Key',
+  units_one: '{{value}} unit',
+  units_other: '{{value}} units',
+  lessons_one: '{{value}} lesson',
+  lessons_other: '{{value}} lessons',
+  total: {
+    ADDED: 'Added',
+    CHANGED: 'Changed',
+    REMOVED: 'Removed'
+  },
   sameUnits_one: '{{value}} unit unchanged',
   sameUnits_other: '{{value}} units unchanged',
   sameLessons_one: '{{value}} lesson unchanged',
@@ -71,7 +105,13 @@ const en: typeof es = {
     duracion_minutos: 'duration',
     resumen: 'summary',
     referencia_fuente: 'source',
-    recursos: 'resources'
+    recursos: 'resources',
+    objetivo: 'objective',
+    requisitos: 'requirements',
+    hitos: 'milestones',
+    criterios_aceptacion: 'acceptance criteria',
+    entregables: 'deliverables',
+    entornos: 'environments'
   }
 }
 

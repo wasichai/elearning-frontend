@@ -109,7 +109,7 @@ describe('VersionPage: las diferencias con la versión anterior', () => {
     expect(await diff.findByText('Comparada con la versión 1.')).toBeInTheDocument()
     expect(diff.getByText('Lección 1.1. Entrar al portal').closest('li')).toHaveTextContent('Cambió: recursos')
     expect(diff.getByText('Lección 1.2. Recorrido por el portal').closest('li')).toHaveTextContent(/^Añadida/)
-    expect(diff.getByText('Unidad 2. Liquidaciones').closest('li')).toHaveTextContent('Antes: «Liquidación»Cambió: título')
+    expect(diff.getByText('Unidad 2. Liquidaciones').closest('li')).toHaveTextContent('Cambió: títuloAntes: LiquidaciónAhora: Liquidaciones')
     expect(diff.getByText('1 lección sin cambios')).toBeVisible()
     expect(diff.getByText('Lección 2.1. Evaluación final')).not.toBeVisible()
     expect(fetchMock.calls.filter((call) => call.path === diffPath(draftVersion.id))).toHaveLength(1)

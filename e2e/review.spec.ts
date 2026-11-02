@@ -20,7 +20,7 @@ test('un revisor abre su bandeja, ve qué cambió, comenta una lección y pide c
   // qué cambió respecto de la versión 1, antes del contenido
   const diff = page.getByRole('region', { name: 'Cambios', exact: true })
   await expect(diff).toContainText('Comparada con la versión 1.')
-  await expect(diff).toContainText('CambiadaLección 1.1. Qué es el SGSPECambió: recursos, resumen')
+  await expect(diff).toContainText('CambiadaLección 1.1. Qué es el SGSPECambió: recursos y resumen')
   await expect(diff).toContainText('AñadidaLección 1.2. Evaluación de la unidad')
   await expect(diff).toContainText('QuitadaUnidad 2. Anexos')
   await page.getByRole('button', { name: 'Comentar Lección 1.2. Evaluación de la unidad' }).click()

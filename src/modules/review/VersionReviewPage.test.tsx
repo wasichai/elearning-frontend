@@ -41,7 +41,7 @@ describe('VersionReviewPage: las diferencias con la versión anterior', () => {
 
     const diff = within(await screen.findByRole('region', { name: 'Cambios' }))
     expect(await diff.findByText('Comparada con la versión 1.')).toBeInTheDocument()
-    expect(diff.getByText('Lección 1.1. Qué es el SGSPE').closest('li')).toHaveTextContent('CambiadaLección 1.1. Qué es el SGSPECambió: recursos, resumen')
+    expect(diff.getByText('Lección 1.1. Qué es el SGSPE').closest('li')).toHaveTextContent('CambiadaLección 1.1. Qué es el SGSPECambió: recursos y resumen')
     expect(diff.getByText('Lección 1.2. Evaluación de la unidad').closest('li')).toHaveTextContent(/^Añadida/)
     // lo quitado se nombra por su título de antes
     expect(diff.getByText('Unidad 2. Anexos').closest('li')).toHaveTextContent(/^QuitadaUnidad 2\. AnexosQuitadaLección 2\.1\. Glosario$/)
@@ -76,7 +76,7 @@ describe('VersionReviewPage: las diferencias con la versión anterior', () => {
 
     const diff = within(await screen.findByRole('region', { name: 'Changes' }))
     expect(await diff.findByText('Compared with version 1.')).toBeInTheDocument()
-    expect(diff.getByText('Changed: resources, summary')).toBeInTheDocument()
+    expect(diff.getByText('Changed: resources and summary')).toBeInTheDocument()
     expect(diff.getByText('Lesson 1.2. Evaluación de la unidad')).toBeInTheDocument()
   })
 })

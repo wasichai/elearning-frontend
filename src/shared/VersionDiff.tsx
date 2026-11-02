@@ -1,13 +1,18 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Button } from '@wasichai/ui'
+import { ChevronRight, Equal, Minus, PenLine, Plus, type LucideIcon } from 'lucide-react'
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DiffChange, LessonDiff, UnitDiff, VersionDiff } from './diff'
 import { isKnownField } from './diffMessages'
 import { formatNumber } from './format'
+import { ProblemState } from './ProblemState'
+import { Section, Skeleton, Stat, StatList } from './Screen'
 
-// qué cambió una versión respecto de la anterior del mismo curso: lo añadido, lo quitado y lo cambiado a la vista, con
-// sus campos; lo que sigue igual, plegado. la usan el estudio y la bandeja, cada uno con sus textos bajo diff (diffMessages)
+// qué cambió una versión respecto de la anterior del mismo curso, para leerlo de un vistazo: cuánto en cifras, cómo se marca cada
+// tipo de cambio y, unidad por unidad, qué cambió en palabras de persona; lo que sigue igual, plegado. la usan el estudio y la
+// bandeja, cada uno con sus textos bajo diff (diffMessages). el contrato solo trae el valor anterior del título: es lo único que
+// se muestra antes y ahora; de los demás campos se dice que cambiaron, no cómo
 
 interface VersionDiffSectionProps {
   // el espacio de nombres i18n del módulo que la pinta
@@ -15,38 +20,42 @@ interface VersionDiffSectionProps {
   query: UseQueryResult<VersionDiff, unknown>
 }
 
-const CHANGE_TONE: Record<DiffChange, string> = {
-  ADDED: 'border-success text-success',
-  REMOVED: 'border-danger text-danger',
-  CHANGED: 'border-warning text-warning',
-  SAME: 'border-border text-ink-muted'
+// cada tipo de cambio se distingue por su icono, su palabra y su forma (borde sólido, tachado, borde discontinuo): el color nunca va solo
+const MARK: Record<DiffChange, { icon: LucideIcon; box: string }> = {
+  ADDED: { icon: Plus, box: 'border-solid border-success bg-success-soft text-success' },
+  CHANGED: { icon: PenLine, box: 'border-dashed border-warning bg-warning-soft text-warning' },
+  REMOVED: { icon: Minus, box: 'border-solid border-danger bg-danger-soft text-danger' },
+  SAME: { icon: Equal, box: 'border-solid border-border bg-surface text-ink-muted' }
 }
+
+// lo que se cuenta y se explica, en el orden en que se lee
+const VISIBLE_CHANGES = ['ADDED', 'CHANGED', 'REMOVED'] as const
 
 const byOrder = <T extends { order: number }>(items: T[]): T[] => [...items].sort((a, b) => a.order - b.order)
 // lo quitado ya no tiene título: se nombra por el que tenía
 const nameOf = (item: { title: string | null; previousTitle: string | null }) => item.title ?? item.previousTitle ?? ''
+const joinWords = (words: string[], language: string) => new Intl.ListFormat(language, { type: 'conjunction' }).format(words)
 
 export function VersionDiffSection({ namespace, query }: VersionDiffSectionProps) {
   const { t } = useTranslation(namespace)
-  const headingId = useId()
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h2 id={headingId} className="text-lg font-semibold text-ink">
-        {t('diff.title')}
-      </h2>
+    <Section title={t('diff.title')}>
       {query.isError ? (
-        <div role="alert" className="flex flex-col items-start gap-2 text-sm">
-          <p className="text-ink-muted">{t('diff.failed')}</p>
+        <ProblemState title={t('diff.failed')}>
           <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
             {t('diff.retry')}
           </Button>
-        </div>
+        </ProblemState>
       ) : query.data ? (
         <DiffBody namespace={namespace} diff={query.data} />
       ) : (
-        <p className="text-sm text-ink-muted">{t('diff.loading')}</p>
+        <div role="status" className="flex flex-col gap-3">
+          <p className="text-sm text-ink-muted">{t('diff.loading')}</p>
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       )}
-    </section>
+    </Section>
   )
 }
 
@@ -57,25 +66,96 @@ function DiffBody({ namespace, diff }: { namespace: string; diff: VersionDiff })
   const units = byOrder(diff.units)
   const changed = units.filter((unit) => unit.change !== 'SAME')
   const same = units.filter((unit) => unit.change === 'SAME')
+  const unchanged =
+    same.length > 0 ? (
+      <Unchanged
+        summary={t('diff.sameUnits', { count: same.length, value: formatNumber(same.length, i18n.language) })}
+        names={same.map((unit) => t('diff.unit', { order: unit.order, title: nameOf(unit) }))}
+      />
+    ) : null
+  if (changed.length === 0)
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
+          <ChangeMark namespace={namespace} change="SAME" />
+          <span>{t('diff.noChanges', { number: diff.baseVersion })}</span>
+        </p>
+        {unchanged}
+      </div>
+    )
   return (
-    <>
-      <p className="text-sm text-ink-muted">{t(changed.length > 0 ? 'diff.base' : 'diff.noChanges', { number: diff.baseVersion })}</p>
-      {changed.length > 0 ? (
-        <ol aria-label={t('diff.changed')} className="flex flex-col gap-4">
-          {changed.map((unit) => (
-            <li key={unit.order}>
-              <UnitChange namespace={namespace} unit={unit} />
-            </li>
-          ))}
-        </ol>
-      ) : null}
-      {same.length > 0 ? (
-        <Unchanged
-          summary={t('diff.sameUnits', { count: same.length, value: formatNumber(same.length, i18n.language) })}
-          names={same.map((unit) => t('diff.unit', { order: unit.order, title: nameOf(unit) }))}
-        />
-      ) : null}
-    </>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-ink-muted">{t('diff.base', { number: diff.baseVersion })}</p>
+      <Summary namespace={namespace} units={units} />
+      <Legend namespace={namespace} />
+      <ol aria-label={t('diff.changed')} className="flex flex-col divide-y divide-border border-t border-border">
+        {changed.map((unit) => (
+          <li key={unit.order} className="py-4 last:pb-0">
+            <UnitChange namespace={namespace} unit={unit} />
+          </li>
+        ))}
+      </ol>
+      {unchanged}
+    </div>
+  )
+}
+
+// cuánto cambió: las marcas que se ven más abajo, contadas. una unidad cambiada por sus lecciones cuenta, como en su fila
+function Summary({ namespace, units }: { namespace: string; units: UnitDiff[] }) {
+  const { t, i18n } = useTranslation(namespace)
+  const language = i18n.language
+  return (
+    <div role="group" aria-label={t('diff.summary')}>
+      <StatList>
+        {VISIBLE_CHANGES.map((change) => {
+          const unitCount = units.filter((unit) => unit.change === change).length
+          const lessonCount = units.flatMap((unit) => unit.lessons).filter((lesson) => lesson.change === change).length
+          const parts = [
+            ...(unitCount > 0 ? [t('diff.units', { count: unitCount, value: formatNumber(unitCount, language) })] : []),
+            ...(lessonCount > 0 ? [t('diff.lessons', { count: lessonCount, value: formatNumber(lessonCount, language) })] : [])
+          ]
+          return (
+            <Stat
+              key={change}
+              icon={MARK[change].icon}
+              label={t(`diff.total.${change}`)}
+              value={formatNumber(unitCount + lessonCount, language)}
+              hint={parts.length > 0 ? joinWords(parts, language) : undefined}
+            />
+          )
+        })}
+      </StatList>
+    </div>
+  )
+}
+
+function Legend({ namespace }: { namespace: string }) {
+  const { t } = useTranslation(namespace)
+  const labelId = useId()
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <p id={labelId} className="text-sm text-ink-muted">
+        {t('diff.legend')}
+      </p>
+      <ul aria-labelledby={labelId} className="flex flex-wrap items-center gap-2">
+        {VISIBLE_CHANGES.map((change) => (
+          <li key={change}>
+            <ChangeMark namespace={namespace} change={change} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function ChangeMark({ namespace, change }: { namespace: string; change: DiffChange }) {
+  const { t } = useTranslation(namespace)
+  const { icon: Icon, box } = MARK[change]
+  return (
+    <span data-change={change} className={`inline-flex shrink-0 items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs font-medium ${box}`}>
+      <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+      <span className={change === 'REMOVED' ? 'line-through' : undefined}>{t(`diff.change.${change}`)}</span>
+    </span>
   )
 }
 
@@ -86,14 +166,20 @@ function UnitChange({ namespace, unit }: { namespace: string; unit: UnitDiff }) 
   const same = lessons.filter((lesson) => lesson.change === 'SAME')
   const lessonName = (lesson: LessonDiff) => t('diff.lesson', { unit: unit.order, order: lesson.order, title: nameOf(lesson) })
   return (
-    <div className="flex flex-col gap-2">
-      <ChangeLine namespace={namespace} item={unit} label={t('diff.unit', { order: unit.order, title: nameOf(unit) })} strong />
+    <div className="flex flex-col gap-3">
+      <ChangeLine
+        namespace={namespace}
+        item={unit}
+        label={t('diff.unit', { order: unit.order, title: nameOf(unit) })}
+        strong
+        lessonsChanged={changed.length > 0}
+      />
       {changed.length > 0 || same.length > 0 ? (
-        <div className="flex flex-col gap-2 border-l border-border pl-4">
+        <div className="flex flex-col gap-1 border-l-2 border-border pl-4">
           {changed.length > 0 ? (
-            <ol className="flex flex-col gap-2">
+            <ol className="flex flex-col divide-y divide-border">
               {changed.map((lesson) => (
-                <li key={lesson.order}>
+                <li key={lesson.order} className="py-2.5 first:pt-0 last:pb-0">
                   <ChangeLine namespace={namespace} item={lesson} label={lessonName(lesson)} />
                 </li>
               ))}
@@ -108,19 +194,49 @@ function UnitChange({ namespace, unit }: { namespace: string; unit: UnitDiff }) 
   )
 }
 
-// una unidad o una lección que cambió: el tipo de cambio, su nombre, el título de antes si lo cambió y los campos
-function ChangeLine({ namespace, item, label, strong = false }: { namespace: string; item: UnitDiff | LessonDiff; label: string; strong?: boolean }) {
-  const { t } = useTranslation(namespace)
+// una unidad o una lección que cambió: el tipo de cambio, su nombre, qué cambió y, si es el título, el de antes y el de ahora
+function ChangeLine({
+  namespace,
+  item,
+  label,
+  strong = false,
+  lessonsChanged = false
+}: {
+  namespace: string
+  item: UnitDiff | LessonDiff
+  label: string
+  strong?: boolean
+  lessonsChanged?: boolean
+}) {
+  const { t, i18n } = useTranslation(namespace)
   const renamed = item.change === 'CHANGED' && item.previousTitle !== null && item.title !== null && item.previousTitle !== item.title
-  const fields = item.fields.map((field) => (isKnownField(field) ? t(`diff.field.${field}`) : field))
+  const removed = item.change === 'REMOVED'
+  // los campos en palabras de persona. uno que la interfaz aún no conoce no enseña su nombre técnico
+  const known = item.fields.filter(isKnownField).map((field) => t(`diff.field.${field}`))
+  const what = [...known, ...(known.length < item.fields.length ? [t('diff.otherFields')] : []), ...(lessonsChanged ? [t('diff.ownLessons')] : [])]
   return (
-    <div className="flex flex-col gap-0.5 text-sm">
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className={`rounded-sm border px-1.5 text-xs font-medium ${CHANGE_TONE[item.change]}`}>{t(`diff.change.${item.change}`)}</span>
-        <span className={`${strong ? 'font-semibold' : 'font-medium'} ${item.change === 'REMOVED' ? 'text-ink-muted line-through' : 'text-ink'}`}>{label}</span>
-      </p>
-      {renamed ? <p className="text-xs text-ink-muted">{t('diff.previousTitle', { title: item.previousTitle })}</p> : null}
-      {fields.length > 0 ? <p className="text-xs text-ink-muted">{t('diff.fields', { fields: fields.join(', ') })}</p> : null}
+    <div className="flex min-w-0 flex-col gap-1 text-sm">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <ChangeMark namespace={namespace} change={item.change} />
+        <p
+          className={`min-w-0 [overflow-wrap:anywhere] ${strong ? 'text-base font-semibold' : 'font-medium'} ${removed ? 'text-ink-muted line-through' : 'text-ink'}`}
+        >
+          {label}
+        </p>
+      </div>
+      {what.length > 0 && item.change === 'CHANGED' ? (
+        <p className="text-ink-muted [overflow-wrap:anywhere]">{t('diff.fields', { fields: joinWords(what, i18n.language) })}</p>
+      ) : null}
+      {renamed ? (
+        <>
+          <p className="text-ink-muted [overflow-wrap:anywhere]">
+            <span>{t('diff.before')}</span> <del className="rounded-sm bg-danger-soft box-decoration-clone px-1 text-danger">{item.previousTitle}</del>
+          </p>
+          <p className="text-ink-muted [overflow-wrap:anywhere]">
+            <span>{t('diff.now')}</span> <ins className="rounded-sm bg-success-soft box-decoration-clone px-1 text-success">{item.title}</ins>
+          </p>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -128,11 +244,16 @@ function ChangeLine({ namespace, item, label, strong = false }: { namespace: str
 // lo que sigue igual: discreto y plegado
 function Unchanged({ summary, names }: { summary: string; names: string[] }) {
   return (
-    <details className="text-sm text-ink-muted">
-      <summary className="cursor-pointer select-none">{summary}</summary>
-      <ul className="mt-1 flex flex-col gap-0.5 pl-4">
+    <details className="group text-sm text-ink-muted">
+      <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-sm select-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
+        <ChevronRight aria-hidden="true" className="size-4 shrink-0 transition-transform duration-[160ms] group-open:rotate-90" />
+        <span>{summary}</span>
+      </summary>
+      <ul className="flex flex-col gap-1 pb-1 pl-5">
         {names.map((name) => (
-          <li key={name}>{name}</li>
+          <li key={name} className="[overflow-wrap:anywhere]">
+            {name}
+          </li>
         ))}
       </ul>
     </details>
