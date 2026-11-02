@@ -1,10 +1,12 @@
-import { ApiError, PageHeader } from '@wasichai/core'
-import { Button } from '@wasichai/ui'
+import { ApiError } from '@wasichai/core'
+import { Button, ConfirmDialog } from '@wasichai/ui'
 import { CircleAlert } from 'lucide-react'
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, type MouseEvent, type MouseEventHandler, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
+import { ScreenBody, ScreenHeader, type ScreenWidth } from '../../shared/Screen'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
@@ -54,35 +56,79 @@ export function EmailText({ email }: { email: string }) {
   )
 }
 
-const BACK_LINK = 'self-start text-sm text-link underline-offset-4 hover:underline'
-
-// el marco de una página dentro de una edición: el curso, qué página es y la vuelta a la página de la que cuelga
+// el marco de una página de trabajo dentro de una edición: el curso, qué página es y la vuelta a la página de la que cuelga. sin
+// pestañas ni selector: de un trabajo a medias no se sale de un toque. onBack deja avisar antes de salir (useLeaveGuard)
 export function OfferingFrame({
   code,
   subtitle,
   back,
   backLabel,
+  onBack,
+  width = 'content',
   children
 }: {
   code: string
   subtitle: string
   back: string
   backLabel: string
+  onBack?: MouseEventHandler
+  width?: ScreenWidth
   children: ReactNode
 }) {
   const { t } = useTranslation('teaching')
   const offering = useOfferings().data?.find((candidate) => candidate.code === code)
   return (
     <>
-      <PageHeader title={offering?.course.title ?? t('roster.title')} subtitle={subtitle} />
-      <div className="mx-auto flex max-w-4xl flex-col gap-5 px-4 pt-6 pb-16 sm:px-8">
-        <Link to={back} className={BACK_LINK}>
-          {backLabel}
-        </Link>
+      <ScreenHeader
+        width={width}
+        title={offering?.course.title ?? t('roster.title')}
+        subtitle={subtitle}
+        breadcrumbs={
+          <Link to={back} onClick={onBack} className={`${TEXT_LINK} self-start`}>
+            {backLabel}
+          </Link>
+        }
+      />
+      <ScreenBody width={width} className="gap-5">
         {children}
-      </div>
+      </ScreenBody>
     </>
   )
+}
+
+// avisar antes de salir de un trabajo sin guardar: guard(destino) para los enlaces de la pantalla, y al recargar o cerrar, el aviso del
+// navegador. el menú del shell queda fuera: core usa BrowserRouter, sin useBlocker, y sus enlaces no se pueden interceptar desde aquí
+export function useLeaveGuard(dirty: boolean) {
+  const { t } = useTranslation('teaching')
+  const navigate = useNavigate()
+  const [target, setTarget] = useState<string>()
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
+  return {
+    guard: (to: string) => (event: MouseEvent) => {
+      if (!dirty) return
+      event.preventDefault()
+      setTarget(to)
+    },
+    dialog: target ? (
+      <ConfirmDialog
+        title={t('leave.title')}
+        description={t('leave.description')}
+        confirmLabel={t('leave.confirm')}
+        cancelLabel={t('leave.stay')}
+        variant="danger"
+        onCancel={() => setTarget(undefined)}
+        onConfirm={() => {
+          setTarget(undefined)
+          void navigate(target)
+        }}
+      />
+    ) : null
+  }
 }
 
 // un fallo al leer: un 404 es una respuesta (lo ajeno y lo inexistente no se distinguen) y no se reintenta; lo demás, sí

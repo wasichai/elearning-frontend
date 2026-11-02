@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
-import { Route, Routes } from 'react-router'
+import { Route, Routes, useLocation } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { serveFiles } from '../../test/files'
 import { AttemptGradingPage } from './AttemptGradingPage'
@@ -30,7 +30,9 @@ afterEach(() => {
 const base: MockRoute[] = [{ path: OFFERINGS, body: [offering] }]
 
 function renderGrading(routes: MockRoute[], route = `/docencia/${CODE}/correccion/int-1`, language?: string) {
-  fetchMock = mockFetch([...base, ...routes])
+  // la misma lista: una prueba puede cambiar una respuesta a mitad de camino
+  routes.push(...base)
+  fetchMock = mockFetch(routes)
   return renderWithProviders(
     <Routes>
       <Route path="/docencia/:code/correccion" element={<GradingQueuePage />} />
@@ -52,15 +54,37 @@ describe('la cola de corrección', () => {
     expect(within(row).getByRole('rowheader')).toHaveTextContent('estudiante@demo.local')
     expect(within(row).getByText('Evaluación final')).toBeInTheDocument()
     expect(await within(row).findByText(/28 oct 2026.*10:20/)).toBeInTheDocument()
+    expect(within(row).getByText(/^Enviado hace/)).toBeInTheDocument()
+    expect(within(row).getByText('2')).toBeInTheDocument()
     expect(within(row).getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' })).toHaveAttribute(
       'href',
       `/docencia/${CODE}/correccion/int-1`
     )
   })
 
+  it('pone lo más antiguo arriba, y solo su «Corregir» es la primaria', async () => {
+    const queue = [
+      { ...pendingAttempts[0]!, attemptId: 'int-2', email: 'nueva@demo.local', submittedAt: '2026-10-30T10:00:00Z' },
+      { ...pendingAttempts[0]!, attemptId: 'int-1', email: 'vieja@demo.local', submittedAt: '2026-10-01T10:00:00Z' }
+    ]
+    renderGrading([{ path: QUEUE, body: queue }], `/docencia/${CODE}/correccion`)
+
+    const table = within(await screen.findByRole('table', { name: 'Cola de corrección' }))
+    expect(table.getAllByRole('rowheader').map((header) => header.textContent)).toEqual(['vieja@demo.local', 'nueva@demo.local'])
+    const actions = table.getAllByRole('link', { name: /^Corregir/ })
+    expect(actions.map((action) => action.getAttribute('data-variant'))).toEqual(['primary', 'secondary'])
+    expect(table.getAllByRole('columnheader').map((header) => header.textContent)).toEqual([
+      'Estudiante',
+      'Evaluación',
+      'Preguntas por corregir',
+      'Enviado',
+      'Acción'
+    ])
+  })
+
   it('vacía lo dice; una edición ajena (404) se explica; un contrato roto deja reintentar', async () => {
     const first = renderGrading([{ path: QUEUE, body: [] }], `/docencia/${CODE}/correccion`)
-    expect(await screen.findByText('No hay intentos por corregir en esta edición.')).toBeInTheDocument()
+    expect(await screen.findByText('Nada pendiente por corregir')).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()
 
@@ -247,5 +271,240 @@ describe('corregir un intento', () => {
 
     expect(await screen.findByText('Awaiting grading: 2 of 10 points so far')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Save the grade' })).toHaveLength(2)
+  })
+})
+
+describe('corregir en lote', () => {
+  const OLDER = { ...pendingAttempts[0]!, attemptId: 'int-0', email: 'antes@demo.local', submittedAt: '2026-10-01T10:00:00Z' }
+  const NEWER = { ...pendingAttempts[0]!, attemptId: 'int-2', email: 'despues@demo.local', submittedAt: '2026-10-29T10:00:00Z' }
+  const FULL = [OLDER, pendingAttempts[0]!, NEWER]
+  const NEXT_ATTEMPT = { path: '/lms/teaching/attempts/int-2', body: { ...attemptToGrade, id: 'int-2' } }
+  const SAVE = 'Guardar y pasar al siguiente'
+
+  async function fill(question: string, points: string, comment?: string) {
+    const form = within(await screen.findByRole('form', { name: `Calificar ${question}` }))
+    await userEvent.type(form.getByRole('spinbutton'), points)
+    if (comment) await userEvent.type(form.getByRole('textbox'), comment)
+  }
+  const OPEN = '2. Explica cómo se liquida.'
+  const FILE = '3. Sube la liquidación.'
+
+  it('dice la posición en la cola, y lleva a la anterior y a la siguiente', async () => {
+    renderGrading([
+      { path: QUEUE, body: FULL },
+      { path: ATTEMPT, body: attemptToGrade }
+    ])
+
+    expect(await screen.findByText('2 de 3')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', `/docencia/${CODE}/correccion/int-0`)
+    expect(screen.getByRole('link', { name: 'Siguiente' })).toHaveAttribute('href', `/docencia/${CODE}/correccion/int-2`)
+  })
+
+  it('«Guardar y pasar al siguiente» guarda lo escrito y abre la siguiente de la cola', async () => {
+    renderGrading([{ path: QUEUE, body: FULL }, { path: ATTEMPT, body: attemptToGrade }, { method: 'POST', path: GRADES, body: attemptToGrade }, NEXT_ATTEMPT])
+
+    await screen.findByText('2 de 3')
+    await fill(OPEN, '3', 'Falta la ordenanza.')
+    await fill(FILE, '4')
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    await waitFor(() => expect(fetchMock.calls.some((call) => call.path === '/lms/teaching/attempts/int-2')).toBe(true))
+    expect(grades().map((call) => call.body)).toEqual([
+      { questionId: 'p-open', points: 3, comment: 'Falta la ordenanza.', reason: null },
+      { questionId: 'p-file', points: 4, comment: null, reason: null }
+    ])
+    expect(await screen.findByText('3 de 3')).toBeInTheDocument()
+  })
+
+  it('no pasa si falta una nota: lo dice en su pregunta y no envía nada', async () => {
+    renderGrading([
+      { path: QUEUE, body: FULL },
+      { path: ATTEMPT, body: attemptToGrade }
+    ])
+
+    await screen.findByText('2 de 3')
+    await fill(OPEN, '3')
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    const form = within(screen.getByRole('form', { name: `Calificar ${FILE}` }))
+    expect(await form.findByRole('alert')).toHaveTextContent('Escribe un número de 0 a 4.')
+    expect(form.getByRole('spinbutton')).toHaveFocus()
+    expect(grades()).toEqual([])
+  })
+
+  it('al terminar la última lo dice claro y lleva a la cola', async () => {
+    renderGrading([
+      { path: QUEUE, body: pendingAttempts },
+      { path: ATTEMPT, body: attemptPartlyGraded },
+      { method: 'POST', path: GRADES, body: attemptGraded }
+    ])
+
+    await screen.findByText('1 de 1')
+    await fill(FILE, '3')
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar y terminar' }))
+
+    expect(await screen.findByText('Has corregido la última entrega de la cola.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Volver a la cola' })).toHaveAttribute('href', `/docencia/${CODE}/correccion`)
+    expect(screen.queryByRole('button', { name: 'Guardar y terminar' })).not.toBeInTheDocument()
+  })
+
+  it('un error al guardar no pierde lo escrito, lo dice y se puede reintentar', async () => {
+    const routes: MockRoute[] = [
+      { path: QUEUE, body: FULL },
+      { path: ATTEMPT, body: attemptToGrade },
+      { method: 'POST', path: GRADES, status: 500, body: problem(500, 'fallo') },
+      NEXT_ATTEMPT
+    ]
+    renderGrading(routes)
+
+    await screen.findByText('2 de 3')
+    await fill(OPEN, '3', 'Falta la ordenanza.')
+    await fill(FILE, '4')
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    expect(await screen.findByText(/No se guardó todo\. Lo que escribiste sigue aquí/)).toBeInTheDocument()
+    const form = within(screen.getByRole('form', { name: `Calificar ${OPEN}` }))
+    expect(form.getByRole('spinbutton')).toHaveValue(3)
+    expect(form.getByRole('textbox')).toHaveValue('Falta la ordenanza.')
+    expect(screen.getByText('2 de 3')).toBeInTheDocument()
+
+    const failed = routes.findIndex((route) => route.method === 'POST')
+    routes[failed] = { method: 'POST', path: GRADES, body: attemptToGrade }
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    expect(await screen.findByText('3 de 3')).toBeInTheDocument()
+  })
+
+  it('un cambio de nota pide el motivo también al pasar, y dice quién lo leerá', async () => {
+    renderGrading([{ path: QUEUE, body: FULL }, { path: ATTEMPT, body: attemptGraded }, { method: 'POST', path: GRADES, body: attemptGraded }, NEXT_ATTEMPT])
+
+    await screen.findByText('2 de 3')
+    const points = within(screen.getByRole('form', { name: `Calificar ${OPEN}` })).getByRole('spinbutton')
+    await userEvent.clear(points)
+    await userEvent.type(points, '4')
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Cambiar esta nota?' }))
+    expect(dialog.getByText(/Lo leen los docentes de esta edición y la administración; el estudiante, no\./)).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole('button', { name: 'Cambiar la nota' }))
+    expect(grades()).toEqual([])
+
+    await userEvent.type(dialog.getByRole('textbox'), 'Revisión pedida')
+    await userEvent.click(dialog.getByRole('button', { name: 'Cambiar la nota' }))
+
+    expect(await screen.findByText('3 de 3')).toBeInTheDocument()
+    expect(grades()).toHaveLength(1)
+    expect(grades()[0]?.body).toMatchObject({ questionId: 'p-open', points: 4, reason: 'Revisión pedida' })
+  })
+
+  it('sin nada que guardar pasa sin enviar nada', async () => {
+    renderGrading([{ path: QUEUE, body: FULL }, { path: ATTEMPT, body: attemptGraded }, NEXT_ATTEMPT])
+
+    await screen.findByText('2 de 3')
+    await userEvent.click(screen.getByRole('button', { name: SAVE }))
+
+    expect(await screen.findByText('3 de 3')).toBeInTheDocument()
+    expect(grades()).toEqual([])
+  })
+
+  it('el total a la vista suma lo escrito antes de guardarlo', async () => {
+    renderGrading([
+      { path: QUEUE, body: FULL },
+      { path: ATTEMPT, body: attemptToGrade }
+    ])
+
+    await fill(OPEN, '3')
+
+    expect(await screen.findByText('Con lo escrito sin guardar: 5 de 10 puntos')).toBeInTheDocument()
+    expect(screen.getByText('Pendiente de corrección: 2 de 10 puntos por ahora')).toBeInTheDocument()
+  })
+
+  it('las celdas de la rúbrica se pulsan, dicen su estado y suman sus puntos a la nota', async () => {
+    renderGrading([
+      { path: QUEUE, body: FULL },
+      { path: ATTEMPT, body: attemptToGrade }
+    ])
+
+    const form = within(await screen.findByRole('form', { name: `Calificar ${OPEN}` }))
+    const first = form.getByRole('button', { name: 'Cita la ordenanza (2 pts)' })
+    const second = form.getByRole('button', { name: 'Explica el cálculo (2 pts)' })
+    expect(first).toHaveAttribute('aria-pressed', 'false')
+
+    await userEvent.click(first)
+    expect(first).toHaveAttribute('aria-pressed', 'true')
+    expect(first).toHaveTextContent('Elegido')
+    expect(form.getByRole('spinbutton')).toHaveValue(2)
+
+    await userEvent.click(second)
+    expect(form.getByRole('spinbutton')).toHaveValue(4)
+
+    await userEvent.click(first)
+    await userEvent.click(second)
+    expect(form.getByRole('spinbutton')).toHaveValue(null)
+    expect(form.getByText(/Solo se guardan la nota y el comentario/)).toBeInTheDocument()
+  })
+
+  describe('salir con cambios sin guardar', () => {
+    function Where() {
+      return <output aria-label="ruta">{useLocation().pathname}</output>
+    }
+
+    function renderWithWhere(routes: MockRoute[]) {
+      fetchMock = mockFetch([...base, ...routes])
+      return renderWithProviders(
+        <>
+          <Where />
+          <Routes>
+            <Route path="/docencia/:code/correccion" element={<p>La cola</p>} />
+            <Route path="/docencia/:code/correccion/:attemptId" element={<AttemptGradingPage />} />
+          </Routes>
+        </>,
+        { modules: [teachingModule()], route: `/docencia/${CODE}/correccion/int-1` }
+      )
+    }
+    const ROUTES: MockRoute[] = [{ path: QUEUE, body: FULL }, { path: ATTEMPT, body: attemptToGrade }, NEXT_ATTEMPT]
+
+    it('sin cambios, los enlaces salen sin preguntar', async () => {
+      renderWithWhere(ROUTES)
+
+      await screen.findByText('2 de 3')
+      await userEvent.click(screen.getByRole('link', { name: '← Cola de corrección' }))
+
+      expect(await screen.findByText('La cola')).toBeInTheDocument()
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('con cambios avisa: se puede seguir sin perder nada, o salir a sabiendas', async () => {
+      renderWithWhere(ROUTES)
+
+      await screen.findByText('2 de 3')
+      await fill(OPEN, '3', 'Falta la ordenanza.')
+      await userEvent.click(screen.getByRole('link', { name: '← Cola de corrección' }))
+
+      const dialog = within(await screen.findByRole('dialog', { name: '¿Salir sin guardar?' }))
+      await userEvent.click(dialog.getByRole('button', { name: 'Seguir aquí' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      expect(within(screen.getByRole('form', { name: `Calificar ${OPEN}` })).getByRole('textbox')).toHaveValue('Falta la ordenanza.')
+      expect(screen.getByRole('status', { name: 'ruta' })).toHaveTextContent(`/docencia/${CODE}/correccion/int-1`)
+
+      await userEvent.click(screen.getByRole('link', { name: 'Siguiente' }))
+      const again = within(await screen.findByRole('dialog', { name: '¿Salir sin guardar?' }))
+      await userEvent.click(again.getByRole('button', { name: 'Salir sin guardar' }))
+      await waitFor(() => expect(screen.getByRole('status', { name: 'ruta' })).toHaveTextContent(`/docencia/${CODE}/correccion/int-2`))
+    })
+
+    it('el aviso tampoco falta al recargar o cerrar la pestaña', async () => {
+      renderWithWhere(ROUTES)
+
+      await screen.findByText('2 de 3')
+      const clean = new Event('beforeunload', { cancelable: true })
+      window.dispatchEvent(clean)
+      expect(clean.defaultPrevented).toBe(false)
+
+      await fill(OPEN, '3')
+      const dirty = new Event('beforeunload', { cancelable: true })
+      window.dispatchEvent(dirty)
+      expect(dirty.defaultPrevented).toBe(true)
+    })
   })
 })

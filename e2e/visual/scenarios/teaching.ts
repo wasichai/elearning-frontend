@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { offering, otherOffering, pendingAttempts, problem, teachingSessions } from '../../../src/modules/teaching/test/fixtures'
+import { attemptGraded, attemptToGrade, offering, otherOffering, pendingAttempts, problem, teachingSessions } from '../../../src/modules/teaching/test/fixtures'
 import { teacher, type Scenario } from '../scenario'
 
 const OFFERING = '/docencia/edicion-sgspe-2026-09'
@@ -116,6 +116,31 @@ const rosterOf = async (page: Page) => {
   await page.route(`${OFFERINGS}/${offering.code}/students`, (route) => route.fulfill({ json: CLASS }))
 }
 
+// una entrega de verdad: respuesta larga en su letra de lectura, y siete en la cola
+const LONG_ANSWER = [
+  'Se parte del área total del anuncio, medida en metros cuadrados, y se aplica la tasa que fija la ordenanza vigente para ese tipo de elemento.',
+  '',
+  'Si el anuncio es luminoso se suma el recargo que corresponda, y el resultado se prorratea por los meses que falten del ejercicio fiscal. La municipalidad emite la liquidación y el contribuyente paga antes de que se otorgue la licencia.'
+].join('\n')
+const LONG_ATTEMPT = {
+  ...attemptToGrade,
+  answers: attemptToGrade.answers.map((answer) => (answer.questionId === 'p-open' ? { ...answer, text: LONG_ANSWER } : answer))
+}
+const ATTEMPT = '**/api/lms/teaching/attempts/int-1'
+
+async function longAttempt(page: Page) {
+  await page.route(ATTEMPT, (route) => route.fulfill({ json: LONG_ATTEMPT }))
+  await page.route(`${OFFERINGS}/${offering.code}/attempts`, (route) =>
+    route.fulfill({
+      json: [
+        ...attempts(2, 'Evaluación final', 12),
+        { ...pendingAttempts[0]!, submittedAt: fromNow(-5, 15) },
+        ...attempts(4, 'Evaluación final', 4).map((attempt, index) => ({ ...attempt, attemptId: `otra-${index}` }))
+      ]
+    })
+  )
+}
+
 export const teachingScenarios: Scenario[] = [
   { name: 'teacher-offerings', path: '/docencia', api: teacher },
   { name: 'teacher-offerings-busy', path: '/docencia', api: teacher, act: reloaded(busy) },
@@ -180,5 +205,63 @@ export const teachingScenarios: Scenario[] = [
   { name: 'teacher-roster-error', path: OFFERING, api: teacher, act: reloaded((page) => failing(page, `${OFFERINGS}/${offering.code}/students`)) },
   { name: 'teacher-roster-not-found', path: '/docencia/edicion-de-otro', api: teacher },
   { name: 'teacher-queue', path: `${OFFERING}/correccion`, api: teacher },
+  { name: 'teacher-queue-busy', path: `${OFFERING}/correccion`, api: teacher, act: reloaded(longAttempt) },
+  {
+    name: 'teacher-queue-empty',
+    path: `${OFFERING}/correccion`,
+    api: teacher,
+    act: reloaded((page) => page.route(`${OFFERINGS}/${offering.code}/attempts`, (route) => route.fulfill({ json: [] })))
+  },
+  {
+    name: 'teacher-queue-error',
+    path: `${OFFERING}/correccion`,
+    api: teacher,
+    act: reloaded((page) => failing(page, `${OFFERINGS}/${offering.code}/attempts`))
+  },
+  { name: 'teacher-attempt', path: `${OFFERING}/correccion/int-1`, api: teacher, act: reloaded(longAttempt) },
+  {
+    name: 'teacher-attempt-working',
+    path: `${OFFERING}/correccion/int-1`,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(longAttempt)(page)
+      const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
+      await form.getByRole('button', { name: 'Cita la ordenanza (2 pts)' }).click()
+      await form.getByLabel('Comentario para el estudiante (opcional)').fill('Falta citar la ordenanza vigente.')
+    }
+  },
+  {
+    name: 'teacher-attempt-leave',
+    path: `${OFFERING}/correccion/int-1`,
+    api: teacher,
+    act: async (page) => {
+      await page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
+      await page.getByRole('link', { name: '← Cola de corrección' }).click()
+    }
+  },
+  {
+    name: 'teacher-attempt-save-failed',
+    path: `${OFFERING}/correccion/int-1`,
+    api: teacher,
+    act: async (page) => {
+      await failing(page, `${ATTEMPT}/grades`)
+      await page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
+      await page.getByRole('form', { name: 'Calificar 3. Sube la liquidación.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
+      await page.getByRole('button', { name: 'Guardar y terminar' }).click()
+      await page.getByRole('alert').filter({ hasText: 'No se guardó todo' }).waitFor()
+    }
+  },
+  {
+    name: 'teacher-attempt-reason',
+    path: `${OFFERING}/correccion/int-1`,
+    api: teacher,
+    act: async (page) => {
+      await reloaded((target) => target.route(ATTEMPT, (route) => route.fulfill({ json: attemptGraded })))(page)
+      const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
+      await form.getByLabel('Puntos (de 0 a 4)').fill('4')
+      await form.getByRole('button', { name: 'Cambiar la nota' }).click()
+    }
+  },
+  { name: 'teacher-attempt-not-found', path: `${OFFERING}/correccion/de-otra-edicion`, api: teacher },
   { name: 'teacher-sessions', path: `${OFFERING}/sesiones`, api: teacher }
 ]
