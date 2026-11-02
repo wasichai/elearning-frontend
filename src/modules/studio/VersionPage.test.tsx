@@ -40,7 +40,11 @@ describe('VersionPage: un borrador', () => {
     expect(screen.getByText('Versión 2 · SGSPE-101')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Estado: Borrador' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Editar la versión' })).toHaveAttribute('href', `/data/objects/version_curso/records/${draftVersion.id}`)
-    expect(screen.getByRole('link', { name: '← Mis versiones' })).toHaveAttribute('href', '/estudio')
+    const trail = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(trail.getByRole('link', { name: 'Mis versiones' })).toHaveAttribute('href', '/estudio')
+    expect(trail.getByText('Versión 2')).toHaveAttribute('aria-current', 'page')
+    expect(within(screen.getByRole('banner')).getByText('Borrador').closest('[data-state]')).toHaveAttribute('data-state', 'todo')
+    expect(screen.queryByText('Solo lectura')).not.toBeInTheDocument()
 
     const syllabus = within(screen.getByRole('region', { name: 'Contenido' }))
     expect(syllabus.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
@@ -54,11 +58,15 @@ describe('VersionPage: un borrador', () => {
     expect(syllabus.getByText('Lectura · 1 recurso')).toBeInTheDocument()
     expect(syllabus.getByText('Video · 2 recursos')).toBeInTheDocument()
     expect(syllabus.getByText('Evaluación · con evaluación · 0 recursos')).toBeInTheDocument()
-    expect(syllabus.getByText('Fuente: wasichai/manual-sgspe@4f2a9c1:acceso.adoc#entrar')).toBeInTheDocument()
+    // la fuente técnica va plegada y se abre
+    const source = syllabus.getByText('Fuente: wasichai/manual-sgspe@4f2a9c1:acceso.adoc#entrar')
+    expect(source).not.toBeVisible()
+    await userEvent.setup().click(syllabus.getByText('Fuente técnica'))
+    expect(source).toBeVisible()
 
     expect(screen.getByText('El revisor no ha dejado comentarios.')).toBeInTheDocument()
     expect(screen.getByText('Aún no hay decisiones sobre esta versión.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Crear una versión nueva a partir de esta' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Crear versión nueva' })).not.toBeInTheDocument()
   })
 
   it('se envía a revisión tras confirmarlo; cancelar no envía nada', async () => {
@@ -145,24 +153,71 @@ describe('VersionPage: una versión publicada', () => {
     renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: publishedDetail }])
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Estado: Publicada' })).toBeInTheDocument()
-    expect(screen.getByText(/Está publicada y no cambia/)).toBeInTheDocument()
+    expect(screen.getByText('Solo lectura').closest('[role]')).toHaveTextContent(/Está publicada y no cambia/)
+    expect(screen.getByRole('button', { name: 'Crear versión nueva' })).toHaveAttribute('data-variant', 'primary')
     expect(screen.queryByRole('link', { name: 'Editar la versión' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /^Editar la (unidad|lección)/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Enviar a revisión' })).not.toBeInTheDocument()
 
+    // cada comentario, junto a su lección y con su estado, sin el nombre técnico de la sección
     const comments = within(screen.getByRole('region', { name: 'Comentarios de revisión' }))
     expect(comments.getByText('1 comentario por atender')).toBeInTheDocument()
-    const items = comments.getAllByRole('listitem')
-    expect(items[0]).toHaveTextContent('unidad:1/leccion:1')
-    expect(items[0]).toHaveTextContent('Resuelto')
-    expect(items[1]).toHaveTextContent('La evaluación pide algo que la unidad no enseña.')
-    expect(items[1]).toHaveTextContent('Por atender')
+    expect(screen.queryByText('unidad:1/leccion:1')).not.toBeInTheDocument()
+    const syllabus = within(screen.getByRole('region', { name: 'Contenido' }))
+    const first = syllabus.getByRole('list', { name: 'Comentarios de Entrar al portal' })
+    expect(first).toHaveTextContent('El primer paso no dice qué navegador usar.')
+    expect(within(first).getByText('Resuelto').closest('[data-state]')).toHaveAttribute('data-state', 'done')
+    const second = syllabus.getByRole('list', { name: 'Comentarios de Evaluación final' })
+    expect(second).toHaveTextContent('La evaluación pide algo que la unidad no enseña.')
+    expect(within(second).getByText('Por atender').closest('[data-state]')).toHaveAttribute('data-state', 'warning')
 
+    // la más reciente primero, como la línea de estados
     const decisions = within(screen.getByRole('region', { name: 'Decisiones del revisor' }))
     expect(decisions.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      expect.stringMatching(/^Pidió cambios.*Faltan ejemplos en la unidad 2\.$/),
-      expect.stringMatching(/^Aprobada/)
+      expect.stringMatching(/^Aprobada/),
+      expect.stringMatching(/^Pidió cambios.*Faltan ejemplos en la unidad 2\.$/)
     ])
+  })
+
+  it('la línea de estados dice qué pasó y qué falta, derivado del estado', async () => {
+    renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: { ...publishedDetail, status: 'APROBADA' } }])
+
+    const state = within(await screen.findByRole('region', { name: 'Estado: Aprobada' }))
+    const steps = within(state.getByRole('list', { name: 'Recorrido de la versión' })).getAllByRole('listitem')
+    expect(steps.map((step) => step.textContent)).toEqual([
+      expect.stringMatching(/^Publicada.*pendiente/),
+      expect.stringMatching(/^Aprobada.*Actualizada el/),
+      expect.stringMatching(/^En revisión.*hecho/),
+      expect.stringMatching(/^Borrador.*hecho/)
+    ])
+    expect(steps[1]).toHaveAttribute('aria-current', 'step')
+    expect(steps.filter((step) => step.hasAttribute('aria-current'))).toHaveLength(1)
+  })
+
+  it('una retirada no pinta un recorrido que no se sabe si hizo', async () => {
+    renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: { ...publishedDetail, status: 'RETIRADA' } }])
+
+    const state = within(await screen.findByRole('region', { name: 'Estado: Retirada' }))
+    expect(state.queryByRole('list', { name: 'Recorrido de la versión' })).not.toBeInTheDocument()
+    expect(screen.getByText('Solo lectura')).toBeInTheDocument()
+  })
+
+  it('los comentarios de toda la versión y de una sección que ya no está van aparte, sin nombres técnicos', async () => {
+    const extra = [
+      { id: 'c-a', section: 'version', text: 'Revisa el enfoque general.', authorId: null, createdAt: null, resolved: false },
+      { id: 'c-b', section: 'unidad:9/leccion:9', text: 'Esta lección sobraba.', authorId: null, createdAt: null, resolved: true },
+      { id: 'c-c', section: 'unidad:1', text: 'La unidad es muy larga.', authorId: null, createdAt: null, resolved: false }
+    ]
+    renderVersion(publishedVersion.id, [{ path: detailPath(publishedVersion.id), body: { ...publishedDetail, comments: extra } }])
+
+    const comments = within(await screen.findByRole('region', { name: 'Comentarios de revisión' }))
+    expect(comments.getByText('2 comentarios por atender')).toBeInTheDocument()
+    expect(comments.getByRole('list', { name: 'Comentarios de toda la versión' })).toHaveTextContent('Revisa el enfoque general.')
+    expect(comments.getByRole('list', { name: 'Comentarios de secciones que ya no están' })).toHaveTextContent('Esta lección sobraba.')
+    expect(screen.queryByText(/unidad:9/)).not.toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Contenido' })).getByRole('list', { name: 'Comentarios de Primeros pasos' })).toHaveTextContent(
+      'La unidad es muy larga.'
+    )
   })
 
   it('crea una versión nueva a partir de ella, tras confirmarlo, y la abre', async () => {
@@ -173,7 +228,7 @@ describe('VersionPage: una versión publicada', () => {
       { path: detailPath(createdVersion.id), body: { ...draftDetail, ...createdVersion } }
     ])
 
-    await user.click(await screen.findByRole('button', { name: 'Crear una versión nueva a partir de esta' }))
+    await user.click(await screen.findByRole('button', { name: 'Crear versión nueva' }))
     const dialog = await screen.findByRole('dialog', { name: '¿Crear una versión nueva?' })
     expect(dialog).toHaveTextContent('La versión 1 y quien la cursa no cambian')
     await user.click(within(dialog).getByRole('button', { name: 'Sí, crear el borrador' }))
@@ -190,7 +245,7 @@ describe('VersionPage: una versión publicada', () => {
       { method: 'POST', path: NEW_VERSION, status: 403, body: problem(403, 'Forbidden') }
     ])
 
-    await user.click(await screen.findByRole('button', { name: 'Crear una versión nueva a partir de esta' }))
+    await user.click(await screen.findByRole('button', { name: 'Crear versión nueva' }))
     await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sí, crear el borrador' }))
     expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('No tienes permiso para hacerlo.')
   })
@@ -220,7 +275,7 @@ describe('VersionPage: errores e idioma', () => {
     )
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Status: Published' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Create a new version from this one' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create new version' })).toBeInTheDocument()
     expect(screen.getByText('Requested changes')).toBeInTheDocument()
     expect(screen.getByText('Reading · 1 resource')).toBeInTheDocument()
     expect(await within(screen.getByRole('region', { name: 'Changes' })).findByText(/This is the first version of this course/)).toBeInTheDocument()
