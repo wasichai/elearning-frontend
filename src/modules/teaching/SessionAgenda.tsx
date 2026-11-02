@@ -93,7 +93,7 @@ function AgendaRow({ session, now, showZone }: { session: AgendaSession; now: nu
         </span>
       ) : session.status === 'REPROGRAMADA' ? (
         <span className="mt-1 flex">
-          <StatusBadge state="review">{t('sessions.status.REPROGRAMADA')}</StatusBadge>
+          <StatusBadge state="warning">{t('sessions.status.REPROGRAMADA')}</StatusBadge>
         </span>
       ) : null}
     </Link>

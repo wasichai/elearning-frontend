@@ -2,11 +2,11 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { Route, Routes } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AttendancePage } from './AttendancePage'
 import { teachingModule } from './module'
 import { OfferingSessionsPage } from './OfferingSessionsPage'
-import { attendanceRows, offering, problem, teachingSessions } from './test/fixtures'
+import { attendanceRows, offering, otherOffering, problem, teachingSessions } from './test/fixtures'
 
 // sesiones y asistencia de una edición (ADR-0016)
 
@@ -17,10 +17,16 @@ const SESSION = '/lms/teaching/sessions/ses-1'
 const ATTENDANCE = `${SESSION}/attendance`
 
 let fetchMock: FetchMock
-afterEach(() => fetchMock?.restore())
+beforeEach(() => vi.setSystemTime(new Date('2026-11-02T15:00:00Z')))
+afterEach(() => {
+  fetchMock?.restore()
+  vi.useRealTimers()
+})
 
 function renderPages(routes: MockRoute[], route = `/docencia/${CODE}/sesiones`, language?: string) {
-  fetchMock = mockFetch([{ path: OFFERINGS, body: [offering] }, ...routes])
+  // la misma lista: una prueba puede cambiar una respuesta a mitad de camino
+  if (!routes.some((candidate) => candidate.path === OFFERINGS)) routes.push({ path: OFFERINGS, body: [offering] })
+  fetchMock = mockFetch(routes)
   return renderWithProviders(
     <Routes>
       <Route path="/docencia/:code/sesiones" element={<OfferingSessionsPage />} />
@@ -38,7 +44,11 @@ describe('las sesiones de la edición', () => {
     renderPages([LIST])
 
     const active = within(await screen.findByRole('article', { name: 'Presentación del curso' }))
-    expect(active.getByText(/10 de noviembre de 2026, 8:00.9:30/)).toBeInTheDocument()
+    expect(active.getByText(/^8:00.9:30$/)).toBeInTheDocument()
+    expect(active.getByText('Teoría')).toBeInTheDocument()
+    expect(active.getByText('Virtual')).toBeInTheDocument()
+    expect(active.getByText('Programada')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: /martes, 10 de noviembre de 2026/ })).toBeInTheDocument()
     expect(await screen.findByText(/^Horas en hora (estándar )?de Perú$/)).toBeInTheDocument()
     expect(active.getByRole('link', { name: 'Pasar asistencia de «Presentación del curso»' })).toHaveAttribute(
       'href',
@@ -47,8 +57,31 @@ describe('las sesiones de la edición', () => {
     expect(active.getByRole('link', { name: /Abrir el enlace/ })).toHaveAttribute('href', 'https://meet.example/sgspe-1')
     const cancelled = within(screen.getByRole('article', { name: 'Consulta cancelada' }))
     expect(cancelled.getByText('Cancelada')).toBeInTheDocument()
+    expect(cancelled.getByRole('heading', { name: 'Consulta cancelada' })).toHaveClass('line-through')
     expect(cancelled.queryByRole('button')).not.toBeInTheDocument()
     expect(cancelled.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('separa próximas y pasadas, y la sesión en curso lo dice', async () => {
+    const past = { ...teachingSessions[0]!, id: 'ses-0', title: 'Ya fue', start: '2026-10-01T13:00:00Z', end: '2026-10-01T14:00:00Z' }
+    const running = { ...teachingSessions[0]!, id: 'ses-3', title: 'Ahora', start: '2026-11-02T14:30:00Z', end: '2026-11-02T16:00:00Z' }
+    renderPages([{ path: SESSIONS, body: [...teachingSessions, past, running] }])
+
+    const upcoming = within(await screen.findByRole('region', { name: 'Próximas' }))
+    expect(upcoming.getAllByRole('article').map((item) => item.getAttribute('aria-label'))).toEqual(['Ahora', 'Presentación del curso', 'Consulta cancelada'])
+    expect(within(upcoming.getByRole('article', { name: 'Ahora' })).getByText('En curso')).toBeInTheDocument()
+    const earlier = within(screen.getByRole('region', { name: 'Pasadas' }))
+    expect(earlier.getAllByRole('article').map((item) => item.getAttribute('aria-label'))).toEqual(['Ya fue'])
+    // de una pasada no se dice «Programada»: ya no lo está
+    expect(within(earlier.getByRole('article')).queryByText('Programada')).not.toBeInTheDocument()
+  })
+
+  it('«Programar sesión» es la única primaria', async () => {
+    renderPages([LIST])
+
+    const open = await screen.findByRole('button', { name: 'Programar sesión' })
+    expect(open).toHaveAttribute('data-variant', 'primary')
+    expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(1)
   })
 
   it('vacía lo dice; una edición ajena (404) se explica; un error deja reintentar', async () => {
@@ -72,7 +105,10 @@ describe('las sesiones de la edición', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Cancelar la sesión «Presentación del curso»' }))
     let dialog = within(await screen.findByRole('dialog', { name: '¿Cancelar «Presentación del curso»?' }))
-    expect(dialog.getByText(/Se avisará a los matriculados/)).toBeInTheDocument()
+    // las alertas se envían siempre; el correo, solo si está configurado (docs/api/lms.md)
+    expect(
+      dialog.getByText(/Se avisará a los matriculados de esta edición con una alerta y, si hay correo configurado, también por correo/)
+    ).toBeInTheDocument()
     await userEvent.click(dialog.getByRole('button', { name: 'Sí, cancelar la sesión' }))
     expect(dialog.getByRole('alert')).toBeInTheDocument()
     expect(posted(`${SESSION}/cancel`)).toEqual([])
@@ -108,6 +144,7 @@ describe('las sesiones de la edición', () => {
     const dialog = within(await screen.findByRole('dialog', { name: 'Reprogramar «Presentación del curso»' }))
     expect(dialog.getByLabelText('Nueva fecha')).toHaveValue('2026-11-10')
     expect(dialog.getByLabelText('Nueva hora local')).toHaveValue('08:00')
+    expect(dialog.getByText(/con una alerta y, si hay correo configurado, también por correo/)).toBeInTheDocument()
 
     await userEvent.click(dialog.getByRole('button', { name: 'Reprogramar y avisar' }))
     expect(dialog.getByRole('alert')).toBeInTheDocument()
@@ -126,7 +163,7 @@ describe('las sesiones de la edición', () => {
 
 describe('crear sesiones', () => {
   const open = async () => {
-    await userEvent.click(await screen.findByRole('button', { name: 'Crear sesiones' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Programar sesión' }))
     return within(await screen.findByRole('form', { name: 'Crear una sesión o una serie' }))
   }
   const choose = async (name: string, option: string) => {
@@ -223,6 +260,8 @@ describe('crear sesiones', () => {
     expect(await form.findByText('El enlace debe empezar por https://.')).toBeInTheDocument()
     expect(form.getByText('La fecha final no puede ser anterior a la inicial.')).toBeInTheDocument()
     expect(form.getByLabelText('Título')).toHaveAttribute('aria-invalid', 'true')
+    expect(form.getByLabelText('Título')).toHaveFocus()
+    expect(form.getByLabelText('Título')).toHaveAccessibleDescription('Este dato es obligatorio.')
     expect(posted(SESSIONS)).toEqual([])
 
     await userEvent.type(form.getByLabelText('Título'), 'Clase')
@@ -237,9 +276,76 @@ describe('crear sesiones', () => {
   })
 })
 
+describe('salir con un formulario de sesión a medias', () => {
+  const OTHER_SESSIONS = `${OFFERINGS}/${otherOffering.code}/sessions`
+  const routes = (): MockRoute[] => [{ path: OFFERINGS, body: [offering, otherOffering] }, LIST, { path: OTHER_SESSIONS, body: [] }]
+  const write = async () => {
+    await userEvent.click(await screen.findByRole('button', { name: 'Programar sesión' }))
+    const form = within(await screen.findByRole('form', { name: 'Crear una sesión o una serie' }))
+    await userEvent.type(form.getByLabelText('Título'), 'Repaso')
+    return form
+  }
+  const asked = () => screen.findByRole('dialog', { name: '¿Salir sin guardar?' })
+
+  it('un formulario abierto sin escribir no avisa', async () => {
+    renderPages(routes())
+    await userEvent.click(await screen.findByRole('button', { name: 'Programar sesión' }))
+    await screen.findByRole('form', { name: 'Crear una sesión o una serie' })
+
+    await userEvent.click(screen.getByRole('link', { name: 'Matriculados' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('una pestaña avisa, y seguir aquí no pierde lo escrito', async () => {
+    renderPages(routes())
+    const form = await write()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Matriculados' }))
+    await userEvent.click(within(await asked()).getByRole('button', { name: 'Seguir aquí' }))
+
+    expect(form.getByLabelText('Título')).toHaveValue('Repaso')
+    expect(screen.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('la ruta y «Pasar asistencia» también avisan', async () => {
+    renderPages(routes())
+    await write()
+
+    await userEvent.click(screen.getByRole('link', { name: 'Mis ediciones' }))
+    await userEvent.click(within(await asked()).getByRole('button', { name: 'Seguir aquí' }))
+    await userEvent.click(screen.getByRole('link', { name: 'Pasar asistencia de «Presentación del curso»' }))
+    expect(await asked()).toBeInTheDocument()
+  })
+
+  it('cambiar de edición avisa, y salir a sabiendas lleva a la misma sección de la otra', async () => {
+    renderPages(routes())
+    await write()
+    const box = screen.getByRole('combobox', { name: 'Cambiar de edición' })
+    box.focus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(await screen.findByRole('option', { name: /Licencias de anuncios con SRTM/ }))
+
+    await userEvent.click(within(await asked()).getByRole('button', { name: 'Salir sin guardar' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeInTheDocument()
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+  })
+
+  it('cerrar el formulario lo descarta sin salir de la pantalla, y crear deja de avisar', async () => {
+    renderPages(routes())
+    await write()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cerrar sin crear' }))
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('link', { name: 'Matriculados' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
 describe('pasar asistencia', () => {
   const route = `/docencia/${CODE}/sesiones/ses-1/asistencia`
-  const group = (name: string) => within(screen.getByRole('radiogroup', { name: `Asistencia de ${name}` }))
+  const group = (name: string) => within(screen.getByRole('group', { name: `Asistencia de ${name}` }))
+  const mark = (student: string, name: string) => group(student).getByRole('button', { name })
 
   it('registrar por primera vez no pide motivo y solo envía lo que cambió', async () => {
     renderPages(
@@ -251,11 +357,13 @@ describe('pasar asistencia', () => {
       route
     )
 
-    await screen.findByRole('table', { name: 'Asistencia' })
+    await screen.findByRole('list', { name: 'Asistencia' })
     expect(await screen.findByText('Presentación del curso')).toBeInTheDocument()
-    expect(group('ana.torres@demo.local').getByRole('radio', { name: 'Presente' })).toBeChecked()
+    expect(mark('ana.torres@demo.local', 'Presente')).toHaveAttribute('aria-pressed', 'true')
+    expect(mark('estudiante@demo.local', 'Presente')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Sin marcar', { selector: 'li *' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Guardar la asistencia' })).toBeDisabled()
-    await userEvent.click(group('estudiante@demo.local').getByRole('radio', { name: 'Presente' }))
+    await userEvent.click(mark('estudiante@demo.local', 'Presente'))
     expect(screen.queryByLabelText('Motivo del cambio')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Guardar la asistencia' }))
 
@@ -267,8 +375,8 @@ describe('pasar asistencia', () => {
   it('cambiar una ya registrada exige motivo: sin él no se envía', async () => {
     renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }, { method: 'PUT', path: ATTENDANCE, body: attendanceRows }], route)
 
-    await screen.findByRole('table', { name: 'Asistencia' })
-    await userEvent.click(group('ana.torres@demo.local').getByRole('radio', { name: 'Justificado' }))
+    await screen.findByRole('list', { name: 'Asistencia' })
+    await userEvent.click(mark('ana.torres@demo.local', 'Justificada'))
     const reason = screen.getByLabelText('Motivo del cambio')
     await userEvent.click(screen.getByRole('button', { name: 'Guardar la asistencia' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Indica un motivo')
@@ -282,13 +390,91 @@ describe('pasar asistencia', () => {
     expect(posted(ATTENDANCE)[0]?.body).toEqual({ records: [{ enrollmentId: 'mat-sgspe-2', status: 'JUSTIFICADO' }], reason: 'Presentó constancia' })
   })
 
+  it('pulsar otra vez lo marcado sin guardar lo deshace', async () => {
+    renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }], route)
+
+    await screen.findByRole('list', { name: 'Asistencia' })
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
+    expect(mark('estudiante@demo.local', 'Tarde')).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
+    expect(mark('estudiante@demo.local', 'Tarde')).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Guardar la asistencia' })).toBeDisabled()
+  })
+
+  it('el resumen cuenta por estado y dice cuánto queda sin guardar', async () => {
+    renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }], route)
+
+    const summary = within(await screen.findByRole('region', { name: 'Resumen de la asistencia' }))
+    const figure = (label: string) => summary.getByText(label).parentElement!.querySelector('dd')!.textContent
+    expect(figure('Presente')).toBe('1')
+    expect(figure('Sin marcar')).toBe('1')
+    expect(screen.getByText('Todo guardado')).toBeInTheDocument()
+
+    await userEvent.click(mark('estudiante@demo.local', 'Ausente'))
+
+    expect(figure('Ausente')).toBe('1')
+    expect(figure('Sin marcar')).toBe('0')
+    expect(screen.getByText('1 cambio sin guardar')).toBeInTheDocument()
+  })
+
+  it('«Marcar a todos presentes» no envía nada ni pisa lo ya marcado', async () => {
+    const rows = [...attendanceRows, { enrollmentId: 'mat-3', email: 'tercero@demo.local', status: 'AUSENTE' }]
+    renderPages([LIST, { path: ATTENDANCE, body: rows }, { method: 'PUT', path: ATTENDANCE, body: rows }], route)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Marcar a todos presentes' }))
+
+    expect(posted(ATTENDANCE)).toEqual([])
+    expect(mark('estudiante@demo.local', 'Presente')).toHaveAttribute('aria-pressed', 'true')
+    expect(mark('tercero@demo.local', 'Ausente')).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByLabelText('Motivo del cambio')).not.toBeInTheDocument()
+    expect(screen.getByText(/Solo cambia a quienes siguen sin marcar/)).toBeInTheDocument()
+    // ya no queda a quién marcar
+    expect(screen.getByRole('button', { name: 'Marcar a todos presentes' })).toBeDisabled()
+  })
+
+  it('un fallo al guardar lo dice con un aviso, no pierde lo marcado y se puede reintentar', async () => {
+    const routes: MockRoute[] = [
+      LIST,
+      { path: ATTENDANCE, body: attendanceRows },
+      { method: 'PUT', path: ATTENDANCE, status: 500, body: problem(500, 'fallo') }
+    ]
+    renderPages(routes, route)
+
+    await screen.findByRole('list', { name: 'Asistencia' })
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar la asistencia' }))
+
+    expect(await screen.findByText(/No se guardó\. Lo que marcaste sigue aquí/)).toBeInTheDocument()
+    expect(mark('estudiante@demo.local', 'Tarde')).toHaveAttribute('aria-pressed', 'true')
+
+    routes[2] = { method: 'PUT', path: ATTENDANCE, body: attendanceRows.map((row) => ({ ...row, status: row.status ?? 'TARDE' })) }
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar la asistencia' }))
+    expect(await screen.findByText('Asistencia guardada')).toBeInTheDocument()
+  })
+
+  it('salir con marcas sin guardar avisa; sin cambios, no', async () => {
+    renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }], route)
+
+    await screen.findByRole('list', { name: 'Asistencia' })
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
+    await userEvent.click(screen.getByRole('link', { name: '← Sesiones de la edición' }))
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Salir sin guardar?' }))
+    await userEvent.click(dialog.getByRole('button', { name: 'Seguir aquí' }))
+    expect(mark('estudiante@demo.local', 'Tarde')).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
+    await userEvent.click(screen.getByRole('link', { name: '← Sesiones de la edición' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Programar sesión' })).toBeInTheDocument()
+  })
+
   it('un 409 se explica; una sesión ajena (404) también; un contrato roto deja reintentar', async () => {
     const first = renderPages(
       [LIST, { path: ATTENDANCE, body: attendanceRows }, { method: 'PUT', path: ATTENDANCE, status: 409, body: problem(409, 'Falta el motivo') }],
       route
     )
-    await screen.findByRole('table', { name: 'Asistencia' })
-    await userEvent.click(group('estudiante@demo.local').getByRole('radio', { name: 'Tarde' }))
+    await screen.findByRole('list', { name: 'Asistencia' })
+    await userEvent.click(mark('estudiante@demo.local', 'Tarde'))
     await userEvent.click(screen.getByRole('button', { name: 'Guardar la asistencia' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('El servidor no lo aceptó: Falta el motivo')
     first.unmount()
@@ -307,8 +493,8 @@ describe('pasar asistencia', () => {
   it('en inglés', async () => {
     renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }], route, 'en')
 
-    expect(await screen.findByRole('table', { name: 'Attendance' })).toBeInTheDocument()
-    expect(screen.getByRole('radiogroup', { name: 'Attendance of ana.torres@demo.local' })).toBeInTheDocument()
+    expect(await screen.findByRole('list', { name: 'Attendance' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Attendance of ana.torres@demo.local' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save the attendance' })).toBeDisabled()
   })
 })

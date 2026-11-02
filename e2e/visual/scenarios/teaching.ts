@@ -141,6 +141,31 @@ async function longAttempt(page: Page) {
   )
 }
 
+// una agenda de verdad: en curso, por venir, reprogramada, cancelada y lo ya pasado
+const AGENDA = () => [
+  session('s-1', 'Taller de liquidación', 0, {
+    start: new Date(Date.now() - 1800_000).toISOString().replace(/\.\d+Z$/, 'Z'),
+    end: new Date(Date.now() + 3600_000).toISOString().replace(/\.\d+Z$/, 'Z')
+  }),
+  session('s-2', 'Consulta previa al examen', 3, { type: 'CONSULTA' }),
+  session('s-3', 'Laboratorio de anuncios', 3, { type: 'LABORATORIO', modality: 'PRESENCIAL', location: 'Aula 204', link: null, status: 'REPROGRAMADA' }),
+  session('s-4', 'Sesión cancelada', 6, { status: 'CANCELADA', link: null }),
+  session('s-5', 'Recuperación del taller', 9, { type: 'RECUPERACION', originalSessionId: 's-7' }),
+  session('s-6', 'Presentación del curso', -7, { link: null }),
+  session('s-7', 'Taller que no se dio', -14, { status: 'CANCELADA', link: null })
+]
+const sessionsPath = `${OFFERINGS}/${offering.code}/sessions`
+const agenda = (page: Page) => page.route(sessionsPath, (route) => route.fulfill({ json: AGENDA() }))
+const ATTENDANCE = '**/api/lms/teaching/sessions/ses-1/attendance'
+const CLASS_ROWS = CLASS.map(({ enrollmentId, email }, index) => ({
+  enrollmentId,
+  email,
+  status: index < 3 ? null : (['PRESENTE', 'TARDE', 'AUSENTE', 'JUSTIFICADO', 'PRESENTE', 'PRESENTE'] as const)[index - 3]!
+}))
+const classRows = (page: Page) =>
+  page.route(ATTENDANCE, (route) => (route.request().method() === 'GET' ? route.fulfill({ json: CLASS_ROWS }) : route.fallback()))
+const student = (page: Page, index: number) => page.getByRole('group', { name: `Asistencia de ${CLASS_ROWS[index]!.email}` })
+
 export const teachingScenarios: Scenario[] = [
   { name: 'teacher-offerings', path: '/docencia', api: teacher },
   { name: 'teacher-offerings-busy', path: '/docencia', api: teacher, act: reloaded(busy) },
@@ -228,6 +253,8 @@ export const teachingScenarios: Scenario[] = [
       const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
       await form.getByRole('button', { name: 'Cita la ordenanza (2 pts)' }).click()
       await form.getByLabel('Comentario para el estudiante (opcional)').fill('Falta citar la ordenanza vigente.')
+      // con la transición de la celda terminada: se ve su color final
+      await page.waitForTimeout(300)
     }
   },
   {
@@ -263,5 +290,118 @@ export const teachingScenarios: Scenario[] = [
     }
   },
   { name: 'teacher-attempt-not-found', path: `${OFFERING}/correccion/de-otra-edicion`, api: teacher },
-  { name: 'teacher-sessions', path: `${OFFERING}/sesiones`, api: teacher }
+  { name: 'teacher-sessions', path: `${OFFERING}/sesiones`, api: teacher },
+  { name: 'teacher-sessions-busy', path: `${OFFERING}/sesiones`, api: teacher, act: reloaded(agenda) },
+  {
+    name: 'teacher-sessions-empty',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: reloaded((page) => page.route(sessionsPath, (route) => route.fulfill({ json: [] })))
+  },
+  { name: 'teacher-sessions-error', path: `${OFFERING}/sesiones`, api: teacher, act: reloaded((page) => failing(page, sessionsPath)) },
+  {
+    name: 'teacher-sessions-loading',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: async (page) => {
+      await page.route(sessionsPath, () => undefined)
+      await page.reload()
+      await page.getByRole('status').first().waitFor()
+    }
+  },
+  {
+    name: 'teacher-session-form-errors',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: async (page) => {
+      await page.getByRole('button', { name: 'Programar sesión' }).click()
+      await page.getByRole('button', { name: 'Crear la sesión' }).click()
+    }
+  },
+  {
+    name: 'teacher-session-leave',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: async (page) => {
+      await page.getByRole('button', { name: 'Programar sesión' }).click()
+      await page.getByRole('form', { name: 'Crear una sesión o una serie' }).getByLabel('Título').fill('Repaso')
+      await page.getByRole('navigation', { name: 'Secciones de la edición' }).getByRole('link', { name: 'Matriculados' }).click()
+    }
+  },
+  {
+    name: 'teacher-session-reschedule',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: (page) => page.getByRole('button', { name: 'Reprogramar «Presentación del curso»' }).click()
+  },
+  {
+    name: 'teacher-session-cancel',
+    path: `${OFFERING}/sesiones`,
+    api: teacher,
+    act: (page) => page.getByRole('button', { name: 'Cancelar la sesión «Presentación del curso»' }).click()
+  },
+  { name: 'teacher-attendance', path: `${OFFERING}/sesiones/ses-1/asistencia`, api: teacher, act: reloaded(classRows) },
+  {
+    name: 'teacher-attendance-marked',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(classRows)(page)
+      await page.getByRole('button', { name: 'Marcar a todos presentes' }).click()
+      await student(page, 0).getByRole('button', { name: 'Tarde' }).click()
+      await page.waitForTimeout(300)
+    }
+  },
+  {
+    name: 'teacher-attendance-reason',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(classRows)(page)
+      await student(page, 3).getByRole('button', { name: 'Justificada' }).click()
+      await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
+      await page.waitForTimeout(300)
+    }
+  },
+  {
+    name: 'teacher-attendance-save-failed',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(classRows)(page)
+      await page.route(ATTENDANCE, (route) =>
+        route.request().method() === 'PUT' ? route.fulfill({ status: 500, json: problem(500, 'fallo') }) : route.fallback()
+      )
+      await student(page, 0).getByRole('button', { name: 'Presente' }).click()
+      await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
+      await page.getByText('No se guardó', { exact: false }).waitFor()
+    }
+  },
+  {
+    name: 'teacher-attendance-leave',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: async (page) => {
+      await student(page, 0).or(page.getByRole('group').first()).first().getByRole('button', { name: 'Ausente' }).click()
+      await page.getByRole('link', { name: '← Sesiones de la edición' }).click()
+    }
+  },
+  {
+    name: 'teacher-attendance-empty',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: reloaded((page) => page.route(ATTENDANCE, (route) => route.fulfill({ json: [] })))
+  },
+  {
+    name: 'teacher-attendance-loading',
+    path: `${OFFERING}/sesiones/ses-1/asistencia`,
+    api: teacher,
+    act: async (page) => {
+      await page.route(ATTENDANCE, () => undefined)
+      await page.reload()
+      await page.getByRole('status').first().waitFor()
+    }
+  },
+  { name: 'teacher-attendance-error', path: `${OFFERING}/sesiones/ses-1/asistencia`, api: teacher, act: reloaded((page) => failing(page, ATTENDANCE)) },
+  { name: 'teacher-attendance-not-found', path: `${OFFERING}/sesiones/de-otra/asistencia`, api: teacher }
 ]

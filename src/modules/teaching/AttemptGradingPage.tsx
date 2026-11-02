@@ -12,7 +12,7 @@ import type { Answer, Attempt, FileRef, Question, QuestionResult } from '../../s
 import { useDownload } from '../../shared/files'
 import { useGrade, useQueue, useTeachingAttempt } from './api'
 import { draftOf, isDirty, projectedScore, queuePosition, rubricPoints, validPoints, type Draft, type QueuePosition } from './grading'
-import { OfferingFrame, QueryProblem, useActionError, useLeaveGuard } from './parts'
+import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveGuard } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 const isManual = (question: Question) => question.type === 'OPEN' || question.type === 'FILE'
@@ -36,14 +36,7 @@ export function AttemptGradingPage() {
   const attemptLink = (id: string) => links.to(TEACHING_ROUTES.attempt, { code, attemptId: id })
   const back = links.to(TEACHING_ROUTES.queue, { code })
   return (
-    <OfferingFrame
-      code={code}
-      subtitle={student?.lessonTitle ?? t('grading.title')}
-      back={back}
-      backLabel={t('grading.back')}
-      onBack={leave.guard(back)}
-      width="wide"
-    >
+    <OfferingFrame code={code} subtitle={student?.lessonTitle ?? t('grading.title')} back={back} backLabel={t('grading.back')} onBack={leave.guard(back)}>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
         {/* el correo va aquí y no en la cabecera: es una palabra larga que la ensancharía en el móvil */}
         {student ? (
@@ -270,7 +263,6 @@ function AttemptGrading({ code, attempt, place, onDirty }: { code: string; attem
   )
 }
 
-// siempre a la vista: main desplaza, y esto se queda pegado a su borde inferior, a ras de los márgenes de ScreenBody
 function TotalBar({
   result,
   projected,
@@ -297,7 +289,7 @@ function TotalBar({
   const score = formatNumber(result.score, locale)
   const max = formatNumber(result.maxScore, locale)
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 -mb-16 flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 shadow-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <div className={STICKY_BAR}>
       {failed ? <Notice tone="danger">{t('grading.saveFailed')}</Notice> : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex min-w-0 flex-col">

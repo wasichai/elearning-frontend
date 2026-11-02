@@ -215,7 +215,9 @@ const es = {
     loading: 'Cargando las sesiones…',
     empty: 'Esta edición todavía no tiene sesiones.',
     timeZone: 'Horas en {{zone}}',
-    new: 'Crear sesiones',
+    new: 'Programar sesión',
+    upcoming: 'Próximas',
+    past: 'Pasadas',
     created_one: 'Se creó {{value}} sesión.',
     created_other: 'Se crearon {{value}} sesiones.',
     status: {
@@ -245,12 +247,14 @@ const es = {
   },
   cancel: {
     title: '¿Cancelar «{{title}}»?',
-    description: 'Se avisará a los matriculados de esta edición. Una sesión cancelada no se puede reactivar.',
+    description:
+      'Se avisará a los matriculados de esta edición con una alerta y, si hay correo configurado, también por correo. Una sesión cancelada no se puede reactivar.',
     confirm: 'Sí, cancelar la sesión'
   },
   reschedule: {
     title: 'Reprogramar «{{title}}»',
-    description: 'La nueva fecha y hora van en {{zone}}. Se avisará a los matriculados de esta edición.',
+    description:
+      'La nueva fecha y hora van en {{zone}}. Se avisará a los matriculados de esta edición con una alerta y, si hay correo configurado, también por correo.',
     date: 'Nueva fecha',
     time: 'Nueva hora local',
     reason: 'Motivo',
@@ -304,7 +308,8 @@ const es = {
     daysRequired: 'Elige al menos un día.',
     createOne: 'Crear la sesión',
     createSeries: 'Crear la serie',
-    creating: 'Creando…'
+    creating: 'Creando…',
+    close: 'Cerrar sin crear'
   },
   attendance: {
     title: 'Asistencia',
@@ -319,8 +324,17 @@ const es = {
       PRESENTE: 'Presente',
       TARDE: 'Tarde',
       AUSENTE: 'Ausente',
-      JUSTIFICADO: 'Justificado'
+      JUSTIFICADO: 'Justificada'
     },
+    summary: 'Resumen de la asistencia',
+    unmarked: 'Sin marcar',
+    rowUnsaved: 'Sin guardar',
+    markAll: 'Marcar a todos presentes',
+    markAllHint: 'Solo cambia a quienes siguen sin marcar. No se guarda hasta que pulses «Guardar la asistencia».',
+    unsaved_one: '{{value}} cambio sin guardar',
+    unsaved_other: '{{value}} cambios sin guardar',
+    allSaved: 'Todo guardado',
+    saveFailed: 'No se guardó. Lo que marcaste sigue aquí: vuelve a intentarlo.',
     reason: 'Motivo del cambio',
     reasonHint: 'Obligatorio porque cambias una asistencia ya registrada.',
     save: 'Guardar la asistencia',
@@ -623,7 +637,9 @@ const en: typeof es = {
     loading: 'Loading the sessions…',
     empty: 'This offering has no sessions yet.',
     timeZone: 'Times in {{zone}}',
-    new: 'Create sessions',
+    new: 'Schedule a session',
+    upcoming: 'Upcoming',
+    past: 'Past',
     created_one: '{{value}} session created.',
     created_other: '{{value}} sessions created.',
     status: {
@@ -653,12 +669,12 @@ const en: typeof es = {
   },
   cancel: {
     title: 'Cancel “{{title}}”?',
-    description: 'Students in this offering will be notified. A cancelled session cannot be reactivated.',
+    description: 'Students in this offering will get an alert and, if email is configured, an email too. A cancelled session cannot be reactivated.',
     confirm: 'Yes, cancel the session'
   },
   reschedule: {
     title: 'Reschedule “{{title}}”',
-    description: 'The new date and time are in {{zone}}. Students in this offering will be notified.',
+    description: 'The new date and time are in {{zone}}. Students in this offering will get an alert and, if email is configured, an email too.',
     date: 'New date',
     time: 'New local time',
     reason: 'Reason',
@@ -712,7 +728,8 @@ const en: typeof es = {
     daysRequired: 'Choose at least one day.',
     createOne: 'Create the session',
     createSeries: 'Create the series',
-    creating: 'Creating…'
+    creating: 'Creating…',
+    close: 'Close without creating'
   },
   attendance: {
     title: 'Attendance',
@@ -729,6 +746,15 @@ const en: typeof es = {
       AUSENTE: 'Absent',
       JUSTIFICADO: 'Excused'
     },
+    summary: 'Attendance summary',
+    unmarked: 'Not marked',
+    rowUnsaved: 'Not saved',
+    markAll: 'Mark everyone present',
+    markAllHint: 'It only changes those still not marked. Nothing is saved until you press “Save the attendance”.',
+    unsaved_one: '{{value}} unsaved change',
+    unsaved_other: '{{value}} unsaved changes',
+    allSaved: 'All saved',
+    saveFailed: 'It was not saved. What you marked is still here: try again.',
     reason: 'Reason for the change',
     reasonHint: 'Required because you are changing attendance already recorded.',
     save: 'Save the attendance',

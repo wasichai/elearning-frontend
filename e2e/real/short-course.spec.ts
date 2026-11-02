@@ -184,12 +184,15 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
 
       await desk.goto(`/docencia/${OFFERING}/sesiones`)
       await desk.getByRole('link', { name: `Pasar asistencia de «${SESSION_LESSON}»` }).click()
-      const attendance = desk.getByRole('radiogroup', { name: `Asistencia de ${student.email}` })
-      await attendance.getByRole('radio', { name: 'Presente' }).check()
+      const attendance = desk.getByRole('group', { name: `Asistencia de ${student.email}` })
+      await attendance.getByRole('button', { name: 'Presente' }).click()
       await desk.getByRole('button', { name: 'Guardar la asistencia' }).click()
       await expect(desk.getByText('Asistencia guardada')).toBeVisible()
       await desk.reload()
-      await expect(desk.getByRole('radiogroup', { name: `Asistencia de ${student.email}` }).getByRole('radio', { name: 'Presente' })).toBeChecked()
+      await expect(desk.getByRole('group', { name: `Asistencia de ${student.email}` }).getByRole('button', { name: 'Presente' })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
 
       await desk.goto(`/docencia/${OFFERING}`)
       const after = desk.getByRole('row').filter({ has: desk.getByRole('rowheader', { name: student.email }) })
