@@ -29,11 +29,17 @@ describe('InboxPage: la bandeja del revisor', () => {
     expect(first.getByRole('link', { name: 'Introducción al SGSPE' })).toHaveAttribute('href', '/revision/ver-sgspe-2')
     expect(first.getByText('SGSPE-101 · versión 2')).toBeInTheDocument()
     expect(first.getByText('En revisión desde el 20 oct 2026')).toBeInTheDocument()
-    expect(first.getByText('1 comentario abierto')).toBeInTheDocument()
+    expect(first.getByText('1 comentario abierto').closest('[data-state]')).toHaveAttribute('data-state', 'warning')
+    expect(first.getByText('En revisión').closest('[data-state]')).toHaveAttribute('data-state', 'review')
+    // una sola primaria: revisar la que más espera. el contrato no da el nombre del autor
+    expect(first.getByRole('link', { name: 'Revisar SGSPE-101, versión 2' })).toHaveAttribute('data-variant', 'primary')
+    expect(first.getByRole('link', { name: 'Revisar SGSPE-101, versión 2' })).toHaveAttribute('href', '/revision/ver-sgspe-2')
+    expect(first.queryByText('u-creador')).not.toBeInTheDocument()
     expect(first.queryByText('Asignada a ti')).not.toBeInTheDocument()
     const second = within(items[1]!)
     expect(second.getByText('Sin comentarios abiertos')).toBeInTheDocument()
     expect(second.getByText('Asignada a ti')).toBeInTheDocument()
+    expect(second.getByRole('link', { name: 'Revisar SRTM-ANU-101, versión 1' })).toHaveAttribute('data-variant', 'secondary')
   })
 
   it('sin nada que revisar lo dice con claridad', async () => {

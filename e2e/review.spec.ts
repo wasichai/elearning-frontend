@@ -40,7 +40,7 @@ test('un revisor abre su bandeja, ve qué cambió, comenta una lección y pide c
   await expect(page.getByRole('region', { name: 'Historial de decisiones' })).toContainText('Faltan las referencias a la ordenanza.')
 
   // y sale de la bandeja
-  await page.getByRole('link', { name: '← Bandeja de revisión' }).click()
+  await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Bandeja de revisión' }).click()
   await expect(page.getByRole('article')).toHaveCount(1)
   await expect(page.getByRole('article')).toContainText('Licencias de anuncios con SRTM')
   expect(api.reviewRequests).toContain('POST /api/lms/review/versions/ver-sgspe-2/comments')
@@ -59,6 +59,50 @@ test('aprobar se confirma; sin PUBLICAR no se ofrece publicar; la primera versi�
   await expect(page.getByRole('status').filter({ hasText: 'Versión aprobada. Estado: Aprobada.' })).toBeVisible()
   await expect(page.getByText('Aprobada', { exact: true }).first()).toBeVisible()
   await expect(page.getByRole('button', { name: 'Publicar la versión' })).toHaveCount(0)
+})
+
+test('con un comentario a medias, salir por el menú avisa y no pierde el texto', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'reviewer' })
+  await page.goto('/revision/ver-sgspe-2')
+
+  await page.getByRole('button', { name: 'Comentar La versión completa' }).click()
+  const box = page.getByRole('form').getByRole('textbox', { name: 'Comentario' })
+  await box.fill('Una idea a medias')
+  await page.getByRole('link', { name: 'Bandeja de revisión', exact: true }).first().click()
+
+  const dialog = page.getByRole('dialog', { name: '¿Salir sin enviar el comentario?' })
+  await expect(dialog).toBeVisible()
+  await expect(page).toHaveURL('/revision/ver-sgspe-2')
+  await dialog.getByRole('button', { name: 'Seguir escribiendo' }).click()
+  await expect(box).toHaveValue('Una idea a medias')
+
+  await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Bandeja de revisión' }).click()
+  await dialog.getByRole('button', { name: 'Salir sin enviar' }).click()
+  await expect(page).toHaveURL('/revision')
+})
+
+test('a 360 el panel de decisión va antes del contenido y nada desborda', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await fakeApi(page, { signedIn: true, as: 'reviewer' })
+  await page.goto('/revision/ver-sgspe-2')
+
+  const panel = page.getByRole('region', { name: 'Tu decisión' })
+  const content = page.getByRole('region', { name: 'Cambios', exact: true })
+  await expect(content).toBeVisible()
+  expect((await panel.boundingBox())!.y).toBeLessThan((await content.boundingBox())!.y)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+})
+
+test('en escritorio el panel de decisión sigue a la vista al desplazar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 600 })
+  await fakeApi(page, { signedIn: true, as: 'reviewer' })
+  await page.goto('/revision/ver-sgspe-2')
+
+  const approve = page.getByRole('button', { name: 'Aprobar', exact: true })
+  await expect(approve).toBeInViewport()
+  await page.getByRole('heading', { level: 2, name: /^Unidad 1\./ }).evaluate((heading) => heading.scrollIntoView({ block: 'end' }))
+  await page.evaluate(() => document.querySelector('main')!.scrollBy(0, 400))
+  await expect(approve).toBeInViewport()
 })
 
 test('un estudiante no ve la bandeja en el menú, y una versión ajena se explica', async ({ page }) => {

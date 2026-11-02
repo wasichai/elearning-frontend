@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { CallerPermissions } from '@wasichai/core'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
-import { Route, Routes } from 'react-router'
+import { Link, Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { reviewModule } from './module'
 import { firstVersionDiff, problem, versionDetail, versionDiff, versionInReview } from './test/fixtures'
@@ -87,8 +87,10 @@ describe('VersionReviewPage: revisar una versión', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Introducción al SGSPE' })).toBeInTheDocument()
     expect(screen.getByText('SGSPE-101 · versión 2')).toBeInTheDocument()
-    expect(screen.getByText('En revisión')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '← Bandeja de revisión' })).toHaveAttribute('href', '/revision')
+    expect(within(screen.getByRole('banner')).getByText('En revisión').closest('[data-state]')).toHaveAttribute('data-state', 'review')
+    const trail = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(trail.getByRole('link', { name: 'Bandeja de revisión' })).toHaveAttribute('href', '/revision')
+    expect(trail.getByText('Versión 2')).toHaveAttribute('aria-current', 'page')
     const unit = within(screen.getByRole('region', { name: 'Unidad 1. El sistema y sus actores' }))
     expect(unit.getByRole('heading', { level: 3, name: 'Lección 1.1. Qué es el SGSPE' })).toBeInTheDocument()
     expect(unit.getByText('Lectura · 1 recurso')).toBeInTheDocument()
@@ -96,12 +98,174 @@ describe('VersionReviewPage: revisar una versión', () => {
     const lessonComments = within(screen.getByRole('list', { name: 'Comentarios de Lección 1.1. Qué es el SGSPE' }))
     expect(lessonComments.getByText('Falta citar la ordenanza.')).toBeInTheDocument()
     expect(lessonComments.getByRole('button', { name: 'Marcar como resuelto' })).toBeInTheDocument()
+    expect(lessonComments.getByText('Abierto').closest('[data-state]')).toHaveAttribute('data-state', 'warning')
+    // lo resuelto, plegado con su contador; se despliega
+    expect(screen.queryByRole('list', { name: 'Comentarios de La versión completa' })).not.toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: 'Comentarios de La versión completa: 1 resuelto' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(toggle)
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
     const general = within(screen.getByRole('list', { name: 'Comentarios de La versión completa' }))
     expect(general.getByText('Revisar el título del curso.')).toBeInTheDocument()
     expect(general.getByText('Resuelto')).toBeInTheDocument()
+    // y se vuelve a plegar lo abierto
+    const lessonToggle = screen.getByRole('button', { name: 'Comentarios de Lección 1.1. Qué es el SGSPE: 1 abierto' })
+    expect(lessonToggle).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(lessonToggle)
+    expect(screen.queryByText('Falta citar la ordenanza.')).not.toBeInTheDocument()
     const history = within(screen.getByRole('region', { name: 'Historial de decisiones' }))
     expect(history.getByText('Cambios pedidos')).toBeInTheDocument()
     expect(history.getByText('Faltan las referencias normativas.')).toBeInTheDocument()
+  })
+
+  it('el panel dice qué se revisa, qué falta y qué pasa con cada decisión, con una sola primaria', async () => {
+    renderVersion([{ path: VERSION, body: versionDetail }])
+
+    const panel = within(await screen.findByRole('region', { name: 'Tu decisión' }))
+    expect(screen.getByText('Revisas la versión 2 de Introducción al SGSPE.')).toBeInTheDocument()
+    expect(panel.getByText('Falta tu decisión')).toBeInTheDocument()
+    expect(screen.getByText('1 comentario abierto')).toBeInTheDocument()
+    expect(panel.getByText(/^Queda lista para publicar/)).toBeInTheDocument()
+    expect(panel.getByText(/^Vuelve a quien la escribió como borrador/)).toBeInTheDocument()
+    expect(panel.getByText(/^Queda retirada y no se podrá publicar/)).toBeInTheDocument()
+    expect(panel.getByRole('button', { name: 'Aprobar' })).toHaveAttribute('data-variant', 'primary')
+    expect(panel.getByRole('button', { name: 'Pedir cambios' })).toHaveAttribute('data-variant', 'secondary')
+    expect(panel.getByRole('button', { name: 'Rechazar' })).toHaveAttribute('data-variant', 'secondary')
+    // la línea de estados, derivada del estado; las decisiones, la más reciente primero
+    const steps = within(screen.getByRole('list', { name: 'Recorrido de la versión' })).getAllByRole('listitem')
+    expect(steps[2]).toHaveAttribute('aria-current', 'step')
+    expect(steps[2]).toHaveTextContent(/^En revisiónActualizada el 20 oct 2026$/)
+    expect(steps[3]).toHaveTextContent('hecho')
+    expect(steps[0]).toHaveTextContent('pendiente')
+  })
+
+  it('en cada sección, lo abierto va antes que lo resuelto', async () => {
+    const comments = [
+      { ...versionDetail.comments[1]!, id: 'r', text: 'Ya resuelto.' },
+      { ...versionDetail.comments[1]!, id: 'a', text: 'Aún abierto.', resolved: false }
+    ]
+    renderVersion([{ path: VERSION, body: { ...versionDetail, comments, openComments: 1 } }])
+
+    const list = await screen.findByRole('list', { name: 'Comentarios de La versión completa' })
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent)
+    ).toEqual([expect.stringMatching(/^Aún abierto\./), expect.stringMatching(/^Ya resuelto\./)])
+  })
+
+  it('aprobar con comentarios abiertos lo avisa antes de confirmar', async () => {
+    renderVersion([{ path: VERSION, body: versionDetail }])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aprobar' }))
+    expect(await screen.findByRole('dialog', { name: '¿Aprobar esta versión?' })).toHaveTextContent('Queda 1 comentario abierto.')
+  })
+
+  it('el motivo dice quién lo leerá; rechazar no envía nada de un clic ni al cancelar', async () => {
+    renderVersion([{ path: VERSION, body: versionDetail }])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Rechazar' }))
+    const dialog = within(await screen.findByRole('dialog', { name: '¿Rechazar esta versión?' }))
+    expect(posts(DECISION)).toEqual([])
+    expect(dialog.getByRole('textbox', { name: 'Motivo (lo leerá quien escribió la versión)' })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'Rechazar' })).toHaveAttribute('data-variant', 'danger')
+    await userEvent.type(dialog.getByRole('textbox'), 'No procede.')
+    await userEvent.click(dialog.getByRole('button', { name: 'Cancelar' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(posts(DECISION)).toEqual([])
+  })
+
+  it('un motivo rechazado por el servidor se explica sin perder lo escrito', async () => {
+    renderVersion([
+      { path: VERSION, body: versionDetail },
+      { method: 'POST', path: DECISION, status: 409, body: problem(409, 'Solo se decide una versión en revisión') }
+    ])
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Pedir cambios' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    await userEvent.type(dialog.getByRole('textbox'), 'Faltan fuentes.')
+    await userEvent.click(dialog.getByRole('button', { name: 'Pedir cambios' }))
+    expect(await dialog.findByRole('alert')).toHaveTextContent('El servidor no lo aceptó: Solo se decide una versión en revisión')
+    expect(dialog.getByRole('textbox')).toHaveValue('Faltan fuentes.')
+  })
+
+  it('un comentario sin enviar avisa: en el panel, al cancelar y al salir por un enlace', async () => {
+    const user = userEvent.setup()
+    fetchMock = mockFetch([
+      { path: VERSION, body: versionDetail },
+      { path: DIFF, body: versionDiff }
+    ])
+    renderWithProviders(
+      <>
+        <Link to="/otra">Menú</Link>
+        <Routes>
+          <Route path="/revision/:versionId" element={<VersionReviewPage />} />
+          <Route path="/otra" element={<p>Otra pantalla</p>} />
+        </Routes>
+      </>,
+      { modules: [reviewModule()], route: '/revision/ver-sgspe-2', permissions: REVIEWER }
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Comentar La versión completa' }))
+    const form = within(screen.getByRole('form'))
+    // el formulario abierto y vacío no retiene a nadie
+    expect(screen.queryByText(/sin enviar/)).not.toBeInTheDocument()
+    await user.type(form.getByRole('textbox'), 'A medias')
+    expect(screen.getByText('Tienes un comentario sin enviar: si decides ahora, se perderá.')).toBeInTheDocument()
+
+    await user.click(form.getByRole('button', { name: 'Cancelar' }))
+    await user.click(within(await screen.findByRole('dialog', { name: '¿Descartar el comentario?' })).getByRole('button', { name: 'Seguir escribiendo' }))
+    expect(screen.getByRole('textbox')).toHaveValue('A medias')
+
+    const unload = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(unload)
+    expect(unload.defaultPrevented).toBe(true)
+
+    await user.click(screen.getByRole('link', { name: 'Menú' }))
+    const leaving = within(await screen.findByRole('dialog', { name: '¿Salir sin enviar el comentario?' }))
+    expect(screen.queryByText('Otra pantalla')).not.toBeInTheDocument()
+    await user.click(leaving.getByRole('button', { name: 'Seguir escribiendo' }))
+    expect(screen.getByRole('textbox')).toHaveValue('A medias')
+
+    await user.click(screen.getByRole('link', { name: 'Menú' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Salir sin enviar' }))
+    expect(await screen.findByText('Otra pantalla')).toBeInTheDocument()
+    const later = new Event('beforeunload', { cancelable: true })
+    window.dispatchEvent(later)
+    expect(later.defaultPrevented).toBe(false)
+  })
+
+  it('sin texto se sale y se cancela sin preguntar', async () => {
+    const user = userEvent.setup()
+    fetchMock = mockFetch([
+      { path: VERSION, body: versionDetail },
+      { path: DIFF, body: versionDiff }
+    ])
+    renderWithProviders(
+      <>
+        <Link to="/otra">Menú</Link>
+        <Routes>
+          <Route path="/revision/:versionId" element={<VersionReviewPage />} />
+          <Route path="/otra" element={<p>Otra pantalla</p>} />
+        </Routes>
+      </>,
+      { modules: [reviewModule()], route: '/revision/ver-sgspe-2', permissions: REVIEWER }
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Comentar La versión completa' }))
+    await user.click(within(screen.getByRole('form')).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.queryByRole('form')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Menú' }))
+    expect(await screen.findByText('Otra pantalla')).toBeInTheDocument()
+  })
+
+  it('un comentario de una sección que ya no está va aparte, sin el nombre técnico', async () => {
+    const orphan = { ...versionDetail.comments[0]!, id: 'com-9', section: 'unidad:9/leccion:9', text: 'Esta lección sobraba.' }
+    renderVersion([{ path: VERSION, body: { ...versionDetail, comments: [orphan] } }])
+
+    expect(await screen.findByRole('list', { name: 'Otros comentarios' })).toHaveTextContent('Esta lección sobraba.')
+    expect(screen.queryByText(/unidad:9/)).not.toBeInTheDocument()
   })
 
   it('un comentario va con la sección de la lección; vacío no se envía', async () => {
@@ -232,13 +396,63 @@ describe('VersionReviewPage: revisar una versión', () => {
     renderVersion([{ path: VERSION, body: approved }])
     expect(await screen.findByText(/Esta versión ya no está en revisión/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Publicar la versión' })).not.toBeInTheDocument()
+    expect(screen.getByText(/^Falta publicarla: lo hace quien tiene el permiso de publicar/)).toBeInTheDocument()
+  })
+
+  it('publicar va por el permiso PUBLICAR, nunca por el rol, y solo sobre una aprobada', async () => {
+    const approved = { ...versionDetail, status: 'APROBADA', comments: [], openComments: 0 }
+    const asRole = (roles: string[], objects: CallerPermissions['objects'], body: unknown) => {
+      fetchMock = mockFetch([
+        { path: VERSION, body },
+        { path: DIFF, body: versionDiff }
+      ])
+      return renderWithProviders(
+        <Routes>
+          <Route path="/revision/:versionId" element={<VersionReviewPage />} />
+        </Routes>,
+        {
+          modules: [reviewModule()],
+          route: '/revision/ver-sgspe-2',
+          user: { id: 'u', email: 'u@demo.local', displayName: 'U', organizationId: 'o', roles },
+          permissions: { admin: false, objects }
+        }
+      )
+    }
+
+    // un rol que se llama publicador, sin el permiso: nada
+    const named = asRole(['PUBLICADOR', 'ADMIN'], { version_curso: ['READ', 'APROBAR'] }, approved)
+    expect(await screen.findByText(/Esta versión ya no está en revisión/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Publicar la versión' })).not.toBeInTheDocument()
+    named.unmount()
+    fetchMock.restore()
+
+    // con el permiso, sea cual sea el rol
+    const allowed = asRole(['ESTUDIANTE'], { version_curso: ['READ', 'PUBLICAR'] }, approved)
+    expect(await screen.findByRole('button', { name: 'Publicar la versión' })).toHaveAttribute('data-variant', 'primary')
+    allowed.unmount()
+    fetchMock.restore()
+
+    // con el permiso, pero en revisión: aún no
+    asRole(['ESTUDIANTE'], { version_curso: ['READ', 'APROBAR', 'PUBLICAR'] }, versionDetail)
+    expect(await screen.findByRole('button', { name: 'Aprobar' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Publicar la versión' })).not.toBeInTheDocument()
+  })
+
+  it('un estado cerrado no ofrece decidir ni pinta un recorrido que no se sabe si hizo', async () => {
+    renderVersion([{ path: VERSION, body: { ...versionDetail, status: 'RETIRADA' } }])
+
+    expect(await screen.findByRole('region', { name: 'Estado: Retirada' })).toBeInTheDocument()
+    expect(screen.getByText('Estás viendo la versión 2 de Introducción al SGSPE.')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Recorrido de la versión' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Comentar / })).not.toBeInTheDocument()
   })
 
   it('una versión ajena (404) se explica y deja volver a la bandeja', async () => {
     renderVersion([{ path: VERSION, status: 404, body: problem(404, 'Versión no encontrada') }])
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Esta versión no está a tu cargo')
-    expect(screen.getByRole('link', { name: '← Bandeja de revisión' })).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByRole('link', { name: 'Bandeja de revisión' })).toBeInTheDocument()
   })
 
   it('en inglés', async () => {
