@@ -103,13 +103,14 @@ describe('VersionDiffSection', () => {
       .getAllByRole('listitem')
       .filter((item) => item.parentElement === changed)
     expect(units).toHaveLength(3)
-    expect(units[0]).toHaveTextContent(/^CambiadaUnidad 1\. Primeros pasosAntes: «Comenzar»Cambió: título/)
+    expect(units[0]).toHaveTextContent(/^CambiadaUnidad 1\. Primeros pasosCambió: título y sus leccionesAntes: ComenzarAhora: Primeros pasos/)
     expect(units[1]).toHaveTextContent(/^AñadidaUnidad 2\. LiquidacionesAñadidaLección 2\.1\. Evaluación final$/)
     expect(units[2]).toHaveTextContent(/^QuitadaUnidad 3\. Anexos$/)
 
-    // las lecciones de la unidad cambiada: la cambiada con sus campos (el desconocido, tal cual), la añadida y la igual plegada
+    // las lecciones de la unidad cambiada: la cambiada con sus campos (el desconocido, sin su nombre técnico), la añadida y la igual plegada
     const lessons = within(units[0]!)
-    expect(lessons.getByText('Lección 1.2. Cambiar la clave').closest('li')).toHaveTextContent('Cambió: recursos, resumen, video_url')
+    expect(lessons.getByText('Lección 1.2. Cambiar la clave').closest('li')).toHaveTextContent('Cambió: recursos, resumen y otros datos')
+    expect(section.queryByText(/video_url/)).not.toBeInTheDocument()
     expect(lessons.getByText('Lección 1.3. Recorrido por el portal').closest('li')).toHaveTextContent(/^AñadidaLección 1\.3/)
     expect(lessons.getByText('1 lección sin cambios')).toBeVisible()
     expect(lessons.getByText('Lección 1.1. Entrar al portal')).not.toBeVisible()
@@ -125,6 +126,7 @@ describe('VersionDiffSection', () => {
 
     expect(await screen.findByText(/Es la primera versión de este curso/)).toBeInTheDocument()
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Resumen de cambios' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Primeros pasos/)).not.toBeInTheDocument()
   })
 
@@ -134,6 +136,105 @@ describe('VersionDiffSection', () => {
     expect(await screen.findByText('Su contenido es el mismo que el de la versión 2.')).toBeInTheDocument()
     expect(screen.queryByRole('list', { name: 'Lo que cambió' })).not.toBeInTheDocument()
     expect(screen.getByText('1 unidad sin cambios')).toBeVisible()
+    // ni cifras a cero ni leyenda: no hay nada que leer con ellas
+    expect(screen.queryByRole('group', { name: 'Resumen de cambios' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Leyenda' })).not.toBeInTheDocument()
+    expect(screen.getByText('Sin cambios')).toBeInTheDocument()
+  })
+
+  it('una versión sin temario, comparada con otra, tampoco tiene cambios', async () => {
+    renderDiff({ baseVersion: 3, units: [] })
+
+    expect(await screen.findByText('Su contenido es el mismo que el de la versión 3.')).toBeInTheDocument()
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+
+  it('resume en cifras exactas lo añadido, lo cambiado y lo quitado, separando unidades y lecciones', async () => {
+    renderDiff(diff)
+
+    const summary = within(await screen.findByRole('group', { name: 'Resumen de cambios' }))
+    expect(summary.getByText('Añadidas').closest('div')).toHaveTextContent(/^Añadidas31 unidad y 2 lecciones$/)
+    expect(summary.getByText('Cambiadas').closest('div')).toHaveTextContent(/^Cambiadas21 unidad y 1 lección$/)
+    expect(summary.getByText('Quitadas').closest('div')).toHaveTextContent(/^Quitadas11 unidad$/)
+  })
+
+  it('una cifra a cero se dice, sin desglose', async () => {
+    renderDiff({
+      baseVersion: 1,
+      units: [
+        {
+          order: 1,
+          change: 'CHANGED',
+          title: 'Primeros pasos',
+          previousTitle: 'Primeros pasos',
+          fields: [],
+          lessons: [{ order: 1, change: 'ADDED', title: 'Nueva', previousTitle: null, fields: [] }]
+        }
+      ]
+    })
+
+    const summary = within(await screen.findByRole('group', { name: 'Resumen de cambios' }))
+    expect(summary.getByText('Añadidas').closest('div')).toHaveTextContent(/^Añadidas11 lección$/)
+    expect(summary.getByText('Quitadas').closest('div')).toHaveTextContent(/^Quitadas0$/)
+  })
+
+  it('la leyenda distingue cada cambio por icono, palabra y forma, y las marcas de las filas son las mismas', async () => {
+    renderDiff(diff)
+
+    const legend = within(await screen.findByRole('list', { name: 'Leyenda' }))
+    const added = legend.getByText('Añadida').closest('[data-change]')!
+    const removed = legend.getByText('Quitada').closest('[data-change]')!
+    const changed = legend.getByText('Cambiada').closest('[data-change]')!
+    expect(added).toHaveClass('border-solid', 'border-success', 'bg-success-soft')
+    expect(removed).toHaveClass('border-solid', 'border-danger', 'bg-danger-soft')
+    expect(changed).toHaveClass('border-dashed', 'border-warning', 'bg-warning-soft')
+    expect(legend.getByText('Quitada')).toHaveClass('line-through')
+    for (const mark of [added, removed, changed]) expect(mark.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    // tres iconos distintos
+    expect(new Set([added, removed, changed].map((mark) => mark.querySelector('svg')!.getAttribute('class'))).size).toBe(3)
+
+    const rows = within(screen.getByRole('list', { name: 'Lo que cambió' }))
+    expect(rows.getAllByText('Quitada')[0]!.closest('[data-change]')).toHaveClass(removed.className)
+  })
+
+  it('marca el título de antes y el de ahora solo donde cambió', async () => {
+    renderDiff(diff)
+
+    const changed = await screen.findByRole('list', { name: 'Lo que cambió' })
+    // la unidad 1 es la única con dos títulos distintos: lo añadido, lo quitado y la lección con el mismo título no se marcan
+    expect(within(changed).getAllByRole('deletion')).toHaveLength(1)
+    expect(within(changed).getAllByRole('insertion')).toHaveLength(1)
+    expect(within(changed).getByRole('deletion')).toHaveTextContent(/^Comenzar$/)
+    expect(within(changed).getByRole('insertion')).toHaveTextContent(/^Primeros pasos$/)
+  })
+
+  it('una unidad cambiada solo por sus lecciones lo explica', async () => {
+    renderDiff({
+      baseVersion: 1,
+      units: [
+        {
+          order: 1,
+          change: 'CHANGED',
+          title: 'Primeros pasos',
+          previousTitle: 'Primeros pasos',
+          fields: [],
+          lessons: [{ order: 1, change: 'REMOVED', title: null, previousTitle: 'Antigua', fields: [] }]
+        }
+      ]
+    })
+
+    expect((await screen.findByText('Unidad 1. Primeros pasos')).closest('li')).toHaveTextContent(/^CambiadaUnidad 1\. Primeros pasosCambió: sus lecciones/)
+    expect(screen.queryByRole('deletion')).not.toBeInTheDocument()
+  })
+
+  it('mientras carga lo anuncia', async () => {
+    function Host() {
+      const query = useQuery({ queryKey: ['diff-pending'], queryFn: () => new Promise<VersionDiff>(() => {}), retry: false })
+      return <VersionDiffSection namespace={NAMESPACE} query={query} />
+    }
+    renderWithProviders(<Host />, { modules: [host] })
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Comparando con la versión anterior…')
   })
 
   it('un fallo se explica y deja reintentar', async () => {
@@ -149,9 +250,12 @@ describe('VersionDiffSection', () => {
 
     const section = within(await screen.findByRole('region', { name: 'Changes' }))
     expect(await section.findByText('Compared with version 1.')).toBeInTheDocument()
-    expect(section.getByText('Before: “Comenzar”')).toBeInTheDocument()
-    expect(section.getByText('Changed: resources, summary, video_url')).toBeInTheDocument()
-    expect(section.getByText('Removed')).toBeInTheDocument()
+    expect(section.getByText('Before:').closest('p')).toHaveTextContent('Before: Comenzar')
+    expect(section.getByText('Now:').closest('p')).toHaveTextContent('Now: Primeros pasos')
+    expect(section.getByText('Changed: resources, summary, and other data')).toBeInTheDocument()
+    expect(within(section.getByRole('list', { name: 'What changed' })).getByText('Removed')).toBeInTheDocument()
+    expect(section.getByRole('group', { name: 'Summary of changes' })).toHaveTextContent('Added31 unit and 2 lessons')
+    expect(within(section.getByRole('list', { name: 'Key' })).getByText('Changed')).toBeInTheDocument()
     expect(section.getByText('1 unit unchanged')).toBeInTheDocument()
   })
 })
@@ -170,7 +274,23 @@ describe('textos de las diferencias', () => {
   })
 
   it('conoce los campos de unidad y lección del modelo, y nada más', () => {
-    for (const field of ['titulo', 'descripcion', 'objetivos', 'horas_estimadas', 'tipo', 'duracion_minutos', 'resumen', 'referencia_fuente', 'recursos'])
+    for (const field of [
+      'titulo',
+      'descripcion',
+      'objetivos',
+      'horas_estimadas',
+      'tipo',
+      'duracion_minutos',
+      'resumen',
+      'referencia_fuente',
+      'recursos',
+      'objetivo',
+      'requisitos',
+      'hitos',
+      'criterios_aceptacion',
+      'entregables',
+      'entornos'
+    ])
       expect(isKnownField(field)).toBe(true)
     expect(isKnownField('video_url')).toBe(false)
     expect(isKnownField('constructor')).toBe(false)

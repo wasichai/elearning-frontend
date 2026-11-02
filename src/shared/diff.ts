@@ -7,7 +7,7 @@ import { z } from 'zod'
 export const DIFF_CHANGES = ['ADDED', 'REMOVED', 'CHANGED', 'SAME'] as const
 
 // title es null en lo quitado y previousTitle en lo añadido; fields nombra los campos del modelo que difieren (en
-// español, con recursos si cambian los enlazados) y va vacío en ADDED y REMOVED
+// español, con recursos si cambian los enlazados) y va vacío en ADDED y REMOVED. solo del título llega el valor anterior
 const diffItem = z.object({
   order: z.number().int(),
   change: z.enum(DIFF_CHANGES),
