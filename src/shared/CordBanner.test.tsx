@@ -10,6 +10,23 @@ describe('CordBanner', () => {
     expect(draw('srtm-anuncios')).not.toBe(draw('sgspe-introductorio'))
   })
 
+  it.each(['srtm-anuncios', 'sgspe-introductorio', 'catastro', 'x'])('los nudos de %s caben en la banda y no se solapan', (seed) => {
+    const height = 96
+    const { container } = render(<CordBanner seed={seed} height={height} />)
+    const groups = [...container.querySelectorAll('g')]
+    expect(groups.length).toBeGreaterThan(0)
+    for (const group of groups) {
+      const knots = [...group.querySelectorAll('circle')].map((knot) => ({ y: Number(knot.getAttribute('cy')), r: Number(knot.getAttribute('r')) }))
+      for (const { y, r } of knots) expect(y + r).toBeLessThanOrEqual(height)
+      for (let index = 1; index < knots.length; index++) expect(knots[index]!.y - knots[index - 1]!.y).toBeGreaterThanOrEqual(knots[index]!.r * 2)
+    }
+  })
+
+  it('no se escala: los nudos miden lo mismo a cualquier ancho', () => {
+    const { container } = render(<CordBanner seed="x" />)
+    expect(container.querySelector('svg')).not.toHaveAttribute('viewBox')
+  })
+
   it('es decorativa para un lector de pantalla', () => {
     const { container } = render(<CordBanner seed="x" />)
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')

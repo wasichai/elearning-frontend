@@ -117,8 +117,8 @@ function BlockBody<T>({
       {block.loading ? (
         <div role="status" className="flex flex-col gap-3">
           <span className="sr-only">{t('dashboard.loading')}</span>
-          <Skeleton className="h-4 w-4/5 bg-border!" />
-          <Skeleton className="h-4 w-3/5 bg-border!" />
+          <Skeleton className="h-4 w-4/5" />
+          <Skeleton className="h-4 w-3/5" />
         </div>
       ) : null}
       {block.items.length > 0 ? (

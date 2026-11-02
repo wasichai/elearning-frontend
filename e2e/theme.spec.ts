@@ -149,7 +149,7 @@ test('el certificado pone al titular en Literata, servida por la app', async ({ 
   expect(await style(holder, 'font-family')).toMatch(/^Literata,/)
   await expect.poll(() => page.evaluate(async () => (await document.fonts.load('600 36px Literata')).length)).toBeGreaterThan(0)
   // ninguna letra viene de fuera
-  expect(new Set(fonts)).toEqual(new Set(['localhost:5180']))
+  expect(new Set(fonts)).toEqual(new Set([new URL(page.url()).host]))
 })
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {

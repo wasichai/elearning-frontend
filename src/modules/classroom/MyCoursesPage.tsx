@@ -92,15 +92,14 @@ function NoEnrollments() {
   )
 }
 
-// la geometría del panel mientras llega, con el aviso para lectores de pantalla. el hueco de Skeleton es del color del fondo
-// de la página: fuera de la tarjeta se pinta en el color del borde para que se vea
+// la geometría del panel mientras llega, con el aviso para lectores de pantalla
 function DashboardSkeleton() {
   const { t } = useTranslation('classroom')
   return (
     <div role="status" className={PANEL}>
       <span className="sr-only">{t('enrollments.loading')}</span>
       <div className="flex flex-col gap-3">
-        <Skeleton className="h-6 w-56 bg-border!" />
+        <Skeleton className="h-6 w-56" />
         <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
           <Skeleton className="h-5 w-2/5" />
           <Skeleton className="h-8 w-4/5" />
@@ -109,9 +108,9 @@ function DashboardSkeleton() {
         </div>
       </div>
       <div className="flex flex-col gap-3">
-        <Skeleton className="h-6 w-40 bg-border!" />
-        <Skeleton className="h-4 w-full bg-border!" />
-        <Skeleton className="h-4 w-4/5 bg-border!" />
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-4/5" />
       </div>
     </div>
   )
