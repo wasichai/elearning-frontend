@@ -8,7 +8,7 @@ const OFFERING = '/docencia/edicion-sgspe-2026-09'
 test('recorrido de corrección: cola → intento → bajar la entrega → calificar → el intento da su nota y sale de la cola', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'teacher' })
   await page.goto(OFFERING)
-  await page.getByRole('navigation', { name: 'De esta edición' }).getByRole('link', { name: 'Cola de corrección (1 intento)' }).click()
+  await page.getByRole('navigation', { name: 'Secciones de la edición' }).getByRole('link', { name: 'Corrección (1)' }).click()
   await expect(page).toHaveURL(`${OFFERING}/correccion`)
   await page.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' }).click()
 

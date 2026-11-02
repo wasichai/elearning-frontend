@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { parseContract } from '../../shared/contract'
 import { teachingModule } from './module'
 import { OFFERING_STATUSES } from '../../shared/contract'
-import { OfferingStatusBadge, useActionError } from './parts'
+import { EmailText, OfferingStatusBadge, useActionError } from './parts'
 
 // el texto de un fallo al guardar (RNF-UX-08): de un problem+json del servidor a una frase que se entiende
 
@@ -86,5 +86,14 @@ describe('la insignia de estado de una edición', () => {
     )
 
     for (const word of ['Programada', 'Inscripción abierta', 'En curso', 'Finalizada', 'Cancelada']) expect(await screen.findByText(word)).toBeInTheDocument()
+  })
+})
+
+describe('un correo largo', () => {
+  it('se puede partir tras la arroba y antes de cada punto, sin cambiar su texto', () => {
+    const { container } = renderWithProviders(<EmailText email="estudiante.2@municipalidad.demo.local" />, { modules: [teachingModule()] })
+
+    expect(screen.getByText('estudiante.2@municipalidad.demo.local')).toBeInTheDocument()
+    expect(container.querySelectorAll('wbr')).toHaveLength(4)
   })
 })

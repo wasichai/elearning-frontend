@@ -160,10 +160,14 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
       await expect(desk).toHaveURL(`/docencia/${OFFERING}`)
 
       const row = desk.getByRole('row').filter({ has: desk.getByRole('rowheader', { name: student.email }) })
-      await expect(row).toContainText('Evaluación: reescribir un mensaje: pendiente de corrección')
+      await expect(row).toContainText('Evaluación: reescribir un mensaje')
+      await expect(row).toContainText('Pendiente de corrección')
       await expect(row).toContainText('33 % (1 de 3 lecciones)')
 
-      await desk.getByRole('link', { name: /^Cola de corrección/ }).click()
+      await desk
+        .getByRole('navigation', { name: 'Secciones de la edición' })
+        .getByRole('link', { name: /^Corrección/ })
+        .click()
       await desk.getByRole('link', { name: `Corregir «${ASSESSMENT}» de ${student.email}` }).click()
       await expect(desk.getByText(`Estudiante: ${student.email}`)).toBeVisible()
       const question = desk.getByRole('article', { name: OPEN_QUESTION })

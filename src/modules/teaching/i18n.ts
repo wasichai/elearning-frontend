@@ -16,8 +16,7 @@ const es = {
     enrolled_other: '{{value}} matriculados',
     pending_one: '{{value}} intento por corregir',
     pending_other: '{{value}} intentos por corregir',
-    nothingPending: 'Nada por corregir',
-    back: '← Mis ediciones'
+    nothingPending: 'Nada por corregir'
   },
   panel: {
     rail: 'Agenda',
@@ -53,6 +52,16 @@ const es = {
       more_other: 'Y {{count}} sesiones más.'
     }
   },
+  frame: {
+    breadcrumbs: 'Ruta',
+    sections: 'Secciones de la edición',
+    switch: 'Cambiar de edición',
+    option: '{{course}}, {{dates}}',
+    roster: 'Matriculados',
+    queue: 'Corrección',
+    queuePending: 'Corrección ({{value}})',
+    sessions: 'Sesiones'
+  },
   offering: {
     timeZone: 'Fechas en {{zone}}',
     status: {
@@ -65,18 +74,52 @@ const es = {
   },
   roster: {
     title: 'Edición',
-    subtitle: 'Edición {{code}}',
     loading: 'Cargando los matriculados…',
     notFound: 'Esta edición no está entre las tuyas',
     notFoundHint: 'Solo ves las ediciones que tienes asignadas como docente. El enlace puede ser de otra edición, o la asignación ya no está vigente.',
     empty: 'Esta edición aún no tiene matriculados.',
     heading_one: '{{value}} matriculado',
     heading_other: '{{value}} matriculados',
-    more: 'De esta edición',
-    toQueue: 'Cola de corrección',
-    toQueuePending_one: 'Cola de corrección ({{value}} intento)',
-    toQueuePending_other: 'Cola de corrección ({{value}} intentos)',
-    toSessions: 'Sesiones y asistencia',
+    summary: {
+      title: 'Resumen de la edición',
+      students: 'Matriculados',
+      mean: 'Avance medio',
+      meanHint: 'Media del avance de cada estudiante, redondeada.',
+      percent: '{{value}} %',
+      attendance: 'Asistencia',
+      attendanceValue: '{{attended}} de {{total}}',
+      attendanceHint: 'Asistencias sumadas de todos los estudiantes.',
+      pending: 'Evaluaciones por corregir'
+    },
+    lowest: {
+      title: 'Menor avance',
+      description: 'Matrículas activas, de menor a mayor porcentaje.',
+      write: 'Escribir',
+      writeLabel: 'Escribir a {{email}}'
+    },
+    search: 'Buscar por correo',
+    filters: 'Filtrar matriculados',
+    filterOption: '{{label}} ({{value}})',
+    filter: {
+      ALL: 'Todos',
+      ACTIVA: 'Activa',
+      FINALIZADA: 'Finalizada',
+      RETIRADA: 'Retirada',
+      PENDING: 'Con evaluación por corregir'
+    },
+    shown_one: '{{shown}} de {{value}} matriculado',
+    shown_other: '{{shown}} de {{value}} matriculados',
+    noResults: 'Nadie coincide con la búsqueda',
+    clearFilters: 'Quitar los filtros',
+    sortBy: 'Ordenar por',
+    sort: {
+      'email-asc': 'Correo, de la A a la Z',
+      'email-desc': 'Correo, de la Z a la A',
+      'progress-asc': 'Menor avance primero',
+      'progress-desc': 'Mayor avance primero',
+      'attendance-asc': 'Menor asistencia primero',
+      'attendance-desc': 'Mayor asistencia primero'
+    },
     student: 'Estudiante',
     noEmail: 'Sin correo registrado',
     status: 'Matrícula',
@@ -87,8 +130,8 @@ const es = {
     attendanceValue: '{{attended}} de {{total}} sesiones',
     noSessions: 'Sin sesiones aún',
     noAssessments: 'Sin evaluaciones',
-    assessmentNone: 'sin intentos',
-    assessmentPending: 'pendiente de corrección',
+    assessmentNone: 'Sin intentos',
+    assessmentPending: 'Pendiente de corrección',
     assessmentPassed: '{{percent}} %, aprobada',
     assessmentFailed: '{{percent}} %, no aprobada',
     enrollmentStatus: {
@@ -99,7 +142,6 @@ const es = {
   },
   queue: {
     title: 'Cola de corrección',
-    back: '← Volver a la edición',
     loading: 'Cargando la cola de corrección…',
     empty: 'No hay intentos por corregir en esta edición.',
     student: 'Estudiante',
@@ -360,8 +402,7 @@ const en: typeof es = {
     enrolled_other: '{{value}} students',
     pending_one: '{{value}} attempt to grade',
     pending_other: '{{value}} attempts to grade',
-    nothingPending: 'Nothing to grade',
-    back: '← My offerings'
+    nothingPending: 'Nothing to grade'
   },
   panel: {
     rail: 'Schedule',
@@ -397,6 +438,16 @@ const en: typeof es = {
       more_other: 'And {{count}} more sessions.'
     }
   },
+  frame: {
+    breadcrumbs: 'Path',
+    sections: 'Offering sections',
+    switch: 'Change offering',
+    option: '{{course}}, {{dates}}',
+    roster: 'Students',
+    queue: 'Grading',
+    queuePending: 'Grading ({{value}})',
+    sessions: 'Sessions'
+  },
   offering: {
     timeZone: 'Dates in {{zone}}',
     status: {
@@ -409,18 +460,52 @@ const en: typeof es = {
   },
   roster: {
     title: 'Offering',
-    subtitle: 'Offering {{code}}',
     loading: 'Loading the students…',
     notFound: 'This offering is not one of yours',
     notFoundHint: 'You only see the offerings you are assigned to as a teacher. The link may be for another offering, or the assignment is no longer current.',
     empty: 'This offering has no students yet.',
     heading_one: '{{value}} student',
     heading_other: '{{value}} students',
-    more: 'In this offering',
-    toQueue: 'Grading queue',
-    toQueuePending_one: 'Grading queue ({{value}} attempt)',
-    toQueuePending_other: 'Grading queue ({{value}} attempts)',
-    toSessions: 'Sessions and attendance',
+    summary: {
+      title: 'Offering summary',
+      students: 'Students',
+      mean: 'Average progress',
+      meanHint: 'Average of each student’s progress, rounded.',
+      percent: '{{value}}%',
+      attendance: 'Attendance',
+      attendanceValue: '{{attended}} of {{total}}',
+      attendanceHint: 'Attendances added up across all students.',
+      pending: 'Assessments to grade'
+    },
+    lowest: {
+      title: 'Lowest progress',
+      description: 'Active enrollments, from lowest to highest percentage.',
+      write: 'Write',
+      writeLabel: 'Write to {{email}}'
+    },
+    search: 'Search by email',
+    filters: 'Filter students',
+    filterOption: '{{label}} ({{value}})',
+    filter: {
+      ALL: 'All',
+      ACTIVA: 'Active',
+      FINALIZADA: 'Finished',
+      RETIRADA: 'Withdrawn',
+      PENDING: 'With an assessment to grade'
+    },
+    shown_one: '{{shown}} of {{value}} student',
+    shown_other: '{{shown}} of {{value}} students',
+    noResults: 'Nobody matches the search',
+    clearFilters: 'Clear the filters',
+    sortBy: 'Sort by',
+    sort: {
+      'email-asc': 'Email, A to Z',
+      'email-desc': 'Email, Z to A',
+      'progress-asc': 'Lowest progress first',
+      'progress-desc': 'Highest progress first',
+      'attendance-asc': 'Lowest attendance first',
+      'attendance-desc': 'Highest attendance first'
+    },
     student: 'Student',
     noEmail: 'No email on record',
     status: 'Enrollment',
@@ -431,8 +516,8 @@ const en: typeof es = {
     attendanceValue: '{{attended}} of {{total}} sessions',
     noSessions: 'No sessions yet',
     noAssessments: 'No assessments',
-    assessmentNone: 'no attempts',
-    assessmentPending: 'awaiting grading',
+    assessmentNone: 'No attempts',
+    assessmentPending: 'Awaiting grading',
     assessmentPassed: '{{percent}}%, passed',
     assessmentFailed: '{{percent}}%, not passed',
     enrollmentStatus: {
@@ -443,7 +528,6 @@ const en: typeof es = {
   },
   queue: {
     title: 'Grading queue',
-    back: '← Back to the offering',
     loading: 'Loading the grading queue…',
     empty: 'There are no attempts to grade in this offering.',
     student: 'Student',

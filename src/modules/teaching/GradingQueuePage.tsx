@@ -6,17 +6,17 @@ import { Link, useParams } from 'react-router'
 import { formatDateTime, formatNumber } from '../../shared/format'
 import { useOfferings, useQueue } from './api'
 import type { PendingAttempt } from './contract'
-import { OfferingFrame, QueryProblem } from './parts'
+import { OfferingSection } from './OfferingSection'
+import { EmailText, QueryProblem } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 // la cola de corrección de una edición: lo enviado que espera al docente, lo más antiguo primero
 export function GradingQueuePage() {
   const { t } = useTranslation('teaching')
-  const links = useWasichaiLinks()
   const { code = '' } = useParams()
   const query = useQueue(code)
   return (
-    <OfferingFrame code={code} subtitle={t('queue.title')} back={links.to(TEACHING_ROUTES.roster, { code })} backLabel={t('queue.back')}>
+    <OfferingSection code={code} section="queue" heading={t('queue.title')}>
       {query.isError ? (
         <QueryProblem error={query.error} resource="queue" onRetry={() => void query.refetch()} />
       ) : !query.data ? (
@@ -26,7 +26,7 @@ export function GradingQueuePage() {
       ) : (
         <QueueTable code={code} attempts={query.data} />
       )}
-    </OfferingFrame>
+    </OfferingSection>
   )
 }
 
@@ -53,8 +53,8 @@ function QueueTable({ code, attempts }: { code: string; attempts: PendingAttempt
             const student = attempt.email ?? t('roster.noEmail')
             return (
               <tr key={attempt.attemptId}>
-                <Th scope="row" className="font-normal break-all">
-                  {student}
+                <Th scope="row" className="bg-transparent text-sm font-normal tracking-normal text-ink normal-case">
+                  {attempt.email ? <EmailText email={attempt.email} /> : student}
                 </Th>
                 <Td>{attempt.lessonTitle}</Td>
                 <Td>{formatDateTime(attempt.submittedAt, locale, zone ?? 'UTC')}</Td>
