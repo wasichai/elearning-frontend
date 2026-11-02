@@ -21,6 +21,9 @@ export const SCENARIOS: Scenario[] = [...catalogScenarios, ...classroomScenarios
 
 export async function open(page: Page, scenario: Scenario): Promise<void> {
   await fakeApi(page, scenario.api ?? {})
+  // VISUAL_LANG=en: el idioma que core guarda con el storagePrefix de la app (WasichaiApp no lo toma del navegador)
+  const language = process.env.VISUAL_LANG
+  if (language) await page.addInitScript((value) => localStorage.setItem('elearning.lang', value), language)
   await page.goto(scenario.path)
   await page.waitForLoadState('networkidle')
   await scenario.act?.(page)

@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { Breadcrumbs, ScreenBody, ScreenHeader, Section, Skeleton, Stat, StatList } from './Screen'
+import { Breadcrumbs, ScreenBody, ScreenHeader, Section, SectionTabs, Skeleton, Stat, StatList } from './Screen'
 
 describe('ScreenHeader', () => {
   it('abre la pantalla con su único h1, y la acción y los hechos a la vista', () => {
@@ -39,6 +39,25 @@ describe('Breadcrumbs', () => {
     expect(within(nav).getByRole('link', { name: 'SRTM' })).toHaveAttribute('href', '/mis-cursos/1')
     expect(within(nav).queryByRole('link', { name: 'Sesiones' })).toBeNull()
     expect(within(nav).getByText('Sesiones')).toHaveAttribute('aria-current', 'page')
+  })
+})
+
+describe('SectionTabs', () => {
+  it('son enlaces por URL y marcan la sección actual', () => {
+    render(
+      <MemoryRouter initialEntries={['/docencia/x/sesiones']}>
+        <SectionTabs
+          label="Secciones"
+          items={[
+            { label: 'Matriculados', to: '/docencia/x', end: true },
+            { label: 'Sesiones', to: '/docencia/x/sesiones' }
+          ]}
+        />
+      </MemoryRouter>
+    )
+    const nav = within(screen.getByRole('navigation', { name: 'Secciones' }))
+    expect(nav.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('aria-current', 'page')
+    expect(nav.getByRole('link', { name: 'Matriculados' })).not.toHaveAttribute('aria-current')
   })
 })
 

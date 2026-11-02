@@ -3,11 +3,11 @@ import { Button } from '@wasichai/ui'
 import { BookOpen, CalendarCheck, ChevronRight, ClipboardCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
-import { Breadcrumbs, ScreenHeader } from '../../shared/Screen'
+import { Breadcrumbs, ScreenHeader, SectionTabs } from '../../shared/Screen'
 import { useClassroom, useSessions } from './api'
 import type { Classroom } from './contract'
 import { assessmentFigure, attendanceFigure, type Figure } from './lessons'
@@ -55,42 +55,26 @@ function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void
   )
 }
 
-// la ruta a «Mis cursos». su enlace mide 44 px en el móvil, como los demás enlaces de texto (TEXT_LINK); Breadcrumbs no lo fija
 function CourseBreadcrumbs() {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
-  return (
-    <div className="shrink-0 [&_a]:min-h-11 sm:[&_a]:min-h-6">
-      <Breadcrumbs label={t('course.breadcrumbs')} items={[{ label: t('nav.myCourses'), to: links.to(CLASSROOM_ROUTES.enrollments) }]} />
-    </div>
-  )
+  return <Breadcrumbs label={t('course.breadcrumbs')} items={[{ label: t('nav.myCourses'), to: links.to(CLASSROOM_ROUTES.enrollments) }]} />
 }
 
-const TAB_FOCUS = 'focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus'
-const TAB = `inline-flex min-h-11 shrink-0 items-center border-b-2 text-sm whitespace-nowrap ${TAB_FOCUS}`
-
-// las secciones del curso: por URL, con desplazamiento propio si no caben. lessonId conserva la lección abierta: pulsar la pestaña en la que
-// ya se está no salta a otra lección
+// las secciones del curso. lessonId conserva la lección abierta: pulsar la pestaña en la que ya se está no salta a otra lección
 function CourseTabs({ classroom, lessonId }: { classroom: Classroom; lessonId?: string }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const params = { enrollmentId: classroom.id }
-  const tabClass = ({ isActive }: { isActive: boolean }) =>
-    `${TAB} ${isActive ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-muted hover:border-border-control hover:text-ink'}`
   return (
-    <nav aria-label={t('course.sections')} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] sm:mx-0 sm:px-0">
-      <div className="flex w-max gap-5">
-        <NavLink to={links.to(CLASSROOM_ROUTES.classroom, params, lessonId ? { [LESSON_PARAM]: lessonId } : undefined)} end className={tabClass}>
-          {t('classroom.showUnits')}
-        </NavLink>
-        <NavLink to={links.to(CLASSROOM_ROUTES.sessions, params)} className={tabClass}>
-          {t('course.tabSessions')}
-        </NavLink>
-        <NavLink to={links.to(CLASSROOM_ROUTES.completion, params)} className={tabClass}>
-          {classroom.certificateCode ? t('completionPanel.titleIssued') : t('course.tabCompletion')}
-        </NavLink>
-      </div>
-    </nav>
+    <SectionTabs
+      label={t('course.sections')}
+      items={[
+        { label: t('classroom.showUnits'), to: links.to(CLASSROOM_ROUTES.classroom, params, lessonId ? { [LESSON_PARAM]: lessonId } : undefined), end: true },
+        { label: t('course.tabSessions'), to: links.to(CLASSROOM_ROUTES.sessions, params) },
+        { label: classroom.certificateCode ? t('completionPanel.titleIssued') : t('course.tabCompletion'), to: links.to(CLASSROOM_ROUTES.completion, params) }
+      ]}
+    />
   )
 }
 
@@ -102,7 +86,7 @@ export function CourseHeader({ classroom, lessonId }: { classroom: Classroom; le
       <header className="border-b border-border bg-surface">
         {/* a ras del panel del temario, que empieza en el borde de la página: a cualquier ancho comparten margen */}
         <div className="flex flex-col px-4 sm:px-6 sm:pt-1 lg:px-8">
-          <div className="flex min-h-11 min-w-0 items-center gap-1 text-sm">
+          <div className="flex min-h-11 min-w-0 items-center gap-1 text-sm [&>nav]:shrink-0">
             <CourseBreadcrumbs />
             <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-ink-muted" />
             <h1 className="min-w-0 truncate text-sm font-semibold text-ink">{classroom.course.title}</h1>

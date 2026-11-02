@@ -92,4 +92,13 @@ temario de 48 px.
 
 ## Cambios por módulo
 
-Se detallan en el historial de la rama; las decisiones de cada módulo quedan abajo a medida que se implementan.
+Lo hecho en cada módulo, en su issue y su PR de la épica #126. Lo que la prioridad 1 dejó fijado para las demás:
+
+- **Una sola hoja.** La cabecera de la lección y su contenido comparten fondo. No se apilan bandas de color distinto.
+- **Cabecera de recurso.** `ScreenHeader` con `Breadcrumbs` y `SectionTabs` en `children`. Las secciones van por URL, nunca como enlaces sueltos.
+- **Una sola primaria también en el pie.** Si una zona ya tiene su acción, el pie de la pantalla no compite con ella.
+- **No se sale de un toque de un trabajo a medias.** Dentro de un intento no se ofrece ir a otra lección; aplica también a una corrección o una asistencia sin guardar.
+- **Una cifra no dice lo que no sabe.** Un intento usado va en neutro, no en musgo, porque no se sabe si aprobó. Se comprueba qué promete cada texto: «se guarda sola» o «te avisaremos» no se escriben si el sistema no lo hace.
+- **Avisos con `Notice`.** `Alert` a solas es texto en su tono; `Notice` añade icono y fondo.
+- **Saltos de título.** Un `h2` de sección baja los títulos de objeto a `h3`.
+- **`main` desplaza, no la ventana.** `fullPage` no captura más que la ventana: para ver una pantalla entera, captura con una ventana alta.
