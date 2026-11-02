@@ -1,16 +1,20 @@
-import { CHANGE_REASON_MAX_LENGTH, LoadingState, normalizeReason, ReasonDialog, reasonProblem, useWasichaiLinks } from '@wasichai/core'
+import { CHANGE_REASON_MAX_LENGTH, EmptyState, normalizeReason, ReasonDialog, reasonProblem, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Dialog, DialogContent, DialogDescription, DialogTitle, Input, Label, Textarea } from '@wasichai/ui'
-import { useId, useState, type FormEvent } from 'react'
+import { BookOpen, FlaskConical, MapPin, MessageCircleQuestion, RotateCcw, Video, type LucideIcon } from 'lucide-react'
+import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { WRAP } from '../../shared/buttons'
+import { TEXT_LINK, WRAP } from '../../shared/buttons'
 import { Link, useParams } from 'react-router'
-import { formatInstantRange, timeZoneLabel, zonedDateTime } from '../../shared/format'
+import { formatTime, timeZoneLabel, zonedDateTime } from '../../shared/format'
+import { Section, Skeleton } from '../../shared/Screen'
+import { StatusBadge } from '../../shared/StatusBadge'
 import { isHttpsUrl, type Session } from '../../shared/sessions'
 import { useCancelSession, useOfferings, useOfferingSessions, useRescheduleSession } from './api'
 import { OfferingSection } from './OfferingSection'
-import { QueryProblem, useActionError } from './parts'
+import { QueryProblem, useActionError, useLeaveGuard, type LeaveGuard } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { SessionForm } from './SessionForm'
+import { groupByDay, splitSessions } from './sessions'
 
 // las sesiones de una edición: crear una o una serie, reprogramar y cancelar con motivo, y pasar asistencia
 export function OfferingSessionsPage() {
@@ -25,100 +29,166 @@ function OfferingSessions({ code }: { code: string }) {
   const timeZone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<number>()
-  const sessions = query.data ? [...query.data].sort((a, b) => Date.parse(a.start) - Date.parse(b.start)) : undefined
+  const [formDirty, setFormDirty] = useState(false)
+  const leave = useLeaveGuard(creating && formDirty)
+  const sessions = query.data
+  const { upcoming, past } = splitSessions(sessions ?? [], Date.now())
   return (
-    <OfferingSection code={code} section="sessions" heading={t('sessions.title')}>
+    <OfferingSection code={code} section="sessions" leave={leave}>
       {query.isError ? (
         <QueryProblem error={query.error} resource="sessions" onRetry={() => void query.refetch()} />
       ) : !sessions ? (
-        <LoadingState label={t('sessions.loading')} />
+        <div role="status" className="flex flex-col gap-3">
+          <span className="sr-only">{t('sessions.loading')}</span>
+          <Skeleton className="h-11 w-40" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
       ) : (
-        <div className="flex flex-col gap-5">
-          <p role="status" className="text-sm text-success">
-            {created ? t('sessions.created', { count: created, value: created }) : ''}
-          </p>
-          {timeZone ? <p className="text-sm text-ink-muted">{t('sessions.timeZone', { zone: timeZoneLabel(timeZone, i18n.language) })}</p> : null}
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <div className="flex flex-col gap-0.5 text-sm">
+              {timeZone ? <p className="text-ink-muted">{t('sessions.timeZone', { zone: timeZoneLabel(timeZone, i18n.language) })}</p> : null}
+              <p role="status" className="font-medium text-success empty:hidden">
+                {created ? t('sessions.created', { count: created, value: created }) : ''}
+              </p>
+            </div>
+            {!creating && timeZone ? (
+              <Button
+                className={`${WRAP} min-h-11 px-5`}
+                onClick={() => {
+                  setCreated(undefined)
+                  setCreating(true)
+                }}
+              >
+                {t('sessions.new')}
+              </Button>
+            ) : null}
+          </div>
           {creating && timeZone ? (
             <SessionForm
               code={code}
               timeZone={timeZone}
               sessions={sessions}
+              onDirty={setFormDirty}
+              onClose={() => setCreating(false)}
               onDone={(count) => {
                 setCreated(count)
                 setCreating(false)
               }}
             />
-          ) : timeZone ? (
-            <Button
-              variant="secondary"
-              className={`self-start ${WRAP}`}
-              onClick={() => {
-                setCreated(undefined)
-                setCreating(true)
-              }}
-            >
-              {t('sessions.new')}
-            </Button>
           ) : null}
-          {sessions.length === 0 ? (
-            <p className="text-sm text-ink-muted">{t('sessions.empty')}</p>
-          ) : (
-            <ol className="flex flex-col gap-3">
-              {sessions.map((session) => (
-                <li key={session.id}>
-                  <SessionItem code={code} session={session} sessions={sessions} />
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
+          {sessions.length === 0 ? <EmptyState title={t('sessions.empty')} /> : null}
+          <SessionGroup title={t('sessions.upcoming')} sessions={upcoming} past={false} code={code} all={sessions} leave={leave} />
+          <SessionGroup title={t('sessions.past')} sessions={past} past code={code} all={sessions} leave={leave} />
+        </>
       )}
+      {leave.dialog}
     </OfferingSection>
   )
 }
 
-function SessionItem({ code, session, sessions }: { code: string; session: Session; sessions: Session[] }) {
+function SessionGroup({
+  title,
+  sessions,
+  past,
+  code,
+  all,
+  leave
+}: {
+  title: string
+  sessions: Session[]
+  past: boolean
+  code: string
+  all: Session[]
+  leave: LeaveGuard
+}) {
+  const { i18n } = useTranslation('teaching')
+  if (sessions.length === 0) return null
+  return (
+    <Section title={title}>
+      <div className="flex flex-col gap-5">
+        {groupByDay(sessions).map((group) => (
+          <div key={group.date} className="flex flex-col gap-1">
+            <h3 className="text-sm font-semibold text-ink first-letter:uppercase">
+              {new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full', timeZone: group.sessions[0]!.timeZone }).format(new Date(group.sessions[0]!.start))}
+            </h3>
+            <ol className="flex flex-col divide-y divide-border border-y border-border">
+              {group.sessions.map((session) => (
+                <li key={session.id} className="@container">
+                  <SessionItem code={code} session={session} sessions={all} past={past} leave={leave} />
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+    </Section>
+  )
+}
+
+const TYPE_ICON: Record<Session['type'], LucideIcon> = { TEORIA: BookOpen, LABORATORIO: FlaskConical, CONSULTA: MessageCircleQuestion, RECUPERACION: RotateCcw }
+const MODALITY_ICON: Record<Session['modality'], LucideIcon> = { PRESENCIAL: MapPin, VIRTUAL: Video }
+
+function Fact({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <Icon aria-hidden="true" className="size-4 shrink-0" />
+      {children}
+    </span>
+  )
+}
+
+// el mismo estado, la misma insignia que en el aula. de una pasada no se dice «Programada»: ya no lo está, y el contrato no dice si se dio
+function SessionState({ session, past }: { session: Session; past: boolean }) {
+  const { t } = useTranslation('teaching')
+  if (session.status === 'CANCELADA') return <StatusBadge state="overdue">{t('sessions.status.CANCELADA')}</StatusBadge>
+  const running = !past && Date.parse(session.start) <= Date.now()
+  if (running) return <StatusBadge state="active">{t('panel.agenda.running')}</StatusBadge>
+  if (session.status === 'REPROGRAMADA') return <StatusBadge state="warning">{t('sessions.status.REPROGRAMADA')}</StatusBadge>
+  return past ? null : <StatusBadge state="todo">{t('sessions.status.PROGRAMADA')}</StatusBadge>
+}
+
+function SessionItem({ code, session, sessions, past, leave }: { code: string; session: Session; sessions: Session[]; past: boolean; leave: LeaveGuard }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
+  const locale = i18n.language
   const [dialog, setDialog] = useState<'reschedule' | 'cancel'>()
   const cancelled = session.status === 'CANCELADA'
   const original = session.originalSessionId ? sessions.find((candidate) => candidate.id === session.originalSessionId) : undefined
+  const attendance = links.to(TEACHING_ROUTES.attendance, { code, sessionId: session.id })
   return (
-    <article aria-label={session.title} className="flex flex-col gap-2 rounded-card border border-border px-5 py-4 text-sm">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className={`text-base font-medium ${cancelled ? 'text-ink-muted line-through' : 'text-ink'}`}>{session.title}</h2>
-        {session.status === 'PROGRAMADA' ? null : (
-          <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${cancelled ? 'border-danger text-danger' : 'border-border-control text-ink'}`}>
-            {t(`sessions.status.${session.status}`)}
-          </span>
-        )}
+    <article aria-label={session.title} className="flex flex-col gap-3 py-3 text-sm @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-6">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h4 className={`text-base font-medium break-words ${cancelled ? 'text-ink-muted line-through' : 'text-ink'}`}>{session.title}</h4>
+          <SessionState session={session} past={past} />
+        </div>
+        <p className="text-ink tabular-nums">
+          <time dateTime={session.start}>{`${formatTime(session.start, locale, session.timeZone)}–${formatTime(session.end, locale, session.timeZone)}`}</time>
+        </p>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-ink-muted">
+          <Fact icon={TYPE_ICON[session.type]}>{t(`sessions.type.${session.type}`)}</Fact>
+          <Fact icon={MODALITY_ICON[session.modality]}>{t(`sessions.modality.${session.modality}`)}</Fact>
+          {session.location ? <span className="break-words">{session.location}</span> : null}
+        </div>
+        {original ? <p className="text-ink-muted">{t('sessions.recovers', { title: original.title })}</p> : null}
+        {!cancelled && session.link && isHttpsUrl(session.link) ? (
+          <a
+            href={session.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${TEXT_LINK} self-start`}
+            aria-label={t('sessions.joinLabel', { title: session.title })}
+          >
+            {t('sessions.join')}
+          </a>
+        ) : null}
       </div>
-      <p className="text-ink">
-        <time dateTime={session.start}>{formatInstantRange(session.start, session.end, i18n.language, session.timeZone)}</time>
-      </p>
-      <p className="text-ink-muted">
-        {t(`sessions.type.${session.type}`)} · {t(`sessions.modality.${session.modality}`)}
-        {session.location ? ` · ${session.location}` : null}
-      </p>
-      {original ? <p className="text-ink-muted">{t('sessions.recovers', { title: original.title })}</p> : null}
-      {!cancelled && session.link && isHttpsUrl(session.link) ? (
-        <a
-          href={session.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="self-start text-link underline-offset-4 hover:underline"
-          aria-label={t('sessions.joinLabel', { title: session.title })}
-        >
-          {t('sessions.join')}
-        </a>
-      ) : null}
       {cancelled ? null : (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button className={WRAP} asChild size="sm" variant="secondary">
-            <Link
-              to={links.to(TEACHING_ROUTES.attendance, { code, sessionId: session.id })}
-              aria-label={t('sessions.attendanceLabel', { title: session.title })}
-            >
+            <Link to={attendance} onClick={leave.guard(attendance)} aria-label={t('sessions.attendanceLabel', { title: session.title })}>
               {t('sessions.attendance')}
             </Link>
           </Button>
@@ -195,11 +265,23 @@ function RescheduleDialog({ code, session, onClose }: { code: string; session: S
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <Label htmlFor={`${id}-date`}>{t('reschedule.date')}</Label>
-              <Input id={`${id}-date`} type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+              <Input
+                id={`${id}-date`}
+                type="date"
+                value={date}
+                aria-invalid={invalid === 'when' && !date ? true : undefined}
+                onChange={(event) => setDate(event.target.value)}
+              />
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor={`${id}-time`}>{t('reschedule.time')}</Label>
-              <Input id={`${id}-time`} type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+              <Input
+                id={`${id}-time`}
+                type="time"
+                value={time}
+                aria-invalid={invalid === 'when' && !time ? true : undefined}
+                onChange={(event) => setTime(event.target.value)}
+              />
             </div>
           </div>
           <div className="flex flex-col gap-1">

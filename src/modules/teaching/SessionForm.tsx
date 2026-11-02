@@ -1,5 +1,5 @@
 import { Alert, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
-import { useId, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WRAP } from '../../shared/buttons'
 import { formatDateTime, timeZoneLabel } from '../../shared/format'
@@ -11,7 +11,21 @@ import { useActionError } from './parts'
 type Field = 'title' | 'duration' | 'link' | 'location' | 'original' | 'startDate' | 'endDate' | 'localTime' | 'days'
 
 // crear una sesión o una serie. la hora es local en la zona de la edición y cada ocurrencia la conserva (ADR-0016)
-export function SessionForm({ code, timeZone, sessions, onDone }: { code: string; timeZone: string; sessions: Session[]; onDone: (count: number) => void }) {
+export function SessionForm({
+  code,
+  timeZone,
+  sessions,
+  onDirty,
+  onClose,
+  onDone
+}: {
+  code: string
+  timeZone: string
+  sessions: Session[]
+  onDirty: (dirty: boolean) => void
+  onClose: () => void
+  onDone: (count: number) => void
+}) {
   const { t, i18n } = useTranslation('teaching')
   const id = useId()
   const describe = useActionError()
@@ -29,6 +43,22 @@ export function SessionForm({ code, timeZone, sessions, onDone }: { code: string
   const [endDate, setEndDate] = useState('')
   const [localTime, setLocalTime] = useState('')
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
+  const formRef = useRef<HTMLFormElement>(null)
+  // tocado, no solo abierto: un formulario abierto y en blanco no tiene nada que perder
+  const dirty =
+    Boolean(title.trim() || link.trim() || location.trim() || original || startDate || endDate || localTime || days.length > 0) ||
+    duration !== '60' ||
+    type !== 'TEORIA' ||
+    modality !== 'VIRTUAL' ||
+    pattern !== 'ONCE'
+  useEffect(() => {
+    onDirty(dirty)
+    return () => onDirty(false)
+  }, [dirty, onDirty])
+  // al primer campo que falla, que quien usa teclado o lector no tenga que buscarlo
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+  }, [errors])
   const virtual = modality === 'VIRTUAL'
   const recovery = type === 'RECUPERACION'
   const once = pattern === 'ONCE'
@@ -67,7 +97,13 @@ export function SessionForm({ code, timeZone, sessions, onDone }: { code: string
   }
   const locale = i18n.language
   return (
-    <form noValidate aria-label={t('form.title')} onSubmit={submit} className="flex flex-col gap-4 rounded-card border border-border px-5 py-4">
+    <form
+      ref={formRef}
+      noValidate
+      aria-label={t('form.title')}
+      onSubmit={submit}
+      className="flex max-w-3xl flex-col gap-4 rounded-card border border-border bg-surface px-5 py-4"
+    >
       <h2 className="text-lg font-semibold text-ink">{t('form.title')}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField id={`${id}-title`} label={t('form.name')} error={errors.title}>
@@ -162,8 +198,11 @@ export function SessionForm({ code, timeZone, sessions, onDone }: { code: string
       </fieldset>
       {create.error ? <Alert tone="danger">{describe(create.error)}</Alert> : null}
       <div className="flex flex-wrap gap-3">
-        <Button className={WRAP} type="submit" disabled={create.isPending}>
+        <Button className={`${WRAP} min-h-11`} type="submit" disabled={create.isPending}>
           {create.isPending ? t('form.creating') : once ? t('form.createOne') : t('form.createSeries')}
+        </Button>
+        <Button className={`${WRAP} min-h-11`} type="button" variant="secondary" disabled={create.isPending} onClick={onClose}>
+          {t('form.close')}
         </Button>
       </div>
     </form>
@@ -209,13 +248,13 @@ function ChoiceField({
     <div className="flex min-w-0 flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id}>
+        <SelectTrigger id={id} aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>{children}</SelectContent>
       </Select>
       {error ? (
-        <p role="alert" className="text-sm text-danger">
+        <p id={`${id}-error`} role="alert" className="text-sm text-danger">
           {error}
         </p>
       ) : null}

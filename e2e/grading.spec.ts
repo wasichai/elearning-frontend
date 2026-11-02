@@ -118,7 +118,7 @@ test('crear una serie, reprogramar con motivo y cancelar con confirmación', asy
   const api = await fakeApi(page, { signedIn: true, as: 'teacher' })
   await page.goto(`${OFFERING}/sesiones`)
 
-  await page.getByRole('button', { name: 'Crear sesiones' }).click()
+  await page.getByRole('button', { name: 'Programar sesión' }).click()
   const form = page.getByRole('form', { name: 'Crear una sesión o una serie' })
   await form.getByLabel('Título').fill('Clase semanal')
   await form.getByRole('combobox', { name: 'Repetición' }).click()
@@ -133,7 +133,8 @@ test('crear una serie, reprogramar con motivo y cancelar con confirmación', asy
   await expect(page.getByText('Se crearon 4 sesiones.')).toBeVisible()
   const series = page.getByRole('article', { name: 'Clase semanal' })
   await expect(series).toHaveCount(4)
-  await expect(series.first()).toContainText('16 de noviembre de 2026, 18:30')
+  await expect(series.first()).toContainText('18:30')
+  await expect(page.getByRole('heading', { level: 3, name: /16 de noviembre de 2026/ })).toBeVisible()
 
   const first = page.getByRole('article', { name: 'Presentación del curso' })
   await first.getByRole('button', { name: 'Reprogramar «Presentación del curso»' }).click()
@@ -168,22 +169,79 @@ test('pasar asistencia; cambiar una ya registrada pide motivo y una recarga la c
   await page.getByRole('link', { name: 'Pasar asistencia de «Presentación del curso»' }).click()
   await expect(page).toHaveURL(`${OFFERING}/sesiones/ses-1/asistencia`)
 
-  const student = page.getByRole('radiogroup', { name: 'Asistencia de estudiante@demo.local' })
-  await student.getByRole('radio', { name: 'Presente' }).check()
+  const student = page.getByRole('group', { name: 'Asistencia de estudiante@demo.local' })
+  await student.getByRole('button', { name: 'Presente' }).click()
   await expect(page.getByLabel('Motivo del cambio')).toHaveCount(0)
   await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
   await expect(page.getByText('Asistencia guardada')).toBeVisible()
 
-  await student.getByRole('radio', { name: 'Tarde' }).check()
+  await student.getByRole('button', { name: 'Tarde' }).click()
   await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
   await expect(page.getByRole('alert')).toContainText('Indica un motivo')
+  await expect(page.getByLabel('Motivo del cambio')).toBeFocused()
   await page.getByLabel('Motivo del cambio').fill('Llegó a las 8:20')
   await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
   await expect(page.getByText('Asistencia guardada')).toBeVisible()
 
   await page.reload()
-  await expect(page.getByRole('radiogroup', { name: 'Asistencia de estudiante@demo.local' }).getByRole('radio', { name: 'Tarde' })).toBeChecked()
+  await expect(page.getByRole('group', { name: 'Asistencia de estudiante@demo.local' }).getByRole('button', { name: 'Tarde' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  )
   expect(api.unexpected).toEqual([])
+})
+
+test('marcar a todos es local y no pisa lo registrado; salir sin guardar avisa', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto(`${OFFERING}/sesiones/ses-1/asistencia`)
+
+  await page.getByRole('button', { name: 'Marcar a todos presentes' }).click()
+  await expect(page.getByText('1 cambio sin guardar')).toBeVisible()
+  expect(api.teachingRequests.filter((request) => request.startsWith('PUT'))).toEqual([])
+
+  await page.getByRole('link', { name: '← Sesiones de la edición' }).click()
+  const dialog = page.getByRole('dialog', { name: '¿Salir sin guardar?' })
+  await dialog.getByRole('button', { name: 'Seguir aquí' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/sesiones/ses-1/asistencia`)
+  await expect(page.getByRole('group', { name: 'Asistencia de estudiante@demo.local' }).getByRole('button', { name: 'Presente' })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  )
+
+  await page.getByRole('link', { name: '← Sesiones de la edición' }).click()
+  await dialog.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/sesiones`)
+})
+
+test('un formulario de sesión a medias avisa al cambiar de pestaña o de edición', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto(`${OFFERING}/sesiones`)
+  await page.getByRole('button', { name: 'Programar sesión' }).click()
+  await page.getByRole('form', { name: 'Crear una sesión o una serie' }).getByLabel('Título').fill('Repaso')
+
+  const dialog = page.getByRole('dialog', { name: '¿Salir sin guardar?' })
+  await page.getByRole('navigation', { name: 'Secciones de la edición' }).getByRole('link', { name: 'Matriculados' }).click()
+  await dialog.getByRole('button', { name: 'Seguir aquí' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/sesiones`)
+
+  await page.getByRole('combobox', { name: 'Cambiar de edición' }).click()
+  await page.getByRole('option', { name: /Licencias de anuncios con SRTM/ }).click()
+  await dialog.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await expect(page).toHaveURL('/docencia/edicion-srtm-2026-11/sesiones')
+  await expect(page.getByRole('form', { name: 'Crear una sesión o una serie' })).toHaveCount(0)
+})
+
+test('en un móvil, cada estudiante tiene su control en una línea bajo el nombre, con objetivos de 44 px', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto(`${OFFERING}/sesiones/ses-1/asistencia`)
+
+  const control = page.getByRole('group', { name: 'Asistencia de estudiante@demo.local' })
+  const buttons = control.getByRole('button')
+  await expect(buttons).toHaveCount(4)
+  const boxes = await buttons.evaluateAll((items) => items.map((item) => item.getBoundingClientRect()).map(({ top, height }) => ({ top, height })))
+  expect(new Set(boxes.map(({ top }) => top)).size).toBe(1)
+  for (const { height } of boxes) expect(height).toBeGreaterThanOrEqual(44)
 })
 
 test('un intento de otra edición se explica', async ({ page }) => {

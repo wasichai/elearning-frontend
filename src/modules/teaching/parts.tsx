@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
-import { ScreenBody, ScreenHeader, type ScreenWidth } from '../../shared/Screen'
+import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
@@ -64,7 +64,6 @@ export function OfferingFrame({
   back,
   backLabel,
   onBack,
-  width = 'content',
   children
 }: {
   code: string
@@ -72,7 +71,6 @@ export function OfferingFrame({
   back: string
   backLabel: string
   onBack?: MouseEventHandler
-  width?: ScreenWidth
   children: ReactNode
 }) {
   const { t } = useTranslation('teaching')
@@ -80,7 +78,7 @@ export function OfferingFrame({
   return (
     <>
       <ScreenHeader
-        width={width}
+        width="wide"
         title={offering?.course.title ?? t('roster.title')}
         subtitle={subtitle}
         breadcrumbs={
@@ -89,15 +87,22 @@ export function OfferingFrame({
           </Link>
         }
       />
-      <ScreenBody width={width} className="gap-5">
+      <ScreenBody width="wide" className="gap-5">
         {children}
       </ScreenBody>
     </>
   )
 }
 
+// el total y la acción de una pantalla de trabajo, siempre a la vista: main desplaza, y esto se queda pegado a su borde inferior, a ras
+// de los márgenes de ScreenBody
+export const STICKY_BAR =
+  'sticky bottom-0 z-10 -mx-4 -mb-16 flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 shadow-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'
+
 // avisar antes de salir de un trabajo sin guardar: guard(destino) para los enlaces de la pantalla, y al recargar o cerrar, el aviso del
 // navegador. el menú del shell queda fuera: core usa BrowserRouter, sin useBlocker, y sus enlaces no se pueden interceptar desde aquí
+export type LeaveGuard = ReturnType<typeof useLeaveGuard>
+
 export function useLeaveGuard(dirty: boolean) {
   const { t } = useTranslation('teaching')
   const navigate = useNavigate()
@@ -113,6 +118,20 @@ export function useLeaveGuard(dirty: boolean) {
       if (!dirty) return
       event.preventDefault()
       setTarget(to)
+    },
+    // para enlaces de una pieza compartida, que no dejan poner su onClick: en la fase de captura, se reconoce el destino por su href
+    guardArea: (targets: string[]) => (event: MouseEvent) => {
+      if (!dirty) return
+      const link = (event.target as Element).closest('a')
+      const to = link && targets.find((candidate) => link.pathname.endsWith(candidate))
+      if (!to) return
+      event.preventDefault()
+      setTarget(to)
+    },
+    // para lo que navega sin un enlace, como un selector
+    request: (to: string) => {
+      if (dirty) setTarget(to)
+      else void navigate(to)
     },
     dialog: target ? (
       <ConfirmDialog
