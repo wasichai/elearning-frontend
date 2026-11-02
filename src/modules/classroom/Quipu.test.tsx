@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { Lesson } from './contract'
-import { courseKnots, Knot, knotOf, MAX_KNOTS, Quipu, summaryKnots } from './Quipu'
+import { attemptKnots, courseKnots, Knot, knotOf, MAX_KNOTS, Quipu, summaryKnots } from './Quipu'
 
 // el progreso en nudos (Progress del sistema de diseño): la forma dice el tipo y el relleno el estado; es decorativo y
 // siempre va con su texto
@@ -15,6 +15,16 @@ const lesson = (overrides: Partial<Lesson>): Lesson =>
     progress: { status: 'NO_INICIADA', startedAt: null, completedAt: null, evidence: null },
     ...overrides
   }) as Lesson
+
+describe('attemptKnots', () => {
+  const states = (max: number, used: number, open: boolean) => attemptKnots(max, used, open).map((knot) => `${knot.kind}:${knot.state}`)
+
+  it('en rombos: los usados, el abierto y los libres', () => {
+    expect(states(3, 1, false)).toEqual(['assessment:used', 'assessment:todo', 'assessment:todo'])
+    expect(states(3, 1, true)).toEqual(['assessment:used', 'assessment:active', 'assessment:todo'])
+    expect(states(2, 2, false)).toEqual(['assessment:used', 'assessment:used'])
+  })
+})
 
 describe('knotOf', () => {
   it('la forma sale del tipo: evaluación rombo, sesión doble anillo, lo demás círculo', () => {

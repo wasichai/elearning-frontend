@@ -27,11 +27,11 @@ test('recorrido: empezar, responder cada tipo, entregar un archivo, enviar con c
 
   const rules = page.getByRole('region', { name: 'Evaluación final' })
   await expect(rules.getByText('0 de 2 usados')).toBeVisible()
-  await rules.getByRole('button', { name: 'Empezar el intento' }).click()
+  await rules.getByRole('button', { name: 'Comenzar intento 1 de 2' }).click()
   // empezar gasta un intento y pone en marcha el reloj: se confirma (RNF-UX-08)
-  const start = page.getByRole('dialog', { name: '¿Empezar el intento?' })
+  const start = page.getByRole('dialog', { name: '¿Comenzar el intento?' })
   await expect(start).toContainText('Usarás el intento 1 de 2 y tendrás 30 min')
-  await start.getByRole('button', { name: 'Empezar' }).click()
+  await start.getByRole('button', { name: 'Comenzar' }).click()
 
   await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeFocused()
   await expect(page).toHaveURL(`${LESSON}&intento=int-1`)
@@ -43,10 +43,10 @@ test('recorrido: empezar, responder cada tipo, entregar un archivo, enviar con c
   await expect(page.getByText('Entregado: liquidacion.pdf')).toBeVisible()
   expect(api.uploads).toEqual([{ path: '/api/objects/entrega/records/ent-1/files/archivo', name: 'liquidacion.pdf', authorization: 'Bearer token-e2e' }])
 
-  await page.getByRole('button', { name: 'Enviar el intento' }).click()
-  const dialog = page.getByRole('dialog', { name: '¿Enviar el intento?' })
+  await page.getByRole('button', { name: 'Entregar' }).click()
+  const dialog = page.getByRole('dialog', { name: '¿Entregar el intento?' })
   await expect(dialog).toContainText('Respondiste todas las preguntas.')
-  await dialog.getByRole('button', { name: 'Enviar' }).click()
+  await dialog.getByRole('button', { name: 'Entregar' }).click()
 
   await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
   await expect(page.getByText('Por ahora llevas 6 de 10 puntos.', { exact: false })).toBeVisible()
@@ -58,7 +58,7 @@ test('recorrido: empezar, responder cada tipo, entregar un archivo, enviar con c
   await page.getByRole('link', { name: '← Volver a la evaluación' }).click()
   await expect(rules.getByText('1 de 2 usados')).toBeVisible()
   await expect(rules.getByText('Pendiente de corrección')).toBeVisible()
-  await expect(rules.getByRole('button', { name: 'Empezar otro intento' })).toBeVisible()
+  await expect(rules.getByRole('button', { name: 'Comenzar intento 2 de 2' })).toBeVisible()
   const writes = api.classroomRequests.filter((request) => !request.startsWith('GET') && !request.includes('/events'))
   expect(writes).toEqual([
     'POST /api/lms/classroom/enrollments/mat-sgspe-1/lessons/lec-eva/attempts',
@@ -74,8 +74,8 @@ test('al acabarse el tiempo la cuenta atrás lo dice, y el 409 del servidor por 
   await page.clock.install()
   const api = await fakeApi(page, { signedIn: true })
   await page.goto(LESSON)
-  await page.getByRole('button', { name: 'Empezar el intento' }).click()
-  await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
+  await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+  await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
   await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
 
   await page.clock.fastForward('31:00')
@@ -83,8 +83,8 @@ test('al acabarse el tiempo la cuenta atrás lo dice, y el 409 del servidor por 
   await expect(page.getByText(/^Se acabó el tiempo\. El servidor solo acepta/)).toBeVisible()
 
   api.failOnce((url, method) => method === 'PUT' && url.pathname.endsWith('/answers'), 409, 'El plazo del intento venció')
-  await page.getByRole('button', { name: 'Enviar el intento' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Enviar' }).click()
+  await page.getByRole('button', { name: 'Entregar' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()
   await expect(page.getByText('El plazo de este intento ya venció')).toBeVisible()
   await expect(page.getByText('El servidor dice: «El plazo del intento venció». Te mostramos el estado actual.')).toBeVisible()
 })
@@ -93,26 +93,154 @@ test('con los intentos agotados la evaluación lo dice', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   await page.goto(LESSON)
   for (const number of [1, 2]) {
-    await page.getByRole('button', { name: number === 1 ? 'Empezar el intento' : 'Empezar otro intento' }).click()
-    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
+    await page.getByRole('button', { name: `Comenzar intento ${number} de 2` }).click()
+    await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: `Intento ${number}` })).toBeVisible()
-    await page.getByRole('button', { name: 'Enviar el intento' }).click()
-    await page.getByRole('dialog').getByRole('button', { name: 'Enviar' }).click()
+    await page.getByRole('button', { name: 'Entregar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Entregar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: `Resultado del intento ${number}` })).toBeVisible()
     await page.getByRole('link', { name: '← Volver a la evaluación' }).click()
   }
   await expect(page.getByText('Ya usaste tus 2 intentos.')).toBeVisible()
-  await expect(page.getByRole('button', { name: /Empezar/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Comenzar/ })).toHaveCount(0)
+})
+
+async function start(page: Page) {
+  await page.goto(LESSON)
+  await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+  await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
+  await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
+}
+
+// lo que recibe el foco no queda bajo la cabecera fija, y esta no se mete bajo la barra de la lección
+async function expectClearOfHeader(page: Page, target: ReturnType<Page['getByRole']>) {
+  await expect(async () => {
+    const header = await page.locator('header:has(h3)').boundingBox()
+    const box = await target.boundingBox()
+    expect(box!.y).toBeGreaterThanOrEqual(header!.y + header!.height)
+  }).toPass()
+}
+
+test.describe('con ancho (el temario plegado o a 1440 px)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } })
+
+  test('todas las preguntas en columna, índice lateral y cabecera fija que no tapa el foco', async ({ page }) => {
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+
+    const question = (name: string) => page.getByRole('group', { name })
+    await expect(question('1. ¿Quién otorga la licencia de anuncio?')).toBeVisible()
+    await expect(question('6. Sube la liquidación de ejemplo.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Pregunta siguiente' })).toBeHidden()
+
+    const index = page.getByRole('navigation', { name: 'Preguntas del intento' })
+    await index.getByRole('button', { name: 'Pregunta 5, en blanco' }).click()
+    await expect(question('5. Explica cómo se liquida una licencia.')).toBeFocused()
+    await expectClearOfHeader(page, question('5. Explica cómo se liquida una licencia.'))
+    // la cabecera y el índice siguen a la vista, debajo de la barra de la lección
+    const bar = await page.locator('article > div.sticky').boundingBox()
+    const header = await page.locator('header:has(h3)').boundingBox()
+    expect(header!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)
+    await expect(page.getByRole('button', { name: 'Entregar' })).toBeInViewport()
+    await expect(index).toBeInViewport()
+    await expect(page.getByText('Pregunta 5 de 6')).toBeVisible()
+
+    // con el teclado, un campo más arriba no se queda bajo la cabecera
+    await page.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }).focus()
+    await expectClearOfHeader(page, page.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }))
+    await expect(page.getByText('Pregunta 4 de 6')).toBeVisible()
+
+    // el índice del diálogo lleva a la pregunta en blanco
+    await page.getByRole('button', { name: 'Entregar' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Pregunta 2' }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(question('2. ¿Qué tipos de anuncio existen?')).toBeFocused()
+    await expectClearOfHeader(page, question('2. ¿Qué tipos de anuncio existen?'))
+  })
+
+  test('el temporizador cambia de tono y de palabra a los 5 minutos y al último, y lo anuncia una vez', async ({ page }) => {
+    await page.clock.install()
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+    const box = page.locator('[data-stage]')
+    await expect(box).toHaveAttribute('data-stage', 'plenty')
+
+    await page.clock.fastForward('25:30')
+    await expect(box).toHaveAttribute('data-stage', 'fiveMinutes')
+    await expect(box).toContainText('últimos 5 min')
+    await expect(page.getByRole('status').filter({ hasText: 'Quedan 5 minutos para entregar el intento.' })).toHaveCount(1)
+
+    await page.clock.fastForward('04:00')
+    await expect(box).toHaveAttribute('data-stage', 'oneMinute')
+    await expect(box).toContainText('último minuto')
+    await expect(page.getByRole('status').filter({ hasText: 'Queda 1 minuto.' })).toHaveCount(1)
+
+    await page.clock.fastForward('01:00')
+    await expect(box).toHaveAttribute('data-stage', 'over')
+    await expect(box).toContainText('tiempo agotado')
+    await expect(page.getByRole('status').filter({ hasText: /Queda/ })).toHaveCount(0)
+  })
+
+  test('si guardar falla sin conexión, el aviso sigue a la vista desde cualquier pregunta y volver a guardar lo quita', async ({ page }) => {
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+    await page.getByRole('radio', { name: 'La municipalidad' }).check()
+    await page.route('**/api/lms/classroom/attempts/*/answers', (route) => route.abort('internetdisconnected'))
+    await page.getByRole('button', { name: 'Guardar respuestas' }).click()
+
+    const alert = page.getByRole('alert')
+    await expect(alert).toContainText('sigue solo en esta pantalla')
+    await page.getByRole('button', { name: 'Pregunta 6, en blanco' }).click()
+    await expect(alert).toBeInViewport()
+    await expect(page.getByText('Sin guardar')).toBeVisible()
+
+    await page.unroute('**/api/lms/classroom/attempts/*/answers')
+    await page.getByRole('button', { name: 'Guardar respuestas' }).click()
+    await expect(alert).toHaveCount(0)
+    await expect(page.getByText(/^Guardado \d/)).toBeVisible()
+  })
 })
 
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
+  test('una pregunta por pantalla: el índice y anterior o siguiente la cambian sin perder lo respondido', async ({ page }) => {
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+
+    const lesson = page.getByRole('article', { name: 'Evaluación final' })
+    await expect(lesson.getByRole('group').filter({ visible: true })).toHaveCount(1)
+    await page.getByRole('radio', { name: 'La municipalidad' }).check()
+    await page.getByRole('button', { name: 'Pregunta siguiente' }).click()
+    const second = page.getByRole('group', { name: '2. ¿Qué tipos de anuncio existen?' })
+    await expect(second).toBeFocused()
+    await expectClearOfHeader(page, second)
+    await expect(page.getByRole('group', { name: '1. ¿Quién otorga la licencia de anuncio?' })).toBeHidden()
+
+    const index = page.getByRole('navigation', { name: 'Preguntas del intento' })
+    await index.getByRole('button', { name: 'Pregunta 1, respondida' }).click()
+    await expect(page.getByRole('radio', { name: 'La municipalidad' })).toBeChecked()
+    await index.getByRole('button', { name: 'Pregunta 5, en blanco' }).click()
+    await page.getByRole('textbox', { name: '5. Explica cómo se liquida una licencia.' }).fill('Con la tasa')
+    await page.getByRole('button', { name: 'Pregunta anterior' }).click()
+    await page.getByRole('button', { name: 'Pregunta siguiente' }).click()
+    await expect(page.getByRole('textbox', { name: '5. Explica cómo se liquida una licencia.' })).toHaveValue('Con la tasa')
+
+    // los objetivos del índice y de las opciones miden al menos 44 px
+    for (const target of await index.getByRole('button').all()) {
+      const box = await target.boundingBox()
+      expect(Math.min(box!.width, box!.height)).toBeGreaterThanOrEqual(44)
+    }
+    await index.getByRole('button', { name: 'Pregunta 1, respondida' }).click()
+    const option = await page.locator('label:has(input[type=radio]):visible').first().boundingBox()
+    expect(option!.height).toBeGreaterThanOrEqual(44)
+  })
+
   test('el intento cabe en el área del aula', async ({ page }) => {
     await fakeApi(page, { signedIn: true })
     await page.goto(LESSON)
-    await page.getByRole('button', { name: 'Empezar el intento' }).click()
-    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
+    await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+    await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
 
     const wider = await page.locator('main').evaluate((main) => {

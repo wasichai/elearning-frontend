@@ -1,13 +1,16 @@
-import { useWasichaiLinks } from '@wasichai/core'
+import { useApiClient, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, ConfirmDialog } from '@wasichai/ui'
-import { useState, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatNumber } from '../../shared/format'
-import { useStartAttempt } from './api'
+import { classroomQuery, useStartAttempt } from './api'
 import { AttemptActionProblem, AttemptView } from './AttemptView'
 import type { AssessmentSummary, Lesson } from './contract'
 import { WRAP } from './parts'
+import { attemptKnots, Knot, type KnotState } from './Quipu'
 import { ATTEMPT_PARAM, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 type AssessedLesson = Lesson & { assessment: AssessmentSummary }
@@ -21,17 +24,23 @@ export function AssessmentLesson({ enrollmentId, lesson, timeZone }: { enrollmen
   const attemptId = params.get(ATTEMPT_PARAM)
   if (!attemptId) return <AssessmentPanel enrollmentId={enrollmentId} lesson={lesson} />
   return (
-    <div className="flex flex-col gap-4">
-      <Link
-        to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id })}
-        className="self-start text-sm text-link underline-offset-4 hover:underline"
-      >
+    <div className="flex flex-col gap-2">
+      <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id })} className={`self-start ${TEXT_LINK}`}>
         {t('assessment.back')}
       </Link>
-      <AttemptView enrollmentId={enrollmentId} attemptId={attemptId} passingPercent={lesson.assessment.passingPercent} timeZone={timeZone} />
+      <AttemptView
+        enrollmentId={enrollmentId}
+        attemptId={attemptId}
+        passingPercent={lesson.assessment.passingPercent}
+        title={lesson.assessment.title}
+        maxAttempts={lesson.assessment.maxAttempts}
+        timeZone={timeZone}
+      />
     </div>
   )
 }
+
+const ATTEMPT_STATE: Partial<Record<KnotState, string>> = { used: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
 
 function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
   const { t, i18n } = useTranslation('classroom')
@@ -39,20 +48,31 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
   const navigate = useNavigate()
   const start = useStartAttempt(enrollmentId)
   const [confirming, setConfirming] = useState(false)
+  const attemptsLabel = useId()
+  // el aula ya está en la caché del marco: solo se lee su estado, sin otra petición
+  const { data: classroom } = useQuery({ ...classroomQuery(useApiClient(), enrollmentId), refetchOnMount: false })
   const { assessment } = lesson
   const locale = i18n.language
-  const exhausted = assessment.openAttemptId === null && assessment.attemptsUsed >= assessment.maxAttempts
-  const attemptNumbers = { number: formatNumber(assessment.attemptsUsed + 1, locale), max: formatNumber(assessment.maxAttempts, locale) }
+  const open = assessment.openAttemptId
+  const exhausted = open === null && assessment.attemptsUsed >= assessment.maxAttempts
+  // el servidor solo deja escribir con la matrícula activa: aquí se explica antes de que responda 409
+  const closed = classroom !== undefined && classroom.status !== 'ACTIVA'
+  const canStart = !closed && !exhausted && open === null
+  const timed = assessment.timeLimitMinutes !== null
+  const numbers = { number: formatNumber(assessment.attemptsUsed + 1, locale), max: formatNumber(assessment.maxAttempts, locale) }
   const attemptLink = (attemptId: string) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id, [ATTEMPT_PARAM]: attemptId })
+  const knots = attemptKnots(assessment.maxAttempts, assessment.attemptsUsed - (open ? 1 : 0), open !== null)
   return (
-    <section aria-labelledby={`assessment-${assessment.id}`} className="flex flex-col gap-4 rounded-card border border-border px-5 py-4">
-      <h3 id={`assessment-${assessment.id}`} className="text-lg font-semibold text-ink">
+    <section
+      aria-labelledby={`assessment-${assessment.id}`}
+      className="@container flex flex-col gap-5 rounded-card border border-border bg-surface px-4 py-5 sm:px-6"
+    >
+      {/* la lección ya lleva su título encima: solo se repite aquí si la evaluación se llama de otro modo */}
+      <h3 id={`assessment-${assessment.id}`} className={assessment.title === lesson.title ? 'sr-only' : 'text-title-3 text-ink'}>
         {assessment.title}
       </h3>
-      <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-        <Fact label={t('assessment.attempts')}>
-          {t('assessment.attemptsValue', { used: formatNumber(assessment.attemptsUsed, locale), max: formatNumber(assessment.maxAttempts, locale) })}
-        </Fact>
+
+      <dl className="grid divide-y divide-border @lg:grid-cols-3 @lg:gap-6 @lg:divide-y-0">
         <Fact label={t('assessment.timeLimit')}>
           {assessment.timeLimitMinutes === null
             ? t('assessment.noTimeLimit')
@@ -68,24 +88,55 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
         </Fact>
       </dl>
 
+      <div className="flex flex-col gap-2 border-t border-border pt-4">
+        <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+          <span id={attemptsLabel} className="font-medium text-ink">
+            {t('assessment.attempts')}
+          </span>
+          <span className="text-ink-muted tabular-nums">
+            {t('assessment.attemptsValue', { used: formatNumber(assessment.attemptsUsed, locale), max: formatNumber(assessment.maxAttempts, locale) })}
+          </span>
+        </p>
+        <ul aria-labelledby={attemptsLabel} className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink">
+          {knots.map((knot, index) => (
+            <li key={index} className="inline-flex items-center gap-2">
+              <Knot {...knot} />
+              <span>{t('assessment.knot', { number: formatNumber(index + 1, locale), state: t(ATTEMPT_STATE[knot.state] ?? 'assessment.knotFree') })}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {start.error ? <AttemptActionProblem error={start.error} /> : null}
 
-      {assessment.openAttemptId ? (
-        <Button asChild className={`self-start ${WRAP}`}>
-          <Link to={attemptLink(assessment.openAttemptId)}>{t('assessment.resume')}</Link>
-        </Button>
+      {closed ? (
+        <Alert tone="notice">{t(classroom.status === 'FINALIZADA' ? 'assessment.closedFinished' : 'assessment.closedInactive')}</Alert>
+      ) : open ? (
+        <div className="flex flex-col gap-3 @lg:flex-row @lg:items-center @lg:justify-between">
+          <p className="text-sm text-ink-muted">{t(timed ? 'assessment.resumeTimed' : 'assessment.resumeHint')}</p>
+          <Button asChild className={`w-full shrink-0 @lg:w-auto ${WRAP} min-h-11`}>
+            <Link to={attemptLink(open)}>{t('assessment.resume')}</Link>
+          </Button>
+        </div>
       ) : exhausted ? (
         <Alert tone="notice">{t('assessment.exhausted', { count: assessment.maxAttempts })}</Alert>
       ) : (
-        <div className="flex flex-col items-start gap-2">
-          {assessment.timeLimitMinutes !== null ? (
-            <p className="text-sm text-ink-muted">{t('assessment.timerStarts', { value: formatNumber(assessment.timeLimitMinutes, locale) })}</p>
-          ) : null}
-          <Button className={WRAP} disabled={start.isPending} onClick={() => setConfirming(true)}>
-            {start.isPending ? t('assessment.starting') : assessment.attemptsUsed > 0 ? t('assessment.retry') : t('assessment.start')}
-          </Button>
-        </div>
+        <Button className={`w-full self-start @lg:w-auto ${WRAP} min-h-11`} disabled={start.isPending} onClick={() => setConfirming(true)}>
+          {start.isPending ? t('assessment.starting') : t('assessment.startNumber', numbers)}
+        </Button>
       )}
+
+      {canStart ? (
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <h4 className="text-sm font-medium text-ink">{t('assessment.onStart')}</h4>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-muted">
+            <li>{t('assessment.onStartAttempt', numbers)}</li>
+            {timed ? <li>{t('assessment.onStartTimer', { value: formatNumber(assessment.timeLimitMinutes!, locale) })}</li> : null}
+            {timed ? <li>{t('assessment.onStartDeadline')}</li> : null}
+            <li>{t('assessment.onStartSaving')}</li>
+          </ul>
+        </div>
+      ) : null}
 
       {/* empezar gasta uno de los intentos y, con límite, pone en marcha un reloj que no se detiene: se confirma (RNF-UX-08) */}
       {confirming ? (
@@ -94,8 +145,8 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
           title={t('assessment.confirmTitle')}
           description={
             assessment.timeLimitMinutes === null
-              ? t('assessment.confirmUntimed', attemptNumbers)
-              : t('assessment.confirmTimed', { ...attemptNumbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
+              ? t('assessment.confirmUntimed', numbers)
+              : t('assessment.confirmTimed', { ...numbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
           }
           confirmLabel={t('assessment.confirmStart')}
           cancelLabel={t('assessment.confirmCancel')}
@@ -112,9 +163,9 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col">
-      <dt className="text-xs text-ink-muted">{label}</dt>
-      <dd className="text-ink">{children}</dd>
+    <div className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0 @lg:flex-col @lg:justify-start @lg:gap-0.5 @lg:py-0">
+      <dt className="shrink-0 text-sm text-ink-muted">{label}</dt>
+      <dd className="text-right text-title-3 text-ink tabular-nums @lg:text-left">{children}</dd>
     </div>
   )
 }

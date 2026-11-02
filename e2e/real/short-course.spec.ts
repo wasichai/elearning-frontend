@@ -59,8 +59,8 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
 
     await (await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${ASSESSMENT}`) }).click()
     await expect(page.getByText('Se completa al aprobar la evaluación.')).toBeVisible()
-    await page.getByRole('button', { name: 'Empezar el intento' }).click()
-    await page.getByRole('dialog', { name: '¿Empezar el intento?' }).getByRole('button', { name: 'Empezar' }).click()
+    await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+    await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeVisible()
     await expect(page).toHaveURL(/intento=/)
     attemptUrl = page.url()
@@ -76,14 +76,14 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
 
     // lo guardado sobrevive a recargar: lo tiene el servidor
     await page.getByRole('button', { name: 'Guardar respuestas' }).click()
-    await expect(page.getByText(/^Respuestas guardadas a las/)).toBeVisible()
+    await expect(page.getByText(/^Guardado \d/)).toBeVisible()
     await page.reload()
     await expect(page.getByRole('textbox', { name: OPEN_QUESTION })).toHaveValue(/^No pudimos guardar/)
 
-    await page.getByRole('button', { name: 'Enviar el intento' }).click()
-    const confirm = page.getByRole('dialog', { name: '¿Enviar el intento?' })
+    await page.getByRole('button', { name: 'Entregar' }).click()
+    const confirm = page.getByRole('dialog', { name: '¿Entregar el intento?' })
     await expect(confirm).toContainText('Respondiste todas las preguntas.')
-    await confirm.getByRole('button', { name: 'Enviar' }).click()
+    await confirm.getByRole('button', { name: 'Entregar' }).click()
 
     await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
     await expect(page.getByRole('status').filter({ hasText: 'Pendiente de corrección' })).toContainText('Por ahora llevas 4 de 10 puntos.')

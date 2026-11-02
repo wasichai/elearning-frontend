@@ -4,7 +4,8 @@ import { isDone, type Lesson, type ProgressSummary } from './contract'
 // tipo (círculo lección, rombo evaluación, doble anillo sesión en vivo) y el relleno el estado (success completada,
 // anillo brand en curso, hueco sin empezar). es decorativo: siempre va con un texto que diga «n de m lecciones»
 export type KnotKind = 'lesson' | 'assessment' | 'session'
-export type KnotState = 'done' | 'active' | 'todo'
+// used: un intento gastado, del que no se sabe aquí si aprobó; por eso no lleva el musgo de lo completado
+export type KnotState = 'done' | 'active' | 'todo' | 'used'
 export interface KnotData {
   kind: KnotKind
   state: KnotState
@@ -29,6 +30,14 @@ export function summaryKnots(progress: ProgressSummary): KnotData[] {
   return Array.from({ length: progress.totalLessons }, (_, index) => ({ kind: 'lesson', state: index < progress.completedLessons ? 'done' : 'todo' }))
 }
 
+// los intentos de una evaluación, en rombos: los ya usados, el abierto si lo hay y los que quedan libres
+export function attemptKnots(max: number, used: number, open: boolean): KnotData[] {
+  return Array.from({ length: max }, (_, index) => ({
+    kind: 'assessment',
+    state: index < used ? 'used' : open && index === used ? 'active' : 'todo'
+  }))
+}
+
 const SHAPE: Record<KnotKind, string> = {
   lesson: 'rounded-full',
   assessment: 'rounded-[3px] rotate-45 scale-[0.86]',
@@ -36,6 +45,7 @@ const SHAPE: Record<KnotKind, string> = {
 }
 
 const FILL: Record<KnotState, string> = {
+  used: 'border-ink-muted bg-ink-muted',
   done: 'border-success bg-success',
   active: 'border-brand bg-surface',
   todo: 'border-border-control bg-surface'
