@@ -35,9 +35,31 @@ test('el catálogo y la ficha se manejan solo con el teclado', async ({ page }) 
   await page.keyboard.press('Enter')
   await expect(courses).toHaveCount(2)
 
+  // limpiar deja el foco en los resultados, no en la nada
+  await expect(page.getByRole('heading', { name: 'Resultados' })).toBeFocused()
+
+  // una categoría: botón que se pulsa con Espacio
+  const category = page.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Gestión municipal (2)' })
+  await tabTo(page, category, 'Shift+Tab')
+  await page.keyboard.press('Space')
+  await expect(category).toHaveAttribute('aria-pressed', 'true')
+  await expect.poll(() => api.catalogRequests.at(-1)?.searchParams.get('category')).toBe('gestion-municipal')
+  await page.keyboard.press('Space')
+  await expect(category).toHaveAttribute('aria-pressed', 'false')
+  await expect.poll(() => api.catalogRequests.at(-1)?.searchParams.get('category')).toBeNull()
+
+  // plegado, «Más filtros» no se lleva el foco: de él se salta a los resultados
+  const more = page.locator('summary').filter({ hasText: 'Más filtros' })
+  await tabTo(page, more)
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Licencias de anuncios con SRTM' })).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(more).toBeFocused()
+  await page.keyboard.press('Enter')
+
   // un desplegable: se abre con Enter, se recorre con flechas y se elige con Enter
   const level = page.getByRole('combobox', { name: 'Nivel' })
-  await tabTo(page, level, 'Shift+Tab')
+  await tabTo(page, level)
   await page.keyboard.press('Enter')
   await expect(page.getByRole('listbox')).toBeVisible()
   await expect(page.getByRole('option', { name: 'Cualquiera' })).toBeFocused()

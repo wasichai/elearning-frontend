@@ -1,7 +1,124 @@
+import type { Page, Route } from '@playwright/test'
+import { coursePage, courseSummary, courseWithoutOffering, problem } from '../../../src/modules/catalog/test/fixtures'
+import { isCourseList } from '../../api'
 import type { Scenario } from '../scenario'
+
+const CATEGORIES = [
+  { slug: 'gestion-municipal', name: 'Gestión municipal', count: 3 },
+  { slug: 'programacion', name: 'Programación', count: 2 },
+  { slug: 'ia', name: 'Inteligencia artificial', count: 1 },
+  { slug: 'atencion', name: 'Atención al ciudadano', count: 1 }
+]
+
+// un catálogo con más de los dos cursos de los ejemplos, para ver la cuadrícula llena y cada disponibilidad
+const FULL_CATALOG = {
+  ...coursePage,
+  content: [
+    courseSummary,
+    { ...courseWithoutOffering, category: CATEGORIES[1] },
+    {
+      ...courseSummary,
+      slug: 'agentes-ia',
+      title: 'Agentes de IA con trazabilidad: diseño, evaluación y operación responsable en instituciones públicas',
+      illustrative: false,
+      level: 'AVANZADO',
+      modality: 'SINCRONA',
+      category: CATEGORIES[2],
+      weeks: 6,
+      workload: { totalHours: 216, contactHours: 144, autonomousHours: 72 },
+      nextOffering: { ...courseSummary.nextOffering, enrollmentOpen: false, enrollmentStatus: 'FULL' }
+    },
+    {
+      ...courseSummary,
+      slug: 'mensajes-de-error',
+      title: 'Curso corto: mensajes de error claros',
+      summary: null,
+      illustrative: false,
+      category: CATEGORIES[3],
+      modality: 'PRESENCIAL',
+      weeks: 1,
+      workload: { totalHours: 6, contactHours: 4, autonomousHours: 2 },
+      nextOffering: { ...courseSummary.nextOffering, status: 'EN_CURSO', enrollmentOpen: false, enrollmentStatus: 'CLOSED' }
+    },
+    {
+      ...courseSummary,
+      slug: 'tramites-en-linea',
+      title: 'Instrucciones claras para un trámite en línea',
+      summary:
+        'Cómo escribir pasos que cualquier persona pueda seguir: orden, verbos, ejemplos, capturas y pruebas con personas reales, con un resumen largo que no cabe en dos líneas de una tarjeta.',
+      illustrative: false,
+      level: 'INTERMEDIO',
+      category: CATEGORIES[0],
+      nextOffering: { ...courseSummary.nextOffering, status: 'PROGRAMADA', enrollmentOpen: false, enrollmentStatus: 'CLOSED' }
+    },
+    {
+      ...courseSummary,
+      slug: 'padron-municipal',
+      title: 'Consultas al padrón municipal',
+      illustrative: false,
+      category: CATEGORIES[0],
+      nextOffering: { ...courseSummary.nextOffering, status: 'INSCRIPCION_ABIERTA', enrollmentOpen: false, enrollmentStatus: 'CLOSED' }
+    }
+  ],
+  totalElements: 18,
+  totalPages: 3,
+  facets: { ...coursePage.facets, categories: CATEGORIES }
+}
+
+// la API simulada ya respondió al abrir: esta ruta gana a la de fakeApi y la página vuelve a pedir el catálogo
+async function reloadWith(page: Page, reply: (route: Route) => Promise<void>) {
+  await page.route(isCourseList, reply)
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+}
+
+const withFullCatalog = (page: Page) => reloadWith(page, (route) => route.fulfill({ json: FULL_CATALOG }))
+const openMoreFilters = (page: Page) => page.getByText('Más filtros').click()
 
 export const catalogScenarios: Scenario[] = [
   { name: 'catalog', path: '/cursos' },
+  { name: 'catalog-full', path: '/cursos', act: withFullCatalog },
+  {
+    // el anillo de foco de la tarjeta, por teclado
+    name: 'catalog-card-focus',
+    path: '/cursos',
+    act: async (page) => {
+      await withFullCatalog(page)
+      const link = page.getByRole('link', { name: 'Introducción al SGSPE' })
+      await link.focus()
+      await page.keyboard.press('Shift+Tab')
+      await page.keyboard.press('Tab')
+      await link.waitFor()
+    }
+  },
+  {
+    name: 'catalog-filters-open',
+    path: '/cursos',
+    act: async (page) => {
+      await withFullCatalog(page)
+      await openMoreFilters(page)
+    }
+  },
+  {
+    name: 'catalog-filters-active',
+    path: '/cursos?q=anuncios&category=gestion-municipal&level=INICIAL&minWeeks=3&maxWeeks=8&minPracticeHours=10&prerequisiteKnowledge=navegador-web&sort=title',
+    act: withFullCatalog
+  },
+  {
+    name: 'catalog-loading',
+    path: '/cursos',
+    act: async (page) => {
+      // la respuesta no llega nunca: se ve el esqueleto
+      await page.route(isCourseList, () => {})
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await page.getByRole('status').getByText('Cargando cursos…').waitFor()
+    }
+  },
+  {
+    name: 'catalog-error',
+    path: '/cursos',
+    act: (page) => reloadWith(page, (route) => route.fulfill({ status: 500, json: problem(500, 'Fallo del servidor') }))
+  },
   { name: 'catalog-empty', path: '/cursos?q=no-existe-ninguno' },
   { name: 'catalog-course', path: '/cursos/srtm-anuncios' },
   { name: 'catalog-course-full', path: '/cursos/srtm-anuncios', api: { offeringFull: true } },

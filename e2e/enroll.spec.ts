@@ -64,6 +64,7 @@ test('una edición completa se dice en el catálogo y en la ficha, sin ofrecer m
   const card = page.getByRole('region', { name: 'Resultados' }).getByRole('listitem').filter({ hasText: 'Licencias de anuncios con SRTM' })
   await expect(card).toContainText('Edición completa')
 
+  await page.getByText('Más filtros').click()
   await page.getByRole('combobox', { name: 'Inscripción' }).click()
   await page.getByRole('option', { name: 'Con inscripción abierta' }).click()
   await expect.poll(() => api.catalogRequests.filter(isCourseList).at(-1)?.searchParams.get('enrollmentOpen')).toBe('true')

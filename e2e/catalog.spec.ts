@@ -6,6 +6,8 @@ import { fakeApi, isCourseList } from './api'
 const results = (page: Page) => page.getByRole('region', { name: 'Resultados' })
 const courses = (page: Page) => results(page).getByRole('listitem')
 const lastParam = (urls: URL[], name: string) => urls.at(-1)?.searchParams.get(name)
+// los filtros de segunda línea, plegados: en escritorio es un <details>, que no tiene rol de botón
+const openMoreFilters = (page: Page) => page.getByText('Más filtros').click()
 
 test('buscar y filtrar: la petición lleva el filtro y la lista cambia', async ({ page }) => {
   const api = await fakeApi(page)
@@ -31,6 +33,7 @@ test('buscar y filtrar: la petición lleva el filtro y la lista cambia', async (
   await expect(page.getByRole('searchbox', { name: 'Buscar cursos' })).toHaveValue('')
 
   // un filtro de selección: nivel
+  await openMoreFilters(page)
   await page.getByRole('combobox', { name: 'Nivel' }).click()
   await page.getByRole('option', { name: 'Intermedio' }).click()
   await expect.poll(() => lastParam(api.catalogRequests, 'level')).toBe('INTERMEDIO')
@@ -38,8 +41,9 @@ test('buscar y filtrar: la petición lleva el filtro y la lista cambia', async (
   await expect(courses(page).getByRole('link')).toHaveText('Introducción al SGSPE')
 
   // y otro encima: categoría (de los facets). ninguno cumple ambos
-  await page.getByRole('combobox', { name: 'Categoría' }).click()
-  await page.getByRole('option', { name: 'Gestión municipal (2)' }).click()
+  const chip = page.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Gestión municipal (2)' })
+  await chip.click()
+  await expect(chip).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(() => api.catalogRequests.at(-1)?.search).toMatch(/category=gestion-municipal/)
   expect(lastParam(api.catalogRequests, 'level')).toBe('INTERMEDIO')
   await expect(results(page).getByText('Ningún curso coincide con la búsqueda')).toBeVisible()
@@ -51,6 +55,7 @@ test('filtros de duración, inscripción y horas: la lista cambia y, sin resulta
   const api = await fakeApi(page)
   await page.goto('/cursos')
   await expect(courses(page)).toHaveCount(2)
+  await openMoreFilters(page)
 
   await page.getByRole('combobox', { name: 'Inscripción' }).click()
   await page.getByRole('option', { name: 'Con inscripción abierta' }).click()
@@ -72,6 +77,70 @@ test('filtros de duración, inscripción y horas: la lista cambia y, sin resulta
   await expect(courses(page)).toHaveCount(2)
   await expect(page.getByLabel('Horas de trabajo autónomo (mínimo)')).toHaveValue('')
   expect(api.unexpected).toEqual([])
+})
+
+test('los filtros activos se ven, se cuentan y se quitan uno a uno; plegado, «Más filtros» no estorba', async ({ page }) => {
+  const api = await fakeApi(page)
+  await page.goto('/cursos?level=INICIAL&minWeeks=3&maxWeeks=8&q=anuncios')
+  await expect(courses(page)).toHaveCount(1)
+
+  // plegado: los controles de segunda línea no se ven ni reciben el foco, y su contador dice cuántos hay en marcha
+  await expect(page.getByRole('combobox', { name: 'Nivel' })).toBeHidden()
+  await expect(page.getByText('2 activos')).toBeAttached()
+
+  const active = page.getByRole('group', { name: 'Filtros activos' })
+  await active.getByRole('button', { name: 'Quitar filtro Duración: De 3 a 8 semanas' }).click()
+  await expect(page).toHaveURL(/\/cursos\?q=anuncios&level=INICIAL$/)
+  await expect(page.getByRole('heading', { name: 'Resultados' })).toBeFocused()
+  await expect(page.getByText('1 activo', { exact: true })).toBeAttached()
+  expect(lastParam(api.catalogRequests, 'minWeeks')).toBeNull()
+
+  await active.getByRole('button', { name: 'Limpiar filtros' }).click()
+  await expect(page).toHaveURL(/\/cursos$/)
+  await expect(active).toHaveCount(0)
+  await expect(courses(page)).toHaveCount(2)
+})
+
+test('la tarjeta entera lleva a la ficha, y su foco rodea la tarjeta sin que el ::after lo tape', async ({ page }) => {
+  await fakeApi(page)
+  await page.goto('/cursos')
+  const card = courses(page).first().getByRole('article')
+  await expect(card).toBeVisible()
+  const link = card.getByRole('link')
+
+  await link.focus()
+  // se pide por teclado: focus() desde el código no siempre activa :focus-visible
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Tab')
+  await expect(link).toBeFocused()
+  const outline = await card.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { style: style.outlineStyle, width: style.outlineWidth, offset: style.outlineOffset }
+  })
+  expect(outline).toEqual({ style: 'solid', width: '2px', offset: '2px' })
+
+  // un clic en la banda, fuera del título, también abre la ficha
+  const banner = (await card.locator('[data-slot="cord-banner"]').boundingBox())!
+  await page.mouse.click(banner.x + banner.width / 2, banner.y + banner.height / 2)
+  await expect(page.getByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeVisible()
+})
+
+test('los chips de categoría miden 44 px y la cuadrícula pasa de 2 a 3 columnas', async ({ page }) => {
+  await fakeApi(page)
+  await page.setViewportSize({ width: 1024, height: 800 })
+  await page.goto('/cursos')
+  await expect(courses(page)).toHaveCount(2)
+
+  const chips = page.getByRole('group', { name: 'Categoría' }).getByRole('button')
+  for (const chip of await chips.all()) expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  const columns = () =>
+    courses(page)
+      .first()
+      .locator('..')
+      .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(' ').length)
+  expect(await columns()).toBe(2)
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect.poll(columns).toBe(3)
 })
 
 test('un error del servidor se explica y «Reintentar» lo recupera', async ({ page }) => {
