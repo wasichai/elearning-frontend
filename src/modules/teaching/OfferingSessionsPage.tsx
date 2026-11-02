@@ -7,22 +7,27 @@ import { Link, useParams } from 'react-router'
 import { formatInstantRange, timeZoneLabel, zonedDateTime } from '../../shared/format'
 import { isHttpsUrl, type Session } from '../../shared/sessions'
 import { useCancelSession, useOfferings, useOfferingSessions, useRescheduleSession } from './api'
-import { OfferingFrame, QueryProblem, useActionError } from './parts'
+import { OfferingSection } from './OfferingSection'
+import { QueryProblem, useActionError } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { SessionForm } from './SessionForm'
 
 // las sesiones de una edición: crear una o una serie, reprogramar y cancelar con motivo, y pasar asistencia
 export function OfferingSessionsPage() {
-  const { t, i18n } = useTranslation('teaching')
-  const links = useWasichaiLinks()
   const { code = '' } = useParams()
+  // al cambiar de edición con el selector, un formulario abierto no se hereda
+  return <OfferingSessions key={code} code={code} />
+}
+
+function OfferingSessions({ code }: { code: string }) {
+  const { t, i18n } = useTranslation('teaching')
   const query = useOfferingSessions(code)
   const timeZone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<number>()
   const sessions = query.data ? [...query.data].sort((a, b) => Date.parse(a.start) - Date.parse(b.start)) : undefined
   return (
-    <OfferingFrame code={code} subtitle={t('sessions.title')} back={links.to(TEACHING_ROUTES.roster, { code })} backLabel={t('queue.back')}>
+    <OfferingSection code={code} section="sessions" heading={t('sessions.title')}>
       {query.isError ? (
         <QueryProblem error={query.error} resource="sessions" onRetry={() => void query.refetch()} />
       ) : !sessions ? (
@@ -68,7 +73,7 @@ export function OfferingSessionsPage() {
           )}
         </div>
       )}
-    </OfferingFrame>
+    </OfferingSection>
   )
 }
 

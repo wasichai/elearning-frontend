@@ -1,15 +1,13 @@
-import { ApiError, PageHeader, useWasichaiLinks } from '@wasichai/core'
+import { ApiError, PageHeader } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CircleAlert } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { formatCivilRange, timeZoneLabel } from '../../shared/format'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
-import { TEACHING_ROUTES } from './routes'
 
 // piezas que comparten las páginas del espacio docente
 
@@ -27,21 +25,6 @@ export function useProblemText(error: unknown, resource: TeachingResource) {
   }
 }
 
-// las fechas de la edición son fechas civiles de su zona: se escriben en esa zona y se dice cuál es
-export function OfferingDates({ offering }: { offering: Pick<TeachingOffering, 'startDate' | 'endDate' | 'timeZone' | 'status'> }) {
-  const { t, i18n } = useTranslation('teaching')
-  const locale = i18n.language
-  return (
-    <p className="flex flex-wrap gap-x-2 text-sm text-ink-muted">
-      <span>
-        <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
-        <span> · {t(`offering.status.${offering.status}`)}</span>
-      </span>
-      <span className="text-xs leading-5">{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span>
-    </p>
-  )
-}
-
 const OFFERING_STATE: Record<TeachingOffering['status'], StatusState> = {
   PROGRAMADA: 'todo',
   INSCRIPCION_ABIERTA: 'todo',
@@ -55,13 +38,19 @@ export function OfferingStatusBadge({ status }: { status: TeachingOffering['stat
   return <StatusBadge state={OFFERING_STATE[status]}>{t(`offering.status.${status}`)}</StatusBadge>
 }
 
-export function BackToOfferings() {
-  const { t } = useTranslation('teaching')
-  const links = useWasichaiLinks()
+// un correo largo no se parte por cualquier letra: tras la arroba y antes de cada punto. <wbr> no cambia su texto, ni lo que se
+// lee ni lo que se copia. overflow-wrap: anywhere, por si un trozo aún no cabe
+export function EmailText({ email }: { email: string }) {
+  const pieces = email.split(/(?<=@)|(?=\.)/)
   return (
-    <Link to={links.to(TEACHING_ROUTES.offerings)} className="text-sm text-link underline-offset-4 hover:underline">
-      {t('offerings.back')}
-    </Link>
+    <span className="[overflow-wrap:anywhere]">
+      {pieces.map((piece, index) => (
+        <Fragment key={`${piece}-${index}`}>
+          {index > 0 ? <wbr /> : null}
+          {piece}
+        </Fragment>
+      ))}
+    </span>
   )
 }
 

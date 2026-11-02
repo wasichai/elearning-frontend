@@ -8,7 +8,7 @@ import { formatDateTime, formatNumber } from '../../shared/format'
 import { Section, Skeleton } from '../../shared/Screen'
 import type { PendingAttempt, TeachingOffering } from './contract'
 import { groupsByOldest, MAX_PANEL_OFFERINGS, MAX_TRAY_ROWS, oldestFirst, submittedAge } from './panel'
-import { BlockProblem, useProblemText } from './parts'
+import { BlockProblem, EmailText, useProblemText } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 interface TrayGroup {
@@ -108,7 +108,7 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
     <div className="flex items-center gap-3 py-2.5 sm:gap-6">
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 @xl:flex-row @xl:items-center @xl:gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
-          <span className="font-medium break-all text-ink">{student}</span>
+          <span className="font-medium text-ink">{attempt.email ? <EmailText email={attempt.email} /> : student}</span>
           <span className="break-words text-ink">{attempt.lessonTitle}</span>
         </div>
         <time

@@ -89,6 +89,33 @@ const reloaded = (prepare: (page: Page) => Promise<unknown>) => async (page: Pag
   await page.waitForLoadState('networkidle')
 }
 
+// una clase de verdad: correos largos, evaluaciones, sin correo, quien va atrás y quien ya acabó
+const CLASS = Array.from({ length: 9 }, (_, index) => {
+  const percent = [0, 12, 25, 50, 62, 75, 88, 100, 100][index]!
+  return {
+    enrollmentId: `m-${index}`,
+    email: index === 4 ? null : `estudiante.${index + 1}@municipalidad.provincial.demo.local`,
+    status: index === 8 ? 'FINALIZADA' : 'ACTIVA',
+    progress: { completedLessons: Math.round((percent * 8) / 100), totalLessons: 8, percent },
+    attendance: { attended: Math.min(index, 6), total: 6 },
+    assessments: [
+      {
+        lessonId: 'parcial',
+        title: 'Evaluación parcial',
+        bestPercent: index > 5 ? 90 - index : index > 3 ? 45 : null,
+        passed: index > 5 ? true : index > 3 ? false : null,
+        pending: false
+      },
+      { lessonId: 'final', title: 'Evaluación final', bestPercent: null, passed: null, pending: index === 2 || index === 6 }
+    ]
+  }
+})
+
+const rosterOf = async (page: Page) => {
+  await page.route(OFFERINGS, (route) => route.fulfill({ json: BUSY }))
+  await page.route(`${OFFERINGS}/${offering.code}/students`, (route) => route.fulfill({ json: CLASS }))
+}
+
 export const teachingScenarios: Scenario[] = [
   { name: 'teacher-offerings', path: '/docencia', api: teacher },
   { name: 'teacher-offerings-busy', path: '/docencia', api: teacher, act: reloaded(busy) },
@@ -115,6 +142,43 @@ export const teachingScenarios: Scenario[] = [
     })
   },
   { name: 'teacher-roster', path: OFFERING, api: teacher },
+  { name: 'teacher-roster-busy', path: OFFERING, api: teacher, act: reloaded(rosterOf) },
+  {
+    name: 'teacher-roster-filtered',
+    path: OFFERING,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(rosterOf)(page)
+      await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('estudiante.3')
+    }
+  },
+  {
+    name: 'teacher-roster-no-results',
+    path: OFFERING,
+    api: teacher,
+    act: async (page) => {
+      await reloaded(rosterOf)(page)
+      await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('nadie')
+    }
+  },
+  {
+    name: 'teacher-roster-empty',
+    path: OFFERING,
+    api: teacher,
+    act: reloaded((page) => page.route(`${OFFERINGS}/${offering.code}/students`, (route) => route.fulfill({ json: [] })))
+  },
+  {
+    name: 'teacher-roster-loading',
+    path: OFFERING,
+    api: teacher,
+    act: async (page) => {
+      await page.route(`${OFFERINGS}/${offering.code}/students`, () => undefined)
+      await page.reload()
+      await page.getByRole('status').first().waitFor()
+    }
+  },
+  { name: 'teacher-roster-error', path: OFFERING, api: teacher, act: reloaded((page) => failing(page, `${OFFERINGS}/${offering.code}/students`)) },
+  { name: 'teacher-roster-not-found', path: '/docencia/edicion-de-otro', api: teacher },
   { name: 'teacher-queue', path: `${OFFERING}/correccion`, api: teacher },
   { name: 'teacher-sessions', path: `${OFFERING}/sesiones`, api: teacher }
 ]

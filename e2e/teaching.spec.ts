@@ -21,8 +21,9 @@ test('un docente encuentra «Docencia» en el menú, abre su edición y ve a sus
   const row = table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'estudiante@demo.local' }) })
   await expect(row).toContainText('33 % (1 de 3 lecciones)')
   await expect(row).toContainText('1 de 2 sesiones')
-  await expect(row).toContainText('Evaluación final: pendiente de corrección')
-  await page.getByRole('link', { name: '← Mis ediciones' }).click()
+  await expect(row).toContainText('Evaluación final')
+  await expect(row).toContainText('Pendiente de corrección')
+  await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis ediciones' }).click()
   await expect(page).toHaveURL('/docencia')
   expect(api.teachingRequests).toContain('GET /api/lms/teaching/offerings/edicion-sgspe-2026-09/students')
   expect(api.unexpected).toEqual([])
@@ -30,6 +31,45 @@ test('un docente encuentra «Docencia» en el menú, abre su edición y ve a sus
 
 // los ejemplos fijan sus fechas: la agenda y la antigüedad se miran con el reloj de la prueba
 const NOW = new Date('2026-11-02T15:00:00Z')
+
+test('las secciones y el selector de la edición llevan a su sitio, y la tabla se ordena y se filtra', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto('/docencia/edicion-sgspe-2026-09')
+
+  const sections = page.getByRole('navigation', { name: 'Secciones de la edición' })
+  await expect(sections.getByRole('link', { name: 'Matriculados' })).toHaveAttribute('aria-current', 'page')
+
+  const table = page.getByRole('table', { name: '2 matriculados' })
+  const emails = table.getByRole('rowheader')
+  await expect(emails).toHaveText(['ana.torres@demo.local', 'estudiante@demo.local'])
+  await table.getByRole('button', { name: 'Progreso' }).click()
+  await expect(table.getByRole('columnheader', { name: 'Progreso' })).toHaveAttribute('aria-sort', 'ascending')
+  await expect(emails).toHaveText(['estudiante@demo.local', 'ana.torres@demo.local'])
+
+  await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('ANA')
+  await expect(emails).toHaveText(['ana.torres@demo.local'])
+  await expect(page.getByText('1 de 2 matriculados')).toBeVisible()
+
+  await sections.getByRole('link', { name: 'Sesiones' }).click()
+  await expect(page).toHaveURL('/docencia/edicion-sgspe-2026-09/sesiones')
+  await page.getByRole('combobox', { name: 'Cambiar de edición' }).click()
+  await page.getByRole('option', { name: /Licencias de anuncios con SRTM/ }).click()
+  await expect(page).toHaveURL('/docencia/edicion-srtm-2026-11/sesiones')
+  await expect(page.getByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeVisible()
+})
+
+test('en un móvil cada estudiante es una tarjeta, sin tabla, y su orden se elige con una lista', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto('/docencia/edicion-sgspe-2026-09')
+
+  const cards = page.getByRole('list', { name: '2 matriculados' })
+  await expect(cards).toContainText('33 % (1 de 3 lecciones)')
+  await expect(page.getByRole('table')).toHaveCount(0)
+  await page.getByRole('combobox', { name: 'Ordenar por' }).click()
+  await page.getByRole('option', { name: 'Menor avance primero' }).click()
+  await expect(cards.getByRole('listitem', { name: 'estudiante@demo.local' })).toBeVisible()
+})
 
 test('el panel dice qué hay que hacer: cifras, bandeja con acceso directo y agenda', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'teacher' })
@@ -92,6 +132,6 @@ test('una edición ajena se explica: solo se ven las asignadas', async ({ page }
   await page.goto('/docencia/edicion-de-otro')
 
   await expect(page.getByRole('alert')).toContainText('Esta edición no está entre las tuyas')
-  await page.getByRole('link', { name: '← Mis ediciones' }).click()
+  await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis ediciones' }).click()
   await expect(page).toHaveURL('/docencia')
 })
