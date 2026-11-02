@@ -96,7 +96,8 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
     const invalid = needsReason && reasonProblem(reason) !== null
     setReasonInvalid(invalid)
     if (invalid) {
-      reasonRef.current?.focus()
+      // tras pintar el error: al enfocar se desplaza contando con él, y no queda bajo el total fijo
+      requestAnimationFrame(() => reasonRef.current?.focus())
       return
     }
     save.mutate(
