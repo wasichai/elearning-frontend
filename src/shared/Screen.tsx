@@ -152,5 +152,5 @@ export function StatList({ children, className = '' }: { children: ReactNode; cl
 
 // el hueco de algo que está cargando, con la geometría real. decorativo: el aviso a lectores lo da quien lo usa (role="status")
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div aria-hidden="true" className={`animate-pulse rounded-md bg-surface-muted motion-reduce:animate-none ${className}`} />
+  return <div aria-hidden="true" className={`animate-pulse rounded-md bg-border motion-reduce:animate-none ${className}`} />
 }

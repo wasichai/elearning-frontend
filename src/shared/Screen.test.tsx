@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import { Breadcrumbs, ScreenBody, ScreenHeader, Section, Stat, StatList } from './Screen'
+import { Breadcrumbs, ScreenBody, ScreenHeader, Section, Skeleton, Stat, StatList } from './Screen'
 
 describe('ScreenHeader', () => {
   it('abre la pantalla con su único h1, y la acción y los hechos a la vista', () => {
@@ -68,5 +68,13 @@ describe('Stat', () => {
     )
     expect(screen.getByRole('term')).toHaveTextContent('Matriculados')
     expect(screen.getAllByRole('definition').map((node) => node.textContent)).toEqual(['38', 'en esta edición'])
+  })
+})
+
+describe('Skeleton', () => {
+  it('se pinta con el color del borde: el del fondo de la página no se vería sobre ella', () => {
+    const { container } = render(<Skeleton />)
+    expect(container.firstChild).toHaveClass('bg-border')
+    expect(container.firstChild).toHaveAttribute('aria-hidden', 'true')
   })
 })
