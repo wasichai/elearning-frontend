@@ -1,35 +1,67 @@
-import { LoadingState, PageHeader, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { CordBanner } from '../../shared/CordBanner'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
+import { ScreenBody, ScreenHeader, Section, Skeleton } from '../../shared/Screen'
 import { useEnrollments } from './api'
 import type { Enrollment } from './contract'
-import { OfferingDates, ProgressBar, useProblemText } from './parts'
+import { allLessonsDone, canContinue, groupEnrollments, railEnrollments, type EnrollmentGroups } from './dashboard'
+import { DashboardRail, useRailData } from './DashboardRail'
+import { OfferingDates, ProgressBar, useProblemText, WRAP } from './parts'
 import { summaryKnots } from './Quipu'
 import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 import { StatusBadge } from './StatusBadge'
 
-// «Mis cursos»: cada matrícula activa con su avance y un solo botón, el que lleva a la siguiente lección
+const NO_ENROLLMENTS: Enrollment[] = []
+
+// «Mis cursos», el panel del estudiante: arriba por dónde seguir, debajo el resto de sus cursos y al lado lo que tiene por
+// delante. el panel solo depende de la lista de matrículas: lo del riel falla por su cuenta (DashboardRail)
 export function MyCoursesPage() {
   const { t } = useTranslation('classroom')
   const query = useEnrollments()
-  useRefetchOnRevisit(query.refetch)
+  const groups = useMemo(() => groupEnrollments(query.data ?? NO_ENROLLMENTS), [query.data])
+  const rail = useMemo(() => railEnrollments(groups), [groups])
+  const railData = useRailData(rail.read, rail.capped)
+  useRefetchOnRevisit(() => {
+    void query.refetch()
+    railData.refetch()
+  })
   return (
     <>
-      <PageHeader title={t('enrollments.title')} subtitle={t('enrollments.subtitle')} />
-      <div className="mx-auto max-w-3xl px-4 pb-16 sm:px-8">
+      <ScreenHeader
+        title={t('enrollments.title')}
+        subtitle={<Greeting hasCourses={Boolean(query.data?.length)} sessionsThisWeek={railData.sessionsThisWeek} />}
+      />
+      <ScreenBody>
         {query.isError ? (
           <EnrollmentsProblem error={query.error} onRetry={() => void query.refetch()} />
         ) : query.data ? (
-          <EnrollmentList enrollments={query.data} />
+          query.data.length === 0 ? (
+            <NoEnrollments />
+          ) : (
+            <Dashboard groups={groups} total={query.data.length} railData={railData} railCount={rail.read.length} capped={rail.capped} />
+          )
         ) : (
-          <LoadingState label={t('enrollments.loading')} />
+          <DashboardSkeleton />
         )}
-      </div>
+      </ScreenBody>
     </>
   )
+}
+
+// el saludo con su nombre y, si se sabe con exactitud, lo que tiene en los próximos 7 días
+function Greeting({ hasCourses, sessionsThisWeek }: { hasCourses: boolean; sessionsThisWeek?: number }) {
+  const { t } = useTranslation('classroom')
+  const name = useAuth().user?.displayName
+  const parts = [
+    name ? t('dashboard.greeting', { name }) : null,
+    !hasCourses ? null : sessionsThisWeek ? t('dashboard.week', { count: sessionsThisWeek }) : t('enrollments.subtitle')
+  ]
+  return <>{parts.filter(Boolean).join(' ')}</>
 }
 
 function EnrollmentsProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -44,76 +76,210 @@ function EnrollmentsProblem({ error, onRetry }: { error: unknown; onRetry: () =>
   )
 }
 
-function EnrollmentList({ enrollments }: { enrollments: Enrollment[] }) {
+function NoEnrollments() {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
-  if (enrollments.length === 0)
-    return (
-      <div className="flex max-w-prose flex-col items-start gap-2 py-12">
-        <p className="text-base font-semibold text-ink">{t('enrollments.empty')}</p>
-        <p className="text-sm text-ink-muted">{t('enrollments.emptyHint')}</p>
-        {/* el catálogo es otro módulo: se enlaza por su clave de ruta, sin importarlo, y solo si está registrado */}
-        {links.has(CATALOG_COURSES_ROUTE) ? (
-          <Button asChild variant="secondary" className="mt-2">
-            <Link to={links.to(CATALOG_COURSES_ROUTE)}>{t('enrollments.toCatalog')}</Link>
-          </Button>
-        ) : null}
-      </div>
-    )
   return (
-    <ul className="flex flex-col divide-y divide-border">
-      {enrollments.map((enrollment) => (
-        <li key={enrollment.id}>
-          <EnrollmentItem enrollment={enrollment} />
-        </li>
-      ))}
-    </ul>
+    <EmptyState title={t('enrollments.empty')}>
+      <p>{t('enrollments.emptyHint')}</p>
+      {/* el catálogo es otro módulo: se enlaza por su clave de ruta, sin importarlo, y solo si está registrado */}
+      {links.has(CATALOG_COURSES_ROUTE) ? (
+        <Button asChild className="mt-2 min-h-11">
+          <Link to={links.to(CATALOG_COURSES_ROUTE)}>{t('enrollments.toCatalog')}</Link>
+        </Button>
+      ) : null}
+    </EmptyState>
   )
 }
 
-function EnrollmentItem({ enrollment }: { enrollment: Enrollment }) {
+// la geometría del panel mientras llega, con el aviso para lectores de pantalla. el hueco de Skeleton es del color del fondo
+// de la página: fuera de la tarjeta se pinta en el color del borde para que se vea
+function DashboardSkeleton() {
+  const { t } = useTranslation('classroom')
+  return (
+    <div role="status" className={PANEL}>
+      <span className="sr-only">{t('enrollments.loading')}</span>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-6 w-56 bg-border!" />
+        <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6">
+          <Skeleton className="h-5 w-2/5" />
+          <Skeleton className="h-8 w-4/5" />
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-11 w-full sm:w-32" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-6 w-40 bg-border!" />
+        <Skeleton className="h-4 w-full bg-border!" />
+        <Skeleton className="h-4 w-4/5 bg-border!" />
+      </div>
+    </div>
+  )
+}
+
+// una columna en el móvil (con «Continuar» primero y el riel debajo); cuerpo y riel desde lg
+const PANEL = 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10'
+
+function Dashboard({
+  groups,
+  total,
+  railData,
+  railCount,
+  capped
+}: {
+  groups: EnrollmentGroups
+  total: number
+  railData: ReturnType<typeof useRailData>
+  railCount: number
+  capped: boolean
+}) {
+  const { t } = useTranslation('classroom')
+  const { primary, inProgress, completed, withdrawn } = groups
+  // con un solo curso las cifras no dicen nada que no se vea; y sin cifras ni nada que leer, el riel sobra
+  const figures = total > 1 ? { inProgress: inProgress.length + (primary ? 1 : 0), completed: completed.length } : undefined
+  const hasRail = figures !== undefined || railCount > 0
+  return (
+    <div className={hasRail ? PANEL : 'flex flex-col'}>
+      <div className="flex min-w-0 flex-col gap-10">
+        {primary ? (
+          <Section title={t('dashboard.continue')}>
+            <PrimaryCourse enrollment={primary} />
+          </Section>
+        ) : null}
+        <CourseSection title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')} enrollments={inProgress} />
+        <CourseSection title={t('dashboard.completed')} enrollments={completed} />
+        <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} />
+      </div>
+      {hasRail ? <DashboardRail data={railData} showBlocks={railCount > 0} capped={capped} figures={figures} /> : null}
+    </div>
+  )
+}
+
+const COURSE_LINK = 'inline-flex min-h-11 items-center rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline'
+const ACTION_LINK = 'inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-link underline-offset-4 hover:underline'
+
+function CourseTitle({ enrollment }: { enrollment: Enrollment }) {
+  const links = useWasichaiLinks()
+  const title = enrollment.course.title
+  return (
+    <h3 className="text-base leading-snug font-semibold tracking-tight break-words">
+      {/* una matrícula retirada ya no tiene aula (404): su título no enlaza a ningún sitio */}
+      {enrollment.status === 'RETIRADA' ? (
+        <span className="text-ink">{title}</span>
+      ) : (
+        <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: enrollment.id })} className={COURSE_LINK}>
+          {title}
+        </Link>
+      )}
+    </h3>
+  )
+}
+
+// el bloque que destaca: el único objeto con tarjeta y banda de la pantalla, la lección exacta y la única primaria.
+// la unidad y la lección se dicen por su número: el resumen de la matrícula no trae el título de la unidad
+function PrimaryCourse({ enrollment }: { enrollment: Enrollment }) {
+  const { t } = useTranslation('classroom')
+  const links = useWasichaiLinks()
+  const next = enrollment.nextLesson!
+  return (
+    <article className="overflow-hidden rounded-card border border-border bg-surface">
+      <CordBanner seed={enrollment.course.slug} height={56} />
+      <div className="flex flex-col gap-4 px-5 pt-3 pb-5 sm:px-6 sm:pb-6">
+        <div className="flex flex-col">
+          <CourseTitle enrollment={enrollment} />
+          <OfferingDates offering={enrollment.offering} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm text-ink-muted">{t('classroom.position', { unit: next.unitOrder, lesson: next.lessonOrder })}</p>
+          <p className="font-read text-title-2 text-balance break-words text-ink">{t('enrollments.next', { lesson: next.title })}</p>
+        </div>
+        <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
+        <Button asChild className={`${WRAP} min-h-11 w-full px-6 sm:w-auto sm:self-start`}>
+          <Link
+            to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: enrollment.id }, { [LESSON_PARAM]: next.id })}
+            aria-label={t('enrollments.continueLabel', { course: enrollment.course.title })}
+          >
+            {t('enrollments.continue')}
+          </Link>
+        </Button>
+      </div>
+    </article>
+  )
+}
+
+function CourseSection({ title, enrollments }: { title: string; enrollments: Enrollment[] }) {
+  if (enrollments.length === 0) return null
+  return (
+    <Section title={title}>
+      <ul className="flex flex-col divide-y divide-border border-y border-border">
+        {enrollments.map((enrollment) => (
+          <li key={enrollment.id}>
+            <CourseRow enrollment={enrollment} />
+          </li>
+        ))}
+      </ul>
+    </Section>
+  )
+}
+
+function statusLine(enrollment: Enrollment): 'next' | 'finished' | 'closed' | 'noLessons' | 'withdrawn' {
+  if (enrollment.status === 'RETIRADA') return 'withdrawn'
+  if (canContinue(enrollment)) return 'next'
+  if (allLessonsDone(enrollment)) return 'finished'
+  return enrollment.status === 'FINALIZADA' ? 'closed' : 'noLessons'
+}
+
+// un curso que no es el principal: una fila, sin caja; a la derecha su avance y su acción, un enlace y no un botón.
+// las dos columnas caben hasta lg y de nuevo desde xl: en medio, el riel y el menú del shell ya ocupan su sitio
+function CourseRow({ enrollment }: { enrollment: Enrollment }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const params = { enrollmentId: enrollment.id }
-  const next = enrollment.nextLesson
   const course = enrollment.course.title
+  const line = statusLine(enrollment)
+  const code = enrollment.certificateCode
   return (
-    <article className="flex flex-col gap-3 py-6">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold leading-snug tracking-tight">
-          <Link
-            to={links.to(CLASSROOM_ROUTES.classroom, params)}
-            className="rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >
-            {course}
-          </Link>
-        </h2>
+    <article className="grid grid-cols-1 gap-x-8 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_14rem]">
+      <div className="flex min-w-0 flex-col">
+        <CourseTitle enrollment={enrollment} />
         <OfferingDates offering={enrollment.offering} />
-      </div>
-      {enrollment.certificateCode ? (
-        <p className="flex flex-wrap gap-x-3 text-sm">
-          <StatusBadge state="done">{t('enrollments.certified')}</StatusBadge>
-          <Link to={links.to(CLASSROOM_ROUTES.certificate, { code: enrollment.certificateCode })} className="text-link underline-offset-4 hover:underline">
-            {t('enrollments.certificate', { course })}
-          </Link>
-        </p>
-      ) : null}
-      <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-ink">{next ? t('enrollments.next', { lesson: next.title }) : t('enrollments.finished')}</p>
-        {next ? (
-          <Button asChild className="self-start sm:self-auto">
-            <Link to={links.to(CLASSROOM_ROUTES.classroom, params, { [LESSON_PARAM]: next.id })} aria-label={t('enrollments.continueLabel', { course })}>
-              {t('enrollments.continue')}
-            </Link>
-          </Button>
+        {line === 'withdrawn' ? (
+          <p className="mt-2 flex">
+            <StatusBadge state="neutral">{t('dashboard.withdrawnBadge')}</StatusBadge>
+          </p>
         ) : (
-          <Button asChild variant="secondary" className="self-start sm:self-auto">
-            <Link to={links.to(CLASSROOM_ROUTES.classroom, params)} aria-label={t('enrollments.reviewLabel', { course })}>
-              {t('enrollments.review')}
-            </Link>
-          </Button>
+          <p className="mt-2 text-sm break-words text-ink">
+            {line === 'next'
+              ? t('enrollments.next', { lesson: enrollment.nextLesson!.title })
+              : line === 'finished'
+                ? t('enrollments.finished')
+                : t(line === 'closed' ? 'dashboard.closed' : 'dashboard.noLessons')}
+          </p>
         )}
+        {code ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <StatusBadge state="achievement">{t('enrollments.certified')}</StatusBadge>
+            <Link to={links.to(CLASSROOM_ROUTES.certificate, { code })} className={ACTION_LINK}>
+              {t('enrollments.certificate', { course })}
+            </Link>
+          </div>
+        ) : null}
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
+        <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
+        {line === 'next' ? (
+          <Link
+            to={links.to(CLASSROOM_ROUTES.classroom, params, { [LESSON_PARAM]: enrollment.nextLesson!.id })}
+            aria-label={t('enrollments.continueLabel', { course })}
+            className={ACTION_LINK}
+          >
+            {t('enrollments.continue')}
+          </Link>
+        ) : line === 'finished' || line === 'closed' ? (
+          <Link to={links.to(CLASSROOM_ROUTES.classroom, params)} aria-label={t('enrollments.reviewLabel', { course })} className={ACTION_LINK}>
+            {t('enrollments.review')}
+          </Link>
+        ) : null}
       </div>
     </article>
   )

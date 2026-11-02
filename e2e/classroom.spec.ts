@@ -21,7 +21,10 @@ test('«Mis cursos» está en el menú y lleva a la siguiente lección con «Con
   await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-html')
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
-  expect(api.classroomRequests.slice(0, 2)).toEqual(['GET /api/lms/classroom/enrollments', 'GET /api/lms/classroom/enrollments/mat-srtm-1'])
+  // el riel también lee el aula y las sesiones de cada matrícula: el orden se comprueba entre estas dos peticiones
+  const list = 'GET /api/lms/classroom/enrollments'
+  const opened = 'GET /api/lms/classroom/enrollments/mat-srtm-1'
+  expect(api.classroomRequests.filter((request) => request === list || request === opened).slice(0, 2)).toEqual([list, opened])
   expect(api.unexpected).toEqual([])
 })
 
@@ -99,6 +102,99 @@ test('«Mis cursos» muestra el avance que guardó el servidor', async ({ page }
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
   await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '33')
   await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
+})
+
+// el panel ya leyó el aula: entrar en ella sale de la caché, pero STARTED se envía igual y el avance se ve al volver
+test('entrar desde el panel inicia la lección una sola vez y al volver se ve lo que guardó el servidor', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos')
+  const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
+  await expect(page.getByRole('region', { name: 'Evaluaciones pendientes' }).getByRole('link', { name: /Evaluación final/ })).toBeVisible()
+
+  await card.getByRole('link', { name: `Continuar «${COURSE}»` }).click()
+  const units = page.getByRole('navigation', { name: 'Unidades del curso' })
+  await expect(units.getByRole('link', { name: 'Tipos de anuncio Empezada' })).toBeVisible()
+  const started = 'POST /api/lms/classroom/enrollments/mat-srtm-1/lessons/lec-html/events'
+  expect(api.classroomRequests.filter((request) => request === started)).toEqual([started])
+
+  await page.getByRole('button', { name: 'Marcar como completada' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
+  await page.getByRole('link', { name: '← Mis cursos' }).click()
+  await expect(card.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '33')
+  await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
+
+  // volver a entrar a la lección ya iniciada no la inicia otra vez
+  await card.getByRole('link', { name: COURSE, exact: true }).click()
+  await units.getByRole('link', { name: /^Tipos de anuncio/ }).click()
+  await expect(units.getByRole('link', { name: 'Tipos de anuncio Completada' })).toBeVisible()
+  expect(api.classroomRequests.filter((request) => request === started)).toHaveLength(2)
+  expect(api.unexpected).toEqual([])
+})
+
+test.describe('el panel del estudiante', () => {
+  // las sesiones de los ejemplos tienen fecha fija: se mira el panel antes de la de noviembre
+  const BEFORE_SESSION = new Date('2026-11-13T12:00:00Z')
+
+  test('saluda, destaca una sola primaria y el riel dice lo que viene', async ({ page }) => {
+    await page.clock.setFixedTime(BEFORE_SESSION)
+    const api = await fakeApi(page, { signedIn: true })
+    await page.goto('/mis-cursos')
+
+    await expect(page.getByText('Hola, Rosa Estudiante. Tienes 1 sesión en vivo en los próximos 7 días.')).toBeVisible()
+    // SGSPE lleva 1 de 3 y SRTM sin empezar: gana la que tiene avance
+    const hero = page.getByRole('region', { name: 'Continuar aprendiendo' })
+    await expect(hero.getByRole('heading', { name: 'Introducción al SGSPE' })).toBeVisible()
+    await expect(hero.getByText('Unidad 1 · Lección 2')).toBeVisible()
+    await expect(hero.getByRole('link', { name: 'Continuar «Introducción al SGSPE»' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1?leccion=lec-eva')
+    await expect(page.locator('main [data-slot="button"][data-variant="primary"]')).toHaveCount(1)
+
+    const sessions = page.getByRole('region', { name: 'Próximas sesiones' })
+    await expect(sessions.getByRole('link', { name: /Recuperación de la consulta/ })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1/sesiones')
+    await expect(sessions.getByRole('link', { name: /Consulta de la unidad/ })).toHaveCount(0)
+    await expect(sessions.locator('time')).toContainText('mar')
+    await expect(page.getByRole('region', { name: 'Evaluaciones pendientes' }).getByRole('link', { name: /Evaluación final/ })).toContainText(
+      'Quedan 2 intentos'
+    )
+    expect(api.unexpected).toEqual([])
+  })
+
+  test('si fallan las sesiones solo lo dice su bloque y «Reintentar» lo recupera', async ({ page }) => {
+    await page.clock.setFixedTime(BEFORE_SESSION)
+    const api = await fakeApi(page, { signedIn: true })
+    api.failOnce((url) => url.pathname.endsWith('/mat-sgspe-1/sessions'), 503)
+    await page.goto('/mis-cursos')
+
+    const sessions = page.getByRole('region', { name: 'Próximas sesiones' })
+    await expect(sessions.getByRole('alert')).toContainText('No pudimos cargar tus próximas sesiones.')
+    await expect(page.getByRole('alert')).toHaveCount(1)
+    await expect(page.getByRole('region', { name: 'Continuar aprendiendo' }).getByRole('link', { name: /^Continuar/ })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Evaluaciones pendientes' }).getByRole('link', { name: /Evaluación final/ })).toBeVisible()
+    await expect(page.getByText(/próximos 7 días/)).toHaveCount(0)
+
+    await sessions.getByRole('button', { name: 'Reintentar las sesiones' }).click()
+    await expect(sessions.getByRole('link', { name: /Recuperación de la consulta/ })).toBeVisible()
+    await expect(page.getByRole('alert')).toHaveCount(0)
+  })
+
+  test('sin matrículas ofrece el catálogo', async ({ page }) => {
+    // sin SRTM queda SGSPE, que la simulación siempre tiene: se vacía la lista para ver el estado vacío
+    await fakeApi(page, { signedIn: true })
+    await page.route('**/api/lms/classroom/enrollments', (route) => route.fulfill({ json: [] }))
+    await page.goto('/mis-cursos')
+    await expect(page.getByText('Todavía no estás matriculado en ningún curso')).toBeVisible()
+    await page.getByRole('link', { name: 'Ver el catálogo' }).click()
+    await expect(page).toHaveURL('/cursos')
+  })
+
+  for (const width of [360, 390, 1024, 1440, 1920])
+    test(`no desborda en horizontal a ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await fakeApi(page, { signedIn: true })
+      await page.goto('/mis-cursos')
+      await expect(page.getByRole('region', { name: 'Continuar aprendiendo' })).toBeVisible()
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow).toBeLessThanOrEqual(0)
+    })
 })
 
 test('sin sesión, «Mis cursos» pide iniciar sesión y recuerda adónde iba', async ({ page }) => {

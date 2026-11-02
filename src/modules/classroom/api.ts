@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
 import { retryNetwork } from '../../shared/retry'
 import { sessionListSchema, type Session } from '../../shared/sessions'
@@ -73,13 +73,17 @@ export function useEnrollments() {
   })
 }
 
-export function useClassroom(enrollmentId: string) {
-  const client = useApiClient()
-  return useQuery({
+// las opciones de una consulta, para leer con useQueries lo mismo y en la misma caché que useClassroom y useSessions
+export function classroomQuery(client: ApiClient, enrollmentId: string) {
+  return queryOptions({
     queryKey: classroomKeys.classroom(enrollmentId),
     queryFn: ({ signal }) => fetchClassroom(client, enrollmentId, signal),
     retry: retryNetwork
   })
+}
+
+export function useClassroom(enrollmentId: string) {
+  return useQuery(classroomQuery(useApiClient(), enrollmentId))
 }
 
 // un hecho del aprendizaje (ADR-0012): abrir una lección, terminar su vídeo o marcarla como completada.
@@ -260,9 +264,16 @@ export async function fetchPublicCertificate(client: ApiClient, code: string, si
   return parseContract(certificateSchema, `GET public/certificates/${code}`, body)
 }
 
+export function sessionsQuery(client: ApiClient, enrollmentId: string) {
+  return queryOptions({
+    queryKey: classroomKeys.sessions(enrollmentId),
+    queryFn: ({ signal }) => fetchSessions(client, enrollmentId, signal),
+    retry: retryNetwork
+  })
+}
+
 export function useSessions(enrollmentId: string) {
-  const client = useApiClient()
-  return useQuery({ queryKey: classroomKeys.sessions(enrollmentId), queryFn: ({ signal }) => fetchSessions(client, enrollmentId, signal), retry: retryNetwork })
+  return useQuery(sessionsQuery(useApiClient(), enrollmentId))
 }
 
 export function useCompletion(enrollmentId: string) {
