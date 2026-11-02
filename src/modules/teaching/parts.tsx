@@ -1,10 +1,12 @@
 import { ApiError, PageHeader, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { CircleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatCivilRange, timeZoneLabel } from '../../shared/format'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
+import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
 import { TEACHING_ROUTES } from './routes'
@@ -38,6 +40,19 @@ export function OfferingDates({ offering }: { offering: Pick<TeachingOffering, '
       <span className="text-xs leading-5">{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span>
     </p>
   )
+}
+
+const OFFERING_STATE: Record<TeachingOffering['status'], StatusState> = {
+  PROGRAMADA: 'todo',
+  INSCRIPCION_ABIERTA: 'todo',
+  EN_CURSO: 'active',
+  FINALIZADA: 'done',
+  CANCELADA: 'neutral'
+}
+
+export function OfferingStatusBadge({ status }: { status: TeachingOffering['status'] }) {
+  const { t } = useTranslation('teaching')
+  return <StatusBadge state={OFFERING_STATE[status]}>{t(`offering.status.${status}`)}</StatusBadge>
 }
 
 export function BackToOfferings() {
@@ -98,6 +113,22 @@ export function QueryProblem({ error, resource, onRetry }: { error: unknown; res
         {t('problem.retry')}
       </Button>
     </ProblemState>
+  )
+}
+
+// un bloque de una pantalla que no se pudo leer: lo dice ahí mismo y deja reintentar, sin tirar el resto de la pantalla
+export function BlockProblem({ text, retryLabel, onRetry }: { text: string; retryLabel: string; onRetry: () => void }) {
+  const { t } = useTranslation('teaching')
+  return (
+    <div role="alert" className="flex gap-2 text-sm">
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-danger" />
+      <div className="flex min-w-0 flex-col items-start gap-2">
+        <p className="text-ink">{text}</p>
+        <Button variant="secondary" className="min-h-11" aria-label={retryLabel} onClick={onRetry}>
+          {t('problem.retry')}
+        </Button>
+      </div>
+    </div>
   )
 }
 

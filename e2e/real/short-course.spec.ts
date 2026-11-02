@@ -150,7 +150,13 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     try {
       const { page: desk } = teacher
       await desk.getByRole('link', { name: 'Mis ediciones' }).click()
-      await desk.getByRole('article').filter({ hasText: OFFERING }).getByRole('link', { name: COURSE }).click()
+      // la tarjeta ya no escribe el código crudo de la edición: se reconoce por su destino
+      await desk
+        .getByRole('article')
+        .getByRole('link', { name: COURSE })
+        .and(desk.locator(`[href="/docencia/${OFFERING}"]`))
+        .first()
+        .click()
       await expect(desk).toHaveURL(`/docencia/${OFFERING}`)
 
       const row = desk.getByRole('row').filter({ has: desk.getByRole('rowheader', { name: student.email }) })

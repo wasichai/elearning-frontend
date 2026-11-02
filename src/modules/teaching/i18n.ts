@@ -9,14 +9,49 @@ const es = {
     subtitle: 'Las ediciones de curso que tienes asignadas como docente.',
     loading: 'Cargando tus ediciones…',
     empty: 'No tienes ediciones asignadas',
-    emptyHint: 'Cuando la coordinación te asigne como docente de una edición, aparecerá aquí con sus matriculados.',
-    code: '{{course}} · edición {{offering}}',
+    emptyHint:
+      'Cuando la coordinación te asigne como docente de una edición, aparecerá aquí con sus matriculados, lo que queda por corregir y sus próximas sesiones.',
+    toEnrollments: 'Ir a Mis cursos',
     enrolled_one: '{{value}} matriculado',
     enrolled_other: '{{value}} matriculados',
     pending_one: '{{value}} intento por corregir',
     pending_other: '{{value}} intentos por corregir',
     nothingPending: 'Nada por corregir',
     back: '← Mis ediciones'
+  },
+  panel: {
+    rail: 'Agenda',
+    offerings: 'Tus ediciones',
+    sessions: 'Sesiones',
+    noUpcoming: 'Sin sesiones próximas',
+    upcoming_one: '{{value}} próxima sesión',
+    upcoming_other: '{{value}} próximas sesiones',
+    capped: 'Aquí se leen las {{count}} ediciones con más trabajo. Las demás, desde su tarjeta.',
+    figures: {
+      offerings: 'Ediciones asignadas',
+      pending: 'Intentos por corregir',
+      enrolled: 'Matriculados'
+    },
+    tray: {
+      title: 'Por corregir',
+      order: 'Lo más antiguo arriba.',
+      none: 'No tienes entregas por corregir.',
+      queue: 'Ver la cola',
+      age: 'Enviado {{age}}',
+      more_one: 'Ver {{value}} entrega más en la cola',
+      more_other: 'Ver {{value}} entregas más en la cola',
+      retry: 'Reintentar: cola de {{course}}'
+    },
+    agenda: {
+      title: 'Próximas sesiones',
+      none: 'No tienes sesiones próximas.',
+      failed: 'No pudimos cargar las sesiones de {{courses}}.',
+      retry: 'Reintentar: sesiones',
+      running: 'En curso',
+      toAttendance: 'Pasar asistencia',
+      more_one: 'Y {{count}} sesión más.',
+      more_other: 'Y {{count}} sesiones más.'
+    }
   },
   offering: {
     timeZone: 'Fechas en {{zone}}',
@@ -318,14 +353,49 @@ const en: typeof es = {
     subtitle: 'The course offerings you are assigned to as a teacher.',
     loading: 'Loading your offerings…',
     empty: 'You have no offerings assigned',
-    emptyHint: 'When coordination assigns you as a teacher of an offering, it will appear here with its students.',
-    code: '{{course}} · offering {{offering}}',
+    emptyHint:
+      'When coordination assigns you as a teacher of an offering, it will appear here with its students, what is left to grade and its upcoming sessions.',
+    toEnrollments: 'Go to My courses',
     enrolled_one: '{{value}} student',
     enrolled_other: '{{value}} students',
     pending_one: '{{value}} attempt to grade',
     pending_other: '{{value}} attempts to grade',
     nothingPending: 'Nothing to grade',
     back: '← My offerings'
+  },
+  panel: {
+    rail: 'Schedule',
+    offerings: 'Your offerings',
+    sessions: 'Sessions',
+    noUpcoming: 'No upcoming sessions',
+    upcoming_one: '{{value}} upcoming session',
+    upcoming_other: '{{value}} upcoming sessions',
+    capped: 'This reads the {{count}} offerings with the most work. Open the others from their card.',
+    figures: {
+      offerings: 'Assigned offerings',
+      pending: 'Attempts to grade',
+      enrolled: 'Students'
+    },
+    tray: {
+      title: 'To grade',
+      order: 'Oldest first.',
+      none: 'You have nothing to grade.',
+      queue: 'See the queue',
+      age: 'Submitted {{age}}',
+      more_one: 'See {{value}} more submission in the queue',
+      more_other: 'See {{value}} more submissions in the queue',
+      retry: 'Retry: queue of {{course}}'
+    },
+    agenda: {
+      title: 'Upcoming sessions',
+      none: 'You have no upcoming sessions.',
+      failed: 'We could not load the sessions of {{courses}}.',
+      retry: 'Retry: sessions',
+      running: 'In progress',
+      toAttendance: 'Take attendance',
+      more_one: 'And {{count}} more session.',
+      more_other: 'And {{count}} more sessions.'
+    }
   },
   offering: {
     timeZone: 'Dates in {{zone}}',
