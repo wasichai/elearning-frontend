@@ -21,17 +21,25 @@ const OFFERINGS = '/api/lms/teaching/offerings'
 export interface TeachingOptions {
   // sin ninguna edición asignada
   noOfferings?: boolean
+  // otra entrega en la cola, más nueva que la del ejemplo: para pasar de una a la siguiente
+  secondAttempt?: boolean
 }
 
-export function teachingState({ noOfferings = false }: TeachingOptions = {}) {
+export function teachingState({ noOfferings = false, secondAttempt = false }: TeachingOptions = {}) {
   const offerings = noOfferings ? [] : structuredClone([offering, otherOffering])
   const rosters: Record<string, unknown[]> = noOfferings ? {} : { [offering.code]: structuredClone(roster), [otherOffering.code]: [] }
   const owned = noOfferings ? [] : [offering.code]
+  const SECOND_ID = 'int-2'
+  const queue = [
+    ...pendingAttempts,
+    ...(secondAttempt ? [{ ...pendingAttempts[0]!, attemptId: SECOND_ID, email: 'ana.torres@demo.local', submittedAt: '2026-10-29T15:20:00Z' }] : [])
+  ]
+  const attempts = [...(noOfferings ? [] : [attemptToGrade]), ...(secondAttempt ? [{ ...attemptToGrade, id: SECOND_ID }] : [])]
   return {
     offerings,
     rosters,
-    queues: Object.fromEntries(owned.map((code) => [code, structuredClone(pendingAttempts)])) as Record<string, typeof pendingAttempts>,
-    attempts: new Map<string, Attempt>(noOfferings ? [] : [[attemptToGrade.id, structuredClone(attemptToGrade) as Attempt]]),
+    queues: Object.fromEntries(owned.map((code) => [code, structuredClone(queue)])) as Record<string, typeof pendingAttempts>,
+    attempts: new Map<string, Attempt>(attempts.map((attempt) => [attempt.id, structuredClone(attempt) as Attempt])),
     // el historial de calificaciones, solo inserción como lms.calificacion
     gradeHistory: [] as { questionId: string; points: number; reason: string | null }[],
     sessions: Object.fromEntries(owned.map((code) => [code, structuredClone(teachingSessions)])) as Record<string, Row[]>,

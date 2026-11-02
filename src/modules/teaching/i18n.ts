@@ -62,6 +62,12 @@ const es = {
     queuePending: 'Corrección ({{value}})',
     sessions: 'Sesiones'
   },
+  leave: {
+    title: '¿Salir sin guardar?',
+    description: 'Se perderá lo que has escrito y aún no has guardado.',
+    stay: 'Seguir aquí',
+    confirm: 'Salir sin guardar'
+  },
   offering: {
     timeZone: 'Fechas en {{zone}}',
     status: {
@@ -143,7 +149,9 @@ const es = {
   queue: {
     title: 'Cola de corrección',
     loading: 'Cargando la cola de corrección…',
-    empty: 'No hay intentos por corregir en esta edición.',
+    empty: 'Nada pendiente por corregir',
+    pendingCount_one: '{{value}} pregunta por corregir',
+    pendingCount_other: '{{value}} preguntas por corregir',
     student: 'Estudiante',
     lesson: 'Evaluación',
     submittedAt: 'Enviado',
@@ -153,6 +161,19 @@ const es = {
     gradeLabel: 'Corregir «{{lesson}}» de {{student}}'
   },
   grading: {
+    position: '{{position}} de {{total}}',
+    positionLabel: 'Posición en la cola',
+    previous: 'Anterior',
+    next: 'Siguiente',
+    saveNext: 'Guardar y pasar al siguiente',
+    saveFinish: 'Guardar y terminar',
+    saveFailed: 'No se guardó todo. Lo que escribiste sigue aquí: revisa el aviso de la pregunta y vuelve a intentarlo.',
+    finished: 'Has corregido la última entrega de la cola.',
+    finishedSaved: 'Corrección guardada.',
+    toQueue: 'Volver a la cola',
+    projected: 'Con lo escrito sin guardar: {{score}} de {{max}} puntos',
+    chosen: 'Elegido',
+    rubricHint: 'Cada criterio elegido suma sus puntos a la nota. Solo se guardan la nota y el comentario.',
     title: 'Corregir un intento',
     student: 'Estudiante: {{student}}',
     back: '← Cola de corrección',
@@ -184,7 +205,8 @@ const es = {
     saving: 'Guardando…',
     saved: 'Nota guardada',
     reasonTitle: '¿Cambiar esta nota?',
-    reasonDescription: 'Esta pregunta ya tiene nota. El cambio y su motivo quedan en el historial, que no se borra.',
+    reasonDescription:
+      'Esta pregunta ya tiene nota. El cambio y su motivo quedan en el historial, que no se borra. Lo leen los docentes de esta edición y la administración; el estudiante, no.',
     reasonConfirm: 'Cambiar la nota',
     reasonNeeded: 'Esta nota ya está puesta; para cambiarla hay que indicar un motivo. El servidor dice: «{{detail}}».'
   },
@@ -448,6 +470,12 @@ const en: typeof es = {
     queuePending: 'Grading ({{value}})',
     sessions: 'Sessions'
   },
+  leave: {
+    title: 'Leave without saving?',
+    description: 'What you wrote and have not saved will be lost.',
+    stay: 'Stay here',
+    confirm: 'Leave without saving'
+  },
   offering: {
     timeZone: 'Dates in {{zone}}',
     status: {
@@ -529,7 +557,9 @@ const en: typeof es = {
   queue: {
     title: 'Grading queue',
     loading: 'Loading the grading queue…',
-    empty: 'There are no attempts to grade in this offering.',
+    empty: 'Nothing left to grade',
+    pendingCount_one: '{{value}} question to grade',
+    pendingCount_other: '{{value}} questions to grade',
     student: 'Student',
     lesson: 'Assessment',
     submittedAt: 'Submitted',
@@ -539,6 +569,19 @@ const en: typeof es = {
     gradeLabel: 'Grade “{{lesson}}” by {{student}}'
   },
   grading: {
+    position: '{{position}} of {{total}}',
+    positionLabel: 'Position in the queue',
+    previous: 'Previous',
+    next: 'Next',
+    saveNext: 'Save and go to the next one',
+    saveFinish: 'Save and finish',
+    saveFailed: 'Not everything was saved. What you wrote is still here: check the message on the question and try again.',
+    finished: 'You graded the last submission in the queue.',
+    finishedSaved: 'Grading saved.',
+    toQueue: 'Back to the queue',
+    projected: 'With what you wrote and have not saved: {{score}} of {{max}} points',
+    chosen: 'Chosen',
+    rubricHint: 'Each chosen criterion adds its points to the grade. Only the grade and the comment are saved.',
     title: 'Grade an attempt',
     student: 'Student: {{student}}',
     back: '← Grading queue',
@@ -570,7 +613,8 @@ const en: typeof es = {
     saving: 'Saving…',
     saved: 'Grade saved',
     reasonTitle: 'Change this grade?',
-    reasonDescription: 'This question already has a grade. The change and its reason stay in the history, which is never deleted.',
+    reasonDescription:
+      'This question already has a grade. The change and its reason stay in the history, which is never deleted. It is read by the teachers of this offering and the administration, not by the student.',
     reasonConfirm: 'Change the grade',
     reasonNeeded: 'This grade is already set; changing it requires a reason. The server says: “{{detail}}”.'
   },

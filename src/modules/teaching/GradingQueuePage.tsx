@@ -1,14 +1,17 @@
-import { LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Button, Table, Td, Th } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
-import { WRAP } from '../../shared/buttons'
 import { Link, useParams } from 'react-router'
+import { WRAP } from '../../shared/buttons'
 import { formatDateTime, formatNumber } from '../../shared/format'
 import { useOfferings, useQueue } from './api'
 import type { PendingAttempt } from './contract'
 import { OfferingSection } from './OfferingSection'
+import { oldestFirst, submittedAge } from './panel'
 import { EmailText, QueryProblem } from './parts'
 import { TEACHING_ROUTES } from './routes'
+
+const HEAD = 'text-sm font-medium tracking-normal normal-case'
 
 // la cola de corrección de una edición: lo enviado que espera al docente, lo más antiguo primero
 export function GradingQueuePage() {
@@ -22,58 +25,105 @@ export function GradingQueuePage() {
       ) : !query.data ? (
         <LoadingState label={t('queue.loading')} />
       ) : query.data.length === 0 ? (
-        <p className="py-6 text-sm text-ink-muted">{t('queue.empty')}</p>
+        <EmptyState title={t('queue.empty')} />
       ) : (
-        <QueueTable code={code} attempts={query.data} />
+        <Queue code={code} attempts={query.data} />
       )}
     </OfferingSection>
   )
 }
 
-function QueueTable({ code, attempts }: { code: string; attempts: PendingAttempt[] }) {
+// tabla o filas según el ancho que deja el menú, no el de la ventana. la única primaria es la de lo más antiguo, por donde se empieza
+function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] }) {
   const { t, i18n } = useTranslation('teaching')
-  const links = useWasichaiLinks()
   const locale = i18n.language
-  const zone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
-  const sorted = [...attempts].sort((a, b) => Date.parse(a.submittedAt) - Date.parse(b.submittedAt))
+  const sorted = oldestFirst(attempts)
   return (
-    <div className="overflow-x-auto">
-      <Table aria-label={t('queue.title')}>
-        <thead>
-          <tr>
-            <Th scope="col">{t('queue.student')}</Th>
-            <Th scope="col">{t('queue.lesson')}</Th>
-            <Th scope="col">{t('queue.submittedAt')}</Th>
-            <Th scope="col">{t('queue.pendingQuestions')}</Th>
-            <Th scope="col">{t('queue.action')}</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((attempt) => {
-            const student = attempt.email ?? t('roster.noEmail')
-            return (
+    <div className="@container">
+      <div className="hidden overflow-x-auto @2xl:block">
+        <Table aria-label={t('queue.title')}>
+          <thead>
+            <tr>
+              <Th scope="col" className={`${HEAD} pl-0`}>
+                {t('queue.student')}
+              </Th>
+              <Th scope="col" className={HEAD}>
+                {t('queue.lesson')}
+              </Th>
+              <Th scope="col" className={HEAD}>
+                {t('queue.pendingQuestions')}
+              </Th>
+              <Th scope="col" className={HEAD}>
+                {t('queue.submittedAt')}
+              </Th>
+              <Th scope="col" className={HEAD}>
+                {t('queue.action')}
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((attempt, index) => (
               <tr key={attempt.attemptId}>
-                <Th scope="row" className="bg-transparent text-sm font-normal tracking-normal text-ink normal-case">
-                  {attempt.email ? <EmailText email={attempt.email} /> : student}
+                <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
+                  {attempt.email ? <EmailText email={attempt.email} /> : t('roster.noEmail')}
                 </Th>
                 <Td>{attempt.lessonTitle}</Td>
-                <Td>{formatDateTime(attempt.submittedAt, locale, zone ?? 'UTC')}</Td>
-                <Td>{formatNumber(attempt.pendingQuestions, locale)}</Td>
+                <Td className="tabular-nums">{formatNumber(attempt.pendingQuestions, locale)}</Td>
                 <Td>
-                  <Button className={WRAP} asChild variant="secondary" size="sm">
-                    <Link
-                      to={links.to(TEACHING_ROUTES.attempt, { code, attemptId: attempt.attemptId })}
-                      aria-label={t('queue.gradeLabel', { student, lesson: attempt.lessonTitle })}
-                    >
-                      {t('queue.grade')}
-                    </Link>
-                  </Button>
+                  <Sent code={code} attempt={attempt} />
+                </Td>
+                <Td>
+                  <GradeLink code={code} attempt={attempt} primary={index === 0} />
                 </Td>
               </tr>
-            )
-          })}
-        </tbody>
-      </Table>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+      <ul aria-label={t('queue.title')} className="flex flex-col divide-y divide-border border-y border-border @2xl:hidden">
+        {sorted.map((attempt, index) => (
+          <li key={attempt.attemptId} className="flex items-center gap-3 py-2.5">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
+              <span className="font-medium text-ink">{attempt.email ? <EmailText email={attempt.email} /> : t('roster.noEmail')}</span>
+              <span className="break-words text-ink">{attempt.lessonTitle}</span>
+              <span className="text-ink-muted">
+                {t('queue.pendingCount', { count: attempt.pendingQuestions, value: formatNumber(attempt.pendingQuestions, locale) })}
+              </span>
+              <Sent code={code} attempt={attempt} />
+            </div>
+            <GradeLink code={code} attempt={attempt} primary={index === 0} />
+          </li>
+        ))}
+      </ul>
     </div>
+  )
+}
+
+function Sent({ code, attempt }: { code: string; attempt: PendingAttempt }) {
+  const { t, i18n } = useTranslation('teaching')
+  const locale = i18n.language
+  const zone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
+  return (
+    <span className="flex flex-col text-sm">
+      <span className="text-ink">{t('panel.tray.age', { age: submittedAge(attempt.submittedAt, Date.now(), locale) })}</span>
+      <time dateTime={attempt.submittedAt} className="text-xs text-ink-muted">
+        {formatDateTime(attempt.submittedAt, locale, zone ?? 'UTC')}
+      </time>
+    </span>
+  )
+}
+
+function GradeLink({ code, attempt, primary }: { code: string; attempt: PendingAttempt; primary: boolean }) {
+  const { t } = useTranslation('teaching')
+  const links = useWasichaiLinks()
+  return (
+    <Button className={`${WRAP} shrink-0`} asChild variant={primary ? 'primary' : 'secondary'} size="sm">
+      <Link
+        to={links.to(TEACHING_ROUTES.attempt, { code, attemptId: attempt.attemptId })}
+        aria-label={t('queue.gradeLabel', { student: attempt.email ?? t('roster.noEmail'), lesson: attempt.lessonTitle })}
+      >
+        {t('queue.grade')}
+      </Link>
+    </Button>
   )
 }

@@ -45,8 +45,73 @@ test('recorrido de corrección: cola → intento → bajar la entrega → califi
   await expect(page.getByText('Corregido: 90 %, aprobado (9 de 10 puntos)')).toBeVisible()
 
   await page.getByRole('link', { name: '← Cola de corrección' }).click()
-  await expect(page.getByText('No hay intentos por corregir en esta edición.')).toBeVisible()
+  await expect(page.getByText('Nada pendiente por corregir')).toBeVisible()
   expect(api.unexpected).toEqual([])
+})
+
+test('corregir en lote: la posición, guardar y pasar, y un mensaje claro al terminar la última', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'teacher', secondAttempt: true })
+  await page.goto(`${OFFERING}/correccion`)
+  await page.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' }).click()
+  await expect(page.getByText('1 de 2')).toBeVisible()
+
+  const gradeBoth = async () => {
+    await page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByRole('button', { name: 'Cita la ordenanza (2 pts)' }).click()
+    await page.getByRole('form', { name: 'Calificar 3. Sube la liquidación.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
+  }
+  // la rúbrica suma, y el total a la vista lo adelanta
+  await gradeBoth()
+  await expect(page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByLabel('Puntos (de 0 a 4)')).toHaveValue('2')
+  await expect(page.getByText('Con lo escrito sin guardar: 7 de 10 puntos')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Guardar y pasar al siguiente' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/correccion/int-2`)
+  await expect(page.getByText('Estudiante: ana.torres@demo.local')).toBeVisible()
+  await expect(page.getByRole('form', { name: 'Calificar 3. Sube la liquidación.' }).getByLabel('Puntos (de 0 a 4)')).toHaveValue('')
+
+  await gradeBoth()
+  await page.getByRole('button', { name: 'Guardar y terminar' }).click()
+  await expect(page.getByText('Has corregido la última entrega de la cola.')).toBeVisible()
+  await page.getByRole('link', { name: 'Volver a la cola' }).click()
+  await expect(page.getByText('Nada pendiente por corregir')).toBeVisible()
+  expect(api.unexpected).toEqual([])
+})
+
+test('salir con cambios sin guardar avisa, y seguir no pierde lo escrito', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto(`${OFFERING}/correccion/int-1`)
+  const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
+  await form.getByLabel('Comentario para el estudiante (opcional)').fill('Falta la ordenanza.')
+
+  await page.getByRole('link', { name: '← Cola de corrección' }).click()
+  const dialog = page.getByRole('dialog', { name: '¿Salir sin guardar?' })
+  await dialog.getByRole('button', { name: 'Seguir aquí' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/correccion/int-1`)
+  await expect(form.getByLabel('Comentario para el estudiante (opcional)')).toHaveValue('Falta la ordenanza.')
+
+  await page.getByRole('link', { name: '← Cola de corrección' }).click()
+  await dialog.getByRole('button', { name: 'Salir sin guardar' }).click()
+  await expect(page).toHaveURL(`${OFFERING}/correccion`)
+})
+
+test('un fallo al guardar no pierde lo escrito, y se puede reintentar', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto(`${OFFERING}/correccion/int-1`)
+  await page.route('**/api/lms/teaching/attempts/int-1/grades', (route) =>
+    route.fulfill({ status: 500, json: { status: 500, title: 'Error', detail: 'fallo' } })
+  )
+  const open = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
+  await open.getByLabel('Puntos (de 0 a 4)').fill('3')
+  await open.getByLabel('Comentario para el estudiante (opcional)').fill('Falta la ordenanza.')
+  await page.getByRole('form', { name: 'Calificar 3. Sube la liquidación.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
+
+  await page.getByRole('button', { name: 'Guardar y terminar' }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'No se guardó todo' })).toBeVisible()
+  await expect(open.getByLabel('Comentario para el estudiante (opcional)')).toHaveValue('Falta la ordenanza.')
+
+  await page.unroute('**/api/lms/teaching/attempts/int-1/grades')
+  await page.getByRole('button', { name: 'Guardar y terminar' }).click()
+  await expect(page.getByText('Has corregido la última entrega de la cola.')).toBeVisible()
 })
 
 test('crear una serie, reprogramar con motivo y cancelar con confirmación', async ({ page }) => {
