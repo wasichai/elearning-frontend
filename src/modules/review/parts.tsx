@@ -2,8 +2,19 @@ import { ApiError } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
+import type { StatusState } from '../../shared/StatusBadge'
+import type { VersionStatus } from './contract'
 
 // piezas que comparten las páginas de la bandeja del revisor
+
+// el mismo mapa que el estudio (studio/parts.tsx): un módulo no importa a otro. la palabra la pone status.* del módulo
+export const VERSION_BADGE: Record<VersionStatus, StatusState> = {
+  BORRADOR: 'todo',
+  EN_REVISION: 'review',
+  APROBADA: 'active',
+  PUBLICADA: 'done',
+  RETIRADA: 'neutral'
+}
 
 export type ReviewResource = 'inbox' | 'version'
 
@@ -14,13 +25,7 @@ export function QueryProblem({ error, resource, onRetry }: { error: unknown; res
   const kind = problemKind(error)
   const status = error instanceof ApiError ? error.status : undefined
   const title = t(`problem.${resource}.${kind}`)
-  if (kind === 'notFound')
-    return (
-      <div role="alert" className="flex max-w-prose flex-col gap-2 py-6">
-        <p className="text-base font-semibold text-ink">{title}</p>
-        <p className="text-sm text-ink-muted">{t('problem.notFoundHint')}</p>
-      </div>
-    )
+  if (kind === 'notFound') return <ProblemState title={title} description={t('problem.notFoundHint')} />
   const description = t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
   return (
     <ProblemState title={title} description={description}>

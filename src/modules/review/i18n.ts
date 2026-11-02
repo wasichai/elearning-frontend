@@ -17,12 +17,21 @@ const es = {
     openComments_one: '{{value}} comentario abierto',
     openComments_other: '{{value}} comentarios abiertos',
     noOpenComments: 'Sin comentarios abiertos',
-    assigned: 'Asignada a ti'
+    assigned: 'Asignada a ti',
+    review: 'Revisar',
+    reviewLabel: 'Revisar {{code}}, versión {{number}}'
   },
   version: {
     title: 'Revisar una versión',
     subtitle: '{{course}} · versión {{number}}',
-    back: '← Bandeja de revisión',
+    breadcrumbs: 'Ruta',
+    number: 'Versión {{number}}',
+    rail: 'Decisión y estado de la versión',
+    state: 'Estado: {{status}}',
+    path: 'Recorrido de la versión',
+    stepDone: 'hecho',
+    stepPending: 'pendiente',
+    awaitingPublish: 'Falta publicarla: lo hace quien tiene el permiso de publicar.',
     loading: 'Cargando la versión…',
     updated: 'Actualizada el {{date}}',
     closed: 'Esta versión ya no está en revisión: no admite comentarios ni decisiones. Aún puedes marcar comentarios como resueltos.'
@@ -49,14 +58,25 @@ const es = {
     resources_one: '{{value}} recurso',
     resources_other: '{{value}} recursos',
     assessment: 'con evaluación',
-    source: 'origen {{source}}',
+    source: 'Fuente: {{source}}',
+    sourceToggle: 'Fuente técnica',
     empty: 'Esta versión aún no tiene unidades.'
   },
   comments: {
     whole: 'Comentarios generales',
     none: 'Sin comentarios generales.',
     others: 'Otros comentarios',
-    section: 'Sección: {{section}}',
+    othersHint: 'De secciones que ya no están en esta versión.',
+    toggle: 'Comentarios de {{section}}: {{counts}}',
+    openCount_one: '{{value}} abierto',
+    openCount_other: '{{value}} abiertos',
+    resolvedCount_one: '{{value}} resuelto',
+    resolvedCount_other: '{{value}} resueltos',
+    pending: 'Abierto',
+    discardTitle: '¿Descartar el comentario?',
+    discardDescription: 'Lo que escribiste aún no se ha enviado y se perderá.',
+    discard: 'Descartar',
+    keep: 'Seguir escribiendo',
     listLabel: 'Comentarios de {{section}}',
     add: 'Comentar',
     addLabel: 'Comentar {{section}}',
@@ -72,7 +92,20 @@ const es = {
   },
   decide: {
     title: 'Tu decisión',
-    hint: 'Aprobar deja la versión lista para publicar. Pedir cambios la devuelve al autor como borrador; rechazarla la retira. Ambas piden un motivo.',
+    reviewing: 'Revisas la versión {{number}} de {{course}}.',
+    viewing: 'Estás viendo la versión {{number}} de {{course}}.',
+    missing: 'Falta tu decisión',
+    unsent_one: 'Tienes un comentario sin enviar: si decides ahora, se perderá.',
+    unsent_other: 'Tienes {{count}} comentarios sin enviar: si decides ahora, se perderán.',
+    effect: {
+      APROBAR: 'Queda lista para publicar y ya no admite comentarios.',
+      PEDIR_CAMBIOS: 'Vuelve a quien la escribió como borrador. Pide un motivo.',
+      RECHAZAR: 'Queda retirada y no se podrá publicar. Pide un motivo.'
+    },
+    reasonLabel: 'Motivo (lo leerá quien escribió la versión)',
+    reasonRequired: 'Escribe el motivo.',
+    approveOpen_one: 'Queda {{value}} comentario abierto.',
+    approveOpen_other: 'Quedan {{value}} comentarios abiertos.',
     APROBAR: 'Aprobar',
     PEDIR_CAMBIOS: 'Pedir cambios',
     RECHAZAR: 'Rechazar',
@@ -94,6 +127,13 @@ const es = {
     PEDIR_CAMBIOS: 'Cambios pedidos',
     RECHAZAR: 'Rechazada'
   },
+  leave: {
+    title: '¿Salir sin enviar el comentario?',
+    description_one: 'Tienes un comentario sin enviar. Si sales, se perderá.',
+    description_other: 'Tienes {{count}} comentarios sin enviar. Si sales, se perderán.',
+    confirm: 'Salir sin enviar',
+    stay: 'Seguir escribiendo'
+  },
   // las diferencias con la versión anterior (VersionDiffSection)
   diff: diffMessages.es,
   history: {
@@ -102,6 +142,7 @@ const es = {
   },
   publish: {
     title: 'Publicar',
+    missing: 'Falta publicarla',
     hint: 'La versión está aprobada. Al publicarla, el curso la ofrecerá y ya no podrá cambiar.',
     action: 'Publicar la versión',
     confirmTitle: '¿Publicar esta versión?',
@@ -168,12 +209,21 @@ const en: typeof es = {
     openComments_one: '{{value}} open comment',
     openComments_other: '{{value}} open comments',
     noOpenComments: 'No open comments',
-    assigned: 'Assigned to you'
+    assigned: 'Assigned to you',
+    review: 'Review',
+    reviewLabel: 'Review {{code}}, version {{number}}'
   },
   version: {
     title: 'Review a version',
     subtitle: '{{course}} · version {{number}}',
-    back: '← Review inbox',
+    breadcrumbs: 'Breadcrumb',
+    number: 'Version {{number}}',
+    rail: 'Version decision and status',
+    state: 'Status: {{status}}',
+    path: 'Version path',
+    stepDone: 'done',
+    stepPending: 'pending',
+    awaitingPublish: 'It still has to be published, by someone with the publish permission.',
     loading: 'Loading the version…',
     updated: 'Updated {{date}}',
     closed: 'This version is no longer in review: it takes no comments or decisions. You can still mark comments as resolved.'
@@ -200,14 +250,25 @@ const en: typeof es = {
     resources_one: '{{value}} resource',
     resources_other: '{{value}} resources',
     assessment: 'with assessment',
-    source: 'source {{source}}',
+    source: 'Source: {{source}}',
+    sourceToggle: 'Technical source',
     empty: 'This version has no units yet.'
   },
   comments: {
     whole: 'General comments',
     none: 'No general comments.',
     others: 'Other comments',
-    section: 'Section: {{section}}',
+    othersHint: 'From sections that are no longer in this version.',
+    toggle: 'Comments on {{section}}: {{counts}}',
+    openCount_one: '{{value}} open',
+    openCount_other: '{{value}} open',
+    resolvedCount_one: '{{value}} resolved',
+    resolvedCount_other: '{{value}} resolved',
+    pending: 'Open',
+    discardTitle: 'Discard the comment?',
+    discardDescription: 'What you wrote has not been sent and will be lost.',
+    discard: 'Discard',
+    keep: 'Keep writing',
     listLabel: 'Comments on {{section}}',
     add: 'Comment',
     addLabel: 'Comment on {{section}}',
@@ -223,7 +284,20 @@ const en: typeof es = {
   },
   decide: {
     title: 'Your decision',
-    hint: 'Approving leaves the version ready to publish. Requesting changes sends it back to the author as a draft; rejecting withdraws it. Both need a reason.',
+    reviewing: 'You are reviewing version {{number}} of {{course}}.',
+    viewing: 'You are viewing version {{number}} of {{course}}.',
+    missing: 'Your decision is pending',
+    unsent_one: 'You have an unsent comment: if you decide now, it will be lost.',
+    unsent_other: 'You have {{count}} unsent comments: if you decide now, they will be lost.',
+    effect: {
+      APROBAR: 'It becomes ready to publish and takes no more comments.',
+      PEDIR_CAMBIOS: 'It goes back to the author as a draft. Needs a reason.',
+      RECHAZAR: 'It is withdrawn and cannot be published. Needs a reason.'
+    },
+    reasonLabel: 'Reason (the author of the version will read it)',
+    reasonRequired: 'Write the reason.',
+    approveOpen_one: '{{value}} comment is still open.',
+    approveOpen_other: '{{value}} comments are still open.',
     APROBAR: 'Approve',
     PEDIR_CAMBIOS: 'Request changes',
     RECHAZAR: 'Reject',
@@ -245,6 +319,13 @@ const en: typeof es = {
     PEDIR_CAMBIOS: 'Changes requested',
     RECHAZAR: 'Rejected'
   },
+  leave: {
+    title: 'Leave without sending the comment?',
+    description_one: 'You have an unsent comment. If you leave, it will be lost.',
+    description_other: 'You have {{count}} unsent comments. If you leave, they will be lost.',
+    confirm: 'Leave without sending',
+    stay: 'Keep writing'
+  },
   diff: diffMessages.en,
   history: {
     title: 'Decision history',
@@ -252,6 +333,7 @@ const en: typeof es = {
   },
   publish: {
     title: 'Publish',
+    missing: 'Not published yet',
     hint: 'The version is approved. Once published, the course offers it and it can no longer change.',
     action: 'Publish the version',
     confirmTitle: 'Publish this version?',

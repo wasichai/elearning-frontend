@@ -228,7 +228,7 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       await expect(page.getByRole('region', { name: 'Historial de decisiones' })).toContainText(REASON)
 
       // vuelve a la autora: sale de la bandeja
-      await page.getByRole('link', { name: '← Bandeja de revisión' }).click()
+      await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Bandeja de revisión' }).click()
       await expect(page.getByRole('heading', { level: 1, name: 'Bandeja de revisión' })).toBeVisible()
       await expect(page.getByRole('article').filter({ hasText: new RegExp(`${CODE} · versión ${number}(?!\\d)`) })).toHaveCount(0)
     })
