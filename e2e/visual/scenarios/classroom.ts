@@ -63,7 +63,7 @@ const THE_CERTIFICATE = { kind: 'CERTIFICATE_ISSUED', at: '2026-11-05T09:00:00Z'
 // los logros van en el panel: en una ventana estrecha, en la hoja del temario, que se abre para verlos
 async function withAchievements(page: Page, achievements: object[]) {
   await reloadWith(page, () => page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: { ...assessmentClassroom, achievements } })))
-  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: 'Temario' }).click()
+  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: /^(Temario|Syllabus)$/ }).click()
 }
 
 const certified = { ...finishedEnrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }

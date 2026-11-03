@@ -159,7 +159,7 @@ function ReadingTools({ controls }: { controls: ReadingControls }) {
         aria-pressed={controls.mode}
         aria-label={t('reading.mode')}
         onClick={controls.toggleMode}
-        className={`gap-2 px-2.5 ${controls.mode ? 'bg-brand-soft text-brand-strong hover:bg-brand-soft' : ''}`}
+        className={`min-w-11 gap-2 px-2.5 ${controls.mode ? 'bg-brand-soft text-brand-strong hover:bg-brand-soft' : ''}`}
       >
         <BookOpen aria-hidden="true" className="size-5" />
         <span className="hidden sm:inline">{t('reading.mode')}</span>

@@ -4,37 +4,37 @@ import { administrator, student, type Scenario } from '../scenario'
 // los términos de uso en cada estado de la aceptación, y publicarlos
 
 const clickWithdraw = async (page: Page) => {
-  await page.getByRole('button', { name: 'Retirar mi aceptación' }).click()
+  await page.getByRole('button', { name: /^(Retirar mi aceptación|Withdraw my acceptance)$/ }).click()
   await page.getByRole('dialog').waitFor()
 }
 
 const withdrawn = async (page: Page) => {
   await clickWithdraw(page)
-  await page.getByRole('button', { name: 'Retirar y suprimir' }).click()
-  await page.getByText('Tu retirada está en curso').waitFor()
+  await page.getByRole('button', { name: /^(Retirar y suprimir|Withdraw and erase)$/ }).click()
+  await page.getByText(/Tu retirada está en curso|Your withdrawal is in progress/).waitFor()
 }
 
 const acceptWhileErasing = async (page: Page) => {
-  await page.getByRole('button', { name: 'Volver a aceptar' }).click()
-  await page.getByText(/todavía se están suprimiendo/).waitFor()
+  await page.getByRole('button', { name: /^(Volver a aceptar|Accept again)$/ }).click()
+  await page.getByText(/todavía se están suprimiendo|is still being erased/).waitFor()
 }
 
 const invalidPublish = async (page: Page) => {
-  await page.getByRole('textbox', { name: 'Texto de los términos' }).fill('')
-  await page.getByRole('textbox', { name: 'Plazo de conservación, en días' }).fill('0')
-  await page.getByRole('button', { name: 'Publicar versión nueva' }).click()
-  await page.getByText('Escribe el texto de los términos.').waitFor()
+  await page.getByRole('textbox', { name: /^(Texto de los términos|Text of the terms)$/ }).fill('')
+  await page.getByRole('textbox', { name: /^(Plazo de conservación, en días|Retention period, in days)$/ }).fill('0')
+  await page.getByRole('button', { name: /^(Publicar versión nueva|Publish new version)$/ }).click()
+  await page.getByText(/Escribe el texto de los términos\.|Write the text of the terms\./).waitFor()
 }
 
 const confirmPublish = async (page: Page) => {
-  await page.getByRole('button', { name: 'Publicar versión nueva' }).click()
+  await page.getByRole('button', { name: /^(Publicar versión nueva|Publish new version)$/ }).click()
   await page.getByRole('dialog').waitFor()
 }
 
 const published = async (page: Page) => {
   await confirmPublish(page)
-  await page.getByRole('button', { name: 'Publicar', exact: true }).click()
-  await page.getByText('Publicaste la versión 4').waitFor()
+  await page.getByRole('button', { name: /^(Publicar|Publish)$/ }).click()
+  await page.getByText(/Publicaste la versión 4|You published version 4/).waitFor()
 }
 
 // GET /terms falla: la ruta más reciente manda sobre la simulación
