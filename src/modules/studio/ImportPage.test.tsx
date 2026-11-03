@@ -64,9 +64,16 @@ async function choose(user: UserEvent, label: string, option: string) {
   await user.click(await screen.findByRole('option', { name: option }))
 }
 
+// pegado, no tecleado: 60 pulsaciones repintan el formulario 60 veces, y en una máquina muy cargada se comían los 15 s de la prueba (#125).
+// lo que se prueba aquí es lo que el formulario hace con el valor, y un commit se pega
+async function pasteInto(user: UserEvent, field: HTMLElement, text: string) {
+  await user.click(field)
+  await user.paste(text)
+}
+
 async function fillForm(user: UserEvent, { sha = ANY_SHA, path = 'manual/maestro.adoc' } = {}) {
-  await user.type(await screen.findByLabelText('Commit'), sha)
-  await user.type(screen.getByLabelText('Ruta del maestro'), path)
+  await pasteInto(user, await screen.findByLabelText('Commit'), sha)
+  await pasteInto(user, screen.getByLabelText('Ruta del maestro'), path)
   await choose(user, 'Curso', 'Introducción al SGSPE (SGSPE-101)')
 }
 

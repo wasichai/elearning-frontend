@@ -1,9 +1,10 @@
 import { useWasichaiLinks } from '@wasichai/core'
-import { BookOpen, ChevronRight, CirclePlay, ClipboardCheck, FileText, FlaskConical, Presentation, Radio, type LucideIcon } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
+import { lessonIcon } from '../../shared/lessonIcon'
 import { isDone, type Classroom, type Lesson, type Unit } from './contract'
 import { CourseFigures } from './CourseFrame'
 import { OfferingDates, ProgressBar, useOpenLabel } from './parts'
@@ -94,23 +95,13 @@ function UnitEntry({
   )
 }
 
-// el tipo de lección es un vocabulario abierto: lo que no se conoce lleva el icono de un documento
-const LESSON_ICONS: Record<string, LucideIcon> = {
-  LECTURA: BookOpen,
-  VIDEO: CirclePlay,
-  PRESENTACION: Presentation,
-  LABORATORIO: FlaskConical,
-  EVALUACION: ClipboardCheck,
-  SESION: Radio
-}
-
 function LessonLink({ enrollmentId, lesson, current, onNavigate }: { enrollmentId: string; lesson: Lesson; current: boolean; onNavigate?: () => void }) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const lessonType = useOpenLabel('lessonType')
   const metaId = useId()
   const status = lesson.progress.status
-  const Icon = LESSON_ICONS[lesson.type] ?? FileText
+  const Icon = lessonIcon(lesson.type)
   const minutes = lesson.durationMinutes === null ? null : t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })
   const statusTone = current ? 'text-ink' : isDone(status) ? 'text-success' : status === 'INICIADA' ? 'text-brand-strong' : 'text-ink-muted'
   return (

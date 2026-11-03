@@ -320,7 +320,7 @@ test.describe('en un teléfono', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeVisible()
     await expect(units).toBeHidden()
 
-    // el menú lateral del shell de @wasichai/core no se pliega en el móvil (es de core); lo del aula cabe en el resto
+    // lo del aula cabe en el área que deja el shell
     const wider = await page.locator('main').evaluate((main) => {
       const right = main.getBoundingClientRect().right
       return [...main.querySelectorAll('*')]
@@ -331,13 +331,13 @@ test.describe('en un teléfono', () => {
   })
 })
 
-test('las pestañas del curso cambian de sección por URL, y volver a Temario no cambia la lección abierta', async ({ page }) => {
+test('las pestañas del curso cambian de sección por URL, y volver a Lecciones no cambia la lección abierta', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-video')
   const tabs = page.getByRole('navigation', { name: 'Secciones del curso' })
-  await expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('aria-current', 'page')
+  await expect(tabs.getByRole('link', { name: 'Lecciones' })).toHaveAttribute('aria-current', 'page')
 
-  await tabs.getByRole('link', { name: 'Temario' }).click()
+  await tabs.getByRole('link', { name: 'Lecciones' }).click()
   await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-video')
   await expect(page.getByRole('heading', { level: 2, name: 'Recorrido por la pantalla' })).toBeVisible()
 

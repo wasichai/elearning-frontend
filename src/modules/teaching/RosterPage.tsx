@@ -208,14 +208,10 @@ function Students({ entries }: { entries: RosterEntry[] }) {
               <thead>
                 <tr>
                   <SortableHead column="email" sort={sort} onToggle={toggle} label={t('roster.student')} />
-                  <Th scope="col" className={HEAD}>
-                    {t('roster.status')}
-                  </Th>
+                  <Th scope="col">{t('roster.status')}</Th>
                   <SortableHead column="progress" sort={sort} onToggle={toggle} label={t('roster.progress')} />
                   <SortableHead column="attendance" sort={sort} onToggle={toggle} label={t('roster.attendance')} />
-                  <Th scope="col" className={HEAD}>
-                    {t('roster.assessments')}
-                  </Th>
+                  <Th scope="col">{t('roster.assessments')}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -252,8 +248,6 @@ function Students({ entries }: { entries: RosterEntry[] }) {
   )
 }
 
-const HEAD = 'text-sm font-medium tracking-normal normal-case'
-
 function SortableHead({ column, sort, onToggle, label }: { column: SortKey; sort: RosterSort; onToggle: (key: SortKey) => void; label: string }) {
   const active = sort.key === column
   const Icon = !active ? ArrowUpDown : sort.direction === 'asc' ? ArrowUp : ArrowDown
@@ -261,7 +255,7 @@ function SortableHead({ column, sort, onToggle, label }: { column: SortKey; sort
     <Th
       scope="col"
       aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}
-      className={`${HEAD} py-0 ${column === 'email' ? 'pl-0' : ''}`}
+      className={`py-0 ${column === 'email' ? 'pl-0' : ''}`}
     >
       <button
         type="button"

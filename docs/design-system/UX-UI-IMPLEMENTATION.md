@@ -58,6 +58,12 @@ temas ni radios, solo decide cómo se componen. Problemas de partida: [UX-UI-AUD
 | `StatusBadge`                             | Estados con icono y palabra: `todo`, `active`, `done`, `review`, `overdue`, `warning`, `achievement`, `neutral` |
 | `CordBanner`                              | La banda de cordones de un curso, generada de su slug                                  |
 | `QuipuMark`                               | La marca                                                                               |
+| `SectionTabs`                             | Secciones de un recurso por URL, en `children` de `ScreenHeader`                        |
+| `Notice`                                  | Avisos con icono y fondo                                                               |
+| `VersionDiffSection`, `VersionStatusLine`, `VERSION_BADGE` | Qué cambió una versión y dónde está, en el estudio y en la bandeja del revisor |
+| `useLeaveGuard`                           | Avisar antes de salir de un trabajo a medias, también por el menú del shell; el diálogo lo pone el módulo |
+| `ReturnFocus`, `useFocusOnClose`          | Devolver el foco al cerrar un diálogo sin trigger o un formulario en línea              |
+| `lessonIcon`, `upcomingSessions`, `formatSessionStart` | El icono por tipo de lección, las próximas sesiones y su comienzo en una agenda |
 | `ProblemState`                            | Error con icono, qué hacer y su acción                                                 |
 | `PublicLayout`                            | Marco público, con la entrada a la cuenta                                              |
 
@@ -92,7 +98,17 @@ temario de 48 px.
 
 ## Cambios por módulo
 
-Lo hecho en cada módulo, en su issue y su PR de la épica #126. Lo que la prioridad 1 dejó fijado para las demás:
+Lo hecho en cada módulo, en su issue y su PR de la épica #126:
+
+- **Compartido** (#107, #108): `ScreenHeader`, `ScreenBody`, `Section`, `Stat`, `Skeleton`, `StatusBadge` con forma común, `CordBanner`, `ProblemState`, escala tipográfica, iconos en el menú y `e2e/visual`.
+- **`classroom`** (#109–#113): panel con «Continuar aprendiendo» y riel de sesiones y evaluaciones; temario con resumen del curso, en hoja en el móvil; lección con barra mínima y lectura a altura de ventana; evaluación con ficha previa, índice de nudos y barra fija; resultado con anillo y desglose; finalización y certificado.
+- **`teaching`** (#114–#117): panel con cifras, bandeja «Por corregir» y agenda; marco de edición con selector y pestañas; matriculados con búsqueda, filtros, orden y tarjetas bajo `md`; corrección a dos paneles con rúbrica, total fijo y «Guardar y pasar al siguiente»; sesiones por fecha y asistencia con control segmentado y marcado en lote.
+- **`studio`** (#118–#120): versiones agrupadas por curso; detalle con línea de estados en el riel, comentarios junto a su sección y comparación con leyenda; importación por pasos con informe por gravedad.
+- **`review`** (#121): bandeja por antigüedad con comentarios abiertos a la vista; panel de decisión fijo en escritorio y antes del contenido en el móvil; comentarios desplegables por sección.
+- **`catalog`** (#122–#124): cuadrícula de `CourseCard` con filtros progresivos y «Más filtros» en hoja; ficha con ediciones fijas en escritorio y acción al pie en el móvil; matrícula con el 409 leído en la barra.
+- **Cierre** (#125): las piezas repetidas pasan a `src/shared` (arriba). La pestaña del aula se llama «Lecciones» y «Temario» queda para el índice. Los encabezados de tabla sin mayúsculas, por `[data-slot='table-head']` en `quipu-controls.css`. Foco devuelto al cerrar diálogos y formularios en línea. Prueba de desbordamiento a 360 px y de los flujos con teclado en `yarn e2e`.
+
+Lo que la prioridad 1 dejó fijado para las demás:
 
 - **Una sola hoja.** La cabecera de la lección y su contenido comparten fondo. No se apilan bandas de color distinto.
 - **Cabecera de recurso.** `ScreenHeader` con `Breadcrumbs` y `SectionTabs` en `children`. Las secciones van por URL, nunca como enlaces sueltos.
@@ -101,4 +117,5 @@ Lo hecho en cada módulo, en su issue y su PR de la épica #126. Lo que la prior
 - **Una cifra no dice lo que no sabe.** Un intento usado va en neutro, no en musgo, porque no se sabe si aprobó. Se comprueba qué promete cada texto: «se guarda sola» o «te avisaremos» no se escriben si el sistema no lo hace.
 - **Avisos con `Notice`.** `Alert` a solas es texto en su tono; `Notice` añade icono y fondo.
 - **Saltos de título.** Un `h2` de sección baja los títulos de objeto a `h3`.
+- **El foco no se pierde.** Un diálogo sin `DialogTrigger` va dentro de `ReturnFocus`; un formulario que sustituye a su botón pone el foco en su primer campo y lo devuelve con `useFocusOnClose`.
 - **`main` desplaza, no la ventana.** `fullPage` no captura más que la ventana: para ver una pantalla entera, captura con una ventana alta.

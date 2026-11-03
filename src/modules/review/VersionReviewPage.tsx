@@ -1,6 +1,6 @@
 import { LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button, ConfirmDialog, Dialog, DialogContent, DialogDescription, DialogTitle, Label, Textarea } from '@wasichai/ui'
-import { ChevronDown, ChevronRight, Circle, CircleAlert, CircleCheck, CircleDot } from 'lucide-react'
+import { ChevronDown, ChevronRight, CircleAlert } from 'lucide-react'
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
@@ -9,13 +9,15 @@ import { formatInstant, formatNumber } from '../../shared/format'
 import { Notice } from '../../shared/Notice'
 import { Breadcrumbs, ScreenBody, ScreenHeader, Section } from '../../shared/Screen'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
+import { useLeaveGuard } from '../../shared/useLeaveGuard'
 import { VersionDiffSection } from '../../shared/VersionDiff'
+import { VERSION_BADGE, VersionStatusLine } from '../../shared/VersionStatusLine'
+import { ReturnFocus, useFocusOnClose } from '../../shared/ReturnFocus'
 import { useComment, useDecision, usePublish, useResolveComment, useVersion, useVersionDiff } from './api'
-import type { Decision, ReviewComment, ReviewDecision, StudioLesson, StudioVersion, StudioVersionDetail, VersionStatus } from './contract'
-import { QueryProblem, useActionError, VERSION_BADGE } from './parts'
+import type { Decision, ReviewComment, ReviewDecision, StudioLesson, StudioVersion, StudioVersionDetail } from './contract'
+import { QueryProblem, useActionError } from './parts'
 import { canPublish } from './permissions'
 import { REVIEW_MODULE_ID, REVIEW_ROUTES } from './routes'
-import { useLeaveGuard } from './useLeaveGuard'
 
 // el máximo de text de un comentario y de reason de una decisión (docs/api/lms.md del backend)
 const MAX_TEXT = 4000
@@ -24,8 +26,6 @@ const WHOLE_VERSION = 'version'
 const unitSection = (unit: number) => `unidad:${unit}`
 const lessonSection = (unit: number, lesson: number) => `unidad:${unit}/leccion:${lesson}`
 
-// el recorrido de una versión, de lo último a lo primero. retirada no está: se llega rechazando o tras publicar, y el contrato no dice cuál
-const PATH: VersionStatus[] = ['PUBLICADA', 'APROBADA', 'EN_REVISION', 'BORRADOR']
 const DECISION_BADGE: Record<Decision, StatusState> = { APROBAR: 'done', PEDIR_CAMBIOS: 'warning', RECHAZAR: 'overdue' }
 const DECISION_ORDER: Decision[] = ['APROBAR', 'PEDIR_CAMBIOS', 'RECHAZAR']
 
@@ -116,7 +116,11 @@ function VersionReview({ version }: { version: StudioVersionDetail }) {
           <NextStep version={version} onDone={setNotice} />
         </div>
         <div className="order-3 flex min-w-0 flex-col gap-8">
-          <StatusLine version={version} />
+          <VersionStatusLine
+            namespace="review"
+            status={version.status}
+            updated={version.updatedAt ? t('version.updated', { date: formatInstant(version.updatedAt, i18n.language) }) : null}
+          />
           <DecisionHistory decisions={version.decisions} />
         </div>
       </aside>
@@ -180,15 +184,17 @@ function VersionReview({ version }: { version: StudioVersionDetail }) {
         ) : null}
       </div>
       {guard.leaving ? (
-        <ConfirmDialog
-          variant="danger"
-          title={t('leave.title')}
-          description={t('leave.description', { count: drafts.size })}
-          confirmLabel={t('leave.confirm')}
-          cancelLabel={t('leave.stay')}
-          onCancel={guard.stay}
-          onConfirm={guard.leave}
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="danger"
+            title={t('leave.title')}
+            description={t('leave.description', { count: drafts.size })}
+            confirmLabel={t('leave.confirm')}
+            cancelLabel={t('leave.stay')}
+            onCancel={guard.stay}
+            onConfirm={guard.leave}
+          />
+        </ReturnFocus>
       ) : null}
     </div>
   )
@@ -277,6 +283,7 @@ function SectionComments({
 }) {
   const { t, i18n } = useTranslation('review')
   const [writing, setWriting] = useState(false)
+  const addComment = useFocusOnClose<HTMLButtonElement>(writing)
   // lo abierto primero; dentro de cada grupo, el orden del servidor
   const mine = comments.filter((comment) => comment.section === section).sort((a, b) => Number(a.resolved) - Number(b.resolved))
   const open = mine.filter((comment) => !comment.resolved).length
@@ -302,12 +309,13 @@ function SectionComments({
             type="button"
             aria-expanded={expanded}
             aria-controls={listId}
-            aria-label={t('comments.toggle', { section: label, counts: new Intl.ListFormat(locale, { type: 'conjunction' }).format(counts) })}
             onClick={() => setExpanded(!expanded)}
             className="-ml-1 inline-flex min-h-11 cursor-pointer flex-wrap items-center gap-1.5 rounded-sm px-1 hover:bg-surface-muted sm:min-h-8"
           >
             <Chevron aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
-            {open > 0 ? <StatusBadge state="warning">{counts[0]}</StatusBadge> : null}
+            {/* el nombre sale del texto, sin aria-label: lo que se ve está en lo que se anuncia (WCAG 2.5.3) */}
+            <span className="sr-only">{t('comments.toggle', { section: label })}</span>{' '}
+            {open > 0 ? <StatusBadge state="warning">{counts[0]}</StatusBadge> : null}{' '}
             {resolved > 0 ? <StatusBadge state="done">{counts[counts.length - 1]}</StatusBadge> : null}
           </button>
         ) : empty && !writing ? (
@@ -316,7 +324,14 @@ function SectionComments({
           <span />
         )}
         {canComment && !writing ? (
-          <Button className={WRAP} variant="secondary" size="sm" aria-label={t('comments.addLabel', { section: label })} onClick={() => setWriting(true)}>
+          <Button
+            ref={addComment}
+            className={WRAP}
+            variant="secondary"
+            size="sm"
+            aria-label={t('comments.addLabel', { section: label })}
+            onClick={() => setWriting(true)}
+          >
             {t('comments.add')}
           </Button>
         ) : null}
@@ -396,6 +411,7 @@ function CommentForm({
         <Label htmlFor={`${id}-text`}>{t('comments.text')}</Label>
         <Textarea
           id={`${id}-text`}
+          autoFocus
           rows={3}
           maxLength={MAX_TEXT}
           value={text}
@@ -423,15 +439,17 @@ function CommentForm({
         </Button>
       </div>
       {discarding ? (
-        <ConfirmDialog
-          variant="danger"
-          title={t('comments.discardTitle')}
-          description={t('comments.discardDescription')}
-          confirmLabel={t('comments.discard')}
-          cancelLabel={t('comments.keep')}
-          onCancel={() => setDiscarding(false)}
-          onConfirm={onClose}
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="danger"
+            title={t('comments.discardTitle')}
+            description={t('comments.discardDescription')}
+            confirmLabel={t('comments.discard')}
+            cancelLabel={t('comments.keep')}
+            onCancel={() => setDiscarding(false)}
+            onConfirm={onClose}
+          />
+        </ReturnFocus>
       ) : null}
     </form>
   )
@@ -484,19 +502,23 @@ function DecisionPanel({ version, onDone }: { version: StudioVersion; onDone: (n
         ))}
       </ul>
       {asking === 'APROBAR' ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('decide.approveTitle')}
-          description={`${t('decide.approveDescription')}${pendingComments}`}
-          confirmLabel={t('decide.APROBAR')}
-          cancelLabel={t('decide.cancel')}
-          busy={decide.isPending}
-          error={error}
-          onCancel={close}
-          onConfirm={() => send('APROBAR', null)}
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="primary"
+            title={t('decide.approveTitle')}
+            description={`${t('decide.approveDescription')}${pendingComments}`}
+            confirmLabel={t('decide.APROBAR')}
+            cancelLabel={t('decide.cancel')}
+            busy={decide.isPending}
+            error={error}
+            onCancel={close}
+            onConfirm={() => send('APROBAR', null)}
+          />
+        </ReturnFocus>
       ) : asking ? (
-        <ReasonDialog decision={asking} busy={decide.isPending} error={error} onCancel={close} onConfirm={(reason) => send(asking, reason)} />
+        <ReturnFocus>
+          <ReasonDialog decision={asking} busy={decide.isPending} error={error} onCancel={close} onConfirm={(reason) => send(asking, reason)} />
+        </ReturnFocus>
       ) : null}
     </section>
   )
@@ -528,45 +550,47 @@ function ReasonDialog({
     if (trimmed !== '') onConfirm(trimmed)
   }
   return (
-    <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
-      <DialogContent className="max-w-md">
-        <DialogTitle className="text-lg font-semibold">{t(`decide.${decision}Title`)}</DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-ink-muted">{t(`decide.${decision}Description`)}</DialogDescription>
-        <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${id}-reason`}>{t('decide.reasonLabel')}</Label>
-            <Textarea
-              id={`${id}-reason`}
-              rows={4}
-              maxLength={MAX_TEXT}
-              value={reason}
-              aria-required="true"
-              aria-invalid={missing ? true : undefined}
-              aria-describedby={missing ? `${id}-missing` : undefined}
-              onChange={(event) => {
-                setReason(event.target.value)
-                setMissing(false)
-              }}
-            />
-          </div>
-          {missing ? (
-            <p id={`${id}-missing`} role="alert" className="flex items-start gap-1.5 text-sm text-danger">
-              <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              <span>{t('decide.reasonRequired')}</span>
-            </p>
-          ) : null}
-          {error ? <Notice tone="danger">{error}</Notice> : null}
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button type="button" variant="secondary" className={WRAP} disabled={busy} onClick={onCancel}>
-              {t('decide.cancel')}
-            </Button>
-            <Button type="submit" variant={decision === 'RECHAZAR' ? 'danger' : 'primary'} className={WRAP} disabled={busy}>
-              {t(`decide.${decision}`)}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <ReturnFocus>
+      <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
+        <DialogContent className="max-w-md">
+          <DialogTitle className="text-lg font-semibold">{t(`decide.${decision}Title`)}</DialogTitle>
+          <DialogDescription className="mt-2 text-sm text-ink-muted">{t(`decide.${decision}Description`)}</DialogDescription>
+          <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`${id}-reason`}>{t('decide.reasonLabel')}</Label>
+              <Textarea
+                id={`${id}-reason`}
+                rows={4}
+                maxLength={MAX_TEXT}
+                value={reason}
+                aria-required="true"
+                aria-invalid={missing ? true : undefined}
+                aria-describedby={missing ? `${id}-missing` : undefined}
+                onChange={(event) => {
+                  setReason(event.target.value)
+                  setMissing(false)
+                }}
+              />
+            </div>
+            {missing ? (
+              <p id={`${id}-missing`} role="alert" className="flex items-start gap-1.5 text-sm text-danger">
+                <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+                <span>{t('decide.reasonRequired')}</span>
+              </p>
+            ) : null}
+            {error ? <Notice tone="danger">{error}</Notice> : null}
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button type="button" variant="secondary" className={WRAP} disabled={busy} onClick={onCancel}>
+                {t('decide.cancel')}
+              </Button>
+              <Button type="submit" variant={decision === 'RECHAZAR' ? 'danger' : 'primary'} className={WRAP} disabled={busy}>
+                {t(`decide.${decision}`)}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </ReturnFocus>
   )
 }
 
@@ -588,74 +612,31 @@ function PublishPanel({ version, onDone }: { version: StudioVersion; onDone: (no
         {t('publish.action')}
       </Button>
       {confirming ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('publish.confirmTitle')}
-          description={t('publish.confirmDescription')}
-          confirmLabel={t('publish.action')}
-          cancelLabel={t('decide.cancel')}
-          busy={publish.isPending}
-          error={publish.error ? describe(publish.error) : null}
-          onCancel={() => {
-            publish.reset()
-            setConfirming(false)
-          }}
-          onConfirm={() =>
-            publish.mutate(undefined, {
-              onSuccess: () => {
-                setConfirming(false)
-                onDone(t('publish.done'))
-              }
-            })
-          }
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="primary"
+            title={t('publish.confirmTitle')}
+            description={t('publish.confirmDescription')}
+            confirmLabel={t('publish.action')}
+            cancelLabel={t('decide.cancel')}
+            busy={publish.isPending}
+            error={publish.error ? describe(publish.error) : null}
+            onCancel={() => {
+              publish.reset()
+              setConfirming(false)
+            }}
+            onConfirm={() =>
+              publish.mutate(undefined, {
+                onSuccess: () => {
+                  setConfirming(false)
+                  onDone(t('publish.done'))
+                }
+              })
+            }
+          />
+        </ReturnFocus>
       ) : null}
     </section>
-  )
-}
-
-// la línea de estados, como en el estudio: dónde está la versión y qué le falta. lo pasado y lo pendiente se derivan de su estado; quién y
-// cuándo, solo donde el contrato lo da (su última actualización y, abajo, las decisiones)
-function StatusLine({ version }: { version: StudioVersionDetail }) {
-  const { t, i18n } = useTranslation('review')
-  const updated = version.updatedAt ? t('version.updated', { date: formatInstant(version.updatedAt, i18n.language) }) : null
-  const current = PATH.indexOf(version.status)
-  return (
-    <Section title={t('version.state', { status: t(`status.${version.status}`) })}>
-      {current === -1 ? (
-        updated ? (
-          <p className="text-sm text-ink-muted">{updated}</p>
-        ) : null
-      ) : (
-        <ol aria-label={t('version.path')} className="flex flex-col">
-          {PATH.map((status, index) => {
-            const isCurrent = index === current
-            const done = index > current
-            const Icon = isCurrent ? CircleDot : done ? CircleCheck : Circle
-            return (
-              <li key={status} aria-current={isCurrent ? 'step' : undefined} className="flex gap-2.5">
-                <span className="flex flex-col items-center">
-                  <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${isCurrent ? 'text-brand-strong' : done ? 'text-success' : 'text-ink-muted'}`} />
-                  {index < PATH.length - 1 ? (
-                    <span aria-hidden="true" className={`w-px grow ${done || isCurrent ? 'bg-border-control' : 'bg-border'}`} />
-                  ) : null}
-                </span>
-                <span className={`flex min-w-0 flex-col pb-3 text-sm ${isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
-                  <span>{t(`status.${status}`)}</span>
-                  {isCurrent ? (
-                    updated ? (
-                      <span className="font-normal text-ink-muted">{updated}</span>
-                    ) : null
-                  ) : (
-                    <span className="sr-only">{t(done ? 'version.stepDone' : 'version.stepPending')}</span>
-                  )}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      )}
-    </Section>
   )
 }
 

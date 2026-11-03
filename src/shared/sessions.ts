@@ -51,3 +51,8 @@ export type Session = z.infer<typeof sessionSchema>
 export function attended(status: AttendanceStatus | null | undefined): boolean {
   return status === 'PRESENTE' || status === 'TARDE'
 }
+
+// sin canceladas y de la más próxima a la más lejana. la que está en curso aún cuenta: todavía se puede entrar o pasar asistencia
+export function upcomingSessions<T extends Pick<Session, 'status' | 'start' | 'end'>>(sessions: T[], now: number): T[] {
+  return sessions.filter((session) => session.status !== 'CANCELADA' && Date.parse(session.end) > now).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
+}

@@ -1,28 +1,13 @@
 import { useAuth, useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Table, Td, Th } from '@wasichai/ui'
-import {
-  BookOpen,
-  Check,
-  ChevronRight,
-  CirclePlay,
-  ClipboardCheck,
-  Clock,
-  FileText,
-  FlaskConical,
-  GraduationCap,
-  Languages,
-  MonitorPlay,
-  Presentation,
-  Radio,
-  ChartNoAxesColumnIncreasing,
-  type LucideIcon
-} from 'lucide-react'
+import { Check, ChevronRight, Clock, GraduationCap, Languages, MonitorPlay, ChartNoAxesColumnIncreasing, type LucideIcon } from 'lucide-react'
 import { useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from '../../shared/format'
+import { lessonIcon } from '../../shared/lessonIcon'
 import { Notice } from '../../shared/Notice'
 import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody, ScreenHeader, Section, Skeleton, screenContainer } from '../../shared/Screen'
@@ -325,16 +310,6 @@ function Knowledge({ tags, text }: { tags: CourseDetail['prerequisiteKnowledgeTa
   )
 }
 
-// el tipo de lección es un vocabulario abierto: lo que no se conoce lleva el icono de un documento
-const LESSON_ICONS: Record<string, LucideIcon> = {
-  LECTURA: BookOpen,
-  VIDEO: CirclePlay,
-  PRESENTACION: Presentation,
-  LABORATORIO: FlaskConical,
-  EVALUACION: ClipboardCheck,
-  SESION: Radio
-}
-
 // el temario público: para saber qué trae el curso, sin avance ni enlaces. solo la primera unidad se abre por sí sola
 function Syllabus({ course }: { course: CourseDetail }) {
   const { t } = useTranslation('catalog')
@@ -390,7 +365,7 @@ function SyllabusUnit({ unit, open }: { unit: CourseDetail['units'][number]; ope
             {[...unit.lessons]
               .sort((a, b) => a.order - b.order)
               .map((lesson) => {
-                const Icon = LESSON_ICONS[lesson.type] ?? FileText
+                const Icon = lessonIcon(lesson.type)
                 return (
                   <li key={lesson.order} className="flex items-start gap-2 py-1.5 text-sm">
                     <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-ink-muted" />
@@ -536,7 +511,7 @@ function Workload({ course }: { course: CourseDetail }) {
   const n = (value: number) => formatNumber(value, i18n.language)
   const totals = { theory: w.theoryHours, practice: w.practiceHours, supervised: w.supervisedHours, autonomous: w.autonomousHours }
   const weeklyTotal = WORKLOAD_ROWS.reduce((total, key) => total + w.weekly[key], 0)
-  const rowHead = 'bg-transparent text-sm normal-case tracking-normal text-ink'
+  const rowHead = 'bg-transparent text-sm text-ink'
   return (
     <div className="flex flex-col gap-3">
       <Table>

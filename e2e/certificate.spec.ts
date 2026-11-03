@@ -22,7 +22,7 @@ test('las sesiones del curso: horas de Lima con su zona, estado, enlace https y 
   const cancelled = page.getByRole('article', { name: 'Consulta de la unidad' })
   await expect(cancelled).toContainText('Cancelada')
   await expect(cancelled.getByRole('link', { name: /^Entrar/ })).toHaveCount(0)
-  await tabs.getByRole('link', { name: 'Temario' }).click()
+  await tabs.getByRole('link', { name: 'Lecciones' }).click()
   await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1')
   expect(api.unexpected).toEqual([])
 })

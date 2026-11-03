@@ -1,13 +1,15 @@
 import { ApiError } from '@wasichai/core'
 import { Button, ConfirmDialog } from '@wasichai/ui'
 import { CircleAlert } from 'lucide-react'
-import { Fragment, useEffect, useState, type MouseEvent, type MouseEventHandler, type ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
+import { useLeaveGuard } from '../../shared/useLeaveGuard'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
 
@@ -57,20 +59,18 @@ export function EmailText({ email }: { email: string }) {
 }
 
 // el marco de una página de trabajo dentro de una edición: el curso, qué página es y la vuelta a la página de la que cuelga. sin
-// pestañas ni selector: de un trabajo a medias no se sale de un toque. onBack deja avisar antes de salir (useLeaveGuard)
+// pestañas ni selector: de un trabajo a medias no se sale de un toque
 export function OfferingFrame({
   code,
   subtitle,
   back,
   backLabel,
-  onBack,
   children
 }: {
   code: string
   subtitle: string
   back: string
   backLabel: string
-  onBack?: MouseEventHandler
   children: ReactNode
 }) {
   const { t } = useTranslation('teaching')
@@ -82,7 +82,7 @@ export function OfferingFrame({
         title={offering?.course.title ?? t('roster.title')}
         subtitle={subtitle}
         breadcrumbs={
-          <Link to={back} onClick={onBack} className={`${TEXT_LINK} self-start`}>
+          <Link to={back} className={`${TEXT_LINK} self-start`}>
             {backLabel}
           </Link>
         }
@@ -99,53 +99,25 @@ export function OfferingFrame({
 export const STICKY_BAR =
   'sticky bottom-0 z-10 -mx-4 -mb-16 flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 shadow-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'
 
-// avisar antes de salir de un trabajo sin guardar: guard(destino) para los enlaces de la pantalla, y al recargar o cerrar, el aviso del
-// navegador. el menú del shell queda fuera: core usa BrowserRouter, sin useBlocker, y sus enlaces no se pueden interceptar desde aquí
-export type LeaveGuard = ReturnType<typeof useLeaveGuard>
-
-export function useLeaveGuard(dirty: boolean) {
+// avisar antes de salir de un trabajo sin guardar: los enlaces (también los del menú del shell), recargar o cerrar, y request para lo que
+// navega sin un enlace, como el selector de edición
+export function useLeaveDialog(dirty: boolean) {
   const { t } = useTranslation('teaching')
-  const navigate = useNavigate()
-  const [target, setTarget] = useState<string>()
-  useEffect(() => {
-    if (!dirty) return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [dirty])
+  const guard = useLeaveGuard(dirty)
   return {
-    guard: (to: string) => (event: MouseEvent) => {
-      if (!dirty) return
-      event.preventDefault()
-      setTarget(to)
-    },
-    // para enlaces de una pieza compartida, que no dejan poner su onClick: en la fase de captura, se reconoce el destino por su href
-    guardArea: (targets: string[]) => (event: MouseEvent) => {
-      if (!dirty) return
-      const link = (event.target as Element).closest('a')
-      const to = link && targets.find((candidate) => link.pathname.endsWith(candidate))
-      if (!to) return
-      event.preventDefault()
-      setTarget(to)
-    },
-    // para lo que navega sin un enlace, como un selector
-    request: (to: string) => {
-      if (dirty) setTarget(to)
-      else void navigate(to)
-    },
-    dialog: target ? (
-      <ConfirmDialog
-        title={t('leave.title')}
-        description={t('leave.description')}
-        confirmLabel={t('leave.confirm')}
-        cancelLabel={t('leave.stay')}
-        variant="danger"
-        onCancel={() => setTarget(undefined)}
-        onConfirm={() => {
-          setTarget(undefined)
-          void navigate(target)
-        }}
-      />
+    request: guard.request,
+    dialog: guard.leaving ? (
+      <ReturnFocus>
+        <ConfirmDialog
+          title={t('leave.title')}
+          description={t('leave.description')}
+          confirmLabel={t('leave.confirm')}
+          cancelLabel={t('leave.stay')}
+          variant="danger"
+          onCancel={guard.stay}
+          onConfirm={guard.leave}
+        />
+      </ReturnFocus>
     ) : null
   }
 }

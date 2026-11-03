@@ -2,19 +2,8 @@ import { ApiError } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { problemKind, ProblemState } from '../../shared/ProblemState'
-import type { StatusState } from '../../shared/StatusBadge'
-import type { VersionStatus } from './contract'
 
 // piezas que comparten las páginas de la bandeja del revisor
-
-// el mismo mapa que el estudio (studio/parts.tsx): un módulo no importa a otro. la palabra la pone status.* del módulo
-export const VERSION_BADGE: Record<VersionStatus, StatusState> = {
-  BORRADOR: 'todo',
-  EN_REVISION: 'review',
-  APROBADA: 'active',
-  PUBLICADA: 'done',
-  RETIRADA: 'neutral'
-}
 
 export type ReviewResource = 'inbox' | 'version'
 

@@ -16,7 +16,7 @@ const ANY = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(
 const SCOPE = `@scope (${ANY}) to ([data-theme]:not(${ANY}))`
 
 // los hooks públicos que esta hoja puede tocar (README de @wasichai/ui, «Styling hooks»)
-const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert']
+const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert', 'table-head']
 const VARIANTS = ['primary', 'secondary', 'ghost', 'danger']
 const SIZES = ['sm', 'md', 'icon']
 
@@ -181,6 +181,15 @@ describe('quipu-controls.css', () => {
   it('las pestañas miden 44px y la elegida se subraya en brand', () => {
     expect(declared("[data-slot='tabs-trigger']").get('min-height')).toBe('44px')
     expect(declared("[data-slot='tabs-trigger'][aria-selected='true']").get('border-bottom-color')).toBe('var(--brand)')
+  })
+
+  it('los encabezados de tabla van sin mayúsculas sostenidas; los de columna, a 14px/500', () => {
+    const head = declared("[data-slot='table-head']")
+    expect([head.get('text-transform'), head.get('letter-spacing')]).toEqual(['none', 'normal'])
+    // solo los de columna: el peso de un encabezado de fila lo decide quien lo usa
+    expect(head.has('font-weight')).toBe(false)
+    const column = declared("[data-slot='table-head'][scope='col']")
+    expect([column.get('font-size'), column.get('font-weight')]).toEqual(['14px', '500'])
   })
 
   it('las alertas redondean con radius-lg', () => {

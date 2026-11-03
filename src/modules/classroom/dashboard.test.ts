@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { enrollmentListSchema, classroomSchema, type Classroom, type Enrollment } from './contract'
-import { sessionListSchema, type Session } from '../../shared/sessions'
-import { groupEnrollments, pendingAssessments, pickPrimary, railEnrollments, upcomingSessions, MAX_RAIL_COURSES, sessionsWithin } from './dashboard'
+import { sessionListSchema, upcomingSessions, type Session } from '../../shared/sessions'
+import { groupEnrollments, pendingAssessments, pickPrimary, railEnrollments, MAX_RAIL_COURSES, sessionsWithin } from './dashboard'
 import { assessmentClassroom, assessmentSummary, classroom, enrollment, finishedEnrollment, otherEnrollment, sessions } from './test/fixtures'
 
 const parse = (list: unknown[]): Enrollment[] => enrollmentListSchema.parse(list)

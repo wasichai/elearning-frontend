@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { WRAP } from '../../shared/buttons'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useNewVersion } from './api'
 import type { StudioVersion } from './contract'
 import { useActionError } from './parts'
@@ -31,20 +32,22 @@ export function SubmitVersionButton({ version, submit, variant, ariaLabel }: Sub
         {submit.isPending ? t('version.submitting') : t('version.submit')}
       </Button>
       {asking ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('version.submitTitle')}
-          description={t('version.submitDescription', { number: version.number })}
-          confirmLabel={t('version.submitConfirm')}
-          cancelLabel={t('version.cancel')}
-          busy={submit.isPending}
-          error={submit.error ? describe(submit.error) : null}
-          onCancel={() => {
-            submit.reset()
-            setAsking(false)
-          }}
-          onConfirm={() => submit.mutate(undefined, { onSuccess: () => setAsking(false) })}
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="primary"
+            title={t('version.submitTitle')}
+            description={t('version.submitDescription', { number: version.number })}
+            confirmLabel={t('version.submitConfirm')}
+            cancelLabel={t('version.cancel')}
+            busy={submit.isPending}
+            error={submit.error ? describe(submit.error) : null}
+            onCancel={() => {
+              submit.reset()
+              setAsking(false)
+            }}
+            onConfirm={() => submit.mutate(undefined, { onSuccess: () => setAsking(false) })}
+          />
+        </ReturnFocus>
       ) : null}
     </>
   )
@@ -64,27 +67,29 @@ export function NewVersionButton({ source, label, ariaLabel, variant }: { source
         {copy.isPending ? t('version.copying') : label}
       </Button>
       {asking ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('version.copyTitle')}
-          description={t('version.copyDescription', { number: source.number })}
-          confirmLabel={t('version.copyConfirm')}
-          cancelLabel={t('version.cancel')}
-          busy={copy.isPending}
-          error={copy.error ? describe(copy.error) : null}
-          onCancel={() => {
-            copy.reset()
-            setAsking(false)
-          }}
-          onConfirm={() =>
-            copy.mutate(source.id, {
-              onSuccess: (created) => {
-                setAsking(false)
-                void navigate(links.to(STUDIO_ROUTES.version, { id: created.id }))
-              }
-            })
-          }
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="primary"
+            title={t('version.copyTitle')}
+            description={t('version.copyDescription', { number: source.number })}
+            confirmLabel={t('version.copyConfirm')}
+            cancelLabel={t('version.cancel')}
+            busy={copy.isPending}
+            error={copy.error ? describe(copy.error) : null}
+            onCancel={() => {
+              copy.reset()
+              setAsking(false)
+            }}
+            onConfirm={() =>
+              copy.mutate(source.id, {
+                onSuccess: (created) => {
+                  setAsking(false)
+                  void navigate(links.to(STUDIO_ROUTES.version, { id: created.id }))
+                }
+              })
+            }
+          />
+        </ReturnFocus>
       ) : null}
     </>
   )

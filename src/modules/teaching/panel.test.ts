@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import type { Session } from '../../shared/sessions'
+import { upcomingSessions, type Session } from '../../shared/sessions'
 import type { PendingAttempt, TeachingOffering } from './contract'
-import { byWork, groupsByOldest, MAX_PANEL_OFFERINGS, oldestFirst, panelFigures, panelPlan, submittedAge, upcomingSessions } from './panel'
+import { byWork, groupsByOldest, MAX_PANEL_OFFERINGS, oldestFirst, panelFigures, panelPlan, submittedAge } from './panel'
 import { offering, otherOffering, pendingAttempts, teachingSessions } from './test/fixtures'
 
 const NOW = Date.parse('2026-11-02T15:00:00Z')

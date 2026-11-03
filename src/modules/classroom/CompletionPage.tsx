@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { ProblemState } from '../../shared/ProblemState'
 import { StatusBadge } from '../../shared/StatusBadge'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useCompletion, useRequestCertificate } from './api'
 import { HOLDER_NAME_MAX, type Certificate, type Classroom, type CompletionRule } from './contract'
 import { CourseSubpage } from './CourseSubpage'
@@ -222,18 +223,20 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
         </>
       )}
       {confirming ? (
-        <ConfirmDialog
-          variant="primary"
-          title={t('certificate.confirmTitle', { name: confirming })}
-          description={t('certificate.confirmDescription')}
-          confirmLabel={t('certificate.confirmIssue')}
-          cancelLabel={t('certificate.confirmCancel')}
-          onCancel={() => setConfirming(undefined)}
-          onConfirm={() => {
-            setConfirming(undefined)
-            request.mutate(confirming)
-          }}
-        />
+        <ReturnFocus>
+          <ConfirmDialog
+            variant="primary"
+            title={t('certificate.confirmTitle', { name: confirming })}
+            description={t('certificate.confirmDescription')}
+            confirmLabel={t('certificate.confirmIssue')}
+            cancelLabel={t('certificate.confirmCancel')}
+            onCancel={() => setConfirming(undefined)}
+            onConfirm={() => {
+              setConfirming(undefined)
+              request.mutate(confirming)
+            }}
+          />
+        </ReturnFocus>
       ) : null}
     </section>
   )

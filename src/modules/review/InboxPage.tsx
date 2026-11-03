@@ -8,7 +8,8 @@ import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useInbox } from './api'
 import type { StudioVersion } from './contract'
-import { QueryProblem, VERSION_BADGE } from './parts'
+import { VERSION_BADGE } from '../../shared/VersionStatusLine'
+import { QueryProblem } from './parts'
 import { REVIEW_ROUTES } from './routes'
 
 // la bandeja del revisor: las versiones en revisión a cargo de la persona, la que más espera primero (así las ordena el servidor)

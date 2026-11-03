@@ -11,7 +11,8 @@ dist/
 .env.*
 !.env.example
 
-# Playwright
+# Playwright (las capturas de referencia de e2e/visual dependen del sistema: son locales)
+e2e/visual/*-snapshots/
 test-results/
 playwright-report/
 blob-report/

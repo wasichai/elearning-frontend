@@ -25,7 +25,7 @@ export function Lab({ lab }: { lab: LabData }) {
       <CardBody className="flex flex-col gap-5">
         {lab.objective ? (
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{t('lab.objective')}</p>
+            <p className="text-xs font-medium text-ink-muted">{t('lab.objective')}</p>
             <p className="max-w-prose text-base text-ink">{lab.objective}</p>
           </div>
         ) : null}

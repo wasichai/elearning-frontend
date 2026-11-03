@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 // no salir de un toque con algo a medias. el router de @wasichai/core es un BrowserRouter, sin useBlocker: se interceptan los clics en
-// enlaces internos antes de que lleguen al Link, y beforeunload cubre recargar o cerrar. el botón «atrás» del navegador no se puede parar
+// enlaces internos antes de que lleguen al Link, también los del menú del shell, y beforeunload cubre recargar o cerrar. el botón «atrás»
+// del navegador no se puede parar. el diálogo lo pone cada módulo, con sus textos
 export function useLeaveGuard(active: boolean) {
   const navigate = useNavigate()
   const [target, setTarget] = useState<string | null>(null)
@@ -30,6 +31,11 @@ export function useLeaveGuard(active: boolean) {
 
   return {
     leaving: target !== null,
+    // para lo que navega sin un enlace, como un selector
+    request: (to: string) => {
+      if (active) setTarget(to)
+      else void navigate(to)
+    },
     stay: () => setTarget(null),
     leave: () => {
       if (target) void navigate(target)

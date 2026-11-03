@@ -9,9 +9,10 @@ import { formatTime, timeZoneLabel, zonedDateTime } from '../../shared/format'
 import { Section, Skeleton } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { isHttpsUrl, type Session } from '../../shared/sessions'
+import { ReturnFocus, useFocusOnClose } from '../../shared/ReturnFocus'
 import { useCancelSession, useOfferings, useOfferingSessions, useRescheduleSession } from './api'
 import { OfferingSection } from './OfferingSection'
-import { QueryProblem, useActionError, useLeaveGuard, type LeaveGuard } from './parts'
+import { QueryProblem, useActionError, useLeaveDialog } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { SessionForm } from './SessionForm'
 import { groupByDay, splitSessions } from './sessions'
@@ -28,13 +29,14 @@ function OfferingSessions({ code }: { code: string }) {
   const query = useOfferingSessions(code)
   const timeZone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
   const [creating, setCreating] = useState(false)
+  const newSession = useFocusOnClose<HTMLButtonElement>(creating)
   const [created, setCreated] = useState<number>()
   const [formDirty, setFormDirty] = useState(false)
-  const leave = useLeaveGuard(creating && formDirty)
+  const leave = useLeaveDialog(creating && formDirty)
   const sessions = query.data
   const { upcoming, past } = splitSessions(sessions ?? [], Date.now())
   return (
-    <OfferingSection code={code} section="sessions" leave={leave}>
+    <OfferingSection code={code} section="sessions" onSwitch={leave.request}>
       {query.isError ? (
         <QueryProblem error={query.error} resource="sessions" onRetry={() => void query.refetch()} />
       ) : !sessions ? (
@@ -55,6 +57,7 @@ function OfferingSessions({ code }: { code: string }) {
             </div>
             {!creating && timeZone ? (
               <Button
+                ref={newSession}
                 className={`${WRAP} min-h-11 px-5`}
                 onClick={() => {
                   setCreated(undefined)
@@ -79,8 +82,8 @@ function OfferingSessions({ code }: { code: string }) {
             />
           ) : null}
           {sessions.length === 0 ? <EmptyState title={t('sessions.empty')} /> : null}
-          <SessionGroup title={t('sessions.upcoming')} sessions={upcoming} past={false} code={code} all={sessions} leave={leave} />
-          <SessionGroup title={t('sessions.past')} sessions={past} past code={code} all={sessions} leave={leave} />
+          <SessionGroup title={t('sessions.upcoming')} sessions={upcoming} past={false} code={code} all={sessions} />
+          <SessionGroup title={t('sessions.past')} sessions={past} past code={code} all={sessions} />
         </>
       )}
       {leave.dialog}
@@ -88,21 +91,7 @@ function OfferingSessions({ code }: { code: string }) {
   )
 }
 
-function SessionGroup({
-  title,
-  sessions,
-  past,
-  code,
-  all,
-  leave
-}: {
-  title: string
-  sessions: Session[]
-  past: boolean
-  code: string
-  all: Session[]
-  leave: LeaveGuard
-}) {
+function SessionGroup({ title, sessions, past, code, all }: { title: string; sessions: Session[]; past: boolean; code: string; all: Session[] }) {
   const { i18n } = useTranslation('teaching')
   if (sessions.length === 0) return null
   return (
@@ -116,7 +105,7 @@ function SessionGroup({
             <ol className="flex flex-col divide-y divide-border border-y border-border">
               {group.sessions.map((session) => (
                 <li key={session.id} className="@container">
-                  <SessionItem code={code} session={session} sessions={all} past={past} leave={leave} />
+                  <SessionItem code={code} session={session} sessions={all} past={past} />
                 </li>
               ))}
             </ol>
@@ -149,7 +138,7 @@ function SessionState({ session, past }: { session: Session; past: boolean }) {
   return past ? null : <StatusBadge state="todo">{t('sessions.status.PROGRAMADA')}</StatusBadge>
 }
 
-function SessionItem({ code, session, sessions, past, leave }: { code: string; session: Session; sessions: Session[]; past: boolean; leave: LeaveGuard }) {
+function SessionItem({ code, session, sessions, past }: { code: string; session: Session; sessions: Session[]; past: boolean }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
   const locale = i18n.language
@@ -188,7 +177,7 @@ function SessionItem({ code, session, sessions, past, leave }: { code: string; s
       {cancelled ? null : (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button className={WRAP} asChild size="sm" variant="secondary">
-            <Link to={attendance} onClick={leave.guard(attendance)} aria-label={t('sessions.attendanceLabel', { title: session.title })}>
+            <Link to={attendance} aria-label={t('sessions.attendanceLabel', { title: session.title })}>
               {t('sessions.attendance')}
             </Link>
           </Button>
@@ -224,15 +213,17 @@ function CancelDialog({ code, session, onClose }: { code: string; session: Sessi
   const describe = useActionError()
   const cancel = useCancelSession(code, session.id)
   return (
-    <ReasonDialog
-      title={t('cancel.title', { title: session.title })}
-      description={t('cancel.description')}
-      confirmLabel={t('cancel.confirm')}
-      busy={cancel.isPending}
-      error={cancel.error ? describe(cancel.error) : null}
-      onCancel={onClose}
-      onConfirm={(reason) => cancel.mutate(reason, { onSuccess: onClose })}
-    />
+    <ReturnFocus>
+      <ReasonDialog
+        title={t('cancel.title', { title: session.title })}
+        description={t('cancel.description')}
+        confirmLabel={t('cancel.confirm')}
+        busy={cancel.isPending}
+        error={cancel.error ? describe(cancel.error) : null}
+        onCancel={onClose}
+        onConfirm={(reason) => cancel.mutate(reason, { onSuccess: onClose })}
+      />
+    </ReturnFocus>
   )
 }
 
@@ -255,61 +246,63 @@ function RescheduleDialog({ code, session, onClose }: { code: string; session: S
     reschedule.mutate({ date, localTime: time, reason: normalizeReason(reason) ?? '' }, { onSuccess: onClose })
   }
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogTitle className="text-lg font-semibold">{t('reschedule.title', { title: session.title })}</DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-ink-muted">
-          {t('reschedule.description', { zone: timeZoneLabel(session.timeZone, i18n.language) })}
-        </DialogDescription>
-        <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${id}-date`}>{t('reschedule.date')}</Label>
-              <Input
-                id={`${id}-date`}
-                type="date"
-                value={date}
-                aria-invalid={invalid === 'when' && !date ? true : undefined}
-                onChange={(event) => setDate(event.target.value)}
-              />
+    <ReturnFocus>
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-md">
+          <DialogTitle className="text-lg font-semibold">{t('reschedule.title', { title: session.title })}</DialogTitle>
+          <DialogDescription className="mt-2 text-sm text-ink-muted">
+            {t('reschedule.description', { zone: timeZoneLabel(session.timeZone, i18n.language) })}
+          </DialogDescription>
+          <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`${id}-date`}>{t('reschedule.date')}</Label>
+                <Input
+                  id={`${id}-date`}
+                  type="date"
+                  value={date}
+                  aria-invalid={invalid === 'when' && !date ? true : undefined}
+                  onChange={(event) => setDate(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`${id}-time`}>{t('reschedule.time')}</Label>
+                <Input
+                  id={`${id}-time`}
+                  type="time"
+                  value={time}
+                  aria-invalid={invalid === 'when' && !time ? true : undefined}
+                  onChange={(event) => setTime(event.target.value)}
+                />
+              </div>
             </div>
             <div className="flex flex-col gap-1">
-              <Label htmlFor={`${id}-time`}>{t('reschedule.time')}</Label>
-              <Input
-                id={`${id}-time`}
-                type="time"
-                value={time}
-                aria-invalid={invalid === 'when' && !time ? true : undefined}
-                onChange={(event) => setTime(event.target.value)}
+              <Label htmlFor={`${id}-reason`}>{t('reschedule.reason')}</Label>
+              <Textarea
+                id={`${id}-reason`}
+                rows={2}
+                value={reason}
+                aria-invalid={invalid === 'reason' ? true : undefined}
+                onChange={(event) => setReason(event.target.value)}
               />
             </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor={`${id}-reason`}>{t('reschedule.reason')}</Label>
-            <Textarea
-              id={`${id}-reason`}
-              rows={2}
-              value={reason}
-              aria-invalid={invalid === 'reason' ? true : undefined}
-              onChange={(event) => setReason(event.target.value)}
-            />
-          </div>
-          {invalid ? (
-            <p role="alert" className="text-sm text-danger">
-              {invalid === 'when' ? t('reschedule.whenRequired') : t('reason.invalid', { max: CHANGE_REASON_MAX_LENGTH })}
-            </p>
-          ) : null}
-          {reschedule.error ? <Alert tone="danger">{describe(reschedule.error)}</Alert> : null}
-          <div className="mt-2 flex justify-end gap-2">
-            <Button className={WRAP} type="button" variant="secondary" onClick={onClose}>
-              {t('reschedule.dismiss')}
-            </Button>
-            <Button className={WRAP} type="submit" disabled={reschedule.isPending}>
-              {reschedule.isPending ? t('reschedule.saving') : t('reschedule.confirm')}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            {invalid ? (
+              <p role="alert" className="text-sm text-danger">
+                {invalid === 'when' ? t('reschedule.whenRequired') : t('reason.invalid', { max: CHANGE_REASON_MAX_LENGTH })}
+              </p>
+            ) : null}
+            {reschedule.error ? <Alert tone="danger">{describe(reschedule.error)}</Alert> : null}
+            <div className="mt-2 flex justify-end gap-2">
+              <Button className={WRAP} type="button" variant="secondary" onClick={onClose}>
+                {t('reschedule.dismiss')}
+              </Button>
+              <Button className={WRAP} type="submit" disabled={reschedule.isPending}>
+                {reschedule.isPending ? t('reschedule.saving') : t('reschedule.confirm')}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </ReturnFocus>
   )
 }

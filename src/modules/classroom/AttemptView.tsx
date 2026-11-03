@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
 import { formatTime } from '../../shared/format'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useAttempt, useSaveAnswers, useSubmitAttempt, useUploadSubmission, type AnswerInput } from './api'
 import { AttemptResultView } from './AttemptResult'
 import type { Attempt } from './contract'
@@ -403,6 +404,7 @@ function SubmitDialog({
   const listLabel = useId()
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
+      {open ? <ReturnFocus /> : null}
       <DialogContent
         onCloseAutoFocus={(event) => {
           if (going.current) event.preventDefault()

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { formatNumber } from '../../shared/format'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { classroomQuery, useStartAttempt } from './api'
 import { AttemptActionProblem, AttemptView } from './AttemptView'
 import type { AssessmentSummary, Lesson } from './contract'
@@ -61,22 +62,24 @@ function useAttemptStart(enrollmentId: string, lesson: AssessedLesson) {
   const attemptLink = (attemptId: string) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id, [ATTEMPT_PARAM]: attemptId })
   // empezar gasta uno de los intentos y, con límite, pone en marcha un reloj que no se detiene: se confirma (RNF-UX-08)
   const dialog = confirming ? (
-    <ConfirmDialog
-      variant="primary"
-      title={t('assessment.confirmTitle')}
-      description={
-        assessment.timeLimitMinutes === null
-          ? t('assessment.confirmUntimed', numbers)
-          : t('assessment.confirmTimed', { ...numbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
-      }
-      confirmLabel={t('assessment.confirmStart')}
-      cancelLabel={t('assessment.confirmCancel')}
-      onCancel={() => setConfirming(false)}
-      onConfirm={() => {
-        setConfirming(false)
-        start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })
-      }}
-    />
+    <ReturnFocus>
+      <ConfirmDialog
+        variant="primary"
+        title={t('assessment.confirmTitle')}
+        description={
+          assessment.timeLimitMinutes === null
+            ? t('assessment.confirmUntimed', numbers)
+            : t('assessment.confirmTimed', { ...numbers, minutes: formatNumber(assessment.timeLimitMinutes, locale) })
+        }
+        confirmLabel={t('assessment.confirmStart')}
+        cancelLabel={t('assessment.confirmCancel')}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false)
+          start.mutate(lesson.id, { onSuccess: (attempt) => void navigate(attemptLink(attempt.id)) })
+        }}
+      />
+    </ReturnFocus>
   ) : null
   const closedNotice = closed ? t(classroom.status === 'FINALIZADA' ? 'assessment.closedFinished' : 'assessment.closedInactive') : undefined
   return { open, exhausted, closedNotice, canStart, numbers, attemptLink, start, ask: () => setConfirming(true), dialog }

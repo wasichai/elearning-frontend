@@ -74,11 +74,6 @@ export function railEnrollments({ primary, inProgress, completed }: EnrollmentGr
   return { read: active.slice(0, MAX_RAIL_COURSES), capped: active.length > MAX_RAIL_COURSES }
 }
 
-// sin canceladas y de la más próxima a la más lejana. la que está en curso aún cuenta: todavía se puede entrar
-export function upcomingSessions<T extends Pick<Session, 'status' | 'start' | 'end'>>(sessions: T[], now: number): T[] {
-  return sessions.filter((session) => session.status !== 'CANCELADA' && Date.parse(session.end) > now).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
-}
-
 export function sessionsWithin<T extends Pick<Session, 'start'>>(sessions: T[], now: number, days: number): T[] {
   return sessions.filter((session) => Date.parse(session.start) < now + days * DAY_MS)
 }

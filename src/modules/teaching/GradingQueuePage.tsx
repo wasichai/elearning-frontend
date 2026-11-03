@@ -11,8 +11,6 @@ import { oldestFirst, submittedAge } from './panel'
 import { EmailText, QueryProblem } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
-const HEAD = 'text-sm font-medium tracking-normal normal-case'
-
 // la cola de corrección de una edición: lo enviado que espera al docente, lo más antiguo primero
 export function GradingQueuePage() {
   const { t } = useTranslation('teaching')
@@ -44,21 +42,13 @@ function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] })
         <Table aria-label={t('queue.title')}>
           <thead>
             <tr>
-              <Th scope="col" className={`${HEAD} pl-0`}>
+              <Th scope="col" className="pl-0">
                 {t('queue.student')}
               </Th>
-              <Th scope="col" className={HEAD}>
-                {t('queue.lesson')}
-              </Th>
-              <Th scope="col" className={HEAD}>
-                {t('queue.pendingQuestions')}
-              </Th>
-              <Th scope="col" className={HEAD}>
-                {t('queue.submittedAt')}
-              </Th>
-              <Th scope="col" className={HEAD}>
-                {t('queue.action')}
-              </Th>
+              <Th scope="col">{t('queue.lesson')}</Th>
+              <Th scope="col">{t('queue.pendingQuestions')}</Th>
+              <Th scope="col">{t('queue.submittedAt')}</Th>
+              <Th scope="col">{t('queue.action')}</Th>
             </tr>
           </thead>
           <tbody>

@@ -70,7 +70,7 @@ const attemptIn = (page: Page, minutes: number | null) =>
   )
 const answerSome = async (page: Page) => {
   await page.getByRole('radio', { name: 'La municipalidad' }).check()
-  await page.getByRole('button', { name: 'Pregunta 4, en blanco' }).click()
+  await page.getByRole('button', { name: /^(Pregunta 4, en blanco|Question 4, blank)$/ }).click()
   await page.getByRole('textbox', { name: '4. ¿Cuáles son las siglas del sistema de rentas?' }).fill('SRTM')
 }
 // el resultado de un intento, con el resumen de la evaluación que le corresponde
@@ -115,9 +115,12 @@ const longAttempt = {
   }
 }
 const startAttempt = async (page: Page) => {
-  await page.getByRole('button', { name: /^Comenzar intento/ }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Comenzar' }).click()
-  await page.getByRole('heading', { level: 3, name: 'Intento 1' }).waitFor()
+  await page.getByRole('button', { name: /^(Comenzar intento|Start attempt)/ }).click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /^(Comenzar|Start)$/ })
+    .click()
+  await page.getByRole('heading', { level: 3, name: /^(Intento|Attempt) 1$/ }).waitFor()
 }
 
 export const classroomScenarios: Scenario[] = [
@@ -199,7 +202,7 @@ export const classroomScenarios: Scenario[] = [
     act: async (page) => {
       await page.route('**/api/lms/classroom/enrollments/**', () => undefined)
       await page.reload({ waitUntil: 'load' })
-      await page.getByRole('region', { name: 'Continuar aprendiendo' }).waitFor()
+      await page.getByRole('region', { name: /^(Continuar aprendiendo|Continue learning)$/ }).waitFor()
     }
   },
   { name: 'student-course', path: '/mis-cursos/mat-srtm-1', api: student },
@@ -229,7 +232,7 @@ export const classroomScenarios: Scenario[] = [
     path: '/mis-cursos/mat-srtm-1?leccion=lec-html',
     api: student,
     act: async (page) => {
-      await page.getByRole('button', { name: 'Modo lectura' }).click()
+      await page.getByRole('button', { name: /^(Modo lectura|Reading mode)$/ }).click()
       await page.waitForTimeout(200)
     }
   },
@@ -238,7 +241,7 @@ export const classroomScenarios: Scenario[] = [
     path: '/mis-cursos/mat-srtm-1?leccion=lec-html',
     api: student,
     act: async (page) => {
-      const open = page.getByRole('button', { name: 'Temario' })
+      const open = page.getByRole('button', { name: /^(Temario|Syllabus)$/ })
       if (await open.isVisible()) await open.click()
       await page.waitForTimeout(200)
     }
@@ -268,9 +271,9 @@ export const classroomScenarios: Scenario[] = [
     act: async (page) => {
       await startAttempt(page)
       await answerSome(page)
-      await page.getByRole('button', { name: 'Guardar respuestas' }).click()
-      await page.getByText(/^Guardado \d/).waitFor()
-      await page.getByRole('button', { name: 'Pregunta 2, en blanco' }).click()
+      await page.getByRole('button', { name: /^(Guardar respuestas|Save answers)$/ }).click()
+      await page.getByText(/^(Guardado|Saved) \d/).waitFor()
+      await page.getByRole('button', { name: /^(Pregunta 2, en blanco|Question 2, blank)$/ }).click()
       await page.getByRole('checkbox', { name: 'Adosado' }).check()
     }
   },
@@ -281,7 +284,7 @@ export const classroomScenarios: Scenario[] = [
     act: async (page) => {
       await startAttempt(page)
       await answerSome(page)
-      await page.getByRole('button', { name: 'Entregar' }).click()
+      await page.getByRole('button', { name: /^(Entregar|Submit)$/ }).click()
       await page.getByRole('dialog').waitFor()
     }
   },
@@ -291,7 +294,7 @@ export const classroomScenarios: Scenario[] = [
     api: student,
     act: async (page) => {
       await startAttempt(page)
-      await page.getByRole('button', { name: 'Pregunta 6, en blanco' }).click()
+      await page.getByRole('button', { name: /^(Pregunta 6, en blanco|Question 6, blank)$/ }).click()
     }
   },
   { name: 'student-attempt-last-five', path: ATTEMPT, api: student, act: (page) => attemptIn(page, 4.5) },
@@ -306,7 +309,7 @@ export const classroomScenarios: Scenario[] = [
       await startAttempt(page)
       await page.getByRole('radio', { name: 'La municipalidad' }).check()
       await page.route('**/api/lms/classroom/attempts/*/answers', (route) => route.abort('internetdisconnected'))
-      await page.getByRole('button', { name: 'Guardar respuestas' }).click()
+      await page.getByRole('button', { name: /^(Guardar respuestas|Save answers)$/ }).click()
       await page.getByRole('alert').waitFor()
     }
   },
@@ -363,7 +366,7 @@ export const classroomScenarios: Scenario[] = [
     api: student,
     act: async (page) => {
       await resultOf(page, failedAttempt, failedSummary)
-      await page.getByRole('button', { name: 'Intentar de nuevo' }).click()
+      await page.getByRole('button', { name: /^(Intentar de nuevo|Try again)$/ }).click()
       await page.getByRole('dialog').waitFor()
     }
   },

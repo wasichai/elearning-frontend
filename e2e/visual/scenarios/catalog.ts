@@ -121,7 +121,7 @@ async function reloadWith(page: Page, reply: (route: Route) => Promise<void>, ta
 
 const withFullCatalog = (page: Page) => reloadWith(page, (route) => route.fulfill({ json: FULL_CATALOG }))
 const withCourse = (page: Page, course: unknown) => reloadWith(page, (route) => route.fulfill({ json: course }), SRTM)
-const openMoreFilters = (page: Page) => page.getByText('Más filtros').click()
+const openMoreFilters = (page: Page) => page.getByText(/^(Más filtros|More filters)/).click()
 
 export const catalogScenarios: Scenario[] = [
   { name: 'catalog', path: '/cursos' },
@@ -159,7 +159,10 @@ export const catalogScenarios: Scenario[] = [
       // la respuesta no llega nunca: se ve el esqueleto
       await page.route(isCourseList, () => {})
       await page.reload({ waitUntil: 'domcontentloaded' })
-      await page.getByRole('status').getByText('Cargando cursos…').waitFor()
+      await page
+        .getByRole('status')
+        .getByText(/^(Cargando cursos|Loading courses)/)
+        .waitFor()
     }
   },
   {
@@ -188,7 +191,7 @@ export const catalogScenarios: Scenario[] = [
             json: problem(409, 'Para matricularte en esta edición antes debes aprobar: PRE-X (Fundamentos); PRE-Y (Normativa)')
           })
       )
-      await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
+      await page.getByRole('button', { name: /^(Matricularme en la edición|Enroll in the)/ }).click()
       await page.getByRole('alert').waitFor()
     }
   },

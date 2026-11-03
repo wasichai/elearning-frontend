@@ -1,4 +1,3 @@
-import type { Session } from '../../shared/sessions'
 import type { PendingAttempt, TeachingOffering } from './contract'
 
 // lo que decide el panel docente, sin pintar nada. todo se deriva de forma exacta de lo que da el contrato
@@ -67,9 +66,4 @@ export function submittedAge(instant: string, now: number, locale: string): stri
   if (elapsed >= DAY_MS) return format.format(-Math.floor(elapsed / DAY_MS), 'day')
   if (elapsed >= HOUR_MS) return format.format(-Math.floor(elapsed / HOUR_MS), 'hour')
   return format.format(-Math.max(1, Math.floor(elapsed / MINUTE_MS)), 'minute')
-}
-
-// sin canceladas y de la más próxima a la más lejana. la que está en curso aún cuenta: es cuando se pasa asistencia
-export function upcomingSessions<T extends Pick<Session, 'status' | 'start' | 'end'>>(sessions: T[], now: number): T[] {
-  return sessions.filter((session) => session.status !== 'CANCELADA' && Date.parse(session.end) > now).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
 }

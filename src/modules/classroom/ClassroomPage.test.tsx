@@ -82,8 +82,8 @@ describe('ClassroomPage: el aula', () => {
     expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByRole('link', { name: 'Mis cursos' })).toHaveAttribute('href', '/mis-cursos')
     const tabs = within(screen.getByRole('navigation', { name: 'Secciones del curso' }))
     // Temario es donde se está: conserva la lección abierta, volver a pulsarlo no salta a otra
-    expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
-    expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('aria-current', 'page')
+    expect(tabs.getByRole('link', { name: 'Lecciones' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    expect(tabs.getByRole('link', { name: 'Lecciones' })).toHaveAttribute('aria-current', 'page')
     expect(tabs.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/sesiones')
     expect(tabs.getByRole('link', { name: 'Sesiones' })).not.toHaveAttribute('aria-current')
     expect(tabs.getByRole('link', { name: 'Finalización' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/finalizacion')
@@ -143,7 +143,7 @@ describe('ClassroomPage: el aula', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: classroom.course.title })).toBeInTheDocument()
     expect(screen.getByText('Este curso todavía no tiene lecciones.')).toBeInTheDocument()
-    expect(within(screen.getByRole('navigation', { name: 'Secciones del curso' })).getByRole('link', { name: 'Temario' })).toHaveAttribute(
+    expect(within(screen.getByRole('navigation', { name: 'Secciones del curso' })).getByRole('link', { name: 'Lecciones' })).toHaveAttribute(
       'href',
       '/mis-cursos/mat-srtm-1'
     )
