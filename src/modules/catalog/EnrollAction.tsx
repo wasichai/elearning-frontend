@@ -1,9 +1,11 @@
 import { ApiError, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { WRAP } from '../../shared/buttons'
 import { formatCivilRange } from '../../shared/format'
+import { RETURN_TO_PARAM, TERMS_ROUTE, useTermsRefusal, type TermsRefusal } from '../../shared/terms'
 import { useEnroll } from './api'
 import type { Offering } from './contract'
 import { offeringState } from './parts'
@@ -11,7 +13,8 @@ import { CLASSROOM_ROUTE } from './routes'
 
 // matricularse desde la ficha, en una edición con la inscripción abierta (completa o cerrada, no se ofrece). sin sesión, el camino es el inicio de sesión
 // de Wasichai, que después vuelve a esta ficha (returnTo, @wasichai/core 1.5.0; lo valida LoginPage). con sesión
-// matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor.
+// matricula y abre el aula de esa matrícula. la ventana y el cupo los decide el servidor. un 403 por no tener aceptados los términos lleva a ellos
+// (ADR-0037 del backend), y de allí se vuelve a la ficha para matricularse: aceptar no matricula sin pedirlo.
 // solo una de la pantalla es la primaria: quien lo monta dice cuál (primary)
 export function EnrollAction({ offering, primary = true }: { offering: Offering; primary?: boolean }) {
   const { user } = useAuth()
@@ -48,7 +51,14 @@ function EnrollButton({ offering, primary }: { offering: Offering; primary: bool
   const { t, i18n } = useTranslation('catalog')
   const links = useWasichaiLinks()
   const navigate = useNavigate()
+  const location = useLocation()
   const enroll = useEnroll()
+  const refusal = useTermsRefusal(enroll.error)
+  const checking = refusal === 'checking'
+  const toTerms = refusal === 'terms' && links.has(TERMS_ROUTE) ? links.to(TERMS_ROUTE, {}, { [RETURN_TO_PARAM]: location.pathname + location.search }) : null
+  useEffect(() => {
+    if (toTerms) void navigate(toTerms)
+  }, [toTerms, navigate])
   const dates = formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, i18n.language)
   const onEnroll = () => enroll.mutate(offering.code, { onSuccess: (enrollment) => void navigate(links.to(CLASSROOM_ROUTE, { enrollmentId: enrollment.id })) })
   return (
@@ -56,20 +66,20 @@ function EnrollButton({ offering, primary }: { offering: Offering; primary: bool
       <Button
         variant={primary ? 'primary' : 'secondary'}
         onClick={onEnroll}
-        disabled={enroll.isPending}
+        disabled={enroll.isPending || checking}
         aria-label={t('enroll.actionLabel', { dates })}
         className={`${WRAP} w-full`}
       >
-        {enroll.isPending ? t('enroll.enrolling') : t('enroll.action')}
+        {enroll.isPending || checking ? t('enroll.enrolling') : t('enroll.action')}
       </Button>
-      {enroll.error ? <EnrollProblem error={enroll.error} /> : null}
+      {enroll.error && !checking && !toTerms ? <EnrollProblem error={enroll.error} refusal={refusal} /> : null}
     </div>
   )
 }
 
 // por qué no se pudo, en palabras de la persona. un 409 tiene varios motivos (cerrada, sin cupo, prerrequisito sin
 // cumplir: docs/api/lms.md) y solo el servidor sabe cuál: su detail legible es la causa; sin él, un texto que no la adivina
-function EnrollProblem({ error }: { error: unknown }) {
+function EnrollProblem({ error, refusal }: { error: unknown; refusal: TermsRefusal }) {
   const { t } = useTranslation('catalog')
   const status = error instanceof ApiError ? error.status : undefined
   const message =
@@ -77,9 +87,13 @@ function EnrollProblem({ error }: { error: unknown }) {
       ? (conflictDetail(error) ?? t('enroll.conflict'))
       : status === 404
         ? t('enroll.unavailable')
-        : status === 403
-          ? t('enroll.forbidden')
-          : t('enroll.failed')
+        : refusal === 'terms'
+          ? t('enroll.termsRequired')
+          : refusal === 'other'
+            ? t('enroll.forbidden')
+            : refusal === 'unknown'
+              ? t('enroll.forbiddenUnknown')
+              : t('enroll.failed')
   return (
     <p role="alert" className="max-w-prose text-sm text-danger">
       {message}

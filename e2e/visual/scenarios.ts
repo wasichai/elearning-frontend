@@ -7,6 +7,7 @@ import { reviewScenarios } from './scenarios/review'
 import { shellScenarios } from './scenarios/shell'
 import { studioScenarios } from './scenarios/studio'
 import { teachingScenarios } from './scenarios/teaching'
+import { termsScenarios } from './scenarios/terms'
 
 // el recorrido visual: cada pantalla principal con su API simulada. lo usan screens.spec.ts (regresión visual) y la
 // inspección a ojo (VISUAL_DIR guarda las capturas). no sustituye a las pruebas de comportamiento de e2e/
@@ -24,7 +25,8 @@ export const SCENARIOS: Scenario[] = [
   ...teachingScenarios,
   ...studioScenarios,
   ...reviewScenarios,
-  ...shellScenarios
+  ...shellScenarios,
+  ...termsScenarios
 ]
 
 export async function open(page: Page, scenario: Scenario): Promise<void> {

@@ -1,7 +1,7 @@
 import { CORE_ROUTE_PATHS, coreModule, createRegistry, type CallerPermissions, type ResolvedNavGroup } from '@wasichai/core'
 import { describe, expect, it } from 'vitest'
 import { modules } from './modules'
-import { canAdminister, homeRoute, isCoreRoute, shellNav } from './shellNav'
+import { canAdminister, homeRoute, isCoreRoute, isSectionRoute, shellNav } from './shellNav'
 
 // los grupos de verdad, los que WasichaiApp pasa a shellNav: si core cambia cómo nombra sus entradas, esto falla aquí
 const registry = createRegistry([coreModule, ...modules])
@@ -25,7 +25,10 @@ const CORE_PATHS = [
   '/admin/audit',
   '/admin/service-accounts'
 ]
-const LMS_PATHS = ['/', '/mis-cursos', '/estudio', '/estudio/versiones/v-1', '/revision', '/cursos']
+const LMS_PATHS = ['/', '/mis-cursos', '/estudio', '/estudio/versiones/v-1', '/revision', '/cursos', '/terminos']
+const PUBLISH_TERMS = '/administracion/terminos'
+const PUBLISH_ENTRY = 'administration:publish.nav'
+const SECTION_PATHS = [...CORE_PATHS, PUBLISH_TERMS]
 
 // lo que queda tras shellNav y el filtro de `visible` que core aplica después (AppShell): lo que se ve
 function menu(pathname: string, permissions: CallerPermissions | null) {
@@ -64,9 +67,19 @@ describe('isCoreRoute', () => {
   })
 })
 
+describe('isSectionRoute', () => {
+  it('son las rutas de core y la de publicar los términos', () => {
+    for (const path of SECTION_PATHS) expect(isSectionRoute(path), path).toBe(true)
+  })
+
+  it('no lo es el resto del LMS, ni los términos de cada persona, ni lo que cuelgue de publicar', () => {
+    for (const path of [...LMS_PATHS, `${PUBLISH_TERMS}/otra`, '/administracion']) expect(isSectionRoute(path), path).toBe(false)
+  })
+})
+
 describe('shellNav', () => {
   describe.each(Object.entries(ACCOUNT_OF))('sin permiso: %s', (_, permissions) => {
-    it.each([...LMS_PATHS, ...CORE_PATHS])('en %s no ve Datos, Administración ni la entrada', (pathname) => {
+    it.each([...LMS_PATHS, ...SECTION_PATHS])('en %s no ve Datos, Administración ni la entrada', (pathname) => {
       const { groups, items } = menu(pathname, permissions)
       expect(groups).not.toContain('data')
       expect(groups).not.toContain('administration')
@@ -85,6 +98,16 @@ describe('shellNav', () => {
     expect(menu('/admin/users', ACCOUNT_OF.estudiante)).toEqual(menu('/mis-cursos', ACCOUNT_OF.estudiante))
   })
 
+  it('un estudiante que escribe la ruta de publicar los términos mantiene su menú, sin la entrada', () => {
+    const { items } = menu(PUBLISH_TERMS, ACCOUNT_OF.estudiante)
+    expect(menu(PUBLISH_TERMS, ACCOUNT_OF.estudiante)).toEqual(menu('/mis-cursos', ACCOUNT_OF.estudiante))
+    expect(items).not.toContain(PUBLISH_ENTRY)
+  })
+
+  it.each(Object.entries(ACCOUNT_OF))('%s llega a sus términos desde el menú', (_, permissions) => {
+    expect(menu('/mis-cursos', permissions).items).toContain('terms:nav.entry')
+  })
+
   describe.each([
     ['admin', ADMIN],
     ['MANAGE_ORGANIZATION', MANAGER]
@@ -96,19 +119,23 @@ describe('shellNav', () => {
       expect(groups).not.toContain('administration')
       expect(items).toContain('administration:nav.entry')
       expect(items).toContain('classroom:nav.myCourses')
+      expect(items).toContain('terms:nav.entry')
+      expect(items).not.toContain(PUBLISH_ENTRY)
     })
 
-    it.each(CORE_PATHS)('en core, en %s: solo Datos y Administración', (pathname) => {
+    it.each(SECTION_PATHS)('en la sección, en %s: solo Datos y Administración, con publicar los términos', (pathname) => {
       const { groups, items } = menu(pathname, permissions)
       expect(groups).toEqual(['data', 'administration'])
       expect(items).not.toContain('administration:nav.entry')
+      expect(items).not.toContain('terms:nav.entry')
       expect(items).toContain('nav.objects')
       expect(items).toContain('nav.users')
+      expect(items).toContain(PUBLISH_ENTRY)
     })
   })
 
   describe('con los permisos cargando o con error (null)', () => {
-    it.each([...LMS_PATHS, ...CORE_PATHS])('en %s no se ofrece la sección', (pathname) => {
+    it.each([...LMS_PATHS, ...SECTION_PATHS])('en %s no se ofrece la sección', (pathname) => {
       const { groups, items } = menu(pathname, null)
       expect(groups).not.toContain('data')
       expect(groups).not.toContain('administration')

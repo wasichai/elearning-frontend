@@ -15,6 +15,7 @@ import type { Session } from '../src/shared/sessions'
 import { REVIEW, reviewState, simulateReview } from './review-api'
 import { isStudio, simulateStudio, studioState } from './studio-api'
 import { onePage, simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
+import { isTerms, simulateTerms, termsGate, termsState, type TermsScenario, type TermsState } from './terms-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
 // las pruebas unitarias. el catálogo filtra de verdad lo que el contrato filtra (salvo las horas de teoría y práctica, que
@@ -26,6 +27,7 @@ const COURSES = '/api/lms/public/catalog/courses'
 const CLASSROOM = '/api/lms/classroom/'
 const ENROLLMENTS = '/api/lms/classroom/enrollments'
 const ATTEMPTS = '/api/lms/classroom/attempts'
+const LESSON_EVENTS_PATH = /^\/api\/lms\/classroom\/enrollments\/[^/]+\/lessons\/[^/]+\/events$/
 const PANEL = '/api/lms/classroom/panel'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
@@ -91,6 +93,8 @@ export interface FakeApiOptions extends TeachingOptions {
   offeringFull?: boolean
   // GET /auth/me/permissions falla siempre: la app sigue sin saber qué puede la persona
   permissionsFail?: boolean
+  // los términos de uso y la aceptación de quien entra: por defecto, aceptados (como la semilla)
+  terms?: TermsScenario
 }
 
 export interface FakeApi {
@@ -112,6 +116,10 @@ export interface FakeApi {
   readonly reviewRequests: string[]
   // los archivos subidos a una entrega, con su nombre y la cabecera Authorization
   readonly uploads: { path: string; name: string | undefined; authorization: string | null }[]
+  // las de los términos de uso, como «MÉTODO /ruta»
+  readonly termsRequests: string[]
+  // el estado de los términos en la simulación, para que una prueba cambie lo que dirá el servidor
+  readonly terms: TermsState
   // las que no son del catálogo: la página pública no debería hacer ninguna
   readonly unexpected: string[]
   // la próxima respuesta a lo que cumpla `matches` (una sola vez), con el detalle que se quiera
@@ -634,6 +642,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
   const teaching = teachingState(options)
   const studio = studioState()
   const review = reviewState()
+  const terms = termsState(options.terms)
   const account = ACCOUNTS[options.as ?? 'student']
   if (options.signedIn)
     await page.addInitScript(
@@ -653,6 +662,8 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     teachingRequests: [],
     studioRequests: [],
     reviewRequests: [],
+    termsRequests: [],
+    terms,
     unexpected: [],
     failOnce: (matches, status, detail = 'Fallo simulado') => {
       let used = false
@@ -668,6 +679,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     const url = new URL(request.url())
     const method = request.method()
     if (isCatalog(request, url)) api.catalogRequests.push(url)
+    else if (isTerms(url)) api.termsRequests.push(`${method} ${url.pathname}`)
     else if (url.pathname.startsWith(PUBLIC_CERTIFICATES)) api.certificateRequests.push(url.pathname)
     else if (url.pathname.startsWith(TEACHING)) api.teachingRequests.push(`${method} ${url.pathname}`)
     else if (isStudio(url)) api.studioRequests.push(`${method} ${url.pathname}`)
@@ -684,8 +696,11 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     let reply: Reply | undefined
     for (const override of overrides) reply ??= override(url, method)
     reply ??= simulateUpload(state, method, url, uploadedName(request), request.postDataBuffer()?.length ?? 0)
-    if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
+    if (url.pathname === '/api/lms/enrollments' && method === 'POST')
+      reply ??= termsGate(terms, 'matricularte') ?? simulateEnroll(state, request.postDataJSON())
+    if (method === 'POST' && LESSON_EVENTS_PATH.test(url.pathname)) reply ??= termsGate(terms, 'registrar tu progreso')
     reply ??=
+      simulateTerms(terms, method, url, jsonBody(request), (account.permissions.capabilities as string[]).includes('MANAGE_ORGANIZATION')) ??
       simulatePlatform(method, url, account, options) ??
       simulateTeaching(teaching, method, url, jsonBody(request)) ??
       simulateStudio(studio, method, url, jsonBody(request)) ??

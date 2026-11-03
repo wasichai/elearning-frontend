@@ -159,6 +159,8 @@ const es = {
     conflict: 'No pudimos matricularte en esta edición.',
     unavailable: 'Esta edición ya no está disponible.',
     forbidden: 'Tu cuenta no puede matricularse en cursos. Consulta con tu institución.',
+    termsRequired: 'Para matricularte debes aceptar los términos de uso.',
+    forbiddenUnknown: 'No pudimos matricularte ni comprobar por qué. Inténtalo de nuevo.',
     failed: 'No pudimos matricularte. Inténtalo de nuevo.'
   },
   lessonType: {
@@ -401,6 +403,8 @@ const en: typeof es = {
     conflict: 'We could not enroll you in this offering.',
     unavailable: 'This offering is no longer available.',
     forbidden: 'Your account cannot enroll in courses. Please ask your institution.',
+    termsRequired: 'To enroll you need to accept the terms of use.',
+    forbiddenUnknown: 'We could not enroll you or check why. Please try again.',
     failed: 'We could not enroll you. Please try again.'
   },
   lessonType: {
