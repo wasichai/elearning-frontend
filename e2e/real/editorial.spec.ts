@@ -453,6 +453,10 @@ test('la importación rechaza un origen no permitido y a quien no puede importar
   const student = await newStudent(request)
   const studentApi = client(request, await token(request, student.email, student.password))
   expect((await studentApi.get('/api/lms/studio/import/sources')).status(), 'estudiante: orígenes').toBe(403)
+  // mis trabajos: una lista para quien importa, 403 para quien no (backend #266). un origen rechazado no deja trabajo
+  const jobs = await json<unknown[]>(await creatorApi.get('/api/lms/studio/import'), 200, 'GET studio/import')
+  expect(Array.isArray(jobs), 'creadora: mis trabajos').toBe(true)
+  expect((await studentApi.get('/api/lms/studio/import')).status(), 'estudiante: mis trabajos').toBe(403)
   expect((await studentApi.post('/api/lms/studio/import', { source, courseId })).status(), 'estudiante: importar').toBe(403)
 
   // sin orígenes configurados (como en CI), la pantalla lo explica en vez de ofrecer el formulario
@@ -464,6 +468,8 @@ test('la importación rechaza un origen no permitido y a quien no puede importar
     await expect(creator.page.getByRole('heading', { level: 1, name: 'Importar un manual' })).toBeVisible()
     await expect(creator.page.getByText('No hay orígenes permitidos')).toBeVisible()
     await expect(creator.page.getByLabel('Commit')).toHaveCount(0)
+    // sin orígenes no se pudo importar nada: la lista real de trabajos, vacía y sin error
+    await expect(creator.page.getByRole('region', { name: 'Tus importaciones' })).toContainText('Aún no tienes importaciones')
   } finally {
     await creator.context.close()
   }

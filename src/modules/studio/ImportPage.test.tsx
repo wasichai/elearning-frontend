@@ -47,7 +47,12 @@ function jobRoute(...states: unknown[]): MockRoute {
   }
 }
 
-const baseRoutes = (...more: MockRoute[]): MockRoute[] => [...more, { path: SOURCES, body: importSources }, { path: COURSES, body: courseRecords }]
+const baseRoutes = (...more: MockRoute[]): MockRoute[] => [
+  ...more,
+  { path: SOURCES, body: importSources },
+  { path: COURSES, body: courseRecords },
+  { path: IMPORT, body: [] }
+]
 
 const calls = (method: string, path: string) => fetchMock.calls.filter((call) => call.method === method && call.path.split('?')[0] === path)
 
@@ -260,18 +265,50 @@ describe('ImportPage: el resultado', () => {
     expect(report.getByText('img/portal.png')).toBeInTheDocument()
   })
 
-  it('un informe recortado dice cuántos problemas hay en total; sin problemas, lo dice', async () => {
+  it('la gravedad de cada aviso la da el servidor, no el tipo', async () => {
     const user = userEvent.setup()
-    const truncated = { ...doneJob, report: { ...importReport, problemCount: 812 } }
+    // el servidor dice lo contrario de lo que decía la tabla retirada: manda él
+    const regraded = {
+      ...doneJob,
+      report: {
+        ...importReport,
+        problemCount: 2,
+        problems: [
+          { kind: 'MISSING_IMAGE', origin: 'a', line: 1, detail: 'imagen', severity: 'GAP' },
+          { kind: 'MISSING_INCLUDE', origin: 'b', line: 2, detail: 'inclusión', severity: 'CHECK' }
+        ],
+        problemsBySeverity: { GAP: 1, CHECK: 1 }
+      }
+    }
+    renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(regraded)))
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    const report = within(await screen.findByRole('region', { name: 'Informe' }))
+    expect(report.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      'Imagen que no existe (1)',
+      'Inclusión que no existe (1)'
+    ])
+    expect(report.getByText('Imagen que no existe (1)').parentElement).toHaveTextContent('Puede faltar temario')
+    expect(report.getByText('Inclusión que no existe (1)').parentElement).toHaveTextContent('A revisar')
+  })
+
+  it('un informe recortado dice cuántos problemas hay en total, con los totales del servidor; sin problemas, lo dice', async () => {
+    const user = userEvent.setup()
+    const truncated = { ...doneJob, report: { ...importReport, problemCount: 812, problemsBySeverity: { GAP: 300, CHECK: 512 } } }
     const first = renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(truncated)))
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
     expect(await screen.findByText(/^812 problemas\..*Se muestran 3 de 812\.$/)).toBeInTheDocument()
-    expect(screen.getByText('Las cifras por gravedad cuentan solo los que se muestran.')).toBeInTheDocument()
+    // los totales cuentan también lo que la lista recorta: no salen de los 3 que se muestran
+    const summary = within(screen.getByRole('group', { name: 'Problemas por gravedad' }))
+    expect(summary.getByText('Puede faltar temario').closest('div')).toHaveTextContent(/^Puede faltar temario300$/)
+    expect(summary.getByText('A revisar').closest('div')).toHaveTextContent(/^A revisar512$/)
+    expect(screen.getByText('Las cifras por gravedad cuentan todos; la lista, solo los que se muestran.')).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()
 
-    const clean = { ...doneJob, report: { ...importReport, problemCount: 0, problems: [] } }
+    const clean = { ...doneJob, report: { ...importReport, problemCount: 0, problems: [], problemsBySeverity: { GAP: 0, CHECK: 0 } } }
     renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(clean)))
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
@@ -283,7 +320,12 @@ describe('ImportPage: el resultado', () => {
     const user = userEvent.setup()
     const odd = {
       ...doneJob,
-      report: { ...importReport, problemCount: 1, problems: [{ kind: 'BROKEN_REFERENCE', origin: 'otro<b>origen', line: 3, detail: 'x' }] }
+      report: {
+        ...importReport,
+        problemCount: 1,
+        problems: [{ kind: 'BROKEN_REFERENCE', origin: 'otro<b>origen', line: 3, detail: 'x', severity: 'CHECK' }],
+        problemsBySeverity: { GAP: 0, CHECK: 1 }
+      }
     }
     renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(odd)))
     await fillForm(user)
@@ -329,13 +371,13 @@ describe('ImportPage: el resultado', () => {
     expect(screen.getByRole('button', { name: 'Importar otro manual' })).toBeInTheDocument()
   })
 
-  it('un trabajo ajeno (404) se explica', async () => {
+  it('un trabajo ajeno o ya purgado (404) se explica', async () => {
     const user = userEvent.setup()
     renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, { path: JOB, status: 404, body: problem(404, 'No encontrado') }))
     await fillForm(user)
     await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Esta importación no está entre las tuyas')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Esta importación ya no está disponible')
   })
 })
 
@@ -343,7 +385,8 @@ describe('ImportPage: sin orígenes o sin permiso', () => {
   it('sin permiso (403) explica qué hace falta y no muestra el formulario', async () => {
     renderImport([
       { path: SOURCES, status: 403, body: problem(403, 'Forbidden') },
-      { path: COURSES, body: courseRecords }
+      { path: COURSES, body: courseRecords },
+      { path: IMPORT, status: 403, body: problem(403, 'Forbidden') }
     ])
 
     const alert = await screen.findByRole('alert')
@@ -356,7 +399,8 @@ describe('ImportPage: sin orígenes o sin permiso', () => {
   it('sin orígenes permitidos lo dice y no muestra el formulario', async () => {
     renderImport([
       { path: SOURCES, body: [] },
-      { path: COURSES, body: courseRecords }
+      { path: COURSES, body: courseRecords },
+      { path: IMPORT, body: [] }
     ])
 
     expect(await screen.findByText('No hay orígenes permitidos')).toBeInTheDocument()
@@ -364,13 +408,19 @@ describe('ImportPage: sin orígenes o sin permiso', () => {
   })
 
   it('un error del servidor deja reintentar; un contrato roto no muestra datos a medias', async () => {
-    const first = renderImport([{ path: SOURCES, status: 500, body: problem(500, 'fallo') }])
+    const first = renderImport([
+      { path: SOURCES, status: 500, body: problem(500, 'fallo') },
+      { path: IMPORT, body: [] }
+    ])
     expect(await screen.findByRole('alert')).toHaveTextContent('error 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()
 
-    renderImport([{ path: SOURCES, body: [{ repository: 'wasichai/manual', sha: '4f2a9c1' }] }])
+    renderImport([
+      { path: SOURCES, body: [{ repository: 'wasichai/manual', sha: '4f2a9c1' }] },
+      { path: IMPORT, body: [] }
+    ])
     expect(await screen.findByText('No pudimos leer la respuesta del servidor')).toBeInTheDocument()
     expect(screen.queryByLabelText('Commit')).not.toBeInTheDocument()
   })

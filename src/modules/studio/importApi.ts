@@ -3,6 +3,7 @@ import { useApiClient, type ApiClient } from '@wasichai/core'
 import { retryNetwork } from '../../shared/retry'
 import {
   courseRecordPageSchema,
+  importJobListSchema,
   importJobSchema,
   importSourceListSchema,
   parseContract,
@@ -44,6 +45,14 @@ export function isValidPath(path: string): boolean {
 
 export const sourceRef = (repository: string, sha: string, path: string) => `${repository}@${sha}:${path}`
 
+const SOURCE_REF = /^([^/\s@:]+\/[^/\s@:]+)@([0-9a-f]{40}):(.+)$/
+
+// lo contrario de sourceRef; con otra forma, null: quien lo muestra lo pinta tal cual
+export function parseSourceRef(ref: string): { repository: string; sha: string; path: string } | null {
+  const match = SOURCE_REF.exec(ref)
+  return match ? { repository: match[1]!, sha: match[2]!, path: match[3]! } : null
+}
+
 export async function fetchImportSources(client: ApiClient, signal?: AbortSignal): Promise<ImportSource[]> {
   const body = await client.request<unknown>(`${IMPORT_PATH}/sources`, { signal })
   return parseContract(importSourceListSchema, 'GET studio/import/sources', body)
@@ -59,6 +68,11 @@ export async function fetchImportJob(client: ApiClient, id: string, signal?: Abo
   return parseContract(importJobSchema, `GET studio/import/${id}`, body)
 }
 
+export async function fetchImportJobs(client: ApiClient, signal?: AbortSignal): Promise<ImportJob[]> {
+  const body = await client.request<unknown>(IMPORT_PATH, { signal })
+  return parseContract(importJobListSchema, 'GET studio/import', body)
+}
+
 export async function fetchCourses(client: ApiClient, signal?: AbortSignal): Promise<CourseOption[]> {
   const body = await client.request<unknown>(COURSE_RECORDS, { signal })
   return parseContract(courseRecordPageSchema, 'GET objects/curso/records', body).content.map((record) => ({
@@ -71,6 +85,7 @@ export async function fetchCourses(client: ApiClient, signal?: AbortSignal): Pro
 export const importKeys = {
   sources: ['studio', 'import', 'sources'] as const,
   courses: ['studio', 'import', 'courses'] as const,
+  jobs: ['studio', 'import', 'jobs'] as const,
   job: (id: string) => ['studio', 'import', 'job', id] as const
 }
 
@@ -103,5 +118,16 @@ export function useImportJob(id: string, interval: number) {
     queryFn: ({ signal }) => fetchImportJob(client, id, signal),
     retry: retryNetwork,
     refetchInterval: (query) => (query.state.status === 'error' || isFinished(query.state.data?.status) ? false : interval)
+  })
+}
+
+// mis trabajos: se consulta mientras alguno sigue en marcha, con el mismo sondeo moderado
+export function useImportJobs(interval: number) {
+  const client = useApiClient()
+  return useQuery({
+    queryKey: importKeys.jobs,
+    queryFn: ({ signal }) => fetchImportJobs(client, signal),
+    retry: retryNetwork,
+    refetchInterval: (query) => (query.state.status !== 'error' && query.state.data?.some((job) => !isFinished(job.status)) ? interval : false)
   })
 }

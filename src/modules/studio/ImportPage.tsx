@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ApiError, LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
 import { Circle, CircleAlert, CircleCheck, CircleDot, CircleX, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
-import { useEffect, useId, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { WRAP } from '../../shared/buttons'
@@ -13,15 +13,30 @@ import { Breadcrumbs, ScreenBody, ScreenHeader, Section, Stat, StatList } from '
 import { studioKeys } from './api'
 import {
   IMPORT_PROBLEM_KINDS,
+  IMPORT_SEVERITIES,
   SHA_PATTERN,
   type ImportJob,
   type ImportProblem,
   type ImportProblemKind,
   type ImportReport,
+  type ImportSeverity,
   type ImportSource,
   type ImportStatus
 } from './contract'
-import { IMPORT_POLL_MS, isFinished, isValidPath, MAX_PATH, sourceRef, useImportCourses, useImportJob, useImportSources, useStartImport } from './importApi'
+import {
+  IMPORT_POLL_MS,
+  importKeys,
+  isFinished,
+  isValidPath,
+  MAX_PATH,
+  parseSourceRef,
+  sourceRef,
+  useImportCourses,
+  useImportJob,
+  useImportSources,
+  useStartImport
+} from './importApi'
+import { ImportJobs } from './ImportJobs'
 import { STUDIO_ROUTES } from './routes'
 
 // lo escrito en el formulario: vive en la página para que un fallo deje volver a intentarlo sin perderlo
@@ -35,14 +50,34 @@ interface ImportDraft {
 
 const EMPTY_DRAFT: ImportDraft = { selected: 0, typedSha: '', path: '', courseId: '' }
 
+// el formulario con lo que pidió un trabajo; null si su origen ya no está entre los permitidos
+function draftFromJob(job: ImportJob, sources: ImportSource[]): ImportDraft | null {
+  const ref = parseSourceRef(job.source)
+  if (!ref) return null
+  const selected = sources.findIndex((source) => source.repository === ref.repository && (source.sha === null || source.sha === ref.sha))
+  if (selected < 0) return null
+  return { selected, typedSha: sources[selected]!.sha ? '' : ref.sha, path: ref.path, courseId: job.courseId }
+}
+
 // importar un manual AsciiDoc a un borrador (ADR-0018 §5): orígenes permitidos, el formulario, el estado del trabajo y su
 // informe. pollInterval solo lo cambian las pruebas
 export function ImportPage({ pollInterval = IMPORT_POLL_MS }: { pollInterval?: number }) {
   const { t } = useTranslation('studio')
   const links = useWasichaiLinks()
+  const queryClient = useQueryClient()
   const sources = useImportSources()
-  const [jobId, setJobId] = useState<string | null>(null)
+  const [opened, setOpened] = useState<{ id: string; fromList: boolean } | null>(null)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
+  const refused = sources.error instanceof ApiError && sources.error.status === 403
+  // lo que tenía el foco desaparece al cambiar de vista: el foco pasa al cuerpo de la pantalla
+  const body = useRef<HTMLDivElement>(null)
+  const openedId = opened?.id ?? null
+  const shownId = useRef(openedId)
+  useEffect(() => {
+    if (shownId.current === openedId) return
+    shownId.current = openedId
+    body.current?.focus()
+  }, [openedId])
   return (
     <>
       <ScreenHeader
@@ -57,27 +92,52 @@ export function ImportPage({ pollInterval = IMPORT_POLL_MS }: { pollInterval?: n
         }
       />
       <ScreenBody width="reading">
-        {jobId ? (
-          <JobPanel
-            id={jobId}
-            interval={pollInterval}
-            onRetry={() => setJobId(null)}
-            onAnother={() => {
-              setDraft(EMPTY_DRAFT)
-              setJobId(null)
-            }}
-          />
-        ) : sources.isError ? (
-          <SourcesProblem error={sources.error} onRetry={() => void sources.refetch()} />
-        ) : sources.data ? (
-          <>
-            {sources.data.length === 0 ? null : <ImportSteps stage="form" />}
-            <Sources sources={sources.data} />
-            {sources.data.length === 0 ? null : <ImportForm sources={sources.data} draft={draft} onChange={setDraft} onStarted={setJobId} />}
-          </>
-        ) : (
-          <LoadingState label={t('import.loading')} />
-        )}
+        <div ref={body} tabIndex={-1} className="flex flex-col gap-8 outline-none">
+          {opened ? (
+            <JobPanel
+              id={opened.id}
+              interval={pollInterval}
+              fromList={opened.fromList}
+              onRetry={(job) => {
+                const restored = sources.data ? draftFromJob(job, sources.data) : null
+                if (restored) setDraft(restored)
+                setOpened(null)
+              }}
+              onBack={() => setOpened(null)}
+              onAnother={() => {
+                setDraft(EMPTY_DRAFT)
+                setOpened(null)
+              }}
+            />
+          ) : (
+            <>
+              {/* sin permiso para importar, ya lo explica el aviso de abajo */}
+              {refused ? null : (
+                <ImportJobs
+                  interval={pollInterval}
+                  onOpen={(job) => {
+                    // lo que ya se sabe de él se ve enseguida, sin pasar por «Consultando…»
+                    queryClient.setQueryData(importKeys.job(job.id), job)
+                    setOpened({ id: job.id, fromList: true })
+                  }}
+                />
+              )}
+              {sources.isError ? (
+                <SourcesProblem error={sources.error} onRetry={() => void sources.refetch()} />
+              ) : sources.data ? (
+                <>
+                  {sources.data.length === 0 ? null : <ImportSteps stage="form" />}
+                  <Sources sources={sources.data} />
+                  {sources.data.length === 0 ? null : (
+                    <ImportForm sources={sources.data} draft={draft} onChange={setDraft} onStarted={(id) => setOpened({ id, fromList: false })} />
+                  )}
+                </>
+              ) : (
+                <LoadingState label={t('import.loading')} />
+              )}
+            </>
+          )}
+        </div>
       </ScreenBody>
     </>
   )
@@ -357,7 +417,22 @@ function useStartError() {
   }
 }
 
-function JobPanel({ id, interval, onRetry, onAnother }: { id: string; interval: number; onRetry: () => void; onAnother: () => void }) {
+function JobPanel({
+  id,
+  interval,
+  fromList,
+  onRetry,
+  onBack,
+  onAnother
+}: {
+  id: string
+  interval: number
+  // abierto desde la lista, volver no borra lo escrito en el formulario
+  fromList: boolean
+  onRetry: (job: ImportJob) => void
+  onBack: () => void
+  onAnother: () => void
+}) {
   const { t } = useTranslation('studio')
   const links = useWasichaiLinks()
   const queryClient = useQueryClient()
@@ -379,23 +454,27 @@ function JobPanel({ id, interval, onRetry, onAnother }: { id: string; interval: 
         </p>
         {job ? <JobState job={job} /> : null}
         {query.isError ? <JobProblem error={query.error} onRetry={() => void query.refetch()} /> : null}
-        {isFinished(status) || lost ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {status === 'HECHO' && job?.versionId ? (
-              <Button asChild variant="primary" className="min-h-11">
-                <Link to={links.to(STUDIO_ROUTES.version, { id: job.versionId })}>{t('import.job.openDraft')}</Link>
-              </Button>
-            ) : null}
-            {status === 'FALLIDO' ? (
-              <Button variant="primary" className={WRAP} onClick={onRetry}>
-                {t('import.job.retry')}
-              </Button>
-            ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {status === 'HECHO' && job?.versionId ? (
+            <Button asChild variant="primary" className="min-h-11">
+              <Link to={links.to(STUDIO_ROUTES.version, { id: job.versionId })}>{t('import.job.openDraft')}</Link>
+            </Button>
+          ) : null}
+          {status === 'FALLIDO' ? (
+            <Button variant="primary" className={WRAP} onClick={() => onRetry(job!)}>
+              {t('import.job.retry')}
+            </Button>
+          ) : null}
+          {(isFinished(status) || lost) && !fromList ? (
             <Button variant="secondary" className={WRAP} onClick={onAnother}>
               {t('import.job.another')}
             </Button>
-          </div>
-        ) : null}
+          ) : (
+            <Button variant="secondary" className={WRAP} onClick={onBack}>
+              {t('import.job.back')}
+            </Button>
+          )}
+        </div>
       </Section>
       {job?.report ? <Report report={job.report} /> : null}
     </>
@@ -420,7 +499,7 @@ function JobState({ job }: { job: ImportJob }) {
   )
 }
 
-// un 404 es la respuesta para lo ajeno: no se reintenta. lo demás para el sondeo hasta «Reintentar»
+// un 404 es la respuesta para lo ajeno y para lo terminado que ya se purgó: no se reintenta. lo demás para el sondeo hasta «Reintentar»
 function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('studio')
   const kind = problemKind(error)
@@ -440,38 +519,19 @@ function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void })
 
 const COUNTS = ['units', 'lessons', 'sections', 'files', 'includes', 'images'] as const
 
-type Severity = 'gap' | 'check'
-
-// la gravedad no viene en el contrato: se deriva del tipo según lo que hace el analizador del servidor. «gap»: no se leyó esa parte
-// del manual, así que al temario le pueden faltar unidades o lecciones. «check»: el temario se leyó; queda algo que revisar
-const SEVERITY: Record<ImportProblemKind, Severity> = {
-  MISSING_INCLUDE: 'gap',
-  INCLUDE_OUTSIDE_ROOT: 'gap',
-  INCLUDE_CYCLE: 'gap',
-  INCLUDE_TOO_DEEP: 'gap',
-  UNRESOLVED_ATTRIBUTE: 'gap',
-  FILE_TOO_LARGE: 'gap',
-  UNSUPPORTED_INCLUDE_OPTION: 'check',
-  MISSING_IMAGE: 'check',
-  IMAGE_OUTSIDE_ROOT: 'check',
-  BROKEN_REFERENCE: 'check',
-  DUPLICATE_ANCHOR: 'check'
-}
-
-const SEVERITIES: Severity[] = ['gap', 'check']
-const SEVERITY_ICON: Record<Severity, LucideIcon> = { gap: CircleAlert, check: TriangleAlert }
-const SEVERITY_TONE: Record<Severity, string> = { gap: 'text-danger', check: 'text-warning' }
+const SEVERITY_ICON: Record<ImportSeverity, LucideIcon> = { GAP: CircleAlert, CHECK: TriangleAlert }
+const SEVERITY_TONE: Record<ImportSeverity, string> = { GAP: 'text-danger', CHECK: 'text-warning' }
 
 // el informe: primero lo que pide atención y las cifras; después cada aviso, lo más grave primero. origin y detail vienen del manual
 // (dato no confiable): se pintan como texto
 function Report({ report }: { report: ImportReport }) {
   const { t, i18n } = useTranslation('studio')
   const locale = i18n.language
-  const groups = SEVERITIES.flatMap((severity) =>
-    IMPORT_PROBLEM_KINDS.filter((kind) => SEVERITY[kind] === severity).map((kind) => ({
+  const groups = IMPORT_SEVERITIES.flatMap((severity) =>
+    IMPORT_PROBLEM_KINDS.map((kind) => ({
       kind,
       severity,
-      problems: report.problems.filter((problem) => problem.kind === kind)
+      problems: report.problems.filter((problem) => problem.kind === kind && problem.severity === severity)
     }))
   ).filter((group) => group.problems.length > 0)
   const partial = report.problems.length < report.problemCount
@@ -490,12 +550,12 @@ function Report({ report }: { report: ImportReport }) {
           </p>
           <div role="group" aria-label={t('import.report.bySeverity')}>
             <StatList>
-              {SEVERITIES.map((severity) => (
+              {IMPORT_SEVERITIES.map((severity) => (
                 <Stat
                   key={severity}
                   icon={SEVERITY_ICON[severity]}
                   label={t(`import.severity.${severity}`)}
-                  value={formatNumber(report.problems.filter((problem) => SEVERITY[problem.kind] === severity).length, locale)}
+                  value={formatNumber(report.problemsBySeverity[severity], locale)}
                 />
               ))}
             </StatList>
@@ -512,13 +572,13 @@ function Report({ report }: { report: ImportReport }) {
         ))}
       </dl>
       {groups.map((group) => (
-        <ProblemGroup key={group.kind} {...group} />
+        <ProblemGroup key={`${group.severity}:${group.kind}`} {...group} />
       ))}
     </Section>
   )
 }
 
-function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind; severity: Severity; problems: ImportProblem[] }) {
+function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind; severity: ImportSeverity; problems: ImportProblem[] }) {
   const { t, i18n } = useTranslation('studio')
   const Icon = SEVERITY_ICON[severity]
   return (
@@ -544,8 +604,7 @@ function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind; s
 }
 
 // el origen es repo@sha:ruta y la fuente ya se ve arriba: basta el archivo. con otra forma, tal cual
-const ORIGIN = /^[^/\s@:]+\/[^/\s@:]+@[0-9a-f]{40}:(.+)$/
-const fileOf = (origin: string) => ORIGIN.exec(origin)?.[1] ?? origin
+const fileOf = (origin: string) => parseSourceRef(origin)?.path ?? origin
 
 function ProblemItem({ problem }: { problem: ImportProblem }) {
   const { t } = useTranslation('studio')

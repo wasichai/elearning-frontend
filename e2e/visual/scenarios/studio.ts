@@ -147,13 +147,42 @@ const severeReport = {
       kind: 'FILE_TOO_LARGE',
       origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/${'capitulo-muy-largo/'.repeat(6)}anexo.adoc`,
       line: 0,
-      detail: 'manual/anexo.adoc'
+      detail: 'manual/anexo.adoc',
+      severity: 'GAP'
     },
-    { kind: 'INCLUDE_CYCLE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`, line: 3, detail: 'manual/a.adoc -> manual/b.adoc -> manual/a.adoc' },
-    { kind: 'BROKEN_REFERENCE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc`, line: 44, detail: 'seccion-inexistente' },
-    { kind: 'UNRESOLVED_ATTRIBUTE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`, line: 9, detail: `{${'atributo-sin-valor-'.repeat(8)}}` }
-  ]
+    {
+      kind: 'INCLUDE_CYCLE',
+      origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`,
+      line: 3,
+      detail: 'manual/a.adoc -> manual/b.adoc -> manual/a.adoc',
+      severity: 'GAP'
+    },
+    { kind: 'BROKEN_REFERENCE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc`, line: 44, detail: 'seccion-inexistente', severity: 'CHECK' },
+    {
+      kind: 'UNRESOLVED_ATTRIBUTE',
+      origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/a.adoc`,
+      line: 9,
+      detail: `{${'atributo-sin-valor-'.repeat(8)}}`,
+      severity: 'GAP'
+    }
+  ],
+  problemsBySeverity: { GAP: 304, CHECK: 508 }
 }
+
+// la pantalla al volver a ella, con la lista de trabajos que se quiere ver y una ventana alta para ver también el formulario
+const withImportJobs = (status: number, body: unknown) => async (page: Page) => {
+  await page.route(IMPORT, (route) =>
+    route.request().method() === 'GET' ? route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }) : route.fallback()
+  )
+  await page.reload({ waitUntil: 'networkidle' })
+  await page.getByRole('heading', { level: 2, name: /Tus importaciones|Your imports/ }).waitFor()
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 1500 })
+}
+
+const finishedJob = (index: number) => ({ ...doneJob, id: `job-${index}`, versionId: `version-${index}` })
+const jobsOfEveryKind = [runningJob, doneJob, { ...failedJob, id: 'job-failed' }, finishedJob(1), finishedJob(2), finishedJob(3)]
+// un curso que no está entre los legibles y una ruta larguísima: se nombra por su archivo, y no se desborda
+const jobsWithLongSource = [{ ...doneJob, courseId: 'otro', source: `wasichai/manual-sgspe@${ANY_SHA}:manual/${'capitulo-muy-largo/'.repeat(6)}anexo.adoc` }]
 
 const withDiff = (status: number, body: unknown) => async (page: Page) => {
   await page.route(DIFF, (route) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) }))
@@ -243,9 +272,37 @@ export const studioScenarios: Scenario[] = [
     name: 'studio-import-clean',
     path: IMPORT_PATH,
     api: creator,
-    act: importedAs({ ...doneJob, report: { ...importReport, source: SOURCE, problemCount: 0, problems: [] } })
+    act: importedAs({ ...doneJob, report: { ...importReport, source: SOURCE, problemCount: 0, problems: [], problemsBySeverity: { GAP: 0, CHECK: 0 } } })
   },
   { name: 'studio-import-failed', path: IMPORT_PATH, api: creator, act: importedAs(failedJob) },
+  // quien vuelve: la lista de sus trabajos, en cada estado que importa
+  { name: 'studio-import-jobs', path: IMPORT_PATH, api: creator, act: withImportJobs(200, jobsOfEveryKind) },
+  { name: 'studio-import-jobs-running', path: IMPORT_PATH, api: creator, act: withImportJobs(200, [runningJob]) },
+  { name: 'studio-import-jobs-long', path: IMPORT_PATH, api: creator, act: withImportJobs(200, jobsWithLongSource) },
+  { name: 'studio-import-jobs-empty', path: IMPORT_PATH, api: creator, act: withImportJobs(200, []) },
+  { name: 'studio-import-jobs-error', path: IMPORT_PATH, api: creator, act: withImportJobs(500, { title: 'Error', status: 500 }) },
+  { name: 'studio-import-jobs-forbidden', path: IMPORT_PATH, api: creator, act: withImportJobs(403, { title: 'Forbidden', status: 403 }) },
+  {
+    name: 'studio-import-jobs-loading',
+    path: IMPORT_PATH,
+    api: creator,
+    act: async (page) => {
+      await page.route(IMPORT, (route) => (route.request().method() === 'GET' ? undefined : route.fallback()))
+      await page.reload({ waitUntil: 'domcontentloaded' })
+      await page.getByRole('button', { name: /Importar como borrador|Import as a draft/ }).waitFor()
+    }
+  },
+  {
+    name: 'studio-import-jobs-resumed',
+    path: IMPORT_PATH,
+    api: creator,
+    act: async (page) => {
+      await page.route(importJob, (route) => route.fulfill({ json: runningJob }))
+      await withImportJobs(200, [runningJob])(page)
+      await page.getByRole('button', { name: /Seguir la importación|Follow the import/ }).click()
+      await page.getByRole('heading', { level: 2, name: /Estado de la importación|Import status/ }).waitFor()
+    }
+  },
   { name: 'studio-import-forbidden', path: IMPORT_PATH, api: creator, act: reloadedWith(IMPORT_SOURCES, 403, { title: 'Forbidden', status: 403 }) },
   { name: 'studio-import-no-sources', path: IMPORT_PATH, api: creator, act: reloadedWith(IMPORT_SOURCES, 200, []) },
   {
