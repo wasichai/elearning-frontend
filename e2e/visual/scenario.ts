@@ -13,3 +13,4 @@ export const student: FakeApiOptions = { signedIn: true }
 export const teacher: FakeApiOptions = { signedIn: true, as: 'teacher' }
 export const creator: FakeApiOptions = { signedIn: true, as: 'creator' }
 export const reviewer: FakeApiOptions = { signedIn: true, as: 'reviewer' }
+export const administrator: FakeApiOptions = { signedIn: true, as: 'administrator' }

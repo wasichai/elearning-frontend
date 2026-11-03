@@ -1,5 +1,6 @@
 import { resolveConfig } from '@wasichai/core'
 import { describe, expect, it } from 'vitest'
+import { shellNav } from './shellNav'
 import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
 import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
 
@@ -27,7 +28,8 @@ describe('createConfig', () => {
       timeZone: 'America/Lima',
       themes: QUIPU_THEMES,
       systemThemes: QUIPU_SYSTEM_THEMES,
-      defaultLoginEmail: ''
+      defaultLoginEmail: '',
+      shellNav
     })
   })
 
