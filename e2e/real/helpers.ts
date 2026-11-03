@@ -30,7 +30,17 @@ export async function newUser(request: APIRequestContext, role: string, displayN
   return user
 }
 
-export const newStudent = (request: APIRequestContext) => newUser(request, 'ESTUDIANTE', 'Estudiante e2e')
+// matricularse exige la aceptación vigente de los términos de uso (ADR-0037 del backend). aún no hay pantalla para aceptarlos (#162):
+// un estudiante nuevo los acepta por la API, para que estos recorridos sigan probando lo suyo
+export async function newStudent(request: APIRequestContext): Promise<Account> {
+  const student = await newUser(request, 'ESTUDIANTE', 'Estudiante e2e')
+  const headers = { Authorization: `Bearer ${await token(request, student.email, student.password)}` }
+  const terms = (await (await request.get(`${API_URL}/api/lms/terms`, { headers })).json()) as { current: { version: number } | null }
+  expect(terms.current, 'la demo no tiene términos de uso publicados').not.toBeNull()
+  const accepted = await request.post(`${API_URL}/api/lms/terms/acceptance`, { headers, data: { version: terms.current!.version } })
+  expect(accepted.status()).toBe(200)
+  return student
+}
 
 export async function signIn(page: Page, user: Account) {
   await page.goto('/login')

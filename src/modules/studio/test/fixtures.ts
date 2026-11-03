@@ -133,3 +133,64 @@ export const problem = (status: number, detail: string) => ({
   detail,
   errors: []
 })
+
+// un curso recién creado, sin versiones, y su primer borrador: vacío, como lo crea POST studio/courses/{id}/versions (#270)
+export const newCourseRecord = {
+  id: 'c0a8e1f2-0000-4000-8000-0000000000bb',
+  createdAt: '2026-11-03T10:00:00Z',
+  updatedAt: '2026-11-03T10:00:00Z',
+  attributes: { codigo: 'NUEVO-101', slug: 'nuevo-101', titulo: 'Curso nuevo', idioma: 'es', nivel: 'INICIAL' }
+}
+
+export const firstDraftDetail = {
+  ...draftDetail,
+  id: 'a1b2c3d4-0000-4000-8000-000000000010',
+  number: 1,
+  course: { id: newCourseRecord.id, code: 'NUEVO-101', title: 'Curso nuevo' },
+  units: []
+}
+
+const objectField = (name: string, label: string, type: string, required = false, position = 0, relationTarget: string | null = null) => ({
+  id: `f-${name}`,
+  name,
+  label,
+  type,
+  required,
+  unique: false,
+  defaultValue: null,
+  description: null,
+  position,
+  enumOptions: null,
+  relationTarget,
+  visible: true,
+  editable: true
+})
+
+const objectDefinition = (name: string, label: string, fields: ReturnType<typeof objectField>[]) => ({
+  id: `o-${name}`,
+  name,
+  label,
+  pluralLabel: label,
+  description: null,
+  enabled: true,
+  uniqueConstraints: [],
+  appendOnly: false,
+  apiOnly: false,
+  requiresReason: false,
+  fields
+})
+
+// los metadatos que da el servidor (model/model.json del backend), con los campos que usan las pantallas del estudio
+export const courseDefinition = objectDefinition('curso', 'Curso', [
+  objectField('codigo', 'Código', 'TEXT', true, 0),
+  objectField('slug', 'Identificador en URL', 'TEXT', true, 1),
+  objectField('titulo', 'Título', 'TEXT', true, 2)
+])
+
+export const unitDefinition = objectDefinition('unidad', 'Unidad', [
+  objectField('orden', 'Orden', 'INTEGER', true, 0),
+  objectField('titulo', 'Título', 'TEXT', true, 1),
+  objectField('descripcion', 'Descripción', 'LONG_TEXT', false, 2),
+  objectField('referencia_fuente', 'Fuente', 'TEXT', false, 3),
+  objectField('version_curso', 'Versión del curso', 'RELATION', true, 4, 'version_curso')
+])

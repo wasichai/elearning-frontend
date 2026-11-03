@@ -114,7 +114,7 @@ describe('VersionsPage: mis versiones', () => {
       permissions: { admin: false, objects: { curso: ['READ', 'CREATE'], version_curso: ['READ', 'CREATE'] } }
     })
 
-    expect(await screen.findByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('href', '/data/objects/curso/records/new')
+    expect(await screen.findByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('href', '/estudio/cursos/nuevo')
   })
 
   it.each([
@@ -133,11 +133,45 @@ describe('VersionsPage: mis versiones', () => {
     expect(screen.queryByRole('link', { name: 'Nuevo curso' })).not.toBeInTheDocument()
   })
 
-  it('sin versiones lo dice con claridad', async () => {
+  it('sin versiones lo dice con claridad y la primera acción es «Nuevo curso», con un camino que existe', async () => {
     renderVersions([{ path: VERSIONS, body: [] }])
 
     expect(await screen.findByText('Aún no tienes versiones')).toBeInTheDocument()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
+    expect(screen.getByText(/al guardarlo se abre su primer borrador/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('data-variant', 'primary')
+  })
+
+  it('con versiones, «Nuevo curso» no compite con la primera acción', async () => {
+    renderVersions([{ path: VERSIONS, body: [draftVersion] }])
+
+    await screen.findByRole('article')
+    expect(screen.getByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('data-variant', 'secondary')
+  })
+
+  it('señala la lista de cursos para un curso sin versiones, sin llamarlos «tuyos»: un curso no tiene dueño en el contrato', async () => {
+    fetchMock = mockFetch([{ path: VERSIONS, body: [draftVersion] }])
+    renderWithProviders(<VersionsPage />, {
+      modules: [studioModule()],
+      route: '/estudio',
+      permissions: { admin: false, objects: { curso: ['READ'], version_curso: ['READ', 'CREATE'] } }
+    })
+
+    expect(await screen.findByRole('link', { name: 'Ver todos los cursos' })).toHaveAttribute('href', '/data/objects/curso/records')
+    expect(screen.getByText(/incluye los de todas las personas/)).toBeInTheDocument()
+    expect(screen.queryByText(/al guardarlo se abre/)).not.toBeInTheDocument()
+  })
+
+  it('sin permiso de leer cursos no los señala', async () => {
+    fetchMock = mockFetch([{ path: VERSIONS, body: [] }])
+    renderWithProviders(<VersionsPage />, {
+      modules: [studioModule()],
+      route: '/estudio',
+      permissions: { admin: false, objects: { version_curso: ['READ', 'CREATE'] } }
+    })
+
+    expect(await screen.findByText('Aún no tienes versiones')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Ver todos los cursos' })).not.toBeInTheDocument()
   })
 
   it('un error del servidor se explica y deja reintentar; un contrato roto no muestra datos a medias', async () => {

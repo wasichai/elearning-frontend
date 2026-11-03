@@ -32,3 +32,16 @@ export function useActionError() {
     return t('action.failedStatus', { status: error.status })
   }
 }
+
+// por qué no se creó el primer borrador y si tiene sentido volver a intentarlo: un 403, un 404 y un 409 darían lo mismo otra vez
+export function useFirstDraftError() {
+  const { t } = useTranslation('studio')
+  return (error: unknown): { message: string; retry: boolean } => {
+    if (error instanceof TypeError) return { message: t('action.network'), retry: true }
+    if (!(error instanceof ApiError)) return { message: t('firstDraft.failed'), retry: true }
+    if (error.status === 403) return { message: t('firstDraft.refused'), retry: false }
+    if (error.status === 404) return { message: t('firstDraft.notFound'), retry: false }
+    if (error.status === 409) return { message: t('firstDraft.conflict'), retry: false }
+    return { message: t('firstDraft.failedStatus', { status: error.status }), retry: true }
+  }
+}

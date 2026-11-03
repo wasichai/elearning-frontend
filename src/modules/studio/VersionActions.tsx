@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { WRAP } from '../../shared/buttons'
 import { ReturnFocus } from '../../shared/ReturnFocus'
-import { useNewVersion } from './api'
+import { useNewVersion, useVersion } from './api'
 import type { StudioVersion } from './contract'
 import { useActionError } from './parts'
 import { STUDIO_ROUTES } from './routes'
@@ -21,11 +21,14 @@ interface SubmitVersionButtonProps {
   ariaLabel?: string
 }
 
-// enviar deja la versión sin editar hasta que el revisor decida: se confirma (RNF-UX-08). un fallo se explica en el diálogo
+// enviar deja la versión sin editar hasta que el revisor decida: se confirma (RNF-UX-08). un fallo se explica en el diálogo.
+// el servidor acepta una versión sin unidades y la lista no sabe cuántas tiene: al abrir el diálogo se lee y, vacía, se avisa
 export function SubmitVersionButton({ version, submit, variant, ariaLabel }: SubmitVersionButtonProps) {
   const { t } = useTranslation('studio')
   const describe = useActionError()
   const [asking, setAsking] = useState(false)
+  const detail = useVersion(version.id, asking)
+  const empty = detail.data?.units.length === 0
   return (
     <>
       <Button variant={variant} className={WRAP} aria-label={ariaLabel} disabled={submit.isPending} onClick={() => setAsking(true)}>
@@ -36,7 +39,7 @@ export function SubmitVersionButton({ version, submit, variant, ariaLabel }: Sub
           <ConfirmDialog
             variant="primary"
             title={t('version.submitTitle')}
-            description={t('version.submitDescription', { number: version.number })}
+            description={t(empty ? 'version.submitEmptyDescription' : 'version.submitDescription', { number: version.number })}
             confirmLabel={t('version.submitConfirm')}
             cancelLabel={t('version.cancel')}
             busy={submit.isPending}

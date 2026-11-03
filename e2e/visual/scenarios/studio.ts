@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { draftDetail, draftVersion, publishedDetail, publishedVersion } from '../../../src/modules/studio/test/fixtures'
+import { draftDetail, draftVersion, newCourseRecord, publishedDetail, publishedVersion } from '../../../src/modules/studio/test/fixtures'
 import { doneJob, failedJob, IMPORT_JOB_ID, importReport, pendingJob, runningJob, ANY_SHA, SOURCE } from '../../../src/modules/studio/test/importFixtures'
 import { creator, type Scenario } from '../scenario'
 
@@ -161,8 +161,46 @@ const withDiff = (status: number, body: unknown) => async (page: Page) => {
   await showDiff(page)
 }
 
+const NEW_COURSE_PATH = '/estudio/cursos/nuevo'
+const FIRST_DRAFT = `**/api/lms/studio/courses/${newCourseRecord.id}/versions`
+
+// el formulario de «Nuevo curso» guardado, con el borrador en la respuesta que se quiere ver
+const savedWithDraftReply = (status: number) => async (page: Page) => {
+  await page.route(FIRST_DRAFT, (route) => route.fulfill({ status, contentType: 'application/problem+json', body: JSON.stringify({ title: 'Error', status }) }))
+  await page.getByLabel(/Código|Code/).fill('NUEVO-101')
+  await page.getByLabel(/Identificador|URL/).fill('nuevo-101')
+  await page.getByLabel(/Título|Title/).fill('Curso nuevo')
+  await page.getByRole('button', { name: /Guardar|Save/ }).click()
+  await page.getByRole('alert').waitFor()
+}
+
+// el primer borrador, recién creado y sin unidades
+const firstDraftOpen = async (page: Page) => {
+  await page.getByLabel(/Código|Code/).fill('NUEVO-101')
+  await page.getByLabel(/Identificador|URL/).fill('nuevo-101')
+  await page.getByLabel(/Título|Title/).fill('Curso nuevo')
+  await page.getByRole('button', { name: /Guardar|Save/ }).click()
+  await page.getByRole('link', { name: /Añadir la primera unidad|Add the first unit/ }).waitFor()
+}
+
 export const studioScenarios: Scenario[] = [
   { name: 'studio', path: '/estudio', api: creator },
+  { name: 'studio-new-course', path: NEW_COURSE_PATH, api: creator },
+  { name: 'studio-new-course-network', path: NEW_COURSE_PATH, api: creator, act: savedWithDraftReply(500) },
+  { name: 'studio-new-course-refused', path: NEW_COURSE_PATH, api: creator, act: savedWithDraftReply(403) },
+  { name: 'studio-new-course-conflict', path: NEW_COURSE_PATH, api: creator, act: savedWithDraftReply(409) },
+  { name: 'studio-first-draft', path: NEW_COURSE_PATH, api: creator, act: firstDraftOpen },
+  {
+    name: 'studio-first-draft-submit',
+    path: NEW_COURSE_PATH,
+    api: creator,
+    act: async (page) => {
+      await firstDraftOpen(page)
+      await page.getByRole('button', { name: /Enviar a revisión|Send for review/ }).click()
+      await page.getByText(/aún no tiene unidades: el revisor|no units yet: the reviewer/).waitFor()
+    }
+  },
+  { name: 'studio-new-unit', path: `${DRAFT_PATH}/unidades/nueva`, api: creator },
   { name: 'studio-draft', path: DRAFT_PATH, api: creator },
   {
     name: 'studio-published',

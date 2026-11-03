@@ -1,4 +1,4 @@
-import { draftDetail, problem, publishedDetail } from '../src/modules/studio/test/fixtures'
+import { courseDefinition, draftDetail, newCourseRecord, problem, publishedDetail, unitDefinition } from '../src/modules/studio/test/fixtures'
 import { courseRecords, importReport, importSources } from '../src/modules/studio/test/importFixtures'
 
 // el estudio del creador simulado (ADR-0018): solo las versiones de quien las escribió; lo demás, 404 como el servidor.
@@ -11,9 +11,15 @@ const VERSIONS = '/api/lms/studio/versions'
 const IMPORT = '/api/lms/studio/import'
 // los cursos que lee el formulario de importación, por la API de registros de Wasichai
 const COURSE_RECORDS = '/api/objects/curso/records'
+// lo que necesitan «Nuevo curso» y «Añadir una unidad», de la API de registros y metadatos de Wasichai
+const VERSION_RECORDS = '/api/objects/version_curso/records'
+const UNIT_RECORDS = '/api/objects/unidad/records'
+const COURSE_DEFINITION = '/api/metadata/objects/curso'
+const UNIT_DEFINITION = '/api/metadata/objects/unidad'
+const RECORD_APIS = [COURSE_RECORDS, VERSION_RECORDS, UNIT_RECORDS, COURSE_DEFINITION, UNIT_DEFINITION]
 
 // lo que atiende esta simulación: el estudio y la lista de cursos del formulario de importación
-export const isStudio = (url: URL) => url.pathname.startsWith(STUDIO) || url.pathname === COURSE_RECORDS
+export const isStudio = (url: URL) => url.pathname.startsWith(STUDIO) || RECORD_APIS.includes(url.pathname)
 
 type Detail = Omit<typeof publishedDetail, 'status' | 'reviewerId' | 'comments' | 'decisions'> & {
   status: string
@@ -108,11 +114,33 @@ function diffOf(state: StudioState, version: Detail) {
   return { baseVersion: base?.number ?? null, units }
 }
 
+// un curso sin versiones recibe la v1 vacía (#270)
+function firstDraft(state: StudioState, courseId: string): Reply {
+  if (courseId !== newCourseRecord.id) return { status: 404, body: problem(404, 'Curso no encontrado') }
+  const id = `a1b2c3d4-0000-4000-8000-${String(++state.lastNumber).padStart(12, '0')}`
+  const attributes = newCourseRecord.attributes
+  state.versions.unshift({
+    ...structuredClone(draftDetail),
+    id,
+    number: 1,
+    status: 'BORRADOR',
+    course: { id: courseId, code: attributes.codigo, title: attributes.titulo },
+    reviewerId: null,
+    updatedAt: new Date().toISOString(),
+    openComments: 0,
+    comments: [],
+    decisions: [],
+    units: []
+  })
+  return { status: 201, body: { id, number: 1, status: 'BORRADOR' } }
+}
+
 const notFound: Reply = { status: 404, body: problem(404, 'Versión no encontrada') }
 
 // copia la versión indicada a un borrador nuevo, sin sus comentarios ni sus decisiones (ADR-0018 §1)
 function newVersion(state: StudioState, courseId: string, body: { fromVersionId?: string | null }): Reply {
   const ofCourse = state.versions.filter((version) => version.course.id === courseId)
+  if (ofCourse.length === 0 && !body.fromVersionId) return firstDraft(state, courseId)
   const source = body.fromVersionId ? ofCourse.find((version) => version.id === body.fromVersionId) : ofCourse[0]
   if (!source) return { status: 400, body: problem(400, 'Invalid version') }
   const number = ++state.lastNumber
@@ -220,8 +248,30 @@ function simulateImport(state: StudioState, method: string, url: URL, body: unkn
   return undefined
 }
 
+// «Nuevo curso» y «Añadir una unidad»: la API de registros, con lo justo. la unidad entra en el temario de su versión
+function simulateRecords(state: StudioState, method: string, url: URL, body: unknown): Reply | undefined {
+  if (method === 'GET' && url.pathname === COURSE_DEFINITION) return { status: 200, body: courseDefinition }
+  if (method === 'GET' && url.pathname === UNIT_DEFINITION) return { status: 200, body: unitDefinition }
+  if (method === 'POST' && url.pathname === COURSE_RECORDS) return { status: 201, body: newCourseRecord }
+  if (method === 'GET' && url.pathname === VERSION_RECORDS) {
+    const content = state.versions.filter((version) => version.course.id === url.searchParams.get('curso')).map(({ id }) => ({ id }))
+    return { status: 200, body: { content } }
+  }
+  if (method === 'POST' && url.pathname === UNIT_RECORDS) {
+    const attributes = (body as { attributes: { orden: number; titulo: string; version_curso: string } }).attributes
+    const version = state.versions.find((candidate) => candidate.id === attributes.version_curso)
+    if (!version) return { status: 404, body: problem(404, 'Versión no encontrada') }
+    const id = `u-${version.units.length + 100}`
+    version.units.push({ id, order: attributes.orden, title: attributes.titulo, lessons: [] })
+    return { status: 201, body: { id, createdAt: null, updatedAt: null, attributes } }
+  }
+  return undefined
+}
+
 export function simulateStudio(state: StudioState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!isStudio(url)) return undefined
+  const record = simulateRecords(state, method, url, body)
+  if (record) return record
   const imported = simulateImport(state, method, url, body)
   if (imported) return imported
   if (method === 'GET' && url.pathname === VERSIONS) return { status: 200, body: state.versions.map(summary) }

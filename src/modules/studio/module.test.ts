@@ -9,8 +9,14 @@ describe('studioModule', () => {
     expect(registry.routes.filter((route) => route.moduleId === 'studio').map(({ key, path, chrome }) => ({ key, path, chrome }))).toEqual([
       { key: STUDIO_ROUTES.versions, path: '/estudio', chrome: 'shell' },
       { key: STUDIO_ROUTES.version, path: '/estudio/versiones/:id', chrome: 'shell' },
-      { key: STUDIO_ROUTES.import, path: '/estudio/importar', chrome: 'shell' }
+      { key: STUDIO_ROUTES.import, path: '/estudio/importar', chrome: 'shell' },
+      { key: STUDIO_ROUTES.newCourse, path: '/estudio/cursos/nuevo', chrome: 'shell' },
+      { key: STUDIO_ROUTES.newUnit, path: '/estudio/versiones/:id/unidades/nueva', chrome: 'shell' }
     ])
+  })
+
+  it('aporta el panel del primer borrador a las fichas de registros', () => {
+    expect(createRegistry([coreModule, studioModule()]).recordPanels).toHaveLength(1)
   })
 
   it('pone «Mis versiones» en el grupo «Contenido», visible solo para quien puede crear versiones o administra', () => {

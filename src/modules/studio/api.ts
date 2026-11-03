@@ -11,12 +11,14 @@ import {
   type StudioVersion,
   type StudioVersionDetail,
   versionDiffSchema,
-  type VersionDiff
+  type VersionDiff,
+  versionRecordPageSchema
 } from './contract'
 
 // la API del estudio, con sesión, relativa a apiBaseUrl
 const STUDIO_PATH = '/lms/studio'
 const versionPath = (id: string) => `${STUDIO_PATH}/versions/${encodeURIComponent(id)}`
+const VERSION_RECORDS = '/objects/version_curso/records'
 
 export async function fetchVersions(client: ApiClient, signal?: AbortSignal): Promise<StudioVersion[]> {
   const body = await client.request<unknown>(`${STUDIO_PATH}/versions`, { signal })
@@ -48,12 +50,19 @@ export async function createVersion(client: ApiClient, courseId: string, fromVer
   return parseContract(newVersionSchema, `POST studio/courses/${courseId}/versions`, body)
 }
 
+// si el curso tiene alguna versión que la persona pueda leer, de cualquier autor. GET studio/versions no sirve: solo trae las suyas
+export async function fetchCourseHasVersions(client: ApiClient, courseId: string, signal?: AbortSignal): Promise<boolean> {
+  const body = await client.request<unknown>(`${VERSION_RECORDS}?curso=${encodeURIComponent(courseId)}&size=1`, { signal })
+  return parseContract(versionRecordPageSchema, 'GET objects/version_curso/records', body).content.length > 0
+}
+
 export const studioKeys = {
   all: ['studio'] as const,
   versions: ['studio', 'versions'] as const,
   version: (id: string) => ['studio', 'version', id] as const,
   // fuera de version(id): enviar no cambia el contenido, y releerla no debe esperar a la comparación
-  diff: (id: string) => ['studio', 'diff', id] as const
+  diff: (id: string) => ['studio', 'diff', id] as const,
+  courseVersions: (courseId: string) => ['studio', 'courseVersions', courseId] as const
 }
 
 export function useVersions() {
@@ -61,9 +70,18 @@ export function useVersions() {
   return useQuery({ queryKey: studioKeys.versions, queryFn: ({ signal }) => fetchVersions(client, signal), retry: retryNetwork })
 }
 
-export function useVersion(id: string) {
+export function useVersion(id: string, enabled = true) {
   const client = useApiClient()
-  return useQuery({ queryKey: studioKeys.version(id), queryFn: ({ signal }) => fetchVersion(client, id, signal), retry: retryNetwork })
+  return useQuery({ queryKey: studioKeys.version(id), queryFn: ({ signal }) => fetchVersion(client, id, signal), retry: retryNetwork, enabled })
+}
+
+export function useCourseHasVersions(courseId: string) {
+  const client = useApiClient()
+  return useQuery({
+    queryKey: studioKeys.courseVersions(courseId),
+    queryFn: ({ signal }) => fetchCourseHasVersions(client, courseId, signal),
+    retry: retryNetwork
+  })
 }
 
 export function useVersionDiff(id: string) {
@@ -88,5 +106,17 @@ export function useNewVersion(courseId: string) {
   return useMutation({
     mutationFn: (fromVersionId: string | null) => createVersion(client, courseId, fromVersionId),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: studioKeys.versions })
+  })
+}
+
+// el primer borrador de un curso sin versiones (#270): vacío, a nombre de quien lo pide. con versiones, el servidor copiaría la última:
+// solo se ofrece a un curso sin ninguna. se relee en cualquier caso: un 409 significa que otra persona se adelantó
+export function useFirstDraft() {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (courseId: string) => createVersion(client, courseId, null),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: studioKeys.versions }),
+    onSettled: (_created, _error, courseId) => void queryClient.invalidateQueries({ queryKey: studioKeys.courseVersions(courseId) })
   })
 }

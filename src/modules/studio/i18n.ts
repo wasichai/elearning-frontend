@@ -12,7 +12,10 @@ const es = {
     subtitle: 'Las versiones de curso que escribes: su estado, lo que comentó el revisor y lo que falta.',
     loading: 'Cargando tus versiones…',
     empty: 'Aún no tienes versiones',
-    emptyHint: 'Cuando crees o importes una versión de un curso, aparecerá aquí para editarla y enviarla a revisión.',
+    emptyHint: 'Empieza por «Nuevo curso»: al guardarlo se abre su primer borrador, que aparecerá aquí para editarlo y enviarlo a revisión.',
+    coursesHint:
+      '¿Un curso aún sin versiones? Ábrelo en la lista de cursos, que incluye los de todas las personas. Al final de su ficha puedes crear su primer borrador.',
+    allCourses: 'Ver todos los cursos',
     name: '{{course}} — versión {{number}}',
     number: 'Versión {{number}}',
     newCourse: 'Nuevo curso',
@@ -55,6 +58,8 @@ const es = {
     submitTitle: '¿Enviar a revisión?',
     submitDescription:
       'Mientras la versión {{number}} esté en revisión no podrás editarla. El revisor puede aprobarla, pedirte cambios (vuelve a borrador) o rechazarla.',
+    submitEmptyDescription:
+      'La versión {{number}} aún no tiene unidades: el revisor recibiría una versión vacía y no podrás editarla hasta que decida. Antes puedes añadirle contenido.',
     submitConfirm: 'Sí, enviar a revisión',
     cancel: 'Volver',
     copy: 'Crear versión nueva',
@@ -64,9 +69,39 @@ const es = {
       'Se copia el contenido de la versión {{number}} (unidades, lecciones, evaluaciones y enlaces a recursos) a un borrador tuyo. La versión {{number}} y quien la cursa no cambian, y los comentarios y decisiones se quedan con ella.',
     copyConfirm: 'Sí, crear el borrador'
   },
+  firstDraft: {
+    title: 'Primer borrador',
+    hint: 'Este curso aún no tiene versiones. Crea su primer borrador, vacío y a tu nombre, para añadirle el contenido.',
+    create: 'Crear primer borrador',
+    creating: 'Creando…',
+    checkFailed: 'No pudimos comprobar si este curso tiene versiones.',
+    failed: 'No pudimos crear el borrador. Inténtalo de nuevo.',
+    failedStatus: 'No pudimos crear el borrador (error {{status}}). Inténtalo de nuevo.',
+    refused: 'No tienes permiso para crear versiones. Si crees que deberías, pide a la coordinación que revise tus permisos.',
+    notFound: 'Este curso ya no existe o no puedes leerlo.',
+    conflict: 'Este curso ya tiene una versión: otra persona pudo crearla hace un momento. Si es tuya, está en «Mis versiones».',
+    toVersions: 'Ir a mis versiones'
+  },
+  newCourse: {
+    title: 'Nuevo curso',
+    loading: 'Cargando el formulario…',
+    subtitle: 'Al guardarlo se abre su primer borrador, vacío, para que le añadas el contenido.',
+    creatingDraft: 'Curso guardado. Creando su primer borrador…',
+    savedTitle: 'El curso «{{title}}» se guardó, pero falta su borrador',
+    openCourse: 'Abrir el curso'
+  },
+  newUnit: {
+    title: 'Nueva unidad',
+    subtitle: 'De la versión {{number}} de {{course}}',
+    backToVersion: 'Volver a la versión'
+  },
   syllabus: {
     title: 'Contenido',
     empty: 'Esta versión aún no tiene unidades.',
+    emptyDraft: 'Esta versión aún no tiene unidades. Empieza por la primera; después, envíala a revisión.',
+    firstDraftDefaults: 'Se creó con modalidad asíncrona, por semanas y de 1 semana: ajústalo en «Editar la versión».',
+    addFirstUnit: 'Añadir la primera unidad',
+    addUnit: 'Añadir una unidad',
     unit: 'Unidad {{order}}. {{title}}',
     lesson: '{{order}}. {{title}}',
     edit: 'Editar',
@@ -166,7 +201,10 @@ const en: typeof es = {
     subtitle: 'The course versions you write: their status, what the reviewer commented and what is left.',
     loading: 'Loading your versions…',
     empty: 'You have no versions yet',
-    emptyHint: 'When you create or import a version of a course, it will appear here to edit it and send it for review.',
+    emptyHint: 'Start with “New course”: when you save it, its first draft opens, and it will appear here to edit it and send it for review.',
+    coursesHint:
+      'A course with no versions yet? Open it from the list of courses, which includes everyone’s. At the end of its page you can create its first draft.',
+    allCourses: 'See all courses',
     name: '{{course}} — version {{number}}',
     number: 'Version {{number}}',
     newCourse: 'New course',
@@ -209,6 +247,8 @@ const en: typeof es = {
     submitTitle: 'Send for review?',
     submitDescription:
       'While version {{number}} is in review you will not be able to edit it. The reviewer can approve it, request changes (it returns to draft) or reject it.',
+    submitEmptyDescription:
+      'Version {{number}} has no units yet: the reviewer would receive an empty version and you will not be able to edit it until they decide. You can add content first.',
     submitConfirm: 'Yes, send for review',
     cancel: 'Go back',
     copy: 'Create new version',
@@ -218,9 +258,39 @@ const en: typeof es = {
       'The content of version {{number}} (units, lessons, assessments and links to resources) is copied to a draft of yours. Version {{number}} and its students are not affected, and its comments and decisions stay with it.',
     copyConfirm: 'Yes, create the draft'
   },
+  firstDraft: {
+    title: 'First draft',
+    hint: 'This course has no versions yet. Create its first draft, empty and in your name, to add the content.',
+    create: 'Create first draft',
+    creating: 'Creating…',
+    checkFailed: 'We could not check whether this course has versions.',
+    failed: 'We could not create the draft. Please try again.',
+    failedStatus: 'We could not create the draft (error {{status}}). Please try again.',
+    refused: 'You do not have permission to create versions. If you think you should, ask the coordination team to review your permissions.',
+    notFound: 'This course no longer exists or you cannot read it.',
+    conflict: 'This course already has a version: someone else may have just created it. If it is yours, it is in “My versions”.',
+    toVersions: 'Go to my versions'
+  },
+  newCourse: {
+    title: 'New course',
+    loading: 'Loading the form…',
+    subtitle: 'When you save it, its first draft opens, empty, for you to add the content.',
+    creatingDraft: 'Course saved. Creating its first draft…',
+    savedTitle: 'The course “{{title}}” was saved, but its draft is missing',
+    openCourse: 'Open the course'
+  },
+  newUnit: {
+    title: 'New unit',
+    subtitle: 'Of version {{number}} of {{course}}',
+    backToVersion: 'Back to the version'
+  },
   syllabus: {
     title: 'Content',
     empty: 'This version has no units yet.',
+    emptyDraft: 'This version has no units yet. Start with the first one; then send it for review.',
+    firstDraftDefaults: 'It was created as asynchronous, by weeks and lasting 1 week: adjust this in “Edit the version”.',
+    addFirstUnit: 'Add the first unit',
+    addUnit: 'Add a unit',
     unit: 'Unit {{order}}. {{title}}',
     lesson: '{{order}}. {{title}}',
     edit: 'Edit',
