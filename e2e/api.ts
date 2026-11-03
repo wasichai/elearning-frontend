@@ -330,6 +330,7 @@ interface SubmissionData {
 }
 
 const KEY = Object.fromEntries(gradedAttempt.result.questions.map((outcome) => [outcome.questionId, outcome.solution]))
+const REVIEW_LESSON = Object.fromEntries(gradedAttempt.result.questions.map((outcome) => [outcome.questionId, outcome.reviewLessonId]))
 const normalized = (text: string | null | undefined) => (text ?? '').trim().toLowerCase()
 
 function lessonOf(data: ClassroomData, lessonId: string) {
@@ -387,7 +388,8 @@ function grade(attempt: Attempt): NonNullable<Attempt['result']> {
       maxPoints: question.points,
       correct,
       comment: null,
-      solution: null
+      solution: null,
+      reviewLessonId: REVIEW_LESSON[question.id] ?? null
     }
   })
   const score = questions.reduce((sum, outcome) => sum + (outcome.points ?? 0), 0)

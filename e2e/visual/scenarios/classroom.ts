@@ -114,6 +114,16 @@ const longAttempt = {
     )
   }
 }
+// la lección de repaso: sin ninguna, y con un título largo que baja de línea
+const withoutReview = {
+  ...failedAttempt,
+  result: { ...failedResult, questions: failedResult.questions.map((outcome) => ({ ...outcome, reviewLessonId: null })) }
+}
+const longReviewSummary = (() => {
+  const copy = summaryWith(failedSummary)
+  copy.units[0]!.lessons[0]!.title = `Una lección de repaso con un título bastante largo para ver cómo baja de línea ${'Anticonstitucionalmente'.repeat(3)}`
+  return copy
+})()
 const startAttempt = async (page: Page) => {
   await page.getByRole('button', { name: /^(Comenzar intento|Start attempt)/ }).click()
   await page
@@ -343,6 +353,36 @@ export const classroomScenarios: Scenario[] = [
   },
   { name: 'student-result-failed', path: ATTEMPT, api: student, act: (page) => resultOf(page, failedAttempt, { ...failedSummary, attemptsUsed: 2 }) },
   { name: 'student-result-retry', path: ATTEMPT, api: student, act: (page) => resultOf(page, failedAttempt, failedSummary) },
+  {
+    name: 'student-result-review',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await resultOf(page, failedAttempt, failedSummary)
+      await toQuestion(page, /^3\./)
+    }
+  },
+  {
+    name: 'student-result-no-review',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await resultOf(page, withoutReview, failedSummary)
+      await toQuestion(page, /^3\./)
+    }
+  },
+  {
+    name: 'student-result-review-long',
+    path: ATTEMPT,
+    api: student,
+    act: async (page) => {
+      await reloadWith(page, async () => {
+        await page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: longReviewSummary }))
+        await page.route('**/api/lms/classroom/attempts/int-1', (route) => route.fulfill({ json: failedAttempt }))
+      })
+      await toQuestion(page, /^3\./)
+    }
+  },
   {
     name: 'student-result-pending',
     path: ATTEMPT,

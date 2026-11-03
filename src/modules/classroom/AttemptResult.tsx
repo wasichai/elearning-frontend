@@ -1,11 +1,18 @@
+import { useApiClient, useWasichaiLinks } from '@wasichai/core'
+import { useQuery } from '@tanstack/react-query'
 import { CircleCheck, CircleMinus, CircleX } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatDateTime, formatNumber } from '../../shared/format'
+import { classroomQuery } from './api'
 import type { Answer, Attempt, AttemptResult, Question, QuestionResult } from './contract'
+import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 import { StatusBadge } from './StatusBadge'
 
 interface AttemptResultViewProps {
+  enrollmentId: string
   attempt: Attempt
   passingPercent: number
   // el título de la evaluación y sus intentos, que el intento no trae: al llegar aquí, el título de la lección ya quedó arriba
@@ -24,7 +31,7 @@ function formatEarned(value: number, locale: string): string {
 
 // el resultado de un intento enviado: la nota (o que espera corrección), cómo salir de aquí y, debajo, cada pregunta con sus puntos, el
 // comentario del docente y, si la evaluación las muestra, las soluciones. lo primero queda arriba: el desglose puede ser largo
-export function AttemptResultView({ attempt, passingPercent, title, maxAttempts, timeZone, actions }: AttemptResultViewProps) {
+export function AttemptResultView({ enrollmentId, attempt, passingPercent, title, maxAttempts, timeZone, actions }: AttemptResultViewProps) {
   const { t, i18n } = useTranslation('classroom')
   const result = attempt.result
   const heading = useRef<HTMLHeadingElement>(null)
@@ -63,6 +70,7 @@ export function AttemptResultView({ attempt, passingPercent, title, maxAttempts,
                   question={question}
                   answer={attempt.answers.find((answer) => answer.questionId === question.id)}
                   outcome={result.questions.find((outcome) => outcome.questionId === question.id)}
+                  enrollmentId={enrollmentId}
                 />
               </li>
             ))}
@@ -128,7 +136,7 @@ function GradeRing({ label, percent, tone, children }: { label: string; percent:
 
 const LONG_TEXT = 'min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere]'
 
-function QuestionOutcome({ question, answer, outcome }: { question: Question; answer?: Answer; outcome?: QuestionResult }) {
+function QuestionOutcome({ question, answer, outcome, enrollmentId }: { question: Question; answer?: Answer; outcome?: QuestionResult; enrollmentId: string }) {
   const { t, i18n } = useTranslation('classroom')
   const locale = i18n.language
   const optionText = (ids: string[]) =>
@@ -173,7 +181,29 @@ function QuestionOutcome({ question, answer, outcome }: { question: Question; an
           <p className={`font-read text-base text-ink ${LONG_TEXT}`}>{outcome.comment}</p>
         </div>
       ) : null}
+      {outcome?.reviewLessonId ? <ReviewLesson enrollmentId={enrollmentId} lessonId={outcome.reviewLessonId} /> : null}
     </article>
+  )
+}
+
+// el resultado da el id de la lección de repaso; su título es el del temario del aula, ya en la caché del marco. una lección que el aula
+// no trae no se enlaza: abrirla solo diría que no está
+function ReviewLesson({ enrollmentId, lessonId }: { enrollmentId: string; lessonId: string }) {
+  const { t } = useTranslation('classroom')
+  const links = useWasichaiLinks()
+  const { data: classroom } = useQuery({ ...classroomQuery(useApiClient(), enrollmentId), refetchOnMount: false })
+  const lesson = classroom?.units.flatMap((unit) => unit.lessons).find((candidate) => candidate.id === lessonId)
+  if (!lesson) return null
+  return (
+    <p className="flex flex-wrap items-center gap-x-1.5 text-ink">
+      <span className="text-ink-muted">{t('result.review')}</span>
+      <Link
+        to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id })}
+        className={`${TEXT_LINK} underline [overflow-wrap:anywhere]`}
+      >
+        {lesson.title}
+      </Link>
+    </p>
   )
 }
 

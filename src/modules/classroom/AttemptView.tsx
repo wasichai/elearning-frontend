@@ -38,6 +38,7 @@ export function AttemptView({ enrollmentId, attemptId, passingPercent, title, ma
     return <AttemptForm key={query.data.id} enrollmentId={enrollmentId} attempt={query.data} title={title} maxAttempts={maxAttempts} timeZone={timeZone} />
   return (
     <AttemptResultView
+      enrollmentId={enrollmentId}
       attempt={query.data}
       passingPercent={passingPercent}
       title={title}

@@ -1,18 +1,16 @@
 import { z } from 'zod'
-import { fileSchema, percentSchema, type FileRef } from '../../shared/attempts'
+import {
+  attemptSchema as baseAttemptSchema,
+  fileSchema,
+  percentSchema,
+  type Attempt as BaseAttempt,
+  type AttemptResult as BaseAttemptResult,
+  type FileRef,
+  type QuestionResult as BaseQuestionResult
+} from '../../shared/attempts'
 import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
-export {
-  ATTEMPT_STATUSES,
-  attemptSchema,
-  QUESTION_TYPES,
-  type Answer,
-  type Attempt,
-  type AttemptResult,
-  type Question,
-  type QuestionResult,
-  type QuestionType
-} from '../../shared/attempts'
+export { ATTEMPT_STATUSES, QUESTION_TYPES, type Answer, type Question, type QuestionType } from '../../shared/attempts'
 export { ContractError, ENROLLMENT_STATUSES, OFFERING_STATUSES, parseContract, progressSummarySchema, type ProgressSummary } from '../../shared/contract'
 
 // el contrato del aula del estudiante (F2, ADR-0012; F3, ADR-0016): «Aula del estudiante» y «Evaluaciones, sesiones y
@@ -159,6 +157,19 @@ export type AssessmentSummary = z.infer<typeof assessmentSummarySchema>
 export type Lab = z.infer<typeof labSchema>
 export type LabEnvironment = Lab['environments'][number]
 export type Submission = z.infer<typeof submissionSchema>
+
+// el resultado del estudiante añade, por pregunta, la lección que la repasa (null si no tiene o en una instantánea anterior a ella).
+// sale siempre tras enviar, muestre o no las soluciones (#309 del backend). las reglas del intento siguen siendo las de shared/attempts
+const reviewLessons = z.object({
+  result: z.object({ questions: z.array(z.object({ reviewLessonId: id.nullable() })) }).nullable()
+})
+
+export type QuestionResult = BaseQuestionResult & { reviewLessonId: string | null }
+export type AttemptResult = Omit<BaseAttemptResult, 'questions'> & { questions: QuestionResult[] }
+export type Attempt = Omit<BaseAttempt, 'result'> & { result: AttemptResult | null }
+
+// zod une las dos lecturas pregunta a pregunta; TypeScript no sabe unir dos listas, por eso el tipo se escribe arriba
+export const attemptSchema = z.intersection(baseAttemptSchema, reviewLessons) as z.ZodType<Attempt>
 
 // la finalización (ADR-0016): las reglas que declara la versión, cada una con si se cumple y su detalle legible
 export const COMPLETION_RULES = ['LESSONS', 'ASSESSMENTS', 'ATTENDANCE'] as const

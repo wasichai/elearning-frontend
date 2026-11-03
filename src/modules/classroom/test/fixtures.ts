@@ -314,12 +314,12 @@ export const submittedAttempt = {
     passed: null,
     pending: true,
     questions: [
-      { questionId: 'p-single', points: 2, maxPoints: 2, correct: true, comment: null, solution: null },
-      { questionId: 'p-multiple', points: 2, maxPoints: 2, correct: true, comment: null, solution: null },
-      { questionId: 'p-tf', points: 0, maxPoints: 1, correct: false, comment: null, solution: null },
-      { questionId: 'p-short', points: 1, maxPoints: 1, correct: true, comment: null, solution: null },
-      { questionId: 'p-open', points: null, maxPoints: 2, correct: null, comment: null, solution: null },
-      { questionId: 'p-file', points: null, maxPoints: 2, correct: null, comment: null, solution: null }
+      { questionId: 'p-single', points: 2, maxPoints: 2, correct: true, comment: null, solution: null, reviewLessonId: null },
+      { questionId: 'p-multiple', points: 2, maxPoints: 2, correct: true, comment: null, solution: null, reviewLessonId: null },
+      { questionId: 'p-tf', points: 0, maxPoints: 1, correct: false, comment: null, solution: null, reviewLessonId: 'lec-sgspe-1' },
+      { questionId: 'p-short', points: 1, maxPoints: 1, correct: true, comment: null, solution: null, reviewLessonId: null },
+      { questionId: 'p-open', points: null, maxPoints: 2, correct: null, comment: null, solution: null, reviewLessonId: null },
+      { questionId: 'p-file', points: null, maxPoints: 2, correct: null, comment: null, solution: null, reviewLessonId: null }
     ]
   }
 }
@@ -335,19 +335,44 @@ export const gradedAttempt = {
     passed: true,
     pending: false,
     questions: [
-      { questionId: 'p-single', points: 2, maxPoints: 2, correct: true, comment: null, solution: { optionIds: ['o-muni'], acceptedAnswers: [] } },
+      {
+        questionId: 'p-single',
+        points: 2,
+        maxPoints: 2,
+        correct: true,
+        comment: null,
+        solution: { optionIds: ['o-muni'], acceptedAnswers: [] },
+        reviewLessonId: null
+      },
       {
         questionId: 'p-multiple',
         points: 2,
         maxPoints: 2,
         correct: true,
         comment: null,
-        solution: { optionIds: ['o-adosado', 'o-luminoso'], acceptedAnswers: [] }
+        solution: { optionIds: ['o-adosado', 'o-luminoso'], acceptedAnswers: [] },
+        reviewLessonId: null
       },
-      { questionId: 'p-tf', points: 0, maxPoints: 1, correct: false, comment: null, solution: { optionIds: ['o-v'], acceptedAnswers: [] } },
-      { questionId: 'p-short', points: 1, maxPoints: 1, correct: true, comment: null, solution: { optionIds: [], acceptedAnswers: ['SRTM', 'S.R.T.M.'] } },
-      { questionId: 'p-open', points: 1, maxPoints: 2, correct: null, comment: 'Falta citar la ordenanza.', solution: null },
-      { questionId: 'p-file', points: 2, maxPoints: 2, correct: null, comment: null, solution: null }
+      {
+        questionId: 'p-tf',
+        points: 0,
+        maxPoints: 1,
+        correct: false,
+        comment: null,
+        solution: { optionIds: ['o-v'], acceptedAnswers: [] },
+        reviewLessonId: 'lec-sgspe-1'
+      },
+      {
+        questionId: 'p-short',
+        points: 1,
+        maxPoints: 1,
+        correct: true,
+        comment: null,
+        solution: { optionIds: [], acceptedAnswers: ['SRTM', 'S.R.T.M.'] },
+        reviewLessonId: null
+      },
+      { questionId: 'p-open', points: 1, maxPoints: 2, correct: null, comment: 'Falta citar la ordenanza.', solution: null, reviewLessonId: null },
+      { questionId: 'p-file', points: 2, maxPoints: 2, correct: null, comment: null, solution: null, reviewLessonId: null }
     ]
   }
 }

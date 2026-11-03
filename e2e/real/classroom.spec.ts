@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { API_URL, expandedUnits, newStudent, signIn } from './helpers'
+import { ADMIN, API_URL, expandedUnits, newStudent, signIn, token } from './helpers'
 
 // recorridos 1–4 del aula contra el backend de verdad (perfil dev con los datos de demostración aplicados; README,
 // «Humo contra el backend real»): iniciar sesión, matricularse desde la ficha, abrir la unidad y sus recursos, completar
@@ -137,4 +138,85 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
   await expect(card.getByRole('progressbar', { name: 'Progreso del curso' })).toBeVisible()
   await card.getByRole('link', { name: /^(Continuar|Repasar) «/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
+})
+
+// la lección de repaso (elearning-backend#309): la demo no enlaza ninguna y lo publicado no cambia, así que la prueba escribe su propio curso.
+// sin soluciones (NUNCA): el repaso sale igual, y sigue ahí con el intento ya cerrado
+test('el resultado de un intento enlaza a la lección de repaso que da el servidor, y solo en su pregunta', async ({ page, request }) => {
+  test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
+  test.setTimeout(120_000)
+  const run = randomUUID().slice(0, 8)
+  const code = `REPASO-${run}`.toUpperCase()
+  const reviewTitle = `Lectura para repasar ${run}`
+  const assessmentTitle = `Evaluación con repaso ${run}`
+
+  const as = async (email: string, password: string) => {
+    const headers = { Authorization: `Bearer ${await token(request, email, password)}` }
+    return async (path: string, data: unknown, status = 201) => {
+      const response = await request.post(`${API_URL}${path}`, { headers, data })
+      expect(response.status(), `POST ${path}: ${await response.text()}`).toBe(status)
+      return (await response.json()) as { id: string }
+    }
+  }
+  const creator = await as('creador@demo.wasichai-learning.test', DEMO_PASSWORD!)
+  const reviewer = await as('revisor@demo.wasichai-learning.test', DEMO_PASSWORD!)
+  const admin = await as(ADMIN.email, ADMIN.password)
+  const record = async (object: string, attributes: Record<string, unknown>) => (await creator(`/api/objects/${object}/records`, { attributes })).id
+
+  const course = await record('curso', { codigo: code, slug: code.toLowerCase(), titulo: `Curso con repaso ${run}`, idioma: 'es', nivel: 'INICIAL' })
+  const version = await creator(`/api/lms/studio/courses/${course}/versions`, { fromVersionId: null })
+  const unit = await record('unidad', { version_curso: version.id, orden: 1, titulo: 'Unidad 1' })
+  const reading = await record('leccion', { unidad: unit, orden: 1, titulo: reviewTitle, tipo: 'LECTURA' })
+  const assessed = await record('leccion', { unidad: unit, orden: 2, titulo: assessmentTitle, tipo: 'EVALUACION' })
+  const evaluation = await record('evaluacion', { leccion: assessed, titulo: assessmentTitle, intentos_max: 2, nota_minima: 60, mostrar_soluciones: 'NUNCA' })
+  const question = async (orden: number, enunciado: string, extra: Record<string, unknown>) => {
+    const id = await record('pregunta', { evaluacion: evaluation, orden, tipo: 'UNICA', enunciado, puntos: 1, ...extra })
+    await record('opcion', { pregunta: id, orden: 1, texto: 'Correcta', correcta: true })
+    await record('opcion', { pregunta: id, orden: 2, texto: 'Incorrecta', correcta: false })
+  }
+  await question(1, 'Con repaso', { leccion_repaso: reading })
+  await question(2, 'Sin repaso', {})
+  await creator(`/api/lms/studio/versions/${version.id}/submit`, {}, 200)
+  await reviewer(`/api/lms/review/versions/${version.id}/decision`, { decision: 'APROBAR', reason: null }, 200)
+  await admin(`/api/lms/review/versions/${version.id}/publish`, {}, 200)
+  const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+  await admin('/api/objects/edicion_curso/records', {
+    attributes: {
+      codigo: code,
+      version_curso: version.id,
+      estado: 'INSCRIPCION_ABIERTA',
+      fecha_inicio: day(0),
+      fecha_fin: day(30),
+      zona_horaria: 'America/Lima',
+      inscripcion_desde: day(-1),
+      inscripcion_hasta: day(5)
+    }
+  })
+
+  const student = await newStudent(request)
+  const enrolled = await (await as(student.email, student.password))('/api/lms/enrollments', { offering: code })
+  await signIn(page, student)
+  await page.goto(`/mis-cursos/${enrolled.id}?leccion=${assessed}`)
+  await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+  await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
+  await page.getByRole('group', { name: '1. Con repaso' }).getByRole('radio', { name: 'Incorrecta' }).check()
+  await page.getByRole('group', { name: '2. Sin repaso' }).getByRole('radio', { name: 'Correcta' }).check()
+  await page.getByRole('button', { name: 'Entregar' }).click()
+  await page.getByRole('dialog', { name: '¿Entregar el intento?' }).getByRole('button', { name: 'Entregar' }).click()
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+  const attemptUrl = page.url()
+
+  const reviewed = page.getByRole('article', { name: '1. Con repaso' })
+  const plain = page.getByRole('article', { name: '2. Sin repaso' })
+  await expect(reviewed.getByRole('link', { name: reviewTitle })).toHaveAttribute('href', `/mis-cursos/${enrolled.id}?leccion=${reading}`)
+  await expect(plain.getByRole('link')).toHaveCount(0)
+  await expect(page.getByText(/^Respuesta correcta/)).toHaveCount(0)
+
+  // con el intento ya cerrado, tras recargar, y de ida y vuelta
+  await page.reload()
+  await reviewed.getByRole('link', { name: reviewTitle }).click()
+  await expect(page.getByRole('heading', { level: 2, name: reviewTitle })).toBeVisible()
+  await page.goBack()
+  await expect(page).toHaveURL(attemptUrl)
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
 })
