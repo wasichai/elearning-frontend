@@ -149,7 +149,9 @@ const es = {
     courseDone: 'Has completado todas las lecciones disponibles del curso.',
     backToCourses: 'Volver a Mis cursos',
     conflict: 'Esta lección no se puede completar así. Ya te mostramos su estado actual.',
-    failed: 'No pudimos guardar tu avance. Inténtalo de nuevo.'
+    failed: 'No pudimos guardar tu avance. Inténtalo de nuevo.',
+    termsRequired: 'Para registrar tu progreso necesitas una aceptación vigente de los términos de uso. Puedes seguir leyendo.',
+    termsAction: 'Ver los términos de uso'
   },
   assessment: {
     attempts: 'Intentos',
@@ -668,7 +670,9 @@ const en: typeof es = {
     courseDone: 'You have completed every available lesson in the course.',
     backToCourses: 'Back to My courses',
     conflict: 'This lesson cannot be completed this way. Here is its current state.',
-    failed: 'We could not save your progress. Please try again.'
+    failed: 'We could not save your progress. Please try again.',
+    termsRequired: 'To record your progress you need a valid acceptance of the terms of use. You can keep reading.',
+    termsAction: 'See the terms of use'
   },
   assessment: {
     attempts: 'Attempts',

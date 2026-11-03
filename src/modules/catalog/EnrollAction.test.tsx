@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { WasichaiModule } from '@wasichai/core'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
-import { Route, Routes, useParams } from 'react-router'
+import { Route, Routes, useLocation, useParams } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CourseDetailPage } from './CourseDetailPage'
 import { catalogModule } from './module'
@@ -20,6 +20,27 @@ const classroomStub: WasichaiModule = {
   routes: [{ id: 'classroom', path: 'mis-cursos/:enrollmentId', chrome: 'shell', component: () => null }]
 }
 
+// los términos también son otro módulo: basta su ruta en el registro con la clave 'terms:terms'
+const termsStub: WasichaiModule = {
+  id: 'terms',
+  routes: [{ id: 'terms', path: 'terminos', chrome: 'shell', component: () => null }]
+}
+const TERMS = '/lms/terms'
+const terms = { version: 3, text: 'Texto', retentionDays: 730, publishedAt: '2026-11-01T15:00:00Z' }
+const acceptance = (over = {}) => ({
+  version: 3,
+  acceptedAt: '2026-11-02T15:00:00Z',
+  expiresAt: '2028-11-01T15:00:00Z',
+  withdrawnAt: null,
+  valid: true,
+  ...over
+})
+
+function TermsScreen() {
+  const location = useLocation()
+  return <p>{`términos ${location.search}`}</p>
+}
+
 function Classroom() {
   const { enrollmentId } = useParams()
   return <p>{`aula ${enrollmentId}`}</p>
@@ -35,6 +56,7 @@ function renderCourse(routes: MockRoute[], { signedIn = true, modules = [catalog
       <Route path="/cursos/:slug" element={<CourseDetailPage />} />
       <Route path="/mis-cursos/:enrollmentId" element={<Classroom />} />
       <Route path="/login" element={<p>inicio de sesión</p>} />
+      <Route path="/terminos" element={<TermsScreen />} />
     </Routes>,
     { modules, route: '/cursos/srtm-anuncios', ...(signedIn ? { permissions: { admin: false, objects: {} } } : { user: null, permissions: null }) }
   )
@@ -217,10 +239,63 @@ describe('matricularse desde la ficha', () => {
     expect(await screen.findByText('aula mat-srtm-1')).toBeInTheDocument()
   })
 
+  describe('un 403 según lo que diga GET /terms', () => {
+    const refused = { method: 'POST', path: ENROLLMENTS, status: 403, body: problem(403, 'Para matricularte debes aceptar los términos de uso vigentes') }
+    const withTerms = { modules: [catalogModule(), classroomStub, termsStub] }
+
+    it.each([
+      ['sin aceptación', { current: terms, acceptance: null }],
+      ['con la aceptación retirada', { current: terms, acceptance: acceptance({ valid: false, withdrawnAt: '2026-11-03T15:00:00Z' }) }],
+      ['con la aceptación vencida', { current: terms, acceptance: acceptance({ valid: false }) }],
+      ['sin términos publicados', { current: null, acceptance: null }]
+    ])('%s lleva a los términos, con la vuelta a la ficha, y no matricula', async (_case, body) => {
+      renderCourse([refused, { path: TERMS, body }], withTerms)
+
+      await userEvent.click((await offerings()).getByRole('button', { name: ACTION }))
+
+      expect(await screen.findByText('términos ?returnTo=%2Fcursos%2Fsrtm-anuncios')).toBeInTheDocument()
+      expect(fetchMock.calls.filter((call) => call.method === 'POST')).toHaveLength(1)
+    })
+
+    it.each([
+      ['vigente', acceptance()],
+      ['vigente de una versión anterior', acceptance({ version: 2 })]
+    ])('con la aceptación %s no se culpa a los términos: es otra causa', async (_case, accepted) => {
+      renderCourse([refused, { path: TERMS, body: { current: terms, acceptance: accepted } }], withTerms)
+
+      const section = await offerings()
+      await userEvent.click(section.getByRole('button', { name: ACTION }))
+
+      expect(await section.findByRole('alert')).toHaveTextContent('Tu cuenta no puede matricularse en cursos')
+      expect(screen.queryByText(/^términos /)).not.toBeInTheDocument()
+    })
+
+    it('si no se puede comprobar, no supone ninguna causa', async () => {
+      renderCourse([refused, { path: TERMS, status: 500, body: problem(500, 'Fallo') }], withTerms)
+
+      const section = await offerings()
+      await userEvent.click(section.getByRole('button', { name: ACTION }))
+
+      const alert = await section.findByRole('alert')
+      expect(alert).toHaveTextContent('ni comprobar por qué')
+      expect(alert).not.toHaveTextContent(/cuenta|términos/)
+      expect(section.getByRole('button', { name: ACTION })).toBeEnabled()
+    })
+
+    it('sin la pantalla de términos registrada, lo explica sin enlace muerto', async () => {
+      renderCourse([refused, { path: TERMS, body: { current: terms, acceptance: null } }])
+
+      const section = await offerings()
+      await userEvent.click(section.getByRole('button', { name: ACTION }))
+
+      expect(await section.findByRole('alert')).toHaveTextContent('Para matricularte debes aceptar los términos de uso.')
+      expect(section.queryByRole('link', { name: /términos/ })).not.toBeInTheDocument()
+    })
+  })
+
   it.each([
     [409, 'No quedan plazas en esta edición.', 'No quedan plazas en esta edición.'],
     [404, 'Esta edición ya no está disponible.', undefined],
-    [403, 'Tu cuenta no puede matricularse en cursos. Consulta con tu institución.', undefined],
     [500, 'No pudimos matricularte. Inténtalo de nuevo.', undefined]
   ])('un %i se explica con claridad y deja la ficha a la vista', async (status, message, detail) => {
     renderCourse([{ method: 'POST', path: ENROLLMENTS, status, body: problem(status, 'No quedan plazas en esta edición.') }])

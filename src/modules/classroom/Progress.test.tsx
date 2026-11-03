@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { WasichaiModule } from '@wasichai/core'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
@@ -133,6 +134,56 @@ describe('completar una lección', () => {
     expect(first).toMatch(UUID)
     expect(second).toMatch(UUID)
     expect(first).not.toBe(second)
+  })
+
+  describe('un 403 al registrar progreso', () => {
+    const TERMS = '/lms/terms'
+    const terms = { version: 3, text: 'Texto', retentionDays: 730, publishedAt: '2026-11-01T15:00:00Z' }
+    const accepted = { version: 3, acceptedAt: '2026-11-02T15:00:00Z', expiresAt: '2028-11-01T15:00:00Z', withdrawnAt: null, valid: true }
+    const refused = { method: 'POST', path: events('lec-pdf'), status: 403, body: problem(403, 'Para registrar tu progreso debes aceptar los términos de uso') }
+    const termsStub: WasichaiModule = { id: 'terms', routes: [{ id: 'terms', path: 'terminos', chrome: 'shell', component: () => null }] }
+
+    function renderRefused(view: unknown, modules: WasichaiModule[] = [classroomModule(), termsStub]) {
+      fetchMock = mockFetch([{ path: CLASSROOM, body: serverClassroom() }, refused, { path: TERMS, body: view }])
+      files = serveFiles({})
+      return renderWithProviders(<ClassroomPage />, { modules, route: '/mis-cursos/mat-srtm-1?leccion=lec-pdf', path: '/mis-cursos/:enrollmentId' })
+    }
+
+    it.each([
+      ['sin aceptación', { current: terms, acceptance: null }],
+      ['con la aceptación retirada', { current: terms, acceptance: { ...accepted, valid: false, withdrawnAt: '2026-11-03T15:00:00Z' } }],
+      ['con la aceptación vencida', { current: terms, acceptance: { ...accepted, valid: false } }],
+      ['sin términos publicados', { current: null, acceptance: null }]
+    ])('%s lo explica, deja seguir leyendo y lleva a los términos con la vuelta a la lección', async (_case, view) => {
+      renderRefused(view)
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Marcar como completada' }))
+
+      expect(await screen.findByText(/Para registrar tu progreso necesitas una aceptación vigente/)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Ver los términos de uso' })).toHaveAttribute(
+        'href',
+        '/terminos?returnTo=%2Fmis-cursos%2Fmat-srtm-1%3Fleccion%3Dlec-pdf'
+      )
+      expect(screen.queryByText('No pudimos guardar tu avance. Inténtalo de nuevo.')).not.toBeInTheDocument()
+    })
+
+    it('con la aceptación vigente es otra causa: no se habla de términos', async () => {
+      renderRefused({ current: terms, acceptance: accepted })
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Marcar como completada' }))
+
+      expect(await screen.findByText('No pudimos guardar tu avance. Inténtalo de nuevo.')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Ver los términos de uso' })).not.toBeInTheDocument()
+    })
+
+    it('sin la pantalla de términos registrada, no hay enlace muerto', async () => {
+      renderRefused({ current: terms, acceptance: null }, [classroomModule()])
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Marcar como completada' }))
+
+      expect(await screen.findByText(/Para registrar tu progreso necesitas/)).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Ver los términos de uso' })).not.toBeInTheDocument()
+    })
   })
 
   it('un 409 se explica sin tecnicismos y se muestra el estado que dice el servidor', async () => {
