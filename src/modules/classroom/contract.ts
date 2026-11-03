@@ -141,7 +141,14 @@ const unit = z.object({
   lessons: z.array(lesson)
 })
 
-export const classroomSchema = enrollmentSchema.extend({ units: z.array(unit) })
+// los logros de la matrícula (RF-AUL-08), del más antiguo al más reciente según el servidor. el documento nombra estos tres y no cierra el
+// vocabulario: un tipo nuevo no tumba el aula (kind es texto) y la interfaz omite el que no sabe decir. at falta o es null si no hay fecha
+export const ACHIEVEMENT_KINDS = ['UNIT_COMPLETED', 'ASSESSMENT_PASSED', 'CERTIFICATE_ISSUED'] as const
+export type AchievementKind = (typeof ACHIEVEMENT_KINDS)[number]
+
+const achievement = z.object({ kind: z.string().min(1), at: instant.nullish(), ref: id })
+
+export const classroomSchema = enrollmentSchema.extend({ units: z.array(unit), achievements: z.array(achievement) })
 
 // la entrega de una pregunta FILE: el archivo (null hasta subirlo) se sube con POST uploadUrl y la misma sesión
 export const submissionSchema = z.object({ id, file: fileSchema.nullable(), uploadUrl: z.string().min(1) })
@@ -149,6 +156,7 @@ export const submissionSchema = z.object({ id, file: fileSchema.nullable(), uplo
 export type LessonProgress = z.infer<typeof lessonProgressSchema>
 export type Enrollment = z.infer<typeof enrollmentSchema>
 export type Classroom = z.infer<typeof classroomSchema>
+export type Achievement = z.infer<typeof achievement>
 export type Unit = z.infer<typeof unit>
 export type Lesson = z.infer<typeof lesson>
 export type Resource = z.infer<typeof resource>

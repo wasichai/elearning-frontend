@@ -44,6 +44,17 @@ const titled = (data: { course: object }) => ({ json: { ...data, course: { ...da
 const emptyCourse = { ...classroom, units: [], nextLesson: null, progress: { completedLessons: 0, totalLessons: 0, percent: 0 } }
 const LONG_TITLE = 'Procedimientos de fiscalización y determinación de deudas tributarias municipales para gestores de rentas'
 
+const LESSON_WITH_ACHIEVEMENTS = '/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1'
+const THE_UNIT = { kind: 'UNIT_COMPLETED', at: '2026-11-03T15:20:00Z', ref: 'uni-sg-1' }
+const THE_ASSESSMENT = { kind: 'ASSESSMENT_PASSED', at: '2026-11-04T10:05:00Z', ref: 'eva-final' }
+const THE_CERTIFICATE = { kind: 'CERTIFICATE_ISSUED', at: '2026-11-05T09:00:00Z', ref: 'K7Q2-M9XW-4RTB' }
+
+// los logros van en el panel: en una ventana estrecha, en la hoja del temario, que se abre para verlos
+async function withAchievements(page: Page, achievements: object[]) {
+  await reloadWith(page, () => page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: { ...assessmentClassroom, achievements } })))
+  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: 'Temario' }).click()
+}
+
 const certified = { ...finishedEnrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }
 const finished = { ...finishedEnrollment, id: 'mat-fin-1', status: 'FINALIZADA', course: { slug: 'catastro', code: 'CAT-1', title: 'Catastro urbano' } }
 const longTitle = {
@@ -237,6 +248,31 @@ export const classroomScenarios: Scenario[] = [
   },
   { name: 'student-course-missing', path: '/mis-cursos/de-otra-persona', api: student },
   { name: 'student-lesson', path: '/mis-cursos/mat-srtm-1?leccion=lec-html', api: student },
+  // los logros (RF-AUL-08) en el panel del temario; en el móvil, dentro de la hoja. sin logros: student-lesson-syllabus, y su panel en student-lesson
+  {
+    name: 'student-achievements',
+    path: LESSON_WITH_ACHIEVEMENTS,
+    api: student,
+    act: (page) => withAchievements(page, [THE_UNIT, THE_ASSESSMENT, THE_CERTIFICATE])
+  },
+  {
+    name: 'student-achievements-no-date',
+    path: LESSON_WITH_ACHIEVEMENTS,
+    api: student,
+    // la evaluación de otra versión no se resuelve: sin título ni enlace. la unidad, sin fecha, va al final; el tipo desconocido no sale
+    act: (page) =>
+      withAchievements(page, [
+        { kind: 'ASSESSMENT_PASSED', at: '2026-11-04T10:05:00Z', ref: 'eva-de-otra-version' },
+        { kind: 'NUEVO_TIPO', at: '2026-11-04T10:06:00Z', ref: 'x' },
+        { ...THE_UNIT, at: null }
+      ])
+  },
+  {
+    name: 'student-achievements-many',
+    path: LESSON_WITH_ACHIEVEMENTS,
+    api: student,
+    act: (page) => withAchievements(page, [THE_UNIT, THE_ASSESSMENT, { ...THE_UNIT, ref: 'otra' }, THE_CERTIFICATE])
+  },
   {
     name: 'student-lesson-sepia',
     path: '/mis-cursos/mat-srtm-1?leccion=lec-html',

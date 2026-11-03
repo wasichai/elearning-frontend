@@ -140,6 +140,31 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
 })
 
+// RF-AUL-08 (#154): la semilla trae su intento en CORTO-101-A, calificado por el docente: 8 de 10, aprobado con 80 % (mínimo 60 %). la prueba no crea
+// nada: si la semilla no lo diera, tiene que fallar. el id de la matrícula sale de la API para no depender de cómo pinte «Mis cursos»
+test('el estudiante demo ve en CORTO-101-A el logro de su evaluación aprobada, con fecha y enlace a su lección', async ({ page, request }) => {
+  test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
+  const account = { email: 'estudiante@demo.wasichai-learning.test', password: DEMO_PASSWORD! }
+  const headers = { Authorization: `Bearer ${await token(request, account.email, account.password)}` }
+  const enrollments = (await (await request.get(`${API_URL}/api/lms/classroom/enrollments`, { headers })).json()) as {
+    id: string
+    offering: { code: string }
+  }[]
+  const enrollment = enrollments.find((candidate) => candidate.offering.code === 'CORTO-101-A')
+  expect(enrollment, 'la semilla no matricula al estudiante demo en CORTO-101-A').toBeDefined()
+
+  const assessment = 'Evaluación: reescribir un mensaje'
+  await signIn(page, account)
+  await page.goto(`/mis-cursos/${enrollment!.id}`)
+  const achievements = page.getByRole('region', { name: 'Logros' })
+  const link = achievements.getByRole('link', { name: new RegExp(`^${assessment}.*Evaluación aprobada`) })
+  await expect(link).toBeVisible()
+  await expect(link.locator('time')).toHaveText(/\d{4}/)
+  await link.click()
+  await expect(page).toHaveURL(new RegExp(`/mis-cursos/${enrollment!.id}\\?leccion=`))
+  await expect(page.getByRole('heading', { level: 2, name: assessment })).toBeVisible()
+})
+
 // la lección de repaso (elearning-backend#309): la demo no enlaza ninguna y lo publicado no cambia, así que la prueba escribe su propio curso.
 // sin soluciones (NUNCA): el repaso sale igual, y sigue ahí con el intento ya cerrado
 test('el resultado de un intento enlaza a la lección de repaso que da el servidor, y solo en su pregunta', { tag: '@publishes' }, async ({ page, request }) => {

@@ -4,7 +4,7 @@ import { screen } from '@testing-library/react'
 import { mockFetch, renderWithProviders, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ATTENDANCE_STATUSES, SESSION_MODALITIES, SESSION_STATUSES, SESSION_TYPES } from '../../shared/sessions'
-import { COMPLETION_RULES, COMPLETIONS, OFFERING_STATUSES, QUESTION_TYPES } from './contract'
+import { ACHIEVEMENT_KINDS, COMPLETION_RULES, COMPLETIONS, OFFERING_STATUSES, QUESTION_TYPES } from './contract'
 import { classroomMessages } from './i18n'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
@@ -58,6 +58,7 @@ describe('textos del aula', () => {
       ...SESSION_MODALITIES.map((modality) => `sessions.modality.${modality}`),
       ...ATTENDANCE_STATUSES.map((status) => `sessions.attendanceStatus.${status}`),
       ...COMPLETION_RULES.map((rule) => `completionPanel.rule.${rule}`),
+      ...ACHIEVEMENT_KINDS.map((kind) => `achievements.kind.${kind}`),
       ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [
         `problem.enrollments.${kind}`,
         `problem.classroom.${kind}`,
