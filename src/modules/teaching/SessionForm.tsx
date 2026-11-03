@@ -107,7 +107,7 @@ export function SessionForm({
       <h2 className="text-lg font-semibold text-ink">{t('form.title')}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField id={`${id}-title`} label={t('form.name')} error={errors.title}>
-          {(props) => <Input {...props} value={title} onChange={(event) => setTitle(event.target.value)} />}
+          {(props) => <Input {...props} autoFocus value={title} onChange={(event) => setTitle(event.target.value)} />}
         </FormField>
         <FormField id={`${id}-duration`} label={t('form.duration')} error={errors.duration}>
           {(props) => <Input {...props} type="number" min={1} value={duration} onChange={(event) => setDuration(event.target.value)} />}

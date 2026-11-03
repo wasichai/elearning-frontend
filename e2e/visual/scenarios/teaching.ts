@@ -164,7 +164,8 @@ const CLASS_ROWS = CLASS.map(({ enrollmentId, email }, index) => ({
 }))
 const classRows = (page: Page) =>
   page.route(ATTENDANCE, (route) => (route.request().method() === 'GET' ? route.fulfill({ json: CLASS_ROWS }) : route.fallback()))
-const student = (page: Page, index: number) => page.getByRole('group', { name: `Asistencia de ${CLASS_ROWS[index]!.email}` })
+const student = (page: Page, index: number) =>
+  page.getByRole('group', { name: new RegExp(`^(Asistencia de|Attendance of) ${CLASS_ROWS[index]!.email!.replaceAll('.', '\\.')}$`) })
 
 export const teachingScenarios: Scenario[] = [
   { name: 'teacher-offerings', path: '/docencia', api: teacher },
@@ -199,7 +200,7 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(rosterOf)(page)
-      await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('estudiante.3')
+      await page.getByRole('searchbox', { name: /^(Buscar por correo|Search by email)$/ }).fill('estudiante.3')
     }
   },
   {
@@ -208,7 +209,7 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(rosterOf)(page)
-      await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('nadie')
+      await page.getByRole('searchbox', { name: /^(Buscar por correo|Search by email)$/ }).fill('nadie')
     }
   },
   {
@@ -250,9 +251,9 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(longAttempt)(page)
-      const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
-      await form.getByRole('button', { name: 'Cita la ordenanza (2 pts)' }).click()
-      await form.getByLabel('Comentario para el estudiante (opcional)').fill('Falta citar la ordenanza vigente.')
+      const form = page.getByRole('form', { name: /^(Calificar|Grade) 2\. Explica cómo se liquida\.$/ })
+      await form.getByRole('button', { name: /^Cita la ordenanza/ }).click()
+      await form.getByLabel(/^(Comentario para el estudiante|Comment for the student)/).fill('Falta citar la ordenanza vigente.')
       // con la transición de la celda terminada: se ve su color final
       await page.waitForTimeout(300)
     }
@@ -262,8 +263,11 @@ export const teachingScenarios: Scenario[] = [
     path: `${OFFERING}/correccion/int-1`,
     api: teacher,
     act: async (page) => {
-      await page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
-      await page.getByRole('link', { name: '← Cola de corrección' }).click()
+      await page
+        .getByRole('form', { name: /^(Calificar|Grade) 2\. Explica cómo se liquida\.$/ })
+        .getByLabel(/^(Puntos \(de 0 a 4\)|Points \(0 to 4\))$/)
+        .fill('3')
+      await page.getByRole('link', { name: /^← (Cola de corrección|Grading queue)$/ }).click()
     }
   },
   {
@@ -272,10 +276,19 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await failing(page, `${ATTEMPT}/grades`)
-      await page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
-      await page.getByRole('form', { name: 'Calificar 3. Sube la liquidación.' }).getByLabel('Puntos (de 0 a 4)').fill('3')
-      await page.getByRole('button', { name: 'Guardar y terminar' }).click()
-      await page.getByRole('alert').filter({ hasText: 'No se guardó todo' }).waitFor()
+      await page
+        .getByRole('form', { name: /^(Calificar|Grade) 2\. Explica cómo se liquida\.$/ })
+        .getByLabel(/^(Puntos \(de 0 a 4\)|Points \(0 to 4\))$/)
+        .fill('3')
+      await page
+        .getByRole('form', { name: /^(Calificar|Grade) 3\. Sube la liquidación\.$/ })
+        .getByLabel(/^(Puntos \(de 0 a 4\)|Points \(0 to 4\))$/)
+        .fill('3')
+      await page.getByRole('button', { name: /^(Guardar y terminar|Save and finish)$/ }).click()
+      await page
+        .getByRole('alert')
+        .filter({ hasText: /No se guardó todo|Not everything was saved/ })
+        .waitFor()
     }
   },
   {
@@ -284,9 +297,9 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded((target) => target.route(ATTEMPT, (route) => route.fulfill({ json: attemptGraded })))(page)
-      const form = page.getByRole('form', { name: 'Calificar 2. Explica cómo se liquida.' })
-      await form.getByLabel('Puntos (de 0 a 4)').fill('4')
-      await form.getByRole('button', { name: 'Cambiar la nota' }).click()
+      const form = page.getByRole('form', { name: /^(Calificar|Grade) 2\. Explica cómo se liquida\.$/ })
+      await form.getByLabel(/^(Puntos \(de 0 a 4\)|Points \(0 to 4\))$/).fill('4')
+      await form.getByRole('button', { name: /^(Cambiar la nota|Change the grade)$/ }).click()
     }
   },
   { name: 'teacher-attempt-not-found', path: `${OFFERING}/correccion/de-otra-edicion`, api: teacher },
@@ -314,8 +327,8 @@ export const teachingScenarios: Scenario[] = [
     path: `${OFFERING}/sesiones`,
     api: teacher,
     act: async (page) => {
-      await page.getByRole('button', { name: 'Programar sesión' }).click()
-      await page.getByRole('button', { name: 'Crear la sesión' }).click()
+      await page.getByRole('button', { name: /^(Programar sesión|Schedule a session)$/ }).click()
+      await page.getByRole('button', { name: /^(Crear la sesión|Create the session)$/ }).click()
     }
   },
   {
@@ -323,22 +336,28 @@ export const teachingScenarios: Scenario[] = [
     path: `${OFFERING}/sesiones`,
     api: teacher,
     act: async (page) => {
-      await page.getByRole('button', { name: 'Programar sesión' }).click()
-      await page.getByRole('form', { name: 'Crear una sesión o una serie' }).getByLabel('Título').fill('Repaso')
-      await page.getByRole('navigation', { name: 'Secciones de la edición' }).getByRole('link', { name: 'Matriculados' }).click()
+      await page.getByRole('button', { name: /^(Programar sesión|Schedule a session)$/ }).click()
+      await page
+        .getByRole('form', { name: /^(Crear una sesión o una serie|Create a session or a series)$/ })
+        .getByLabel(/^(Título|Title)/)
+        .fill('Repaso')
+      await page
+        .getByRole('navigation', { name: /^(Secciones de la edición|Offering sections)$/ })
+        .getByRole('link', { name: /^(Matriculados|Students)$/ })
+        .click()
     }
   },
   {
     name: 'teacher-session-reschedule',
     path: `${OFFERING}/sesiones`,
     api: teacher,
-    act: (page) => page.getByRole('button', { name: 'Reprogramar «Presentación del curso»' }).click()
+    act: (page) => page.getByRole('button', { name: /^(Reprogramar «|Reschedule “)Presentación del curso/ }).click()
   },
   {
     name: 'teacher-session-cancel',
     path: `${OFFERING}/sesiones`,
     api: teacher,
-    act: (page) => page.getByRole('button', { name: 'Cancelar la sesión «Presentación del curso»' }).click()
+    act: (page) => page.getByRole('button', { name: /^(Cancelar la sesión «|Cancel the session “)Presentación del curso/ }).click()
   },
   { name: 'teacher-attendance', path: `${OFFERING}/sesiones/ses-1/asistencia`, api: teacher, act: reloaded(classRows) },
   {
@@ -347,8 +366,10 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(classRows)(page)
-      await page.getByRole('button', { name: 'Marcar a todos presentes' }).click()
-      await student(page, 0).getByRole('button', { name: 'Tarde' }).click()
+      await page.getByRole('button', { name: /^(Marcar a todos presentes|Mark everyone present)$/ }).click()
+      await student(page, 0)
+        .getByRole('button', { name: /^(Tarde|Late)$/ })
+        .click()
       await page.waitForTimeout(300)
     }
   },
@@ -358,8 +379,10 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(classRows)(page)
-      await student(page, 3).getByRole('button', { name: 'Justificada' }).click()
-      await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
+      await student(page, 3)
+        .getByRole('button', { name: /^(Justificada|Excused)$/ })
+        .click()
+      await page.getByRole('button', { name: /^(Guardar la asistencia|Save the attendance)$/ }).click()
       await page.waitForTimeout(300)
     }
   },
@@ -372,9 +395,11 @@ export const teachingScenarios: Scenario[] = [
       await page.route(ATTENDANCE, (route) =>
         route.request().method() === 'PUT' ? route.fulfill({ status: 500, json: problem(500, 'fallo') }) : route.fallback()
       )
-      await student(page, 0).getByRole('button', { name: 'Presente' }).click()
-      await page.getByRole('button', { name: 'Guardar la asistencia' }).click()
-      await page.getByText('No se guardó', { exact: false }).waitFor()
+      await student(page, 0)
+        .getByRole('button', { name: /^(Presente|Present)$/ })
+        .click()
+      await page.getByRole('button', { name: /^(Guardar la asistencia|Save the attendance)$/ }).click()
+      await page.getByText(/^(No se guardó|It was not saved)/).waitFor()
     }
   },
   {
@@ -382,8 +407,12 @@ export const teachingScenarios: Scenario[] = [
     path: `${OFFERING}/sesiones/ses-1/asistencia`,
     api: teacher,
     act: async (page) => {
-      await student(page, 0).or(page.getByRole('group').first()).first().getByRole('button', { name: 'Ausente' }).click()
-      await page.getByRole('link', { name: '← Sesiones de la edición' }).click()
+      await student(page, 0)
+        .or(page.getByRole('group').first())
+        .first()
+        .getByRole('button', { name: /^(Ausente|Absent)$/ })
+        .click()
+      await page.getByRole('link', { name: /^← (Sesiones de la edición|Offering sessions)$/ }).click()
     }
   },
   {

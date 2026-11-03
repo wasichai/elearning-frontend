@@ -49,9 +49,17 @@ configuración, `src/modules.ts` lista los módulos y `src/index.css` carga Tail
 | `src/modules/studio/`    | Estudio del creador (`/estudio`, `/estudio/versiones/:id`, `/estudio/importar`), con sesión, grupo «Contenido»: mis versiones, temario del borrador con enlaces a editarlo en las pantallas de registros de Wasichai, envío a revisión, qué cambió respecto de la versión anterior, comentarios y decisiones del revisor, versión nueva por copia e importación de un manual AsciiDoc con su informe |
 | `src/modules/review/`    | Bandeja del revisor (`/revision`, `/revision/:versionId`), con sesión, grupo «Revisión» (a quien tiene `APROBAR` sobre `version_curso`): versiones en revisión, qué cambió respecto de la versión anterior, comentarios por sección, decisiones con motivo y publicar (con `PUBLICAR`)                                                                                                               |
 
-Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`). Lo que comparten (piezas del contrato,
-formato de fechas, estado de error y la vista de diferencias entre versiones del estudio y la bandeja, con sus textos en
-`diffMessages`) vive en `src/shared/`, y las comprobaciones de frontera en `src/test/boundaries.ts`.
+Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`), y las comprobaciones de frontera están en
+`src/test/boundaries.ts`. Lo que comparten vive en `src/shared/`, sin textos propios (cada pantalla pone los de su módulo):
+
+| Pieza                                                                                                               | Para qué                                                                      |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `Screen.tsx`: `ScreenHeader`, `ScreenBody`, `Breadcrumbs`, `SectionTabs`, `Section`, `Stat`, `StatList`, `Skeleton` | El armazón de cada pantalla, con un solo contenedor por ancho                 |
+| `StatusBadge`, `Notice`, `ProblemState`                                                                             | Estados con icono y palabra, avisos y errores                                 |
+| `CordBanner`, `QuipuMark`, `PublicLayout`, `buttons.ts`                                                             | La firma del quipu, el marco público y las clases de enlace y botón           |
+| `VersionDiff`, `VersionStatusLine`, `diffMessages`, `diff.ts`                                                       | Qué cambió una versión y dónde está, para el estudio y la bandeja del revisor |
+| `useLeaveGuard`                                                                                                     | No salir de un toque de un trabajo a medias, también por el menú del shell    |
+| `sessions.ts`, `attempts.ts`, `contract.ts`, `format.ts`, `files.ts`, `retry.ts`, `revisit.ts`, `lessonIcon.ts`     | Piezas del contrato, fechas y formato, y utilidades de consulta               |
 
 ## Tema
 
@@ -64,40 +72,32 @@ La letra de interfaz es Figtree y la de lectura, Literata (las dos SIL OFL, serv
 La lectura HTML del iframe no la carga, porque su CSP no deja pedir fuentes. `quipu.test.ts` comprueba que cada bloque pone
 todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
 
-## Tema
-
-La app trae su propio tema, **Quipu** (`src/theme/`), según el contrato de temas de `@wasichai/ui`: `quipu.css` pone los
-tokens de Wasichai en dos bloques, `quipu` (claro) y `quipu-dark` (oscuro), y `themes.ts` los ofrece en `config.themes`.
-Un usuario nuevo entra en Quipu, claro u oscuro según su sistema; el claro y el oscuro de Wasichai siguen en el selector.
-El script de arranque de `index.html` aplica el tema guardado antes del bundle; un tema nuevo se añade allí también.
-La letra es Figtree (SIL OFL), servida por la app desde `src/theme/fonts/`. `quipu.test.ts` comprueba que cada bloque pone
-todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
-
 `quipu-controls.css` da a los componentes de `@wasichai/ui` los objetivos de 44px del sistema de diseño, solo bajo los
 temas Quipu y solo por sus `data-slot` públicos: botones `md` e `icon` de 44px (`sm`, de 36px, con área táctil de 44px),
 campos de 44px que escriben a 16px, un campo inválido con 2px de `danger` que no salta, pestañas de 44px y alertas con
-`radius-lg`. `quipu-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts`
+`radius-lg`, y encabezados de tabla sin mayúsculas sostenidas. `quipu-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts`
 mide los controles en el navegador.
 
 El **modo lectura** de la lección es un tercer bloque, `quipu-lectura` (papel sepia, mismos pares AA), que no está en el
 selector: la lección lo pone como subárbol (`data-theme` en su contenedor) cuando el estudiante pulsa «Modo lectura» en
-la barra de la lección, donde también elige el tamaño de la lectura (A−/A+, de 17 a 23px). Sobre un tema oscuro la
+la barra de la lección, donde también elige el tamaño de la lectura (de 17 a 23px). Sobre un tema oscuro la
 lección sigue oscura y la lectura abre el interlineado. La elección se guarda en este navegador (`<storagePrefix>.reading`)
 y la lectura del iframe recibe la paleta, el tamaño y el interlineado.
 
 ## Comandos
 
-| Comando          | Qué hace                                             |
-| ---------------- | ---------------------------------------------------- |
-| `yarn dev`       | Servidor de desarrollo en el puerto 5180             |
-| `yarn lint`      | Formato (Prettier) y tipos (TypeScript)              |
-| `yarn typecheck` | Solo tipos                                           |
-| `yarn test`      | Pruebas con Vitest                                   |
-| `yarn e2e`       | Pruebas extremo a extremo (Playwright, API simulada) |
-| `yarn e2e:real`  | Humo extremo a extremo contra el backend de verdad   |
-| `yarn build`     | Tipos y build de producción en `dist/`               |
-| `yarn preview`   | Sirve `dist/` en el puerto 5180, con el mismo proxy  |
-| `yarn format`    | Formatea todo con Prettier                           |
+| Comando           | Qué hace                                               |
+| ----------------- | ------------------------------------------------------ |
+| `yarn dev`        | Servidor de desarrollo en el puerto 5180               |
+| `yarn lint`       | Formato (Prettier) y tipos (TypeScript)                |
+| `yarn typecheck`  | Solo tipos                                             |
+| `yarn test`       | Pruebas con Vitest                                     |
+| `yarn e2e`        | Pruebas extremo a extremo (Playwright, API simulada)   |
+| `yarn e2e:real`   | Humo extremo a extremo contra el backend de verdad     |
+| `yarn e2e:visual` | Recorrido visual de todas las pantallas, solo en local |
+| `yarn build`      | Tipos y build de producción en `dist/`                 |
+| `yarn preview`    | Sirve `dist/` en el puerto 5180, con el mismo proxy    |
+| `yarn format`     | Formatea todo con Prettier                             |
 
 ## Pruebas extremo a extremo
 
@@ -126,6 +126,29 @@ que sirve `dist/` del disco: si lo reutilizas, haz antes `yarn build`.
 La primera vez, instala el navegador: `npx playwright install chromium` (en Linux, `--with-deps` también instala las
 librerías del sistema). Si una prueba falla, `npx playwright show-trace test-results/<prueba>/trace.zip` enseña el
 recorrido paso a paso.
+
+`e2e/overflow.spec.ts` comprueba a 360 px, sin capturas, que ninguna pantalla principal desborda en horizontal, con o sin
+sesión. `e2e/keyboard.spec.ts` recorre con el teclado los flujos principales: foco a la vista, Esc en los diálogos y foco devuelto.
+
+### Recorrido visual
+
+`yarn e2e:visual` (`playwright.visual.config.ts`, `e2e/visual/`) abre cada escenario de `e2e/visual/scenarios/` con la API
+simulada, sobre su propio `yarn dev`. **Es local**: no corre en `yarn e2e` ni en CI, y las capturas de referencia dependen del
+sistema, así que no se commitean (`e2e/visual/*-snapshots/` está en `.gitignore`). Sin `VISUAL_DIR`, compara con las referencias
+de tu máquina; la primera vez las crea.
+
+| Variable           | Para qué                                                                                                    | Por defecto            |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `VISUAL_DIR`       | Guarda las capturas ahí para mirarlas, en vez de compararlas                                                | sin definir: compara   |
+| `VISUAL_ONLY`      | Solo esos escenarios, separados por comas (`student-lesson,catalog`)                                        | todos                  |
+| `VISUAL_VIEWPORTS` | Anchos, separados por comas: `small` (360), `phone` (390), `tablet` (1024), `desktop` (1440), `wide` (1920) | `phone,tablet,desktop` |
+| `VISUAL_DARK`      | Con cualquier valor, el sistema pide tema oscuro                                                            | claro                  |
+| `VISUAL_LANG`      | Idioma de la interfaz (`en`). Los escenarios buscan los controles en los dos idiomas                        | el de la app (`es`)    |
+| `VISUAL_PORT`      | Puerto de su `yarn dev`. Falla si está ocupado; `VISUAL_REUSE=1` reutiliza el tuyo a sabiendas              | `5180`                 |
+| `VISUAL_OUTPUT`    | Carpeta de resultados de Playwright                                                                         | `test-results/visual`  |
+| `E2E_PORT`         | El puerto de `yarn e2e` (no del recorrido visual), para correr a la vez desde varias copias                 | `5180`                 |
+
+`main` desplaza, no la ventana: `fullPage` solo captura lo que cabe en ella. Para ver una pantalla entera, usa una ventana alta.
 
 ### Humo contra el backend real
 
@@ -189,8 +212,8 @@ Si reutilizas un `yarn preview` ya abierto, su proxy apunta al backend con el qu
 - **El motivo de una decisión de revisión**: pedir cambios y rechazar usan `ReasonDialog` de `@wasichai/core`, que limita el
   motivo a `CHANGE_REASON_MAX_LENGTH` (500), por debajo de los 4000 caracteres que acepta el servidor.
 
-- **El menú del shell en el móvil**: el panel lateral de `@wasichai/core` no se pliega en pantallas estrechas. Las
-  páginas del aula caben en el espacio que deja (lo prueba `e2e/classroom.spec.ts`), pero el plegado es de core.
+- **El menú del shell en el móvil**: bajo 768 px, `@wasichai/core` lo pliega en un cajón con su botón «Abrir el menú», que atrapa
+  el foco, se cierra con Esc y lo devuelve (`e2e/keyboard.spec.ts`). Sus ítems y la falta de un salto al contenido son de core.
 
 ## Integración continua
 

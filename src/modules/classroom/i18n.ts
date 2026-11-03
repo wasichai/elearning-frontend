@@ -15,8 +15,6 @@ const es = {
     mode: 'Modo lectura',
     smaller: 'Texto más pequeño',
     larger: 'Texto más grande',
-    smallerShort: 'A−',
-    largerShort: 'A+',
     size: '{{value}} px'
   },
   enrollments: {
@@ -121,6 +119,7 @@ const es = {
   course: {
     breadcrumbs: 'Ruta',
     sections: 'Secciones del curso',
+    tabLessons: 'Lecciones',
     tabSessions: 'Sesiones',
     tabCompletion: 'Finalización',
     figures: 'Tu avance',
@@ -535,8 +534,6 @@ const en: typeof es = {
     mode: 'Reading mode',
     smaller: 'Smaller text',
     larger: 'Larger text',
-    smallerShort: 'A−',
-    largerShort: 'A+',
     size: '{{value}} px'
   },
   enrollments: {
@@ -640,6 +637,7 @@ const en: typeof es = {
   course: {
     breadcrumbs: 'Breadcrumb',
     sections: 'Course sections',
+    tabLessons: 'Lessons',
     tabSessions: 'Sessions',
     tabCompletion: 'Completion',
     figures: 'Your progress',

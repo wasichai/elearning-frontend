@@ -10,9 +10,10 @@ import { Notice } from '../../shared/Notice'
 import { Skeleton } from '../../shared/Screen'
 import type { Answer, Attempt, FileRef, Question, QuestionResult } from '../../shared/attempts'
 import { useDownload } from '../../shared/files'
+import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useGrade, useQueue, useTeachingAttempt } from './api'
 import { draftOf, isDirty, projectedScore, queuePosition, rubricPoints, validPoints, type Draft, type QueuePosition } from './grading'
-import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveGuard } from './parts'
+import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 const isManual = (question: Question) => question.type === 'OPEN' || question.type === 'FILE'
@@ -32,11 +33,11 @@ export function AttemptGradingPage() {
   const student = known.current
   const place = queue ? queuePosition(queue, attemptId) : undefined
   const [dirty, setDirty] = useState(false)
-  const leave = useLeaveGuard(dirty)
+  const leave = useLeaveDialog(dirty)
   const attemptLink = (id: string) => links.to(TEACHING_ROUTES.attempt, { code, attemptId: id })
   const back = links.to(TEACHING_ROUTES.queue, { code })
   return (
-    <OfferingFrame code={code} subtitle={student?.lessonTitle ?? t('grading.title')} back={back} backLabel={t('grading.back')} onBack={leave.guard(back)}>
+    <OfferingFrame code={code} subtitle={student?.lessonTitle ?? t('grading.title')} back={back} backLabel={t('grading.back')}>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
         {/* el correo va aquí y no en la cabecera: es una palabra larga que la ensancharía en el móvil */}
         {student ? (
@@ -48,12 +49,12 @@ export function AttemptGradingPage() {
           <nav aria-label={t('grading.positionLabel')} className="flex flex-wrap items-center gap-x-4 text-sm">
             <span className="font-medium text-ink tabular-nums">{t('grading.position', { position: place.position, total: place.total })}</span>
             {place.previous ? (
-              <Link to={attemptLink(place.previous)} onClick={leave.guard(attemptLink(place.previous))} className={TEXT_LINK}>
+              <Link to={attemptLink(place.previous)} className={TEXT_LINK}>
                 {t('grading.previous')}
               </Link>
             ) : null}
             {place.next ? (
-              <Link to={attemptLink(place.next)} onClick={leave.guard(attemptLink(place.next))} className={TEXT_LINK}>
+              <Link to={attemptLink(place.next)} className={TEXT_LINK}>
                 {t('grading.next')}
               </Link>
             ) : null}
@@ -246,18 +247,20 @@ function AttemptGrading({ code, attempt, place, onDirty }: { code: string; attem
         />
       ) : null}
       {asking ? (
-        <ReasonDialog
-          title={t('grading.reasonTitle')}
-          description={t('grading.reasonDescription')}
-          confirmLabel={t('grading.reasonConfirm')}
-          busy={busy}
-          error={askingError ? describe(askingError) : null}
-          onCancel={() => {
-            setErrors({})
-            setAsking(undefined)
-          }}
-          onConfirm={(reason) => void run(asking.ids, reason, asking.after)}
-        />
+        <ReturnFocus>
+          <ReasonDialog
+            title={t('grading.reasonTitle')}
+            description={t('grading.reasonDescription')}
+            confirmLabel={t('grading.reasonConfirm')}
+            busy={busy}
+            error={askingError ? describe(askingError) : null}
+            onCancel={() => {
+              setErrors({})
+              setAsking(undefined)
+            }}
+            onConfirm={(reason) => void run(asking.ids, reason, asking.after)}
+          />
+        </ReturnFocus>
       ) : null}
     </div>
   )

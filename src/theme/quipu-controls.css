@@ -77,6 +77,18 @@
   [data-slot='alert'] {
     border-radius: var(--radius-lg);
   }
+
+  /* la librería pone sus encabezados de tabla en mayúsculas sostenidas, que Quipu no usa */
+  [data-slot='table-head'] {
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  /* el peso de un encabezado de fila lo decide quien lo usa */
+  [data-slot='table-head'][scope='col'] {
+    font-size: 14px;
+    font-weight: 500;
+  }
 }
 
 /* el ::after del botón sm se coloca respecto del botón. en la capa base: una clase de quien lo usa (absolute) gana, y

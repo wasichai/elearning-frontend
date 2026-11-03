@@ -5,12 +5,12 @@ import { CircleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { timeZoneLabel } from '../../shared/format'
+import { formatSessionStart, timeZoneLabel } from '../../shared/format'
 import { Section, Skeleton, Stat, StatList } from '../../shared/Screen'
-import type { Session } from '../../shared/sessions'
+import { upcomingSessions, type Session } from '../../shared/sessions'
 import { classroomQuery, sessionsQuery } from './api'
 import type { Classroom, Enrollment } from './contract'
-import { blockOf, MAX_RAIL_COURSES, pendingAssessments, type Block, sessionsWithin, upcomingSessions } from './dashboard'
+import { blockOf, MAX_RAIL_COURSES, pendingAssessments, type Block, sessionsWithin } from './dashboard'
 import type { PlacedLesson } from './lessons'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 import { StatusBadge } from './StatusBadge'
@@ -133,13 +133,6 @@ function BlockBody<T>({
 const ROW_LINK =
   'flex min-h-11 flex-col gap-0.5 py-2.5 text-sm break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
 
-// día de la semana y hora, en la zona de la edición: la que se dice en el bloque o, si hay varias, en la fila
-function formatStart(start: string, locale: string, timeZone: string): string {
-  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone }).format(
-    new Date(start)
-  )
-}
-
 function SessionsBlock({ block }: { block: Block<UpcomingSession> }) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
@@ -160,7 +153,7 @@ function SessionsBlock({ block }: { block: Block<UpcomingSession> }) {
             <Link to={links.to(CLASSROOM_ROUTES.sessions, { enrollmentId: session.enrollment.id })} className={ROW_LINK}>
               <span className="font-medium text-ink">{session.title}</span>
               <time dateTime={session.start} className="text-ink">
-                {formatStart(session.start, i18n.language, session.timeZone)}
+                {formatSessionStart(session.start, i18n.language, session.timeZone)}
               </time>
               {zones.length > 1 ? <span className="text-ink-muted">{timeZoneLabel(session.timeZone, i18n.language)}</span> : null}
               <span className="text-ink-muted">

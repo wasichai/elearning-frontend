@@ -2,12 +2,12 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { useWasichaiLinks } from '@wasichai/core'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { timeZoneLabel } from '../../shared/format'
+import { formatSessionStart, timeZoneLabel } from '../../shared/format'
 import { Section, Skeleton } from '../../shared/Screen'
-import type { Session } from '../../shared/sessions'
+import { upcomingSessions, type Session } from '../../shared/sessions'
 import { StatusBadge } from '../../shared/StatusBadge'
 import type { TeachingOffering } from './contract'
-import { MAX_AGENDA_ROWS, MAX_PANEL_OFFERINGS, upcomingSessions } from './panel'
+import { MAX_AGENDA_ROWS, MAX_PANEL_OFFERINGS } from './panel'
 import { BlockProblem } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
@@ -15,13 +15,6 @@ type AgendaSession = Session & { offering: TeachingOffering }
 
 const ROW_LINK =
   'flex min-h-11 flex-col gap-0.5 py-2.5 text-sm break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
-
-// día de la semana y hora, en la zona de la edición: la que se dice en el bloque o, si hay varias, en la fila
-function formatStart(start: string, locale: string, timeZone: string): string {
-  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone }).format(
-    new Date(start)
-  )
-}
 
 // la agenda «Próximas sesiones» de las ediciones vivas. cada lista falla por su cuenta: se dice de qué curso y lo demás se ve igual
 export function SessionAgenda({ offerings, queries, capped }: { offerings: TeachingOffering[]; queries: UseQueryResult<Session[]>[]; capped: boolean }) {
@@ -82,7 +75,7 @@ function AgendaRow({ session, now, showZone }: { session: AgendaSession; now: nu
     <Link to={to} className={ROW_LINK}>
       <span className="font-medium text-ink">{session.title}</span>
       <time dateTime={session.start} className="text-ink">
-        {formatStart(session.start, locale, session.timeZone)}
+        {formatSessionStart(session.start, locale, session.timeZone)}
       </time>
       {showZone ? <span className="text-ink-muted">{timeZoneLabel(session.timeZone, locale)}</span> : null}
       <span className="text-ink-muted">{session.offering.course.title}</span>

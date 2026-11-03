@@ -7,7 +7,7 @@ import { formatCivilRange, formatNumber, timeZoneLabel } from '../../shared/form
 import { Breadcrumbs, ScreenBody, ScreenHeader, SectionTabs } from '../../shared/Screen'
 import { useOfferings } from './api'
 import type { TeachingOffering } from './contract'
-import { OfferingStatusBadge, type LeaveGuard } from './parts'
+import { OfferingStatusBadge } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 export type OfferingSectionKey = 'roster' | 'queue' | 'sessions'
@@ -15,18 +15,18 @@ export type OfferingSectionKey = 'roster' | 'queue' | 'sessions'
 // el marco común de las secciones de una edición: su cabecera con la ruta, el selector y las pestañas por URL. sin la edición en la lista
 // (aún no llega, o no es de esta persona: lo dice el contenido) la cabecera se queda con lo que sabe.
 // lo que se hace dentro de una corrección o de una asistencia no va aquí: de un trabajo a medias no se sale de un toque
-// leave: si la sección tiene un trabajo a medias, sus enlaces y el selector avisan antes de salir
+// onSwitch: lo que hace el selector en vez de navegar, si la sección tiene un trabajo a medias que avisar (useLeaveDialog)
 export function OfferingSection({
   code,
   section,
   heading,
-  leave,
+  onSwitch,
   children
 }: {
   code: string
   section: OfferingSectionKey
   heading?: string
-  leave?: LeaveGuard
+  onSwitch?: (to: string) => void
   children: ReactNode
 }) {
   const { t, i18n } = useTranslation('teaching')
@@ -35,25 +35,15 @@ export function OfferingSection({
   const offerings = useOfferings().data
   const offering = offerings?.find((candidate) => candidate.code === code)
   const pending = offering?.pendingAttempts ?? 0
-  const home = links.to(TEACHING_ROUTES.offerings)
-  const tabs = {
-    roster: links.to(TEACHING_ROUTES.roster, { code }),
-    queue: links.to(TEACHING_ROUTES.queue, { code }),
-    sessions: links.to(TEACHING_ROUTES.sessions, { code })
-  }
   return (
     <>
       <ScreenHeader
         width="wide"
-        breadcrumbs={
-          <div onClickCapture={leave?.guardArea([home])}>
-            <Breadcrumbs label={t('frame.breadcrumbs')} items={[{ label: t('nav.offerings'), to: home }]} />
-          </div>
-        }
+        breadcrumbs={<Breadcrumbs label={t('frame.breadcrumbs')} items={[{ label: t('nav.offerings'), to: links.to(TEACHING_ROUTES.offerings) }]} />}
         title={offering?.course.title ?? t('roster.title')}
         actions={
           offering && offerings && offerings.length > 1 ? (
-            <OfferingSwitcher current={offering} offerings={offerings} section={section} leave={leave} />
+            <OfferingSwitcher current={offering} offerings={offerings} section={section} onSwitch={onSwitch} />
           ) : undefined
         }
         meta={
@@ -69,16 +59,17 @@ export function OfferingSection({
       >
         {/* una edición que no está entre las suyas no tiene secciones a las que ir */}
         {offerings && !offering ? null : (
-          <div onClickCapture={leave?.guardArea(Object.values(tabs))}>
-            <SectionTabs
-              label={t('frame.sections')}
-              items={[
-                { label: t('frame.roster'), to: tabs.roster, end: true },
-                { label: pending > 0 ? t('frame.queuePending', { value: formatNumber(pending, locale) }) : t('frame.queue'), to: tabs.queue },
-                { label: t('frame.sessions'), to: tabs.sessions }
-              ]}
-            />
-          </div>
+          <SectionTabs
+            label={t('frame.sections')}
+            items={[
+              { label: t('frame.roster'), to: links.to(TEACHING_ROUTES.roster, { code }), end: true },
+              {
+                label: pending > 0 ? t('frame.queuePending', { value: formatNumber(pending, locale) }) : t('frame.queue'),
+                to: links.to(TEACHING_ROUTES.queue, { code })
+              },
+              { label: t('frame.sessions'), to: links.to(TEACHING_ROUTES.sessions, { code }) }
+            ]}
+          />
         )}
       </ScreenHeader>
       <ScreenBody width="wide">
@@ -94,12 +85,12 @@ function OfferingSwitcher({
   current,
   offerings,
   section,
-  leave
+  onSwitch
 }: {
   current: TeachingOffering
   offerings: TeachingOffering[]
   section: OfferingSectionKey
-  leave?: LeaveGuard
+  onSwitch?: (to: string) => void
 }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
@@ -109,7 +100,7 @@ function OfferingSwitcher({
       value={current.code}
       onValueChange={(code) => {
         const to = links.to(TEACHING_ROUTES[section], { code })
-        if (leave) leave.request(to)
+        if (onSwitch) onSwitch(to)
         else void navigate(to)
       }}
     >

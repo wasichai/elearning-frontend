@@ -83,3 +83,10 @@ export function formatTime(instant: string | number | Date, locale: string, time
 export function formatInstantRange(start: string, end: string, locale: string, timeZone: string): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: 'full', timeStyle: 'short', timeZone }).formatRange(new Date(start), new Date(end))
 }
+
+// el comienzo de una sesión en una agenda: día de la semana y hora, en la zona de la edición
+export function formatSessionStart(start: string, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone }).format(
+    new Date(start)
+  )
+}

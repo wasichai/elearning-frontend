@@ -1,6 +1,6 @@
 import { useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
+import { AArrowDown, AArrowUp, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
@@ -149,7 +149,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   )
 }
 
-// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (A−/A+, 17–23px)
+// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (17–23px)
 function ReadingTools({ controls }: { controls: ReadingControls }) {
   const { t } = useTranslation('classroom')
   return (
@@ -165,13 +165,13 @@ function ReadingTools({ controls }: { controls: ReadingControls }) {
         <span className="hidden sm:inline">{t('reading.mode')}</span>
       </Button>
       <Button variant="ghost" size="icon" aria-label={t('reading.smaller')} disabled={!controls.canShrink} onClick={controls.shrink}>
-        <span aria-hidden="true">{t('reading.smallerShort')}</span>
+        <AArrowDown aria-hidden="true" className="size-5" />
       </Button>
       <span className="min-w-11 text-center text-sm text-ink-muted tabular-nums" aria-live="polite">
         {t('reading.size', { value: controls.shownSize })}
       </span>
       <Button variant="ghost" size="icon" aria-label={t('reading.larger')} disabled={!controls.canGrow} onClick={controls.grow}>
-        <span aria-hidden="true">{t('reading.largerShort')}</span>
+        <AArrowUp aria-hidden="true" className="size-5" />
       </Button>
     </div>
   )

@@ -6,7 +6,11 @@ import { open, SCENARIOS, VIEWPORTS } from './scenarios'
 const dir = process.env.VISUAL_DIR
 const only = process.env.VISUAL_ONLY?.split(',')
 const viewports = process.env.VISUAL_VIEWPORTS?.split(',') ?? ['phone', 'tablet', 'desktop']
-const language = process.env.VISUAL_LOCALE
+// el idioma y el tema, en el nombre: una tanda no pisa las capturas de otra
+const suffix = [process.env.VISUAL_LANG ?? process.env.VISUAL_LOCALE, process.env.VISUAL_DARK ? 'dark' : undefined]
+  .filter(Boolean)
+  .map((part) => `-${part}`)
+  .join('')
 
 for (const scenario of SCENARIOS.filter((candidate) => !only || only.includes(candidate.name))) {
   for (const viewport of viewports as (keyof typeof VIEWPORTS)[]) {
@@ -16,7 +20,7 @@ for (const scenario of SCENARIOS.filter((candidate) => !only || only.includes(ca
       // ninguna pantalla desborda en horizontal (4-responsive.md)
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
       expect(overflow, 'desbordamiento horizontal de la página').toBeLessThanOrEqual(0)
-      if (dir) await page.screenshot({ path: `${dir}/${scenario.name}-${viewport}${language ? `-${language}` : ''}.png`, fullPage: true })
+      if (dir) await page.screenshot({ path: `${dir}/${scenario.name}-${viewport}${suffix}.png`, fullPage: true })
       else await expect(page).toHaveScreenshot(`${scenario.name}-${viewport}.png`, { fullPage: true, maxDiffPixelRatio: 0.01, animations: 'disabled' })
     })
   }

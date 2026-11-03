@@ -70,7 +70,7 @@ function CourseTabs({ classroom, lessonId }: { classroom: Classroom; lessonId?: 
     <SectionTabs
       label={t('course.sections')}
       items={[
-        { label: t('classroom.showUnits'), to: links.to(CLASSROOM_ROUTES.classroom, params, lessonId ? { [LESSON_PARAM]: lessonId } : undefined), end: true },
+        { label: t('course.tabLessons'), to: links.to(CLASSROOM_ROUTES.classroom, params, lessonId ? { [LESSON_PARAM]: lessonId } : undefined), end: true },
         { label: t('course.tabSessions'), to: links.to(CLASSROOM_ROUTES.sessions, params) },
         { label: classroom.certificateCode ? t('completionPanel.titleIssued') : t('course.tabCompletion'), to: links.to(CLASSROOM_ROUTES.completion, params) }
       ]}

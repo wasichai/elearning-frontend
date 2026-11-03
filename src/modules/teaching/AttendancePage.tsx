@@ -11,7 +11,7 @@ import { Section, Skeleton, Stat, StatList } from '../../shared/Screen'
 import { ATTENDANCE_STATUSES, type AttendanceStatus } from '../../shared/sessions'
 import { useAttendance, useOfferingSessions, useSaveAttendance } from './api'
 import type { AttendanceRow } from './contract'
-import { EmailText, OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveGuard } from './parts'
+import { EmailText, OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { attendanceSummary, markAllPresent, type AttendanceOverrides } from './sessions'
 
@@ -31,10 +31,10 @@ export function AttendancePage() {
   const session = useOfferingSessions(code).data?.find((candidate) => candidate.id === sessionId)
   const query = useAttendance(sessionId)
   const [dirty, setDirty] = useState(false)
-  const leave = useLeaveGuard(dirty)
+  const leave = useLeaveDialog(dirty)
   const back = links.to(TEACHING_ROUTES.sessions, { code })
   return (
-    <OfferingFrame code={code} subtitle={session?.title ?? t('attendance.title')} back={back} backLabel={t('attendance.back')} onBack={leave.guard(back)}>
+    <OfferingFrame code={code} subtitle={session?.title ?? t('attendance.title')} back={back} backLabel={t('attendance.back')}>
       {session ? (
         <p className="text-sm text-ink-muted">
           {formatInstantRange(session.start, session.end, i18n.language, session.timeZone)} ({timeZoneLabel(session.timeZone, i18n.language)})

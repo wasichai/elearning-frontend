@@ -1,6 +1,6 @@
 import { LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { ChevronRight, Circle, CircleCheck, CircleDot } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
@@ -10,9 +10,10 @@ import { ProblemState } from '../../shared/ProblemState'
 import { Breadcrumbs, ScreenBody, ScreenHeader, Section } from '../../shared/Screen'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { VersionDiffSection } from '../../shared/VersionDiff'
+import { VERSION_BADGE, VersionStatusLine } from '../../shared/VersionStatusLine'
 import { useSubmitVersion, useVersion, useVersionDiff } from './api'
-import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail, VersionStatus } from './contract'
-import { useProblemText, VERSION_BADGE } from './parts'
+import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail } from './contract'
+import { useProblemText } from './parts'
 import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
 import { NewVersionButton, SubmitVersionButton } from './VersionActions'
 
@@ -26,9 +27,6 @@ const LESSON_OBJECT = 'leccion'
 const WHOLE_VERSION = 'version'
 const unitSection = (unit: number) => `unidad:${unit}`
 const lessonSection = (unit: number, lesson: number) => `unidad:${unit}/leccion:${lesson}`
-
-// el recorrido de una versión, de lo último a lo primero. retirada no está: se llega rechazando o tras publicar, y el contrato no dice cuál
-const PATH: VersionStatus[] = ['PUBLICADA', 'APROBADA', 'EN_REVISION', 'BORRADOR']
 
 const DECISION_BADGE: Record<ReviewDecision['decision'], StatusState> = { APROBAR: 'done', PEDIR_CAMBIOS: 'warning', RECHAZAR: 'overdue' }
 
@@ -113,7 +111,7 @@ function Actions({ version }: { version: StudioVersionDetail }) {
 }
 
 function Version({ version }: { version: StudioVersionDetail }) {
-  const { t } = useTranslation('studio')
+  const { t, i18n } = useTranslation('studio')
   const diff = useVersionDiff(version.id)
   const draft = version.status === 'BORRADOR'
   return (
@@ -130,56 +128,15 @@ function Version({ version }: { version: StudioVersionDetail }) {
         <Syllabus version={version} draft={draft} />
       </div>
       <aside aria-label={t('version.rail')} className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-6">
-        <StatusLine version={version} />
+        <VersionStatusLine
+          namespace={STUDIO_MODULE_ID}
+          status={version.status}
+          updated={version.updatedAt ? t('versions.updated', { date: formatInstant(version.updatedAt, i18n.language) }) : null}
+        />
         <Comments version={version} />
         <Decisions decisions={version.decisions} />
       </aside>
     </div>
-  )
-}
-
-// la línea de estados: dónde está la versión y qué le falta. lo pasado y lo pendiente se derivan de su estado; quién y cuándo, solo
-// donde el contrato lo da (su última actualización y, abajo, las decisiones)
-function StatusLine({ version }: { version: StudioVersionDetail }) {
-  const { t, i18n } = useTranslation('studio')
-  const updated = version.updatedAt ? t('versions.updated', { date: formatInstant(version.updatedAt, i18n.language) }) : null
-  const current = PATH.indexOf(version.status)
-  return (
-    <Section title={t('version.state', { status: t(`status.${version.status}`) })}>
-      {current === -1 ? (
-        updated ? (
-          <p className="text-sm text-ink-muted">{updated}</p>
-        ) : null
-      ) : (
-        <ol aria-label={t('version.path')} className="flex flex-col">
-          {PATH.map((status, index) => {
-            const isCurrent = index === current
-            const done = index > current
-            const Icon = isCurrent ? CircleDot : done ? CircleCheck : Circle
-            return (
-              <li key={status} aria-current={isCurrent ? 'step' : undefined} className="flex gap-2.5">
-                <span className="flex flex-col items-center">
-                  <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${isCurrent ? 'text-brand-strong' : done ? 'text-success' : 'text-ink-muted'}`} />
-                  {index < PATH.length - 1 ? (
-                    <span aria-hidden="true" className={`w-px grow ${done || isCurrent ? 'bg-border-control' : 'bg-border'}`} />
-                  ) : null}
-                </span>
-                <span className={`flex min-w-0 flex-col pb-3 text-sm ${isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
-                  <span>{t(`status.${status}`)}</span>
-                  {isCurrent ? (
-                    updated ? (
-                      <span className="font-normal text-ink-muted">{updated}</span>
-                    ) : null
-                  ) : (
-                    <span className="sr-only">{t(done ? 'version.stepDone' : 'version.stepPending')}</span>
-                  )}
-                </span>
-              </li>
-            )
-          })}
-        </ol>
-      )}
-    </Section>
   )
 }
 

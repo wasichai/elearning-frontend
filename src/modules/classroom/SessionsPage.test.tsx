@@ -153,7 +153,7 @@ describe('SessionsPage', () => {
     expect(figures.getByText('0 de 1')).toBeInTheDocument()
     expect(await figures.findByText('1 de 2')).toBeInTheDocument()
     const tabs = within(screen.getByRole('navigation', { name: 'Secciones del curso' }))
-    expect(tabs.getByRole('link', { name: 'Temario' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1')
+    expect(tabs.getByRole('link', { name: 'Lecciones' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1')
     expect(tabs.getByRole('link', { name: 'Finalización' })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1/finalizacion')
   })
 
