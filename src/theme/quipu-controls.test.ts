@@ -16,7 +16,7 @@ const ANY = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(
 const SCOPE = `@scope (${ANY}) to ([data-theme]:not(${ANY}))`
 
 // los hooks públicos que esta hoja puede tocar (README de @wasichai/ui, «Styling hooks»)
-const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert', 'table-head']
+const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert', 'table-head', 'nav-item']
 const VARIANTS = ['primary', 'secondary', 'ghost', 'danger']
 const SIZES = ['sm', 'md', 'icon']
 
@@ -190,6 +190,17 @@ describe('quipu-controls.css', () => {
     expect(head.has('font-weight')).toBe(false)
     const column = declared("[data-slot='table-head'][scope='col']")
     expect([column.get('font-size'), column.get('font-weight')]).toEqual(['14px', '500'])
+  })
+
+  it('los ítems del menú miden 44px como mínimo', () => {
+    expect(declared("[data-slot='nav-item']").get('min-height')).toBe('44px')
+  })
+
+  it('el ítem actual no depende solo del color: una barra de 3px y un peso mayor, sin cambiar de tamaño', () => {
+    const current = declared("[data-slot='nav-item'][aria-current='page']")
+    expect(current.get('font-weight')).toBe('600')
+    expect(current.get('box-shadow')).toBe('inset 3px 0 0 var(--shell-ink)')
+    expect([...current.keys()].filter((name) => /^(border.*|padding.*|height|min-height)$/.test(name))).toEqual([])
   })
 
   it('las alertas redondean con radius-lg', () => {

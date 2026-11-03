@@ -74,6 +74,18 @@
     border-bottom-color: var(--brand);
   }
 
+  /* el menú del shell: 44px de objetivo; lo centra su propio flex */
+  [data-slot='nav-item'] {
+    min-height: 44px;
+  }
+
+  /* el ítem actual lo marca NavLink con aria-current. el fondo de core es solo color: se añaden una barra y un peso mayor,
+     que no cambian el tamaño */
+  [data-slot='nav-item'][aria-current='page'] {
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--shell-ink);
+  }
+
   [data-slot='alert'] {
     border-radius: var(--radius-lg);
   }

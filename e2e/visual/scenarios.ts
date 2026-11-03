@@ -4,6 +4,7 @@ import type { Scenario } from './scenario'
 import { catalogScenarios } from './scenarios/catalog'
 import { classroomScenarios } from './scenarios/classroom'
 import { reviewScenarios } from './scenarios/review'
+import { shellScenarios } from './scenarios/shell'
 import { studioScenarios } from './scenarios/studio'
 import { teachingScenarios } from './scenarios/teaching'
 
@@ -17,7 +18,14 @@ export const VIEWPORTS = {
   small: { width: 360, height: 740 }
 } as const
 
-export const SCENARIOS: Scenario[] = [...catalogScenarios, ...classroomScenarios, ...teachingScenarios, ...studioScenarios, ...reviewScenarios]
+export const SCENARIOS: Scenario[] = [
+  ...catalogScenarios,
+  ...classroomScenarios,
+  ...teachingScenarios,
+  ...studioScenarios,
+  ...reviewScenarios,
+  ...shellScenarios
+]
 
 export async function open(page: Page, scenario: Scenario): Promise<void> {
   await fakeApi(page, scenario.api ?? {})

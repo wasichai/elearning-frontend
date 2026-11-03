@@ -29,15 +29,20 @@ const ATTEMPTS = '/api/lms/classroom/attempts'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
 export const STUDENT = { id: 'u-estudiante', email: 'estudiante@demo.local', displayName: 'Rosa Estudiante', organizationId: 'org-demo', roles: ['ESTUDIANTE'] }
-const STUDENT_PERMISSIONS = { admin: false, objects: { curso: ['READ'], categoria: ['READ'], matricula: ['READ', 'CREATE'] } }
+const STUDENT_PERMISSIONS = { admin: false, capabilities: [], objects: { curso: ['READ'], categoria: ['READ'], matricula: ['READ', 'CREATE'] } }
 // un docente: lee las asignaciones (docente_edicion), que es lo que muestra el menú «Docencia»
 export const TEACHER = { id: 'u-docente', email: 'docente@demo.local', displayName: 'Luis Docente', organizationId: 'org-demo', roles: ['DOCENTE'] }
-const TEACHER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ'], progreso_leccion: ['READ'] } }
+const TEACHER_PERMISSIONS = {
+  admin: false,
+  capabilities: [],
+  objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ'], progreso_leccion: ['READ'] }
+}
 // un creador de contenido: crea versiones de curso (version_curso: CREATE), que es lo que muestra el menú «Contenido», y
 // unidades y lecciones, que con lo anterior es lo que exige importar un manual
 export const CREATOR = { id: AUTHOR_ID, email: 'creador@demo.local', displayName: 'Clara Creadora', organizationId: 'org-demo', roles: ['CREADOR'] }
 const CREATOR_PERMISSIONS = {
   admin: false,
+  capabilities: [],
   objects: {
     curso: ['READ', 'CREATE', 'UPDATE'],
     version_curso: ['READ', 'CREATE', 'UPDATE', 'ENVIAR_A_REVISION', 'VER_TODAS'],
@@ -47,13 +52,17 @@ const CREATOR_PERMISSIONS = {
 }
 // un revisor: APROBAR sobre version_curso, que es lo que muestra «Bandeja de revisión»; sin PUBLICAR, como el rol REVISOR
 export const REVIEWER = { id: 'u-revisor', email: 'revisor@demo.local', displayName: 'Eva Revisora', organizationId: 'org-demo', roles: ['REVISOR'] }
-const REVIEWER_PERMISSIONS = { admin: false, objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR', 'VER_TODAS'] } }
+const REVIEWER_PERMISSIONS = { admin: false, capabilities: [], objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR', 'VER_TODAS'] } }
+// quien administra la plataforma: admin y MANAGE_ORGANIZATION, tal como responde el backend, y por eso la sección de administración
+export const ADMINISTRATOR = { id: 'u-admin', email: 'admin@demo.local', displayName: 'Ana Administradora', organizationId: 'org-demo', roles: ['ADMIN'] }
+const ADMINISTRATOR_PERMISSIONS = { admin: true, capabilities: ['MANAGE_METADATA', 'MANAGE_ORGANIZATION', 'MANAGE_TENANTS'], objects: {} }
 // quién inicia sesión en la simulación, con sus permisos
 const ACCOUNTS = {
   student: { user: STUDENT, permissions: STUDENT_PERMISSIONS },
   teacher: { user: TEACHER, permissions: TEACHER_PERMISSIONS },
   creator: { user: CREATOR, permissions: CREATOR_PERMISSIONS },
-  reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS }
+  reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS },
+  administrator: { user: ADMINISTRATOR, permissions: ADMINISTRATOR_PERMISSIONS }
 }
 type Account = (typeof ACCOUNTS)[keyof typeof ACCOUNTS]
 
@@ -68,7 +77,8 @@ type Override = (url: URL, method: string) => Reply | undefined
 export interface FakeApiOptions extends TeachingOptions {
   // con sesión: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
-  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas, un creador de contenido o un revisor
+  // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas, un creador de contenido, un revisor o
+  // quien administra la plataforma
   as?: keyof typeof ACCOUNTS
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean
@@ -78,6 +88,8 @@ export interface FakeApiOptions extends TeachingOptions {
   certificateIssued?: boolean
   // la edición de SRTM con el cupo agotado (RF-CAT-09): enrollmentStatus FULL en el listado y en la ficha
   offeringFull?: boolean
+  // GET /auth/me/permissions falla siempre: la app sigue sin saber qué puede la persona
+  permissionsFail?: boolean
 }
 
 export interface FakeApi {
@@ -460,16 +472,92 @@ function simulateFile(method: string, url: URL): Reply | undefined {
   return file ? { status: 200, body: null, raw: file } : { status: 404, body: problem(404, 'Archivo no encontrado') }
 }
 
-// lo que @wasichai/core pide por su cuenta con sesión: permisos, preferencias y, en el panel de inicio, los objetos.
-// sin endpoint de preferencias (404), core las guarda solo en el navegador
-const isPlatform = (url: URL) => url.pathname.startsWith('/api/auth/') || url.pathname === '/api/objects'
+// lo que @wasichai/core pide por su cuenta con sesión: permisos, preferencias, los objetos y lo que piden sus pantallas de
+// datos y de administración. sin endpoint de preferencias (404), core las guarda solo en el navegador
+const CORE_API = /^\/api\/(auth\/|objects(\/|$)|metadata\/|users$|roles(\/|$)|audit$|service-accounts$|relationships$|organizations\/)/
+const isPlatform = (url: URL) => CORE_API.test(url.pathname)
 
-function simulatePlatform(method: string, url: URL, account: Account): Reply | undefined {
+// lo que solo atiende quien administra, como el backend: a los demás, 403 y ningún dato
+const ADMIN_LISTS: Record<string, unknown[]> = {
+  '/api/users': [
+    {
+      id: 'u-1',
+      email: 'rosa@demo.local',
+      displayName: 'Rosa Estudiante',
+      enabled: true,
+      roles: ['ESTUDIANTE'],
+      orgUnits: [],
+      createdAt: '2026-10-01T10:00:00Z'
+    }
+  ],
+  '/api/roles': [
+    {
+      id: 'r-1',
+      name: 'ESTUDIANTE',
+      label: 'Estudiante',
+      ownRecordsOnly: false,
+      permissions: [{ objectName: 'curso', action: 'READ', allowed: true }],
+      fieldPermissions: []
+    }
+  ],
+  '/api/audit': [],
+  '/api/service-accounts': [],
+  '/api/relationships': []
+}
+
+// el objeto de las lecciones, reducido, que abre el estudio con «Editar la lección» y sale en la lista de objetos
+const LESSON_OBJECT = {
+  id: 'o-leccion',
+  name: 'leccion',
+  label: 'Lección',
+  pluralLabel: 'Lecciones',
+  description: 'Unidad mínima de contenido.',
+  enabled: true,
+  createdAt: '2026-10-01T10:00:00Z',
+  updatedAt: '2026-10-01T10:00:00Z',
+  uniqueConstraints: [],
+  appendOnly: false,
+  apiOnly: false,
+  requiresReason: false,
+  fields: [
+    {
+      id: 'f-titulo',
+      name: 'titulo',
+      label: 'Título',
+      type: 'TEXT',
+      required: true,
+      unique: false,
+      defaultValue: null,
+      description: null,
+      position: 0,
+      enumOptions: null,
+      relationTarget: null,
+      visible: true,
+      editable: true
+    }
+  ]
+}
+const LESSON_RECORD = {
+  id: 'l-1',
+  createdAt: '2026-10-01T10:00:00Z',
+  updatedAt: '2026-10-01T10:00:00Z',
+  attributes: { titulo: 'Entrar al portal' },
+  state: null
+}
+
+function simulatePlatform(method: string, url: URL, account: Account, options: FakeApiOptions): Reply | undefined {
+  if (options.permissionsFail && url.pathname === '/api/auth/me/permissions') return { status: 500, body: problem(500, 'Fallo simulado') }
   // iniciar sesión desde la pantalla de Wasichai: entra quien se simula (estudiante, docente, creador o revisor)
   if (method === 'POST' && url.pathname === '/api/auth/login')
     return { status: 200, body: { token: 'token-e2e', expiresAt: '2099-01-01T00:00:00Z', user: account.user } }
   if (method === 'GET' && url.pathname === '/api/auth/me/permissions') return { status: 200, body: account.permissions }
-  if (method === 'GET' && url.pathname === '/api/objects') return { status: 200, body: [] }
+  const administers = account.permissions.admin
+  if (method === 'GET' && url.pathname === '/api/objects') return { status: 200, body: administers ? [LESSON_OBJECT] : [] }
+  if (method === 'GET' && url.pathname in ADMIN_LISTS)
+    return administers ? { status: 200, body: ADMIN_LISTS[url.pathname] } : { status: 403, body: problem(403, 'Sin permiso') }
+  if (method === 'GET' && url.pathname === '/api/metadata/objects/leccion') return { status: 200, body: LESSON_OBJECT }
+  if (method === 'GET' && url.pathname === '/api/objects/leccion/records/l-1') return { status: 200, body: LESSON_RECORD }
+  if (method === 'GET' && url.pathname === '/api/objects/leccion/relationships') return { status: 200, body: [] }
   return undefined
 }
 
@@ -543,7 +631,7 @@ export async function fakeApi(page: Page, options: FakeApiOptions = {}): Promise
     reply ??= simulateUpload(state, method, url, uploadedName(request), request.postDataBuffer()?.length ?? 0)
     if (url.pathname === '/api/lms/enrollments' && method === 'POST') reply ??= simulateEnroll(state, request.postDataJSON())
     reply ??=
-      simulatePlatform(method, url, account) ??
+      simulatePlatform(method, url, account, options) ??
       simulateTeaching(teaching, method, url, jsonBody(request)) ??
       simulateStudio(studio, method, url, jsonBody(request)) ??
       simulateReview(review, method, url, jsonBody(request)) ??

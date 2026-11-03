@@ -109,19 +109,20 @@ No se parchean aquí (CLAUDE.md, regla 7); se piden en `wasichai-ui` con este pr
 
 | #   | Limitación                                                                                                                          | Efecto aquí                                                                    |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| W1  | Los ítems del menú del shell no tienen `data-slot`: no se puede dar la marca al ítem actual ni 44 px de alto (`NavLink` `py-2`, 36 px) | El menú sigue con el estilo de core y bajo el objetivo táctil de Quipu          |
+| W1  | **Resuelta con 1.6.0 (#141).** Los ítems llevan `data-slot='nav-item'` y `aria-current`: `quipu-controls.css` les da 44 px y marca el actual con una barra y peso 600, no solo con color | «Registros» es un `span` sin `data-slot` y sigue en 36 px (W8) |
 | W2  | Sin un `chrome` por estado de ruta: la lección no puede retirar el menú global con `?leccion=`                                       | La lección retira su temario, no el menú global                                 |
 | W3  | `PageHeader` con `px-8` fijo, sin ruta de navegación ni ancho de contenedor                                                           | `ScreenHeader` en `src/shared` hasta que exista                                 |
 | W4  | Selector de tema y de idioma del shell sin hooks; `EmptyState` sin descripción propia                                                 | Se usan tal cual                                                                |
 | W5  | La marca del shell no admite logotipo; solo texto                                                                                     | `QuipuMark` solo en las páginas públicas                                        |
 | W6  | `ConfirmDialog` y `cn()` no conocen las utilidades de texto de la app (`tailwind-merge`)                                              | Las utilidades de escala van en elementos propios                               |
-| W7  | Core no filtra su menú por lectura: el shell solo aplica `NavContribution.visible`, y de sus entradas solo «Cuentas de servicio» lo declara. Datos y Administración salen a todo el que tiene sesión | Un estudiante ve menús que no le sirven; requiere `visible` por permiso en las entradas de core |
+| W7  | **Resuelta con `shellNav` de 1.6.0 (#141).** Core sigue sin filtrar sus entradas por lectura, pero `src/shellNav.ts` decide el menú: sin `admin` ni `MANAGE_ORGANIZATION`, Datos y Administración no salen en ninguna ruta | Quien tiene permiso los ve en las rutas de core; fuera de ellas, una entrada «Administración». Es cortesía: decide el servidor, y la pantalla de core ante un `403` sigue diciendo «Todavía no hay usuarios» |
 | W8  | La entrada de menú sin destino («Registros») es un `span` a 2,46:1 (claro) y 2,84:1 (oscuro), sin `aria-disabled` | Lo único que axe señala fuera de `main`: si fuera un control deshabilitado declarado, WCAG lo exime |
-| W9  | El shell no tiene salto al contenido: en escritorio hay hasta 13 paradas de Tab antes de la pantalla. Sus ítems no llegan a 44 px | Solo con teclado, cada pantalla empieza por el menú                            |
+| W9  | El shell no tiene salto al contenido: en escritorio hay hasta 8 paradas de Tab antes de la pantalla | Solo con teclado, cada pantalla empieza por el menú |
 | W10 | El cajón móvil del shell funciona (Esc, foco atrapado y devuelto), pero es un `aside` sin `role="dialog"` ni nombre                 | Un lector de pantalla no anuncia que se abrió un diálogo                       |
 | W11 | `ConfirmDialog` y `ReasonDialog` no devuelven el foco al cerrarse: Radix lo devuelve a un trigger que no tienen                     | `ReturnFocus` en `src/shared`, hasta que `@wasichai/ui` lo resuelva            |
 | W12 | «Auditoría» no trae icono en el menú; los títulos de grupo del menú van en mayúsculas                                               | Se usan tal cual                                                               |
 | W13 | `/` y `/login` son de core: `/` da a cada perfil el lema «Plataforma de aplicaciones geoespaciales configurables» y «Objetos: 0», sin camino a su trabajo; el login propone el correo de la semilla en desarrollo | Lo trata #142 |
+| W14 | El formulario de registros de core no admite valores iniciales, y `version_curso` exige que `autor_id` sea el UUID de quien crea, que ninguna pantalla muestra | Por eso el estudio no enlaza a `links.newRecord('version_curso')`: una primera versión solo llega importando (#141). Pide cambio en `@wasichai/core` o en el backend |
 
 ## Estado tras el rediseño
 
@@ -133,12 +134,12 @@ Comprobado el 3 de noviembre de 2026 en el código y en el navegador, no en los 
 
 | #   | Qué queda                                                                                                                           |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| A1  | Dentro de `main` sigue habiendo botones `sm` de 36 px a la vista, con área táctil de 44 px, en filas densas. Los ítems del menú son de core (W1, W9) |
+| A1  | Dentro de `main` sigue habiendo botones `sm` de 36 px a la vista, con área táctil de 44 px, en filas densas. Los ítems del menú ya miden 44 px, salvo «Registros» (W8) |
 | A3  | Los encabezados están resueltos; `input type=date` sigue con el formato del navegador (también `mm/dd/yyyy` en una interfaz en español) |
 | E6  | El título de la lección y el `h1` del documento se repiten si el documento empieza por el mismo título: es contenido del autor, y su HTML no se reescribe |
 | T5  | Las entradas del LMS llevan icono; «Auditoría», de core, no (W12)                                                                   |
 | T6  | El lema ya no sale en el menú ni en el login, pero sí en `/`, que es de core (W13)                                                  |
-| W1–W13 | Limitaciones de `@wasichai/*`: no se parchean aquí                                                                               |
+| W2–W14 | Limitaciones de `@wasichai/*`, salvo W7, ya resuelta: no se parchean aquí                                                                               |
 
 **Accesibilidad automática.** axe-core 4.14 con `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` y `wcag22aa`, en los escenarios de `e2e/visual` a 390 y 1440 px, en claro, oscuro y modo lectura. Dentro de `main` y de los diálogos no quedan infracciones; fuera, solo W8. Es evidencia automática: axe no comprueba la mayoría de los criterios de WCAG y no entra en el `iframe` aislado de la lectura, así que esto no afirma que se cumpla WCAG 2.2 AA.
 
