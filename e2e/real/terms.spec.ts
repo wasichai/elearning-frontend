@@ -24,8 +24,8 @@ test('un estudiante nuevo acepta los términos por la pantalla, vuelve a la fich
   await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
   await expect(page).toHaveURL(`/terminos?returnTo=%2Fcursos%2F${slug}`)
   await expect(page.getByRole('heading', { level: 1, name: 'Términos de uso' })).toBeVisible()
-  await expect(page.getByText('Plazo de conservación')).toBeVisible()
-  await expect(page.getByText('Aún no has aceptado estos términos')).toBeVisible()
+  await expect(page.getByText('Plazo de conservación', { exact: true })).toBeVisible()
+  await expect(page.getByText('Aún no has aceptado estos términos', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Aceptar los términos' }).click()
   await expect(page).toHaveURL(`/cursos/${slug}`)
@@ -35,7 +35,7 @@ test('un estudiante nuevo acepta los términos por la pantalla, vuelve a la fich
 
   // sus términos, desde el menú, para retirarlos
   await page.getByRole('link', { name: 'Términos de uso' }).click()
-  await expect(page.getByText('Aceptaste estos términos')).toBeVisible()
+  await expect(page.getByText('Aceptaste estos términos', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Retirar mi aceptación' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'Retirar y suprimir' }).click()
   await expect(page.getByText('Tu retirada está en curso')).toBeVisible()
