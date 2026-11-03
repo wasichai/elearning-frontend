@@ -35,6 +35,12 @@ export function studioModule(): WasichaiModule {
         path: 'estudio/versiones/:id/unidades/nueva',
         chrome: 'shell',
         lazy: () => import('./NewUnitPage').then((m) => ({ default: m.NewUnitPage }))
+      },
+      {
+        id: 'newLesson',
+        path: 'estudio/versiones/:id/unidades/:unitId/lecciones/nueva',
+        chrome: 'shell',
+        lazy: () => import('./NewLessonPage').then((m) => ({ default: m.NewLessonPage }))
       }
     ],
     // tras «Docencia» (6) y antes que los grupos de core (datos 10)

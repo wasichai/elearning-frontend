@@ -1,5 +1,14 @@
 import type { Page } from '@playwright/test'
-import { draftDetail, draftVersion, newCourseRecord, publishedDetail, publishedVersion } from '../../../src/modules/studio/test/fixtures'
+import {
+  draftDetail,
+  draftVersion,
+  firstDraftDetail,
+  lessonDefinition,
+  newCourseRecord,
+  noLessonsDetail,
+  publishedDetail,
+  publishedVersion
+} from '../../../src/modules/studio/test/fixtures'
 import { doneJob, failedJob, IMPORT_JOB_ID, importReport, pendingJob, runningJob, ANY_SHA, SOURCE } from '../../../src/modules/studio/test/importFixtures'
 import { creator, type Scenario } from '../scenario'
 
@@ -212,6 +221,25 @@ const firstDraftOpen = async (page: Page) => {
   await page.getByRole('link', { name: /Añadir la primera unidad|Add the first unit/ }).waitFor()
 }
 
+// la lista con un primer borrador, recién creado, sin unidades; su detalle dice que está vacío
+const withEmptyDraftListed = async (page: Page) => {
+  const { units: _units, comments: _comments, decisions: _decisions, ...summary } = firstDraftDetail
+  await page.route(VERSIONS, (route) => route.fulfill({ json: [summary, publishedVersion] }))
+  await page.route(`**/api/lms/studio/versions/${firstDraftDetail.id}`, (route) => route.fulfill({ json: firstDraftDetail }))
+  await page.reload({ waitUntil: 'networkidle' })
+}
+
+// el servidor rechaza con un 409, sea cual sea su causa, y lo que se relee después es lo que decide el mensaje
+const rejected = (reread: unknown, status: number) => async (page: Page) => {
+  await page.getByRole('button', { name: /Enviar a revisión|Send for review/ }).click()
+  const confirm = page.getByRole('dialog').getByRole('button', { name: /Sí, enviar a revisión|Yes, send for review/ })
+  await confirm.waitFor()
+  await page.route(`${DETAIL}`, (route) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(reread) }))
+  await page.route(`${DETAIL}/submit`, (route) => route.fulfill({ status: 409, json: { title: 'Conflict', status: 409, detail: 'no es contrato' } }))
+  await confirm.click()
+  await page.getByRole('dialog').getByRole('alert').waitFor()
+}
+
 export const studioScenarios: Scenario[] = [
   { name: 'studio', path: '/estudio', api: creator },
   { name: 'studio-new-course', path: NEW_COURSE_PATH, api: creator },
@@ -220,14 +248,38 @@ export const studioScenarios: Scenario[] = [
   { name: 'studio-new-course-conflict', path: NEW_COURSE_PATH, api: creator, act: savedWithDraftReply(409) },
   { name: 'studio-first-draft', path: NEW_COURSE_PATH, api: creator, act: firstDraftOpen },
   {
-    name: 'studio-first-draft-submit',
-    path: NEW_COURSE_PATH,
+    name: 'studio-no-lessons',
+    path: DRAFT_PATH,
     api: creator,
     act: async (page) => {
-      await firstDraftOpen(page)
-      await page.getByRole('button', { name: /Enviar a revisión|Send for review/ }).click()
-      await page.getByText(/aún no tiene unidades: el revisor|no units yet: the reviewer/).waitFor()
+      await reloadedWith(DETAIL, 200, { ...noLessonsDetail, id: DRAFT })(page)
+      await page.setViewportSize({ width: page.viewportSize()!.width, height: 1800 })
     }
+  },
+  // «Mis versiones» no sabe cuántas lecciones tiene: lo comprueba al pedir enviar, por eso primero se ve el borrador con su acción
+  { name: 'studio-list-empty-draft', path: '/estudio', api: creator, act: withEmptyDraftListed },
+  {
+    name: 'studio-list-empty-draft-dialog',
+    path: '/estudio',
+    api: creator,
+    act: async (page) => {
+      await withEmptyDraftListed(page)
+      await page.getByRole('button', { name: /(Enviar a revisión la versión 1|Send version 1)/ }).click()
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: /Añadir la primera unidad|Add the first unit/ })
+        .waitFor()
+    }
+  },
+  { name: 'studio-rejected-no-lessons', path: DRAFT_PATH, api: creator, act: rejected({ ...draftDetail, units: [] }, 200) },
+  { name: 'studio-rejected-state', path: DRAFT_PATH, api: creator, act: rejected(draftDetail, 200) },
+  { name: 'studio-rejected-not-draft', path: DRAFT_PATH, api: creator, act: rejected({ ...draftDetail, status: 'EN_REVISION' }, 200) },
+  { name: 'studio-rejected-unknown', path: DRAFT_PATH, api: creator, act: rejected({ title: 'Error', status: 500 }, 500) },
+  {
+    name: 'studio-new-lesson',
+    path: `${DRAFT_PATH}/unidades/u-1/lecciones/nueva`,
+    api: creator,
+    act: reloadedWith('**/api/metadata/objects/leccion', 200, lessonDefinition)
   },
   { name: 'studio-new-unit', path: `${DRAFT_PATH}/unidades/nueva`, api: creator },
   { name: 'studio-draft', path: DRAFT_PATH, api: creator },

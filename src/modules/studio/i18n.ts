@@ -12,7 +12,8 @@ const es = {
     subtitle: 'Las versiones de curso que escribes: su estado, lo que comentó el revisor y lo que falta.',
     loading: 'Cargando tus versiones…',
     empty: 'Aún no tienes versiones',
-    emptyHint: 'Empieza por «Nuevo curso»: al guardarlo se abre su primer borrador, que aparecerá aquí para editarlo y enviarlo a revisión.',
+    emptyHint:
+      'Empieza por «Nuevo curso»: al guardarlo se abre su primer borrador, que aparecerá aquí para añadirle contenido y, con sus lecciones, enviarlo a revisión.',
     coursesHint:
       '¿Un curso aún sin versiones? Ábrelo en la lista de cursos, que incluye los de todas las personas. Al final de su ficha puedes crear su primer borrador.',
     allCourses: 'Ver todos los cursos',
@@ -58,8 +59,18 @@ const es = {
     submitTitle: '¿Enviar a revisión?',
     submitDescription:
       'Mientras la versión {{number}} esté en revisión no podrás editarla. El revisor puede aprobarla, pedirte cambios (vuelve a borrador) o rechazarla.',
-    submitEmptyDescription:
-      'La versión {{number}} aún no tiene unidades: el revisor recibiría una versión vacía y no podrás editarla hasta que decida. Antes puedes añadirle contenido.',
+    checking: 'Comprobando que la versión tenga lecciones…',
+    checkFailed: 'No pudimos comprobar si la versión tiene lecciones, así que aún no se envía. Inténtalo de nuevo.',
+    recheck: 'Vuelve a comprobarla antes de enviarla otra vez.',
+    blockedTitle: 'Aún no se puede enviar a revisión',
+    blockedNoUnits: 'Esta versión no tiene lecciones, y sin ellas no hay nada que revisar. Empieza por su primera unidad y añádele al menos una lección.',
+    blockedNoLessons: 'Sus unidades aún no tienen lecciones, y sin ellas no hay nada que revisar. Añade al menos una.',
+    notDraftTitle: 'Esta versión ya no es un borrador',
+    notDraftDescription: 'Ahora está en estado «{{status}}», así que no se puede enviar. Ábrela para ver cómo sigue.',
+    open: 'Abrir la versión',
+    rejectedNoLessons: 'El servidor no aceptó el envío: la versión {{number}} no tiene lecciones.',
+    rejectedState: 'El servidor no aceptó el envío: el estado de la versión cambió hace un momento.',
+    rejectedUnknown: 'El servidor no aceptó el envío y no pudimos comprobar por qué.',
     submitConfirm: 'Sí, enviar a revisión',
     cancel: 'Volver',
     copy: 'Crear versión nueva',
@@ -95,12 +106,19 @@ const es = {
     subtitle: 'De la versión {{number}} de {{course}}',
     backToVersion: 'Volver a la versión'
   },
+  newLesson: {
+    title: 'Nueva lección',
+    subtitle: 'De la unidad {{order}}. {{title}}',
+    unitGone: 'Esta unidad ya no está en la versión'
+  },
   syllabus: {
     title: 'Contenido',
     empty: 'Esta versión aún no tiene unidades.',
-    emptyDraft: 'Esta versión aún no tiene unidades. Empieza por la primera; después, envíala a revisión.',
     firstDraftDefaults: 'Se creó con modalidad asíncrona, por semanas y de 1 semana: ajústalo en «Editar la versión».',
     addFirstUnit: 'Añadir la primera unidad',
+    addFirstLesson: 'Añadir la primera lección',
+    addLesson: 'Añadir una lección',
+    addLessonLabel: 'Añadir una lección a «{{title}}»',
     addUnit: 'Añadir una unidad',
     unit: 'Unidad {{order}}. {{title}}',
     lesson: '{{order}}. {{title}}',
@@ -201,7 +219,8 @@ const en: typeof es = {
     subtitle: 'The course versions you write: their status, what the reviewer commented and what is left.',
     loading: 'Loading your versions…',
     empty: 'You have no versions yet',
-    emptyHint: 'Start with “New course”: when you save it, its first draft opens, and it will appear here to edit it and send it for review.',
+    emptyHint:
+      'Start with “New course”: when you save it, its first draft opens, and it will appear here so you can add content and, once it has lessons, send it for review.',
     coursesHint:
       'A course with no versions yet? Open it from the list of courses, which includes everyone’s. At the end of its page you can create its first draft.',
     allCourses: 'See all courses',
@@ -247,8 +266,18 @@ const en: typeof es = {
     submitTitle: 'Send for review?',
     submitDescription:
       'While version {{number}} is in review you will not be able to edit it. The reviewer can approve it, request changes (it returns to draft) or reject it.',
-    submitEmptyDescription:
-      'Version {{number}} has no units yet: the reviewer would receive an empty version and you will not be able to edit it until they decide. You can add content first.',
+    checking: 'Checking that the version has lessons…',
+    checkFailed: 'We could not check whether the version has lessons, so it has not been sent. Please try again.',
+    recheck: 'Check it again before sending it again.',
+    blockedTitle: 'It cannot be sent for review yet',
+    blockedNoUnits: 'This version has no lessons, and without them there is nothing to review. Start with its first unit and add at least one lesson to it.',
+    blockedNoLessons: 'Its units have no lessons yet, and without them there is nothing to review. Add at least one.',
+    notDraftTitle: 'This version is no longer a draft',
+    notDraftDescription: 'Its status is now “{{status}}”, so it cannot be sent. Open it to see what comes next.',
+    open: 'Open the version',
+    rejectedNoLessons: 'The server did not accept it: version {{number}} has no lessons.',
+    rejectedState: 'The server did not accept it: the status of the version changed a moment ago.',
+    rejectedUnknown: 'The server did not accept it and we could not check why.',
     submitConfirm: 'Yes, send for review',
     cancel: 'Go back',
     copy: 'Create new version',
@@ -284,12 +313,19 @@ const en: typeof es = {
     subtitle: 'Of version {{number}} of {{course}}',
     backToVersion: 'Back to the version'
   },
+  newLesson: {
+    title: 'New lesson',
+    subtitle: 'In unit {{order}}. {{title}}',
+    unitGone: 'This unit is no longer in the version'
+  },
   syllabus: {
     title: 'Content',
     empty: 'This version has no units yet.',
-    emptyDraft: 'This version has no units yet. Start with the first one; then send it for review.',
     firstDraftDefaults: 'It was created as asynchronous, by weeks and lasting 1 week: adjust this in “Edit the version”.',
     addFirstUnit: 'Add the first unit',
+    addFirstLesson: 'Add the first lesson',
+    addLesson: 'Add a lesson',
+    addLessonLabel: 'Add a lesson to “{{title}}”',
     addUnit: 'Add a unit',
     unit: 'Unit {{order}}. {{title}}',
     lesson: '{{order}}. {{title}}',

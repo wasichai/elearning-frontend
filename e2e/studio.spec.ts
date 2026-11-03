@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fakeApi } from './api'
+import { draftDetail, lessonDefinition } from '../src/modules/studio/test/fixtures'
 import { failedJob } from '../src/modules/studio/test/importFixtures'
 import { fullDiff } from './visual/scenarios/studio'
 
@@ -228,8 +229,10 @@ test('la comparación no desborda a 360 con títulos muy largos y sus plegados s
   await expect(folded).toBeVisible()
 })
 
-test('de «Nuevo curso» al primer borrador vacío, y de ahí a su primera unidad, sin salir del estudio', async ({ page }) => {
+test('de «Nuevo curso» al primer borrador vacío, a su primera unidad y a su primera lección: solo entonces se puede enviar', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  // la simulación de la plataforma da una lección con solo su título: aquí, los campos que el modelo exige
+  await page.route('**/api/metadata/objects/leccion', (route) => route.fulfill({ json: lessonDefinition }))
   await page.goto('/estudio')
 
   await page.getByRole('link', { name: 'Nuevo curso' }).click()
@@ -243,6 +246,8 @@ test('de «Nuevo curso» al primer borrador vacío, y de ahí a su primera unida
   await expect(page).toHaveURL(/\/estudio\/versiones\/[^/]+$/)
   await expect(page.getByText('Versión 1 · NUEVO-101')).toBeVisible()
   await expect(page.getByText(/aún no tiene unidades/)).toBeVisible()
+  await expect(page.getByText('Aún no se puede enviar a revisión')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
 
   await page.getByRole('link', { name: 'Añadir la primera unidad' }).click()
   await expect(page.getByLabel(/Orden/)).toHaveValue('1')
@@ -251,5 +256,74 @@ test('de «Nuevo curso» al primer borrador vacío, y de ahí a su primera unida
 
   await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Primeros pasos' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Añadir la primera unidad' })).toHaveCount(0)
+  // con una unidad sin lecciones sigue sin poder enviarse, y el camino lleva a una lección de esa unidad
+  await expect(page.getByText(/Sus unidades aún no tienen lecciones/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Añadir la primera lección' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Nueva lección' })).toBeVisible()
+  await expect(page.getByText('De la unidad 1. Primeros pasos')).toBeVisible()
+  await expect(page.getByLabel(/Orden/)).toHaveValue('1')
+  await expect(page.getByLabel(/^Unidad/)).toHaveCount(0)
+  await page.getByLabel(/Título/).fill('Entrar al portal')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+
+  await expect(page.getByText('1. Entrar al portal', { exact: true })).toBeVisible()
+  await expect(page.getByText('Aún no se puede enviar a revisión')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+  await page.getByRole('dialog', { name: '¿Enviar a revisión?' }).getByRole('button', { name: 'Sí, enviar a revisión' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Enviada a revisión.' })).toBeVisible()
   expect(api.unexpected).toEqual([])
+})
+
+test('desde «Mis versiones», un borrador sin lecciones se comprueba al pedir enviar: se explica, no se envía y el foco vuelve', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto('/estudio/cursos/nuevo')
+  await page.getByLabel(/Código/).fill('NUEVO-101')
+  await page.getByLabel(/Identificador/).fill('nuevo-101')
+  await page.getByLabel(/Título/).fill('Curso nuevo')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Curso nuevo' })).toBeVisible()
+  await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis versiones' }).click()
+
+  const submit = page.getByRole('button', { name: 'Enviar a revisión la versión 1 de Curso nuevo' })
+  await submit.focus()
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+  await expect(dialog).toContainText('no tiene lecciones')
+  await expect(dialog.getByRole('button', { name: 'Sí, enviar a revisión' })).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(submit).toBeFocused()
+  expect(api.studioRequests.filter((request) => request.endsWith('/submit'))).toEqual([])
+
+  await submit.click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Añadir la primera unidad' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Nueva unidad' })).toBeVisible()
+  expect(api.unexpected).toEqual([])
+})
+
+test('un 409 con la versión ya vaciada en otra pestaña se explica con lo que se relee: no se ve como enviada', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto(`/estudio/versiones/${DRAFT}`)
+  await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+  const confirm = page.getByRole('dialog', { name: '¿Enviar a revisión?' }).getByRole('button', { name: 'Sí, enviar a revisión' })
+  await expect(confirm).toBeEnabled()
+
+  // desde aquí, la versión no tiene lecciones: en otra pestaña se le quitaron
+  await page.route(`**/api/lms/studio/versions/${DRAFT}`, (route) => route.fulfill({ json: { ...draftDetail, units: [] } }))
+  await page.route(`**/api/lms/studio/versions/${DRAFT}/submit`, (route) =>
+    route.fulfill({ status: 409, json: { title: 'Conflict', status: 409, detail: 'detail que no es contrato' } })
+  )
+  await confirm.click()
+
+  const dialog = page.getByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+  await expect(dialog.getByRole('alert')).toHaveText('El servidor no aceptó el envío: la versión 2 no tiene lecciones.')
+  await expect(page.getByText('Enviada a revisión.')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Volver' }).click()
+  await expect(page.getByRole('link', { name: 'Añadir la primera unidad' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
+  // el botón ya no está: el foco sigue en las acciones, y el siguiente Tab va a la primera
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Editar la versión' })).toBeFocused()
 })

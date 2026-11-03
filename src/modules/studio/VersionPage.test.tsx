@@ -10,6 +10,7 @@ import {
   draftDiff,
   draftVersion,
   firstDraftDetail,
+  noLessonsDetail,
   problem,
   publishedDetail,
   publishedDiff,
@@ -102,17 +103,100 @@ describe('VersionPage: un borrador', () => {
     await waitFor(() => expect(fetchMock.calls.filter((call) => call.method === 'GET' && call.path === detailPath(draftVersion.id)).length).toBeGreaterThan(1))
   })
 
-  it('si el servidor no lo acepta (409), el diálogo dice por qué', async () => {
+  it('nunca envía sin haber comprobado antes que tiene lecciones: lo lee de nuevo al abrir el diálogo', async () => {
     const user = userEvent.setup()
-    renderVersion(draftVersion.id, [
-      { path: detailPath(draftVersion.id), body: draftDetail },
-      { method: 'POST', path: SUBMIT, status: 409, body: problem(409, 'Solo se envía a revisión un borrador') }
-    ])
+    renderVersion(draftVersion.id, [{ path: detailPath(draftVersion.id), body: draftDetail }])
 
+    const reads = () => fetchMock.calls.filter((call) => call.method === 'GET' && call.path === detailPath(draftVersion.id)).length
     await user.click(await screen.findByRole('button', { name: 'Enviar a revisión' }))
-    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Sí, enviar a revisión' }))
-    expect(await within(screen.getByRole('dialog')).findByRole('alert')).toHaveTextContent('El servidor no lo aceptó: Solo se envía a revisión un borrador')
-    expect(screen.queryByText('Enviada a revisión.')).not.toBeInTheDocument()
+    await within(await screen.findByRole('dialog')).findByRole('button', { name: 'Sí, enviar a revisión' })
+    await waitFor(() => expect(reads()).toBeGreaterThan(1))
+  })
+
+  describe('el rechazo del servidor (409), que no se distingue por su código ni por su detail', () => {
+    const rejected = (status: number): MockRoute => ({ method: 'POST', path: SUBMIT, status, body: problem(status, 'detail que no es contrato') })
+
+    // la primera lectura es la de la pantalla y la del diálogo, con lecciones; lo que cambia es lo que se lee tras el rechazo
+    async function confirmAndReject(routes: MockRoute[], reread: Partial<MockRoute>) {
+      const user = userEvent.setup()
+      const live = [...routes, ANY_DIFF]
+      fetchMock = mockFetch(live)
+      renderWithProviders(
+        <Routes>
+          <Route path="/estudio/versiones/:id" element={<VersionPage />} />
+        </Routes>,
+        { modules: [studioModule()], route: `/estudio/versiones/${draftVersion.id}` }
+      )
+      await user.click(await screen.findByRole('button', { name: 'Enviar a revisión' }))
+      const confirm = await within(await screen.findByRole('dialog')).findByRole('button', { name: 'Sí, enviar a revisión' })
+      live[0] = { path: detailPath(draftVersion.id), ...reread }
+      await user.click(confirm)
+      return user
+    }
+
+    it('sin lecciones al releerla, dice que le faltan lecciones y lleva a añadirlas', async () => {
+      await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(409)], { body: { ...draftDetail, units: [] } })
+
+      const dialog = await screen.findByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent('El servidor no aceptó el envío: la versión 2 no tiene lecciones.')
+      expect(dialog).not.toHaveTextContent('detail que no es contrato')
+      expect(within(dialog).getByRole('button', { name: 'Añadir la primera unidad' })).toBeInTheDocument()
+      expect(screen.queryByText('Enviada a revisión.')).not.toBeInTheDocument()
+    })
+
+    it('con lecciones y aún en borrador, dice que el estado cambió, y deja reintentar', async () => {
+      await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(409)], { body: draftDetail })
+
+      const dialog = await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent('El servidor no aceptó el envío: el estado de la versión cambió hace un momento.')
+      expect(dialog).not.toHaveTextContent('lecciones')
+      expect(within(dialog).getByRole('button', { name: 'Sí, enviar a revisión' })).toBeEnabled()
+    })
+
+    it('si ya está en revisión, lo dice en vez de cerrarse, y no da a entender que se envió desde aquí', async () => {
+      await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(409)], { body: { ...draftDetail, status: 'EN_REVISION' } })
+
+      const dialog = await screen.findByRole('dialog', { name: 'Esta versión ya no es un borrador' })
+      expect(dialog).toHaveTextContent('Ahora está en estado «En revisión»')
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent('el estado de la versión cambió hace un momento')
+      expect(screen.queryByText('Enviada a revisión.')).not.toBeInTheDocument()
+    })
+
+    it('si no se puede releer, no afirma ninguna causa y no vuelve a enviar: reintenta la lectura', async () => {
+      const user = await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(409)], {
+        status: 500,
+        body: problem(500, 'fallo')
+      })
+
+      const dialog = await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })
+      const alert = await within(dialog).findByRole('alert')
+      expect(alert).toHaveTextContent('El servidor no aceptó el envío y no pudimos comprobar por qué.')
+      expect(alert).not.toHaveTextContent('no tiene lecciones')
+      expect(alert).not.toHaveTextContent('estado de la versión cambió')
+      await user.click(within(dialog).getByRole('button', { name: 'Reintentar' }))
+      expect(await within(screen.getByRole('dialog')).findByText(/No pudimos comprobar si la versión tiene lecciones/)).toBeInTheDocument()
+      expect(posts(SUBMIT)).toHaveLength(1)
+    })
+
+    it('un 403 sigue diciendo que no hay permiso, y no habla de lecciones', async () => {
+      await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(403)], { body: draftDetail })
+
+      const alert = await within(screen.getByRole('dialog')).findByRole('alert')
+      expect(alert).toHaveTextContent('No tienes permiso para hacerlo.')
+      expect(alert).not.toHaveTextContent('lecciones')
+    })
+
+    it('al cerrar, si el botón ya no está, el foco no se pierde: va a las acciones de la versión', async () => {
+      const user = await confirmAndReject([{ path: detailPath(draftVersion.id), body: draftDetail }, rejected(409)], { body: { ...draftDetail, units: [] } })
+
+      const dialog = await screen.findByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+      await within(dialog).findByRole('alert')
+      await user.click(within(dialog).getByRole('button', { name: 'Volver' }))
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      const edit = screen.getByRole('link', { name: 'Editar la versión' })
+      await waitFor(() => expect(document.activeElement).toContainElement(edit))
+    })
   })
 })
 
@@ -291,38 +375,61 @@ describe('VersionPage: errores e idioma', () => {
     expect(await within(screen.getByRole('region', { name: 'Changes' })).findByText(/This is the first version of this course/)).toBeInTheDocument()
   })
 
-  describe('un borrador sin unidades', () => {
-    const emptyRoutes: MockRoute[] = [
-      { path: detailPath(firstDraftDetail.id), body: firstDraftDetail },
-      { path: diffPath(firstDraftDetail.id), body: { baseVersion: null, units: [] } }
-    ]
-    const renderEmpty = () => {
-      fetchMock = mockFetch(emptyRoutes)
-      return renderWithProviders(
-        <Routes>
-          <Route path="/estudio/versiones/:id" element={<VersionPage />} />
-        </Routes>,
-        { modules: [studioModule()], route: `/estudio/versiones/${firstDraftDetail.id}` }
+  describe('un borrador sin lecciones', () => {
+    const renderDetail = (detail: { id: string }, language?: string) =>
+      renderVersion(
+        detail.id,
+        [
+          { path: detailPath(detail.id), body: detail },
+          { path: diffPath(detail.id), body: { baseVersion: null, units: [] } }
+        ],
+        language
       )
-    }
 
-    it('la siguiente acción es añadir la primera unidad, no enviarla, y dice con qué valores se creó', async () => {
-      renderEmpty()
+    it('sin unidades, no ofrece enviar: dice qué falta y la única primaria es añadir la primera unidad', async () => {
+      renderDetail(firstDraftDetail)
 
       const add = await screen.findByRole('link', { name: 'Añadir la primera unidad' })
       expect(add).toHaveAttribute('href', `/estudio/versiones/${firstDraftDetail.id}/unidades/nueva`)
       expect(add).toHaveAttribute('data-variant', 'primary')
-      expect(screen.getByRole('button', { name: 'Enviar a revisión' })).toHaveAttribute('data-variant', 'secondary')
+      expect(screen.getByText('Aún no se puede enviar a revisión').closest('[role="status"]')).toHaveTextContent('no tiene lecciones')
+      expect(screen.queryByRole('button', { name: 'Enviar a revisión' })).not.toBeInTheDocument()
+      expect(screen.queryByText(/cuando esté lista/)).not.toBeInTheDocument()
       expect(screen.getByText(/modalidad asíncrona/)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Editar la versión' })).toHaveAttribute('data-variant', 'secondary')
+      expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(1)
     })
 
-    it('enviarla vacía avisa de lo que pasa: el servidor la acepta y deja de poder editarse', async () => {
-      const user = userEvent.setup()
-      renderEmpty()
+    it('con unidades sin lecciones, lleva a añadir la primera lección a la primera unidad, y cada unidad ofrece la suya', async () => {
+      renderDetail(noLessonsDetail)
 
-      await user.click(await screen.findByRole('button', { name: 'Enviar a revisión' }))
+      const add = await screen.findByRole('link', { name: 'Añadir la primera lección' })
+      expect(add).toHaveAttribute('href', `/estudio/versiones/${noLessonsDetail.id}/unidades/u-vacia-1/lecciones/nueva`)
+      expect(add).toHaveAttribute('data-variant', 'primary')
+      expect(screen.getByText(/Sus unidades aún no tienen lecciones/)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Añadir una lección a «Pagos»' })).toHaveAttribute(
+        'href',
+        `/estudio/versiones/${noLessonsDetail.id}/unidades/u-vacia-2/lecciones/nueva`
+      )
+      expect(screen.queryByRole('button', { name: 'Enviar a revisión' })).not.toBeInTheDocument()
+      expect(document.querySelectorAll('[data-variant="primary"]')).toHaveLength(1)
+    })
 
-      expect(await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })).toHaveTextContent('aún no tiene unidades')
+    it('con una sola lección en cualquier unidad, ya se puede enviar', async () => {
+      const [lesson] = draftDetail.units[0]!.lessons
+      const detail = { ...noLessonsDetail, units: [noLessonsDetail.units[0]!, { ...noLessonsDetail.units[1]!, lessons: [lesson!] }] }
+      renderDetail(detail)
+
+      expect(await screen.findByRole('button', { name: 'Enviar a revisión' })).toHaveAttribute('data-variant', 'primary')
+      expect(screen.queryByText('Aún no se puede enviar a revisión')).not.toBeInTheDocument()
+    })
+
+    it('en inglés', async () => {
+      renderDetail(noLessonsDetail, 'en')
+
+      expect(await screen.findByRole('link', { name: 'Add the first lesson' })).toBeInTheDocument()
+      expect(screen.getByText('It cannot be sent for review yet')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Send for review' })).not.toBeInTheDocument()
     })
 
     it('con unidades, enviar sigue siendo la primera acción y añadir otra es secundaria', async () => {

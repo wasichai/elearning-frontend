@@ -11,7 +11,8 @@ describe('studioModule', () => {
       { key: STUDIO_ROUTES.version, path: '/estudio/versiones/:id', chrome: 'shell' },
       { key: STUDIO_ROUTES.import, path: '/estudio/importar', chrome: 'shell' },
       { key: STUDIO_ROUTES.newCourse, path: '/estudio/cursos/nuevo', chrome: 'shell' },
-      { key: STUDIO_ROUTES.newUnit, path: '/estudio/versiones/:id/unidades/nueva', chrome: 'shell' }
+      { key: STUDIO_ROUTES.newUnit, path: '/estudio/versiones/:id/unidades/nueva', chrome: 'shell' },
+      { key: STUDIO_ROUTES.newLesson, path: '/estudio/versiones/:id/unidades/:unitId/lecciones/nueva', chrome: 'shell' }
     ])
   })
 

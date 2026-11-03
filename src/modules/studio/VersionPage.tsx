@@ -1,6 +1,7 @@
 import { LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { ChevronRight } from 'lucide-react'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
@@ -12,10 +13,10 @@ import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { VersionDiffSection } from '../../shared/VersionDiff'
 import { VERSION_BADGE, VersionStatusLine } from '../../shared/VersionStatusLine'
 import { useSubmitVersion, useVersion, useVersionDiff } from './api'
-import type { ReviewComment, ReviewDecision, StudioLesson, StudioUnit, StudioVersionDetail } from './contract'
+import { hasLessons, type ReviewComment, type ReviewDecision, type StudioLesson, type StudioUnit, type StudioVersionDetail } from './contract'
 import { useProblemText } from './parts'
 import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
-import { NewVersionButton, SubmitVersionButton } from './VersionActions'
+import { NewVersionButton, SubmitVersionButton, useFirstContentStep } from './VersionActions'
 
 // el contenido de la versión se edita en las pantallas de registros de Wasichai (core), que la guarda editorial del
 // servidor deja solo al autor y en borrador: aquí no se reimplementan formularios (CLAUDE.md, regla 7)
@@ -82,31 +83,46 @@ function VersionProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
   )
 }
 
-// la siguiente acción, en la cabecera. una publicada o retirada solo tiene una salida; una en curso la ofrece sin prisa
+// la siguiente acción, en la cabecera. una publicada o retirada solo tiene una salida; una en curso la ofrece sin prisa. un borrador sin
+// lecciones no se envía: lo que le falta, y su primaria, van en el cuerpo (BlockedSubmit)
 function Actions({ version }: { version: StudioVersionDetail }) {
   const { t } = useTranslation('studio')
   const links = useWasichaiLinks()
   const submit = useSubmitVersion(version.id)
+  const home = useRef<HTMLDivElement>(null)
   const draft = version.status === 'BORRADOR'
   const finished = version.status === 'PUBLICADA' || version.status === 'RETIRADA'
   return (
-    <div className="flex flex-col gap-2 sm:items-end">
+    <div ref={home} tabIndex={-1} className="flex flex-col gap-2 outline-none sm:items-end">
       <div className="flex flex-wrap items-center gap-2">
         {draft ? (
-          <>
-            <Button asChild variant="secondary" className="min-h-11">
-              <Link to={links.record(VERSION_OBJECT, version.id)}>{t('version.edit')}</Link>
-            </Button>
-            {/* una versión vacía aún no tiene qué revisar: la primera acción es añadir contenido (Syllabus) */}
-            <SubmitVersionButton version={version} submit={submit} variant={version.units.length === 0 ? 'secondary' : 'primary'} />
-          </>
+          <Button asChild variant="secondary" className="min-h-11">
+            <Link to={links.record(VERSION_OBJECT, version.id)}>{t('version.edit')}</Link>
+          </Button>
         ) : (
           <NewVersionButton source={version} label={t('version.copy')} variant={finished ? 'primary' : 'secondary'} />
         )}
+        <SubmitVersionButton version={version} submit={submit} variant="primary" offered={draft && hasLessons(version)} focusHome={home} />
       </div>
       <p role="status" className="text-sm text-success empty:hidden">
         {submit.isSuccess ? t('version.submitted') : ''}
       </p>
+    </div>
+  )
+}
+
+// un borrador sin lecciones no se puede enviar: qué falta, a la vista, y el siguiente paso
+function BlockedSubmit({ version }: { version: StudioVersionDetail }) {
+  const { t } = useTranslation('studio')
+  const step = useFirstContentStep(version)
+  return (
+    <div className="flex max-w-prose flex-col items-start gap-3">
+      <Notice tone="notice" title={t('version.blockedTitle')}>
+        {step.reason}
+      </Notice>
+      <Button asChild variant="primary" className="min-h-11">
+        <Link to={step.to}>{step.label}</Link>
+      </Button>
     </div>
   )
 }
@@ -119,7 +135,11 @@ function Version({ version }: { version: StudioVersionDetail }) {
     <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-10">
       <div className="flex min-w-0 flex-col gap-8">
         {draft ? (
-          <p className="max-w-prose text-base text-ink-muted">{t('statusHint.BORRADOR')}</p>
+          hasLessons(version) ? (
+            <p className="max-w-prose text-base text-ink-muted">{t('statusHint.BORRADOR')}</p>
+          ) : (
+            <BlockedSubmit version={version} />
+          )
         ) : (
           <Notice tone="notice" title={t('version.readOnly')}>
             {t(`statusHint.${version.status}`)}
@@ -158,14 +178,9 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
     >
       {sorted.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="max-w-prose text-sm text-ink-muted">{t(draft ? 'syllabus.emptyDraft' : 'syllabus.empty')}</p>
+          <p className="max-w-prose text-sm text-ink-muted">{t('syllabus.empty')}</p>
           {/* lo que el servidor pone a la v1 vacía (#270): el curso no tiene duración ni modalidad */}
           {draft && version.number === 1 ? <p className="max-w-prose text-sm text-ink-muted">{t('syllabus.firstDraftDefaults')}</p> : null}
-          {draft ? (
-            <Button asChild variant="primary" className="min-h-11">
-              <Link to={links.to(STUDIO_ROUTES.newUnit, { id: version.id })}>{t('syllabus.addFirstUnit')}</Link>
-            </Button>
-          ) : null}
         </div>
       ) : (
         <ol className="flex flex-col gap-6">
@@ -206,6 +221,15 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
                     ))}
                 </ol>
               )}
+              {draft ? (
+                <Link
+                  to={links.to(STUDIO_ROUTES.newLesson, { id: version.id, unitId: unit.id })}
+                  className={`self-start ${TEXT_LINK}`}
+                  aria-label={t('syllabus.addLessonLabel', { title: unit.title })}
+                >
+                  {t('syllabus.addLesson')}
+                </Link>
+              ) : null}
             </li>
           ))}
         </ol>

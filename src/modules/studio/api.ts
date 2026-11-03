@@ -70,9 +70,20 @@ export function useVersions() {
   return useQuery({ queryKey: studioKeys.versions, queryFn: ({ signal }) => fetchVersions(client, signal), retry: retryNetwork })
 }
 
-export function useVersion(id: string, enabled = true) {
+export function useVersion(id: string) {
   const client = useApiClient()
-  return useQuery({ queryKey: studioKeys.version(id), queryFn: ({ signal }) => fetchVersion(client, id, signal), retry: retryNetwork, enabled })
+  return useQuery({ queryKey: studioKeys.version(id), queryFn: ({ signal }) => fetchVersion(client, id, signal), retry: retryNetwork })
+}
+
+// lo que hay ahora, aunque ya esté en caché: lo que se lee para decidir, no para pintar
+export function useFreshVersion(id: string) {
+  const client = useApiClient()
+  return useQuery({
+    queryKey: studioKeys.version(id),
+    queryFn: ({ signal }) => fetchVersion(client, id, signal),
+    retry: retryNetwork,
+    refetchOnMount: 'always'
+  })
 }
 
 export function useCourseHasVersions(courseId: string) {
@@ -89,7 +100,7 @@ export function useVersionDiff(id: string) {
   return useQuery({ queryKey: studioKeys.diff(id), queryFn: ({ signal }) => fetchVersionDiff(client, id, signal), retry: retryNetwork })
 }
 
-// el servidor manda: tras enviar (o tras un 409, otra pestaña ya la envió) se releen la versión y la lista
+// el servidor manda: tras enviar (o tras un rechazo, que el diálogo explica con lo que lea) se releen la versión y la lista
 export function useSubmitVersion(id: string) {
   const client = useApiClient()
   const queryClient = useQueryClient()
