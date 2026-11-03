@@ -1199,26 +1199,26 @@
   resolved "https://registry.yarnpkg.com/@vitest/spy/-/spy-5.0.4.tgz#1b1a14019d14f7f8bf9ab1ea854c78d4d98c0200"
   integrity sha512-MZKk/gSkm2q+ICobMxCpH1mA+cCAWm8WV7UhxlqGjq/sJ3AGc1BqFOs5CRVXxH78wQtme9q/NAAgBquj4AcyMw==
 
-"@wasichai/core@1.5.0":
-  version "1.5.0"
-  resolved "https://npm.pkg.github.com/download/@wasichai/core/1.5.0/ab4b5af10c331a7762bc94ee195147de3dc85e7a#ab4b5af10c331a7762bc94ee195147de3dc85e7a"
-  integrity sha512-TBbhSzBTklqJ0hCzq7hRmYPl78tBrvu4xVJPvinQHup7IrlK7T5g2w9TyXdkIhMNGHg1h8+2CotK4LmQDUR9nQ==
+"@wasichai/core@1.6.0":
+  version "1.6.0"
+  resolved "https://npm.pkg.github.com/download/@wasichai/core/1.6.0/1df08c1b3f78f92772f09312a8d4576b99349037#1df08c1b3f78f92772f09312a8d4576b99349037"
+  integrity sha512-wDp3N3ppKQbv1nU6GKwDS3n3+6tZkdf9Aaniz3nZXwdxvuBIY8gHFpKKBfvLITleYwoM9uXFcTvpXbZobbs8Mg==
   dependencies:
     "@hookform/resolvers" "5.9.1"
-    "@wasichai/ui" "1.5.0"
+    "@wasichai/ui" "1.6.0"
     lucide-react "^1.61.0"
     react-hook-form "^7.89.0"
     zod "^4.6.7"
 
-"@wasichai/testing@1.5.0":
-  version "1.5.0"
-  resolved "https://npm.pkg.github.com/download/@wasichai/testing/1.5.0/0461b988d524ba6d56047e463df2a68f4c493842#0461b988d524ba6d56047e463df2a68f4c493842"
-  integrity sha512-pXM4vmX7X/0X5DtrZYq2xlar/RuWOn3ldZSmzRkK89cSAosaPB1HeIc7WWyka9CsS/4HKovvZSMgesZRT96w9A==
+"@wasichai/testing@1.6.0":
+  version "1.6.0"
+  resolved "https://npm.pkg.github.com/download/@wasichai/testing/1.6.0/aaeb2c7da0d60332ff7cfbaafd66dd5e7e5fda78#aaeb2c7da0d60332ff7cfbaafd66dd5e7e5fda78"
+  integrity sha512-RwL52ENCSFXV//KzedFe6E2PgAnKuDXFR8aZBa7WzriQ8edcpmM25vZB5WLokan3lYeK3bTSWKb0oBE0PkUHtQ==
 
-"@wasichai/ui@1.5.0":
-  version "1.5.0"
-  resolved "https://npm.pkg.github.com/download/@wasichai/ui/1.5.0/9ede82e56a36d96a6fdce21376bfe6404aceb585#9ede82e56a36d96a6fdce21376bfe6404aceb585"
-  integrity sha512-7HJWAWBuLj4MgP+hPC4lSdqc3Ckqvz9chc2UXvj5ypnXsPXyDGjIyIIAhmgLxY7PUT5B8/0RdFmLM7fvIcTy0g==
+"@wasichai/ui@1.6.0":
+  version "1.6.0"
+  resolved "https://npm.pkg.github.com/download/@wasichai/ui/1.6.0/5fbbcd13f01158df672d51ce2122f6d2901853d9#5fbbcd13f01158df672d51ce2122f6d2901853d9"
+  integrity sha512-FA+nO6OxtPAtcxcnSF9RpeabOMnGr/4ndHfxxExbaI2mH+bju+EZQdK2ScWwnn5oqXGX53Dfp6tuju2dyD0XLA==
   dependencies:
     "@radix-ui/react-dialog" "1.3.1"
     "@radix-ui/react-dropdown-menu" "2.1.25"
