@@ -29,6 +29,12 @@ yarn dev            # http://localhost:5180
 el backend, sigue su [README](https://github.com/wasichai/elearning-backend#readme). Con el backend en el perfil `dev`,
 el login propone el administrador de la semilla de Wasichai (`admin@wasichai.local`).
 
+Para enseñar o probar la plataforma a mano hay una **demo poblada** (24 estudiantes, docentes, cursos con avance,
+intentos por corregir y una edición sin cupo) en su propio backend, en el puerto 8096: se levanta con
+`model/demo/demo.sh` del backend ([su README](https://github.com/wasichai/elearning-backend/blob/main/model/demo/README.md#la-demo-poblada))
+y la interfaz se apunta a ella con `WASICHAI_API_URL=http://localhost:8096 yarn dev`. Las cuentas y su clave las lista
+`model/demo/demo.sh cuentas`. Los e2e reales no corren contra ella: cambia los conteos que esperan.
+
 Variables (opcionales; copia `.env.example` a `.env` o expórtalas en tu shell):
 
 | Variable           | Para qué                                                                    | Por defecto             |
