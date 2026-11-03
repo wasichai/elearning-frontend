@@ -193,7 +193,7 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
                 {draft ? (
                   <Link
                     to={links.record(UNIT_OBJECT, unit.id)}
-                    className={`shrink-0 ${TEXT_LINK}`}
+                    className={`min-w-11 shrink-0 justify-center ${TEXT_LINK}`}
                     aria-label={t('syllabus.editUnitLabel', { title: unit.title })}
                   >
                     {t('syllabus.edit')}
@@ -256,7 +256,7 @@ function LessonItem({ lesson, draft, comments }: { lesson: StudioLesson; draft: 
         {draft ? (
           <Link
             to={links.record(LESSON_OBJECT, lesson.id)}
-            className={`shrink-0 ${TEXT_LINK}`}
+            className={`min-w-11 shrink-0 justify-center ${TEXT_LINK}`}
             aria-label={t('syllabus.editLessonLabel', { title: lesson.title })}
           >
             {t('syllabus.edit')}

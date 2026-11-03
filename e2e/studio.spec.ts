@@ -323,7 +323,23 @@ test('un 409 con la versión ya vaciada en otra pestaña se explica con lo que s
   await dialog.getByRole('button', { name: 'Volver' }).click()
   await expect(page.getByRole('link', { name: 'Añadir la primera unidad' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
-  // el botón ya no está: el foco sigue en las acciones, y el siguiente Tab va a la primera
+  // el botón ya no está: el foco va a las acciones, y el siguiente Tab, a la primera
+  await expect(page.locator(':focus')).toContainText('Editar la versión')
   await page.keyboard.press('Tab')
   await expect(page.getByRole('link', { name: 'Editar la versión' })).toBeFocused()
+})
+
+test('a 390, «Editar» mide al menos 44 px de ancho y de alto, y sigue al final de su fila', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto(`/estudio/versiones/${DRAFT}`)
+
+  for (const name of ['Editar la unidad «Primeros pasos»', 'Editar la lección «Entrar al portal»']) {
+    const edit = page.getByRole('link', { name })
+    const box = (await edit.boundingBox())!
+    expect(box.width).toBeGreaterThanOrEqual(44)
+    expect(box.height).toBeGreaterThanOrEqual(44)
+    const row = (await edit.locator('..').boundingBox())!
+    expect(box.x + box.width).toBeCloseTo(row.x + row.width, 0)
+  }
 })
