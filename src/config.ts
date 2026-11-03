@@ -1,5 +1,5 @@
 import type { WasichaiConfig } from '@wasichai/core'
-import { shellNav } from './shellNav'
+import { homeRoute, shellNav } from './shellNav'
 import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
 
 // nombre de trabajo: el producto se llama como diga VITE_APP_NAME en cada despliegue (ADR-0005 del backend)
@@ -44,6 +44,8 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     systemThemes: QUIPU_SYSTEM_THEMES,
     defaultLoginEmail: env.DEV ? DEV_LOGIN_EMAIL : '',
     // qué menú se ve según el permiso y la ruta: la sección de administración es un estado del menú
-    shellNav
+    shellNav,
+    // adónde lleva / y «Inicio» según quién entra
+    homeRoute
   }
 }

@@ -16,6 +16,8 @@ const openDrawer = async (page: Page) => {
 }
 
 export const shellScenarios: Scenario[] = [
+  // / lleva a «Mis cursos»: «Inicio» e «Mis cursos» son la misma ruta
+  { name: 'shell-student-home', path: '/', api: student },
   { name: 'shell-student', path: '/mis-cursos', api: student, act: openDrawer },
   { name: 'shell-student-core', path: '/admin/users', api: student, act: openDrawer },
   { name: 'shell-teacher', path: '/docencia', api: teacher, act: openDrawer },
@@ -29,7 +31,9 @@ export const shellScenarios: Scenario[] = [
   { name: 'shell-admin-core-closed', path: '/data/objects', api: administrator },
   { name: 'shell-admin-users', path: '/admin/users', api: administrator, act: openDrawer },
   { name: 'shell-admin-record', path: LESSON, api: administrator, act: openDrawer },
-  // sin saber qué puede la persona no se ofrece la sección
+  { name: 'shell-admin-home-closed', path: '/', api: administrator },
+  // sin saber qué puede la persona no se ofrece la sección; en /, core abre su panel
+  { name: 'shell-student-home-permissions-error', path: '/', api: { ...student, permissionsFail: true } },
   { name: 'shell-admin-permissions-error', path: '/mis-cursos', api: { ...administrator, permissionsFail: true }, act: openDrawer },
   { name: 'shell-admin-permissions-error-core', path: '/admin/users', api: { ...administrator, permissionsFail: true }, act: openDrawer }
 ]
