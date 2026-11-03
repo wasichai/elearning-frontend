@@ -68,6 +68,10 @@ async function retitle(page: Page, current: string, next: string) {
   const lessonId = (await edit.getAttribute('href'))!.split('/').pop()!
   await edit.click()
   await expect(page).toHaveURL(`/data/objects/leccion/records/${lessonId}`)
+  // sigue en su menú del LMS, sin la sección de administración (#141)
+  const menu = page.getByRole('navigation').filter({ has: page.getByRole('link', { name: 'Inicio', exact: true }) })
+  await expect(menu.getByRole('link', { name: 'Mis versiones', exact: true })).toBeVisible()
+  await expect(menu.getByRole('link', { name: 'Usuarios', exact: true })).toHaveCount(0)
   const title = page.getByRole('textbox', { name: /^Título/ })
   await expect(title).toHaveValue(current)
   await title.fill(next)
