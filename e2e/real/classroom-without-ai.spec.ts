@@ -239,8 +239,9 @@ test(
 
         for (const lesson of lessons) {
           await page.goto(`/mis-cursos/${enrollment}?leccion=${lesson.id}`)
-          await expect(page.getByRole('heading', { level: 2, name: lesson.title })).toBeVisible()
-          if (lesson.summary) await expect(page.getByRole('article', { name: lesson.title }).getByText(lesson.summary.trim())).toBeVisible()
+          await expect(page.getByRole('heading', { level: 2, name: lesson.title, exact: true })).toBeVisible()
+          if (lesson.summary)
+            await expect(page.getByRole('article', { name: lesson.title, exact: true }).getByText(lesson.summary.trim()).first()).toBeVisible()
           // cada lectura generada: su HTML del servidor, con texto, en el iframe aislado
           for (const resource of lesson.resources.filter((candidate) => candidate.type === 'HTML' && candidate.file)) {
             const frame = page.locator('iframe').and(page.getByTitle(resource.title, { exact: true }))
