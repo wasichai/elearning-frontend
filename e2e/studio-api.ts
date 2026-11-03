@@ -60,7 +60,8 @@ const summary = (version: Detail) => ({
   authorId: version.authorId,
   reviewerId: version.reviewerId,
   updatedAt: version.updatedAt,
-  openComments: version.openComments
+  openComments: version.openComments,
+  generator: version.generator
 })
 type Unit = Detail['units'][number]
 type Lesson = Unit['lessons'][number]

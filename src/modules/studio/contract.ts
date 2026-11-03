@@ -8,6 +8,8 @@ export { versionDiffSchema, type VersionDiff } from '../../shared/diff'
 
 // los vocabularios del modelo (model/model.json del backend)
 export const VERSION_STATUSES = ['BORRADOR', 'EN_REVISION', 'APROBADA', 'PUBLICADA', 'RETIRADA'] as const
+// quién generó el borrador de una versión (#288): un proveedor de IA o el doble determinista; null, una persona
+export const GENERATORS = ['MODEL', 'DETERMINISTIC'] as const
 export const LESSON_TYPES = ['LECTURA', 'VIDEO', 'PRESENTACION', 'LABORATORIO', 'EVALUACION', 'SESION'] as const
 export const REVIEW_DECISIONS = ['APROBAR', 'PEDIR_CAMBIOS', 'RECHAZAR'] as const
 
@@ -23,7 +25,9 @@ export const studioVersionSchema = z.object({
   reviewerId: z.string().nullable(),
   updatedAt: instant.nullable(),
   // comentarios de revisión sin resolver
-  openComments: count
+  openComments: count,
+  // un backend anterior no lo manda: escrita a mano
+  generator: z.enum(GENERATORS).nullable().default(null)
 })
 
 export const studioVersionListSchema = z.array(studioVersionSchema)

@@ -62,3 +62,17 @@ describe('contrato del estudio del creador', () => {
     )
   })
 })
+
+describe('contrato: el origen del borrador (#288)', () => {
+  it('acepta MODEL, DETERMINISTIC y null, y sin el campo (un backend anterior) lo lee como escrito a mano', () => {
+    expect(parseContract(studioVersionSchema, 'versions', { ...draftVersion, generator: 'MODEL' }).generator).toBe('MODEL')
+    expect(parseContract(studioVersionSchema, 'versions', { ...draftVersion, generator: 'DETERMINISTIC' }).generator).toBe('DETERMINISTIC')
+    expect(parseContract(studioVersionSchema, 'versions', { ...draftVersion, generator: null }).generator).toBeNull()
+    const withoutGenerator = Object.fromEntries(Object.entries(draftVersion).filter(([key]) => key !== 'generator'))
+    expect(parseContract(studioVersionSchema, 'versions', withoutGenerator).generator).toBeNull()
+  })
+
+  it('rechaza un origen desconocido', () => {
+    expect(() => parseContract(studioVersionSchema, 'versions', { ...draftVersion, generator: 'HUMAN' })).toThrow(ContractError)
+  })
+})

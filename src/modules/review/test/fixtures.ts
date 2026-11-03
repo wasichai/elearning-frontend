@@ -10,7 +10,8 @@ export const versionInReview = {
   authorId: 'u-creador',
   reviewerId: null,
   updatedAt: '2026-10-20T12:00:00Z',
-  openComments: 1
+  openComments: 1,
+  generator: null
 }
 
 export const otherVersionInReview = {
@@ -21,7 +22,8 @@ export const otherVersionInReview = {
   authorId: 'u-creador',
   reviewerId: 'u-revisor',
   updatedAt: '2026-10-25T12:00:00Z',
-  openComments: 0
+  openComments: 0,
+  generator: null
 }
 
 export const versionDetail = {

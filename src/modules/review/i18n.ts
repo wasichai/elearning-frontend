@@ -43,6 +43,10 @@ const es = {
     PUBLICADA: 'Publicada',
     RETIRADA: 'Retirada'
   },
+  generator: {
+    MODEL: 'Generado con IA',
+    DETERMINISTIC: 'Generado sin IA, ilustrativo'
+  },
   lessonType: {
     LECTURA: 'Lectura',
     VIDEO: 'Vídeo',
@@ -234,6 +238,10 @@ const en: typeof es = {
     APROBADA: 'Approved',
     PUBLICADA: 'Published',
     RETIRADA: 'Withdrawn'
+  },
+  generator: {
+    MODEL: 'AI-generated',
+    DETERMINISTIC: 'Generated without AI, illustrative'
   },
   lessonType: {
     LECTURA: 'Reading',

@@ -34,6 +34,10 @@ const es = {
     PUBLICADA: 'Publicada',
     RETIRADA: 'Retirada'
   },
+  generator: {
+    MODEL: 'Generado con IA',
+    DETERMINISTIC: 'Generado sin IA, ilustrativo'
+  },
   statusHint: {
     BORRADOR: 'Puedes editar su contenido y, cuando esté lista, enviarla a revisión.',
     EN_REVISION: 'Está en revisión: no se puede editar hasta que el revisor decida. Si pide cambios, vuelve a borrador.',
@@ -268,6 +272,10 @@ const en: typeof es = {
     APROBADA: 'Approved',
     PUBLICADA: 'Published',
     RETIRADA: 'Withdrawn'
+  },
+  generator: {
+    MODEL: 'AI-generated',
+    DETERMINISTIC: 'Generated without AI, illustrative'
   },
   statusHint: {
     BORRADOR: 'You can edit its content and, when it is ready, send it for review.',

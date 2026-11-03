@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DECISIONS, VERSION_STATUSES } from './contract'
+import { DECISIONS, GENERATORS, VERSION_STATUSES } from './contract'
 import { reviewMessages } from './i18n'
 
 type Tree = { [key: string]: string | Tree }
@@ -40,6 +40,7 @@ describe('textos de la bandeja del revisor', () => {
     const asked = DECISIONS.filter((decision) => decision !== 'APROBAR')
     const composed = [
       ...VERSION_STATUSES.map((status) => `status.${status}`),
+      ...GENERATORS.map((generator) => `generator.${generator}`),
       ...DECISIONS.flatMap((decision) => [`decision.${decision}`, `decided.${decision}`, `decide.${decision}`]),
       ...asked.flatMap((decision) => [`decide.${decision}Title`, `decide.${decision}Description`]),
       // el vocabulario tipo_leccion del modelo; uno nuevo se muestra tal cual

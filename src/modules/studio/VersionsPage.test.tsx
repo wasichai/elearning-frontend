@@ -316,3 +316,52 @@ describe('VersionsPage: mis versiones', () => {
     expect(fetchMock.calls.filter((call) => call.path === VERSIONS)).toHaveLength(2)
   })
 })
+
+// RF-IA-03, RF-IA-08: de dónde salió el borrador, como información; no cambia lo que se puede hacer
+describe('VersionsPage: el origen del borrador', () => {
+  it('distingue lo generado sin IA (ilustrativo) de lo generado con IA, sin tocar el envío', async () => {
+    renderVersions([
+      {
+        path: VERSIONS,
+        body: [
+          { ...draftVersion, generator: 'DETERMINISTIC' },
+          { ...publishedVersion, generator: 'MODEL' }
+        ]
+      }
+    ])
+
+    const [deterministic, model] = (await screen.findAllByRole('article')).map((item) => within(item))
+    expect(deterministic!.getByText('Generado sin IA, ilustrativo').closest('[data-generator]')).toHaveAttribute('data-generator', 'DETERMINISTIC')
+    expect(deterministic!.queryByText('Generado con IA')).not.toBeInTheDocument()
+    expect(model!.getByText('Generado con IA').closest('[data-generator]')).toHaveAttribute('data-generator', 'MODEL')
+    expect(model!.queryByText('Generado sin IA, ilustrativo')).not.toBeInTheDocument()
+    expect(deterministic!.getByRole('button', { name: 'Enviar a revisión la versión 2 de Introducción al SGSPE' })).toBeEnabled()
+  })
+
+  it('lo escrito a mano no lleva distintivo, tampoco si un backend anterior no manda el origen', async () => {
+    const withoutGenerator = Object.fromEntries(Object.entries(publishedVersion).filter(([key]) => key !== 'generator'))
+    renderVersions([{ path: VERSIONS, body: [{ ...draftVersion, generator: null }, withoutGenerator] }])
+
+    expect(await screen.findAllByRole('article')).toHaveLength(2)
+    expect(document.querySelector('[data-generator]')).toBeNull()
+    expect(screen.queryByText(/^Generado/)).not.toBeInTheDocument()
+  })
+
+  it('en inglés', async () => {
+    renderVersions(
+      [
+        {
+          path: VERSIONS,
+          body: [
+            { ...draftVersion, generator: 'DETERMINISTIC' },
+            { ...publishedVersion, generator: 'MODEL' }
+          ]
+        }
+      ],
+      'en'
+    )
+
+    expect(await screen.findByText('Generated without AI, illustrative')).toBeInTheDocument()
+    expect(screen.getByText('AI-generated')).toBeInTheDocument()
+  })
+})

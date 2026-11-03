@@ -35,8 +35,18 @@ const now = () => new Date().toISOString()
 
 // el resumen (StudioVersion) que devuelven la bandeja, decidir y publicar
 function summary(version: Detail) {
-  const { id, number, status, course, authorId, reviewerId, updatedAt } = version
-  return { id, number, status, course, authorId, reviewerId, updatedAt, openComments: version.comments.filter((comment) => !comment.resolved).length }
+  const { id, number, status, course, authorId, reviewerId, updatedAt, generator } = version
+  return {
+    id,
+    number,
+    status,
+    course,
+    authorId,
+    reviewerId,
+    updatedAt,
+    openComments: version.comments.filter((comment) => !comment.resolved).length,
+    generator
+  }
 }
 
 function detail(version: Detail) {

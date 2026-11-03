@@ -41,3 +41,17 @@ describe('contrato de la bandeja del revisor', () => {
     expect(() => parseContract(versionDiffSchema, 'GET review/versions/x/diff', { ...versionDiff, baseVersion: '1' })).toThrow(ContractError)
   })
 })
+
+describe('contrato: el origen del borrador (#288)', () => {
+  it('acepta MODEL, DETERMINISTIC y null, y sin el campo (un backend anterior) lo lee como escrito a mano', () => {
+    expect(parseContract(studioVersionSchema, 'version', { ...versionInReview, generator: 'MODEL' }).generator).toBe('MODEL')
+    expect(parseContract(studioVersionSchema, 'version', { ...versionInReview, generator: 'DETERMINISTIC' }).generator).toBe('DETERMINISTIC')
+    expect(parseContract(studioVersionSchema, 'version', { ...versionInReview, generator: null }).generator).toBeNull()
+    const withoutGenerator = Object.fromEntries(Object.entries(versionInReview).filter(([key]) => key !== 'generator'))
+    expect(parseContract(studioVersionSchema, 'version', withoutGenerator).generator).toBeNull()
+  })
+
+  it('rechaza un origen desconocido', () => {
+    expect(() => parseContract(studioVersionSchema, 'version', { ...versionInReview, generator: 'HUMAN' })).toThrow(ContractError)
+  })
+})

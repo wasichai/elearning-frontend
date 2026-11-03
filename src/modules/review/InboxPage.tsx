@@ -5,12 +5,13 @@ import { Link } from 'react-router'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
+import { GeneratorBadge } from '../../shared/GeneratorBadge'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useInbox } from './api'
 import type { StudioVersion } from './contract'
 import { VERSION_BADGE } from '../../shared/VersionStatusLine'
 import { QueryProblem } from './parts'
-import { REVIEW_ROUTES } from './routes'
+import { REVIEW_MODULE_ID, REVIEW_ROUTES } from './routes'
 
 // la bandeja del revisor: las versiones en revisión a cargo de la persona, la que más espera primero (así las ordena el servidor)
 export function InboxPage() {
@@ -70,6 +71,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
         <p className="text-sm text-ink-muted">{t('inbox.code', { course: version.course.code, number: version.number })}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink-muted">
           <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
+          <GeneratorBadge namespace={REVIEW_MODULE_ID} generator={version.generator} />
           {version.openComments > 0 ? (
             <StatusBadge state="warning">
               {t('inbox.openComments', { count: version.openComments, value: formatNumber(version.openComments, locale) })}
