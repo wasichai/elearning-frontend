@@ -4,7 +4,7 @@ import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '
 import { Link } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioModule } from './module'
-import { draftVersion, problem, publishedVersion } from './test/fixtures'
+import { draftDetail, draftVersion, firstDraftDetail, noLessonsDetail, problem, publishedVersion } from './test/fixtures'
 import { VersionsPage } from './VersionsPage'
 
 const VERSIONS = '/lms/studio/versions'
@@ -63,6 +63,7 @@ describe('VersionsPage: mis versiones', () => {
         path: VERSIONS,
         body: [draftVersion, { ...draftVersion, id: 'd-otro', number: 5, course: { id: 'c-otro', code: 'SRTM-200', title: 'Curso de SRTM' } }]
       },
+      { path: `${VERSIONS}/${draftVersion.id}`, body: draftDetail },
       { method: 'POST', path: `${VERSIONS}/${draftVersion.id}/submit`, body: { ...draftVersion, status: 'EN_REVISION' } }
     ])
     renderWithProviders(<VersionsPage />, { modules: [studioModule()], route: '/estudio' })
@@ -74,9 +75,91 @@ describe('VersionsPage: mis versiones', () => {
     expect(screen.queryByRole('button', { name: /^Nueva versión/ })).not.toBeInTheDocument()
 
     await user.click(first)
-    await user.click(within(await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })).getByRole('button', { name: 'Sí, enviar a revisión' }))
+    await user.click(await within(await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })).findByRole('button', { name: 'Sí, enviar a revisión' }))
     await waitFor(() => expect(fetchMock.calls.filter((call) => call.method === 'POST')).toHaveLength(1))
     expect(await screen.findByText('Enviada a revisión.')).toBeInTheDocument()
+  })
+
+  describe('un borrador sin lecciones: la lista no sabe cuántas tiene, y lo comprueba al pedir enviar', () => {
+    const emptyInList = { ...draftVersion, id: firstDraftDetail.id }
+    const SUBMIT = `${VERSIONS}/${firstDraftDetail.id}/submit`
+    const NAME = 'Enviar a revisión la versión 2 de Introducción al SGSPE'
+
+    it('mientras comprueba, no se puede confirmar', async () => {
+      const user = userEvent.setup()
+      renderVersions([{ path: VERSIONS, body: [emptyInList] }])
+      // la lectura del detalle no llega nunca
+      const reply = globalThis.fetch
+      globalThis.fetch = (input, init) => (String(input).endsWith(firstDraftDetail.id) ? new Promise(() => {}) : reply(input, init))
+
+      await user.click(await screen.findByRole('button', { name: NAME }))
+      const dialog = await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })
+      expect(dialog).toHaveTextContent('Comprobando que la versión tenga lecciones')
+      expect(within(dialog).getByRole('button', { name: 'Sí, enviar a revisión' })).toBeDisabled()
+    })
+
+    it('sin unidades, explica qué falta, no envía y lleva a añadir la primera unidad', async () => {
+      const user = userEvent.setup()
+      renderVersions([
+        { path: VERSIONS, body: [emptyInList] },
+        { path: `${VERSIONS}/${firstDraftDetail.id}`, body: firstDraftDetail }
+      ])
+
+      await user.click(await screen.findByRole('button', { name: NAME }))
+      const dialog = await screen.findByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+      expect(dialog).toHaveTextContent('no tiene lecciones')
+      expect(within(dialog).queryByRole('button', { name: 'Sí, enviar a revisión' })).not.toBeInTheDocument()
+      expect(within(dialog).getByRole('button', { name: 'Añadir la primera unidad' })).toBeInTheDocument()
+
+      await user.click(within(dialog).getByRole('button', { name: 'Volver' }))
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      await waitFor(() => expect(screen.getByRole('button', { name: NAME })).toHaveFocus())
+      expect(fetchMock.calls.filter((call) => call.path === SUBMIT)).toHaveLength(0)
+    })
+
+    it('con unidades sin lecciones, lleva a añadir la primera lección', async () => {
+      const user = userEvent.setup()
+      renderVersions([
+        { path: VERSIONS, body: [emptyInList] },
+        { path: `${VERSIONS}/${firstDraftDetail.id}`, body: noLessonsDetail }
+      ])
+
+      await user.click(await screen.findByRole('button', { name: NAME }))
+      const dialog = await screen.findByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+      expect(within(dialog).getByRole('button', { name: 'Añadir la primera lección' })).toBeInTheDocument()
+    })
+
+    it('si no puede comprobarlo, no envía: lo dice y deja volver a comprobar', async () => {
+      const user = userEvent.setup()
+      const routes: MockRoute[] = [
+        { path: VERSIONS, body: [emptyInList] },
+        { path: `${VERSIONS}/${firstDraftDetail.id}`, status: 500, body: problem(500, 'fallo') }
+      ]
+      renderVersions(routes)
+
+      await user.click(await screen.findByRole('button', { name: NAME }))
+      const dialog = await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })
+      expect(await within(dialog).findByText(/No pudimos comprobar si la versión tiene lecciones/)).toBeInTheDocument()
+      routes[1] = { path: `${VERSIONS}/${firstDraftDetail.id}`, body: firstDraftDetail }
+      await user.click(within(dialog).getByRole('button', { name: 'Reintentar' }))
+      expect(await screen.findByRole('dialog', { name: 'Aún no se puede enviar a revisión' })).toBeInTheDocument()
+      expect(fetchMock.calls.filter((call) => call.path === SUBMIT)).toHaveLength(0)
+    })
+
+    it('en inglés', async () => {
+      const user = userEvent.setup()
+      renderVersions(
+        [
+          { path: VERSIONS, body: [emptyInList] },
+          { path: `${VERSIONS}/${firstDraftDetail.id}`, body: firstDraftDetail }
+        ],
+        'en'
+      )
+
+      await user.click(await screen.findByRole('button', { name: 'Send version 2 of Introducción al SGSPE for review' }))
+      const dialog = await screen.findByRole('dialog', { name: 'It cannot be sent for review yet' })
+      expect(within(dialog).getByRole('button', { name: 'Add the first unit' })).toBeInTheDocument()
+    })
   })
 
   it('un curso sin nada en curso ofrece una versión nueva desde la última; con una en revisión, no', async () => {

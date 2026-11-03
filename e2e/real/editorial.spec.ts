@@ -374,8 +374,12 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
 // la importación contra GitHub no se prueba aquí (sin red controlada ni orígenes configurados). lo que sí se comprueba sin
 // red: un origen fuera de la lista no se encola (403) y quien no crea versiones no importa
 // de «Nuevo curso» al borrador abierto, sin importar (front#161, elearning-backend#270): lo que el formulario pide de verdad, el borrador
-// vacío a nombre de la creadora, su primera unidad, y la vuelta a un curso sin versiones desde su ficha
-test('un creador llega de «Nuevo curso» a un primer borrador vacío y le añade su primera unidad', async ({ browser, baseURL, request }) => {
+// vacío a nombre de la creadora, su primera unidad y su primera lección, y la vuelta a un curso sin versiones desde su ficha
+test('un creador llega de «Nuevo curso» a un primer borrador vacío, que no se ofrece enviar hasta que tiene una lección', async ({
+  browser,
+  baseURL,
+  request
+}) => {
   test.setTimeout(120_000)
   const creatorApi = client(request, await token(request, CREATOR.email, CREATOR.password))
   const creator = await browserFor(browser, baseURL, CREATOR)
@@ -403,11 +407,9 @@ test('un creador llega de «Nuevo curso» a un primer borrador vacío y le añad
     const draft = await json<VersionDetail>(await creatorApi.get(`/api/lms/studio/versions/${draftId}`), 200, 'GET el borrador')
     expect(draft.units).toEqual([])
 
-    // enviarla vacía: el servidor lo aceptaría, así que el diálogo avisa; aquí no se envía
-    await page.getByRole('button', { name: 'Enviar a revisión' }).click()
-    const dialog = page.getByRole('dialog', { name: '¿Enviar a revisión?' })
-    await expect(dialog).toContainText('aún no tiene unidades')
-    await dialog.getByRole('button', { name: 'Volver' }).click()
+    // sin lecciones no se ofrece enviar: se dice qué falta
+    await expect(page.getByText('Aún no se puede enviar a revisión')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
 
     // la siguiente acción lleva a un formulario que no pregunta la versión
     await page.getByRole('link', { name: 'Añadir la primera unidad' }).click()
@@ -416,6 +418,16 @@ test('un creador llega de «Nuevo curso» a un primer borrador vacío y le añad
     await page.getByLabel(/Título/).fill('Primeros pasos')
     await page.getByRole('button', { name: 'Guardar' }).click()
     await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Primeros pasos' })).toBeVisible()
+
+    // con una unidad y sin lecciones, tampoco. el camino a la primera lección no pregunta la unidad y el servidor la acepta
+    await expect(page.getByText(/Sus unidades aún no tienen lecciones/)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0)
+    await page.getByRole('link', { name: 'Añadir la primera lección' }).click()
+    await expect(page.getByLabel(/Orden/)).toHaveValue('1')
+    await page.getByLabel(/Título/).fill('Entrar al portal')
+    await page.getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByText('1. Entrar al portal', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible()
 
     // el borrador ya está en «Mis versiones»
     await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis versiones' }).click()
@@ -433,6 +445,15 @@ test('un creador llega de «Nuevo curso» a un primer borrador vacío y le añad
     await page.getByRole('button', { name: 'Crear primer borrador' }).click()
     await expect(page.getByRole('heading', { level: 1, name: `Curso suelto ${RUN}` })).toBeVisible()
     await expect(page.getByText(`Versión 1 · SUELTO-${RUN}`)).toBeVisible()
+
+    // ese borrador está vacío: desde «Mis versiones», que no sabe cuántas lecciones tiene, tampoco se puede confirmar
+    await page.goto('/estudio')
+    await page.getByRole('button', { name: `Enviar a revisión la versión 1 de Curso suelto ${RUN}` }).click()
+    const blocked = page.getByRole('dialog', { name: 'Aún no se puede enviar a revisión' })
+    await expect(blocked).toContainText('no tiene lecciones')
+    await expect(blocked.getByRole('button', { name: 'Sí, enviar a revisión' })).toHaveCount(0)
+    await blocked.getByRole('button', { name: 'Volver' }).click()
+
     await page.goto(`/data/objects/curso/records/${orphan.id}`)
     await expect(page.getByRole('heading', { name: /Historial/ })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Crear primer borrador' })).toHaveCount(0)
