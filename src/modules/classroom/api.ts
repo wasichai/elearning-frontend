@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
+import { fetchAllPages } from '../../shared/pages'
 import { retryNetwork } from '../../shared/retry'
 import { sessionListSchema, type Session } from '../../shared/sessions'
 import {
@@ -57,22 +58,8 @@ export async function fetchClassroom(client: ApiClient, enrollmentId: string, si
 }
 
 const PANEL_PATH = '/lms/classroom/panel'
-// lo que se pide de una vez: el contrato acota size a 1–200
-export const PANEL_PAGE_SIZE = 100
-// por si un servidor nunca diera una página corta: nadie cursa tantas a la vez, y pasarlo es un fallo, no una lista completa
-export const MAX_PANEL_PAGES = 20
-
-// todas las páginas, o ningún dato: una página con menos de size es la última, y si una falla, falla todo. entre dos páginas la lista
-// puede moverse: una matrícula repetida cuenta una vez
-export async function fetchClassroomPanel(client: ApiClient, signal?: AbortSignal): Promise<ClassroomPanelItem[]> {
-  const items = new Map<string, ClassroomPanelItem>()
-  for (let page = 0; page < MAX_PANEL_PAGES; page++) {
-    const body = await client.request<unknown>(`${PANEL_PATH}?page=${page}&size=${PANEL_PAGE_SIZE}`, { signal })
-    const read = parseContract(classroomPanelSchema, 'GET classroom/panel', body)
-    read.forEach((item) => items.set(item.id, item))
-    if (read.length < PANEL_PAGE_SIZE) return [...items.values()]
-  }
-  throw new Error(`GET classroom/panel: más de ${MAX_PANEL_PAGES} páginas`)
+export function fetchClassroomPanel(client: ApiClient, signal?: AbortSignal): Promise<ClassroomPanelItem[]> {
+  return fetchAllPages(client, { path: PANEL_PATH, schema: classroomPanelSchema, resource: 'GET classroom/panel', keyOf: (item) => item.id, signal })
 }
 
 export const classroomKeys = {

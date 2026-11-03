@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApiClient, type ApiClient } from '@wasichai/core'
+import { fetchAllPages } from '../../shared/pages'
 import { retryNetwork } from '../../shared/retry'
 import { attemptSchema, type Attempt } from '../../shared/attempts'
 import { sessionListSchema, sessionSchema, type AttendanceStatus, type Session, type SessionType } from '../../shared/sessions'
@@ -32,22 +33,8 @@ export async function fetchOfferings(client: ApiClient, signal?: AbortSignal): P
 }
 
 const PANEL_PATH = '/lms/teaching/panel'
-// lo que se pide de una vez: el contrato acota size a 1–200
-export const PANEL_PAGE_SIZE = 100
-// por si un servidor nunca diera una página corta: nadie enseña tantas a la vez, y pasarlo es un fallo, no una lista completa
-export const MAX_PANEL_PAGES = 20
-
-// todas las páginas, o ningún dato: una página con menos de size es la última, y si una falla, falla todo. entre dos páginas la lista
-// puede moverse: una edición repetida cuenta una vez
-export async function fetchTeachingPanel(client: ApiClient, signal?: AbortSignal): Promise<TeachingPanelItem[]> {
-  const items = new Map<string, TeachingPanelItem>()
-  for (let page = 0; page < MAX_PANEL_PAGES; page++) {
-    const body = await client.request<unknown>(`${PANEL_PATH}?page=${page}&size=${PANEL_PAGE_SIZE}`, { signal })
-    const read = parseContract(teachingPanelSchema, 'GET teaching/panel', body)
-    read.forEach((item) => items.set(item.code, item))
-    if (read.length < PANEL_PAGE_SIZE) return [...items.values()]
-  }
-  throw new Error(`GET teaching/panel: más de ${MAX_PANEL_PAGES} páginas`)
+export function fetchTeachingPanel(client: ApiClient, signal?: AbortSignal): Promise<TeachingPanelItem[]> {
+  return fetchAllPages(client, { path: PANEL_PATH, schema: teachingPanelSchema, resource: 'GET teaching/panel', keyOf: (item) => item.code, signal })
 }
 
 export async function fetchRoster(client: ApiClient, code: string, signal?: AbortSignal): Promise<RosterEntry[]> {

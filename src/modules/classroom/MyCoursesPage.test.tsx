@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
-import { PANEL_PAGE_SIZE } from './api'
+import { PANEL_PAGE_SIZE } from '../../shared/pages'
 import { assessmentSummary, enrollment, finishedEnrollment, otherEnrollment, panelItem, problem, sessions } from './test/fixtures'
 
 const ENROLLMENTS = '/lms/classroom/enrollments'

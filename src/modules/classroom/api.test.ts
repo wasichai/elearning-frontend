@@ -1,7 +1,8 @@
 import { createApiClient } from '@wasichai/core'
 import { mockFetch, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
-import { fetchClassroom, fetchClassroomPanel, fetchEnrollments, MAX_PANEL_PAGES, PANEL_PAGE_SIZE } from './api'
+import { MAX_PANEL_PAGES, PANEL_PAGE_SIZE } from '../../shared/pages'
+import { fetchClassroom, fetchClassroomPanel, fetchEnrollments } from './api'
 import { ContractError } from './contract'
 import { classroom, enrollment, panelItem } from './test/fixtures'
 
