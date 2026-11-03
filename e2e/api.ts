@@ -14,7 +14,7 @@ import { AUTHOR_ID } from '../src/modules/studio/test/fixtures'
 import type { Session } from '../src/shared/sessions'
 import { REVIEW, reviewState, simulateReview } from './review-api'
 import { isStudio, simulateStudio, studioState } from './studio-api'
-import { simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
+import { onePage, simulateTeaching, TEACHING, teachingState, type TeachingOptions } from './teaching-api'
 import { isTerms, simulateTerms, termsGate, termsState, type TermsScenario, type TermsState } from './terms-api'
 
 // la API del LMS simulada en el navegador, con los ejemplos del contrato (docs/api/lms.md del backend) que usan también
@@ -28,6 +28,7 @@ const CLASSROOM = '/api/lms/classroom/'
 const ENROLLMENTS = '/api/lms/classroom/enrollments'
 const ATTEMPTS = '/api/lms/classroom/attempts'
 const LESSON_EVENTS_PATH = /^\/api\/lms\/classroom\/enrollments\/[^/]+\/lessons\/[^/]+\/events$/
+const PANEL = '/api/lms/classroom/panel'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
 export const STUDENT = { id: 'u-estudiante', email: 'estudiante@demo.local', displayName: 'Rosa Estudiante', organizationId: 'org-demo', roles: ['ESTUDIANTE'] }
@@ -322,8 +323,38 @@ function lessonEvent(state: ClassroomState, data: ClassroomData, lessonId: strin
   return { status: 200, body: progress }
 }
 
+// el panel como el servidor: una matrícula no activa o con certificado, con las dos listas vacías; las evaluaciones no aprobadas con un
+// intento abierto o por usar, en el orden del curso. las sesiones, sin canceladas; las ya terminadas las quita la pantalla con su reloj, que
+// es el que fijan las pruebas (el de la simulación es el real)
+function panelItem(state: ClassroomState, data: ClassroomData) {
+  const closed = data.status !== 'ACTIVA' || Boolean(data.certificateCode)
+  return {
+    ...enrollmentOf(data),
+    upcomingSessions: closed
+      ? []
+      : (state.sessions[data.id] ?? []).filter((session) => session.status !== 'CANCELADA').sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+    pendingAssessments: closed
+      ? []
+      : data.units
+          .flatMap((unit) => unit.lessons)
+          .flatMap(({ id: lessonId, assessment, progress }) =>
+            assessment && progress.status !== 'APROBADA' && (assessment.openAttemptId !== null || assessment.attemptsUsed < assessment.maxAttempts)
+              ? [{ lessonId, assessment }]
+              : []
+          )
+  }
+}
+
 function simulateClassroom(state: ClassroomState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!url.pathname.startsWith(CLASSROOM)) return undefined
+  if (method === 'GET' && url.pathname === PANEL)
+    return {
+      status: 200,
+      body: onePage(
+        Object.values(state.classrooms).map((data) => panelItem(state, data)),
+        url
+      )
+    }
   if (url.pathname.startsWith(`${ATTEMPTS}/`)) return simulateAttempt(state, method, url, body)
   if (method === 'GET' && url.pathname === ENROLLMENTS) return { status: 200, body: Object.values(state.classrooms).map(enrollmentOf) }
   const [id, rest] = url.pathname

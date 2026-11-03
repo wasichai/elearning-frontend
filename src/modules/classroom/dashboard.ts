@@ -1,13 +1,7 @@
-import type { UseQueryResult } from '@tanstack/react-query'
-import type { Session } from '../../shared/sessions'
-import { isDone, type Classroom, type Enrollment } from './contract'
-import { lessonPath, orderedUnits, type PlacedLesson } from './lessons'
+import { upcomingSessions, type Session } from '../../shared/sessions'
+import type { ClassroomPanelItem, Enrollment, PendingAssessment } from './contract'
 
 // lo que decide el panel del estudiante, sin pintar nada. todo se deriva de forma exacta de lo que da el contrato
-
-// cada matrícula activa cuesta dos peticiones (su aula y sus sesiones): con 6 cursos a la vez ya son 12 y nadie lleva más
-// a la vez de forma habitual. el panel dice cuándo lo aplicó, para que un bloque vacío no se lea como «no hay nada»
-export const MAX_RAIL_COURSES = 6
 
 const DAY_MS = 24 * 3600 * 1000
 
@@ -68,44 +62,39 @@ export function groupEnrollments(enrollments: Enrollment[]): EnrollmentGroups {
   return { primary, inProgress, completed, withdrawn }
 }
 
-// las matrículas de las que el riel lee sesiones y evaluaciones: solo activas (una finalizada ya no tiene nada por delante)
-export function railEnrollments({ primary, inProgress, completed }: EnrollmentGroups): { read: Enrollment[]; capped: boolean } {
-  const active = [...(primary ? [primary] : []), ...inProgress, ...completed].filter(isActive)
-  return { read: active.slice(0, MAX_RAIL_COURSES), capped: active.length > MAX_RAIL_COURSES }
+// las matrículas de las que el riel habla: solo activas (una finalizada ya no tiene nada por delante)
+export function railEnrollments({ primary, inProgress, completed }: EnrollmentGroups): Enrollment[] {
+  return [...(primary ? [primary] : []), ...inProgress, ...completed].filter(isActive)
+}
+
+export type UpcomingSession = Session & { enrollment: Enrollment }
+export type RailAssessment = PendingAssessment & { enrollment: Enrollment }
+
+// lo que trae el panel de esas matrículas. el servidor ordena las sesiones por matrícula: aquí se funden, y el reloj de la pantalla
+// deja fuera la que terminó con la página abierta. las evaluaciones van en el orden de las matrículas y, dentro, en el del curso
+export function railItems(active: Enrollment[], panel: ClassroomPanelItem[], now: number) {
+  const byId = new Map(panel.map((item) => [item.id, item]))
+  const read = active.flatMap((enrollment) => {
+    const item = byId.get(enrollment.id)
+    return item ? [{ enrollment, item }] : []
+  })
+  return {
+    sessions: upcomingSessions(
+      read.flatMap(({ enrollment, item }) => item.upcomingSessions.map((session) => ({ ...session, enrollment }))),
+      now
+    ),
+    assessments: read.flatMap(({ enrollment, item }) => item.pendingAssessments.map((pending) => ({ ...pending, enrollment })))
+  }
 }
 
 export function sessionsWithin<T extends Pick<Session, 'start'>>(sessions: T[], now: number, days: number): T[] {
   return sessions.filter((session) => Date.parse(session.start) < now + days * DAY_MS)
 }
 
-// pendiente: tiene evaluación, se puede hacer ya, no está hecha y le quedan intentos o tiene uno abierto.
-// el contrato no da plazos de evaluación: el orden es el del curso
-export function pendingAssessments(classroom: Pick<Classroom, 'units'>): PlacedLesson[] {
-  return lessonPath(orderedUnits(classroom)).filter(({ lesson }) => {
-    const assessment = lesson.assessment
-    if (!assessment || lesson.completion === 'NOT_YET' || isDone(lesson.progress.status)) return false
-    return assessment.openAttemptId !== null || assessment.attemptsUsed < assessment.maxAttempts
-  })
-}
-
-// un bloque del riel, leído de una consulta por matrícula: cada una falla por su cuenta
+// un bloque del riel. los dos salen de la misma lectura: si falla, fallan a la vez y sin datos a medias
 export interface Block<T> {
   items: T[]
   loading: boolean
-  // alguna consulta falló; con partial, las otras sí llegaron y sus datos se ven igual
   failed: boolean
-  partial: boolean
   retry: () => void
-}
-
-export function blockOf<Data, T>(queries: UseQueryResult<Data>[], items: (data: Data, index: number) => T[]): Block<T> {
-  const failed = queries.filter((query) => query.isError)
-  return {
-    items: queries.flatMap((query, index) => (query.data ? items(query.data, index) : [])),
-    loading: queries.some((query) => query.isPending),
-    failed: failed.length > 0,
-    partial: failed.length > 0 && failed.length < queries.length,
-    // solo lo que falló: lo demás ya está a la vista
-    retry: () => failed.forEach((query) => void query.refetch())
-  }
 }

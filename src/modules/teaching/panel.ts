@@ -1,12 +1,10 @@
-import type { PendingAttempt, TeachingOffering } from './contract'
+import { upcomingSessions } from '../../shared/sessions'
+import type { PendingAttempt, TeachingOffering, TeachingPanelItem } from './contract'
 
 // lo que decide el panel docente, sin pintar nada. todo se deriva de forma exacta de lo que da el contrato
 
-// el servidor no tiene una vista agregada: cada edición cuesta hasta dos peticiones (su cola y sus sesiones). con 8 ya son 16 más
-// la lista, y quien enseña rara vez lleva más a la vez. el tope se aplica por trabajo pendiente, nunca a las cifras (que salen de
-// la lista), y el panel dice cuándo lo aplicó, para que un bloque vacío no se lea como «no hay nada»
-export const MAX_PANEL_OFFERINGS = 8
-// lo que cabe en cada bloque sin alejar lo de abajo: el resto se cuenta, y las entregas llevan a su cola
+// lo que cabe en cada bloque sin alejar lo de abajo: el resto se cuenta, y las entregas llevan a su cola. el panel trae justo estas
+// entregas de cada edición (los primeros de la cola)
 export const MAX_TRAY_ROWS = 5
 export const MAX_AGENDA_ROWS = 6
 
@@ -14,7 +12,7 @@ const MINUTE_MS = 60 * 1000
 const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
 
-function isLive({ status }: TeachingOffering): boolean {
+export function isLive({ status }: Pick<TeachingOffering, 'status'>): boolean {
   return status !== 'FINALIZADA' && status !== 'CANCELADA'
 }
 
@@ -28,25 +26,26 @@ export function panelFigures(offerings: TeachingOffering[]) {
 
 // por qué este orden: primero lo que ya espera a alguien (más intentos sin corregir, aunque la edición haya terminado: esas notas
 // siguen debiéndose); luego lo que sigue vivo, antes que lo finalizado o cancelado; y a igualdad, lo que empezó antes
-export function byWork(offerings: TeachingOffering[]): TeachingOffering[] {
+export function byWork<T extends TeachingOffering>(offerings: T[]): T[] {
   return [...offerings].sort(
     (a, b) =>
       b.pendingAttempts - a.pendingAttempts || Number(isLive(b)) - Number(isLive(a)) || a.startDate.localeCompare(b.startDate) || a.code.localeCompare(b.code)
   )
 }
 
-// qué se lee de cada edición: su cola, si tiene algo por corregir; sus sesiones, si sigue viva (una edición terminada ya no tiene
-// agenda). por trabajo, así el tope deja fuera lo que menos urge
-export function panelPlan(offerings: TeachingOffering[]) {
-  const sorted = byWork(offerings)
-  const withWork = sorted.filter((offering) => offering.pendingAttempts > 0)
-  const live = sorted.filter(isLive)
-  return {
-    grading: withWork.slice(0, MAX_PANEL_OFFERINGS),
-    gradingCapped: withWork.length > MAX_PANEL_OFFERINGS,
-    agenda: live.slice(0, MAX_PANEL_OFFERINGS),
-    agendaCapped: live.length > MAX_PANEL_OFFERINGS
-  }
+// las próximas sesiones de las ediciones vivas (una edición terminada ya no tiene agenda). el servidor las ordena por edición: aquí se
+// funden, y el reloj de la pantalla deja fuera la que terminó con la página abierta
+export function panelAgenda(items: TeachingPanelItem[], now: number) {
+  return upcomingSessions(
+    items.filter(isLive).flatMap((item) => item.upcomingSessions.map((session) => ({ ...session, offering: item }))),
+    now
+  )
+}
+
+// cuántas entregas de la edición no caben en la bandeja, con el total real. con menos filas de las que caben ya está toda la cola, aunque
+// el total diga más: cuenta todo lo enviado, y la cola deja fuera los intentos propios de quien la mira
+export function hiddenAttempts({ pendingAttempts, oldestPending }: Pick<TeachingPanelItem, 'pendingAttempts' | 'oldestPending'>): number {
+  return oldestPending.length < MAX_TRAY_ROWS ? 0 : Math.max(0, pendingAttempts - MAX_TRAY_ROWS)
 }
 
 export function oldestFirst(attempts: PendingAttempt[]): PendingAttempt[] {

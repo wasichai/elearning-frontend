@@ -4,6 +4,7 @@ import { teacher, type Scenario } from '../scenario'
 
 const OFFERING = '/docencia/edicion-sgspe-2026-09'
 const OFFERINGS = '**/api/lms/teaching/offerings'
+const PANEL = '**/api/lms/teaching/panel*'
 
 const failing = (page: Page, pattern: string) => page.route(pattern, (route) => route.fulfill({ status: 500, json: problem(500, 'fallo') }))
 
@@ -59,28 +60,26 @@ const attempts = (count: number, lessonTitle: string, firstDays: number) =>
     submittedAt: fromNow(-(firstDays - index), 15)
   }))
 
+// el panel como lo da el servidor: los 5 primeros de la cola (el total, en pendingAttempts) y las sesiones sin las canceladas
 async function busy(page: Page) {
-  await page.route(OFFERINGS, (route) => route.fulfill({ json: BUSY }))
-  await page.route(`${OFFERINGS}/${offering.code}/attempts`, (route) => route.fulfill({ json: attempts(7, 'Evaluación final', 9) }))
-  await page.route(`${OFFERINGS}/${otherOffering.code}/attempts`, (route) =>
-    route.fulfill({ json: attempts(2, 'Práctica calificada: cálculo de la licencia', 12) })
+  const running = {
+    start: new Date(Date.now() - 1800_000).toISOString().replace(/\.\d+Z$/, 'Z'),
+    end: new Date(Date.now() + 3600_000).toISOString().replace(/\.\d+Z$/, 'Z')
+  }
+  const lists: Record<string, { upcomingSessions: unknown[]; oldestPending: unknown[] }> = {
+    [offering.code]: {
+      upcomingSessions: [session('s-1', 'Taller de liquidación', 0, running), session('s-2', 'Consulta previa al examen', 3, { type: 'CONSULTA' })],
+      oldestPending: attempts(7, 'Evaluación final', 9).slice(0, 5)
+    },
+    [otherOffering.code]: {
+      upcomingSessions: [session('s-4', 'Laboratorio de anuncios', 2, { status: 'REPROGRAMADA' }), session('s-5', 'Revisión de casos', 9)],
+      oldestPending: attempts(2, 'Práctica calificada: cálculo de la licencia', 12)
+    },
+    [BUSY[2]!.code]: { upcomingSessions: [session('s-6', 'Presentación del curso', 14)], oldestPending: [] }
+  }
+  await page.route(PANEL, (route) =>
+    route.fulfill({ json: BUSY.map((item) => ({ ...item, ...(lists[item.code] ?? { upcomingSessions: [], oldestPending: [] }) })) })
   )
-  await page.route(`${OFFERINGS}/${offering.code}/sessions`, (route) =>
-    route.fulfill({
-      json: [
-        session('s-1', 'Taller de liquidación', 0, {
-          start: new Date(Date.now() - 1800_000).toISOString().replace(/\.\d+Z$/, 'Z'),
-          end: new Date(Date.now() + 3600_000).toISOString().replace(/\.\d+Z$/, 'Z')
-        }),
-        session('s-2', 'Consulta previa al examen', 3, { type: 'CONSULTA' }),
-        session('s-3', 'Sesión cancelada', 4, { status: 'CANCELADA' })
-      ]
-    })
-  )
-  await page.route(`${OFFERINGS}/${otherOffering.code}/sessions`, (route) =>
-    route.fulfill({ json: [session('s-4', 'Laboratorio de anuncios', 2, { status: 'REPROGRAMADA' }), session('s-5', 'Revisión de casos', 9)] })
-  )
-  await page.route(`${OFFERINGS}/${BUSY[2]!.code}/sessions`, (route) => route.fulfill({ json: [session('s-6', 'Presentación del curso', 14)] }))
 }
 
 const reloaded = (prepare: (page: Page) => Promise<unknown>) => async (page: Page) => {
@@ -175,22 +174,27 @@ export const teachingScenarios: Scenario[] = [
     name: 'teacher-offerings-loading',
     path: '/docencia',
     api: teacher,
-    // la lista no llega nunca: se queda el esqueleto
+    // el panel no llega nunca: se queda el esqueleto
     act: async (page) => {
-      await page.route(OFFERINGS, () => undefined)
+      await page.route(PANEL, () => undefined)
       await page.reload()
       await page.getByRole('status').first().waitFor()
     }
   },
-  { name: 'teacher-offerings-error', path: '/docencia', api: teacher, act: reloaded((page) => failing(page, OFFERINGS)) },
+  {
+    name: 'teacher-offerings-error',
+    path: '/docencia',
+    api: teacher,
+    act: reloaded(async (page) => {
+      await failing(page, PANEL)
+      await failing(page, OFFERINGS)
+    })
+  },
   {
     name: 'teacher-offerings-blocks-failed',
     path: '/docencia',
     api: teacher,
-    act: reloaded(async (page) => {
-      await failing(page, `${OFFERINGS}/*/attempts`)
-      await failing(page, `${OFFERINGS}/*/sessions`)
-    })
+    act: reloaded((page) => failing(page, PANEL))
   },
   { name: 'teacher-roster', path: OFFERING, api: teacher },
   { name: 'teacher-roster-busy', path: OFFERING, api: teacher, act: reloaded(rosterOf) },

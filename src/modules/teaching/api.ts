@@ -9,11 +9,13 @@ import {
   pendingAttemptListSchema,
   rosterSchema,
   teachingOfferingListSchema,
+  teachingPanelSchema,
   type AttendanceRow,
   type PendingAttempt,
   type RecurrencePattern,
   type RosterEntry,
   type TeachingOffering,
+  type TeachingPanelItem,
   type WeekDay
 } from './contract'
 
@@ -29,6 +31,25 @@ export async function fetchOfferings(client: ApiClient, signal?: AbortSignal): P
   return parseContract(teachingOfferingListSchema, 'GET teaching/offerings', body)
 }
 
+const PANEL_PATH = '/lms/teaching/panel'
+// lo que se pide de una vez: el contrato acota size a 1–200
+export const PANEL_PAGE_SIZE = 100
+// por si un servidor nunca diera una página corta: nadie enseña tantas a la vez, y pasarlo es un fallo, no una lista completa
+export const MAX_PANEL_PAGES = 20
+
+// todas las páginas, o ningún dato: una página con menos de size es la última, y si una falla, falla todo. entre dos páginas la lista
+// puede moverse: una edición repetida cuenta una vez
+export async function fetchTeachingPanel(client: ApiClient, signal?: AbortSignal): Promise<TeachingPanelItem[]> {
+  const items = new Map<string, TeachingPanelItem>()
+  for (let page = 0; page < MAX_PANEL_PAGES; page++) {
+    const body = await client.request<unknown>(`${PANEL_PATH}?page=${page}&size=${PANEL_PAGE_SIZE}`, { signal })
+    const read = parseContract(teachingPanelSchema, 'GET teaching/panel', body)
+    read.forEach((item) => items.set(item.code, item))
+    if (read.length < PANEL_PAGE_SIZE) return [...items.values()]
+  }
+  throw new Error(`GET teaching/panel: más de ${MAX_PANEL_PAGES} páginas`)
+}
+
 export async function fetchRoster(client: ApiClient, code: string, signal?: AbortSignal): Promise<RosterEntry[]> {
   const body = await client.request<unknown>(`${offeringPath(code)}/students`, { signal })
   return parseContract(rosterSchema, `GET teaching/offerings/${code}/students`, body)
@@ -37,6 +58,8 @@ export async function fetchRoster(client: ApiClient, code: string, signal?: Abor
 export const teachingKeys = {
   all: ['teaching'] as const,
   offerings: ['teaching', 'offerings'] as const,
+  // bajo la lista de ediciones: lo que la invalida (una nota) también lo vuelve a leer
+  panel: ['teaching', 'offerings', 'panel'] as const,
   roster: (code: string) => ['teaching', 'offering', code, 'students'] as const,
   queue: (code: string) => ['teaching', 'offering', code, 'attempts'] as const,
   attempt: (attemptId: string) => ['teaching', 'attempt', attemptId] as const,
@@ -44,9 +67,22 @@ export const teachingKeys = {
   attendance: (sessionId: string) => ['teaching', 'session', sessionId, 'attendance'] as const
 }
 
-export function useOfferings() {
+export function useTeachingPanel() {
   const client = useApiClient()
-  return useQuery({ queryKey: teachingKeys.offerings, queryFn: ({ signal }) => fetchOfferings(client, signal), retry: retryNetwork })
+  return useQuery({ queryKey: teachingKeys.panel, queryFn: ({ signal }) => fetchTeachingPanel(client, signal), retry: retryNetwork })
+}
+
+// el panel ya trae las ediciones: al entrar en una desde él, la cabecera tiene su título mientras llega la lista
+export function useOfferings({ enabled = true }: { enabled?: boolean } = {}) {
+  const client = useApiClient()
+  const queryClient = useQueryClient()
+  return useQuery<TeachingOffering[]>({
+    queryKey: teachingKeys.offerings,
+    queryFn: ({ signal }) => fetchOfferings(client, signal),
+    retry: retryNetwork,
+    enabled,
+    placeholderData: () => queryClient.getQueryData<TeachingPanelItem[]>(teachingKeys.panel)
+  })
 }
 
 export function useRoster(code: string) {
@@ -81,13 +117,9 @@ export async function postGrade(client: ApiClient, attemptId: string, grade: Gra
   return parseContract(attemptSchema, `POST teaching/attempts/${attemptId}/grades`, body)
 }
 
-// la cola y las sesiones de una edición también se leen en lote (el panel, con useQueries): la misma clave y la misma caché
-export function queueQuery(client: ApiClient, code: string) {
-  return { queryKey: teachingKeys.queue(code), queryFn: ({ signal }: { signal: AbortSignal }) => fetchQueue(client, code, signal), retry: retryNetwork }
-}
-
 export function useQueue(code: string) {
-  return useQuery(queueQuery(useApiClient(), code))
+  const client = useApiClient()
+  return useQuery({ queryKey: teachingKeys.queue(code), queryFn: ({ signal }) => fetchQueue(client, code, signal), retry: retryNetwork })
 }
 
 export function useTeachingAttempt(attemptId: string) {
@@ -172,16 +204,9 @@ export async function saveAttendance(client: ApiClient, sessionId: string, chang
   return parseContract(attendanceRowListSchema, `PUT teaching/sessions/${sessionId}/attendance`, body)
 }
 
-export function offeringSessionsQuery(client: ApiClient, code: string) {
-  return {
-    queryKey: teachingKeys.sessions(code),
-    queryFn: ({ signal }: { signal: AbortSignal }) => fetchOfferingSessions(client, code, signal),
-    retry: retryNetwork
-  }
-}
-
 export function useOfferingSessions(code: string) {
-  return useQuery(offeringSessionsQuery(useApiClient(), code))
+  const client = useApiClient()
+  return useQuery({ queryKey: teachingKeys.sessions(code), queryFn: ({ signal }) => fetchOfferingSessions(client, code, signal), retry: retryNetwork })
 }
 
 export function useAttendance(sessionId: string) {
@@ -191,7 +216,10 @@ export function useAttendance(sessionId: string) {
 
 function useRefreshSessions(code: string) {
   const queryClient = useQueryClient()
-  return () => void queryClient.invalidateQueries({ queryKey: teachingKeys.sessions(code) })
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: teachingKeys.sessions(code) })
+    void queryClient.invalidateQueries({ queryKey: teachingKeys.panel })
+  }
 }
 
 export function useCreateSessions(code: string) {

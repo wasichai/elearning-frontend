@@ -196,3 +196,11 @@ export const attendanceRows = [
   { enrollmentId: 'mat-sgspe-1', email: 'estudiante@demo.local', status: null },
   { enrollmentId: 'mat-sgspe-2', email: 'ana.torres@demo.local', status: 'PRESENTE' }
 ]
+
+// un elemento de GET teaching/panel: la edición con sus próximas sesiones y el principio de su cola. por defecto, nada
+export const panelItem = (base: object, rest: { upcomingSessions?: unknown[]; oldestPending?: unknown[] } = {}) => ({
+  ...base,
+  upcomingSessions: [],
+  oldestPending: [],
+  ...rest
+})
