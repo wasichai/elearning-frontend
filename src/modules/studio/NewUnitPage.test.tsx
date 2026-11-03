@@ -17,14 +17,14 @@ const CREATED = { id: 'u-nueva', createdAt: null, updatedAt: null, attributes: {
 let fetchMock: FetchMock
 afterEach(() => fetchMock?.restore())
 
-function renderPage(id: string, routes: MockRoute[]) {
+function renderPage(id: string, routes: MockRoute[], language?: string) {
   fetchMock = mockFetch([{ path: DEFINITION, body: unitDefinition }, { method: 'POST', path: UNITS, status: 201, body: CREATED }, ...routes])
   return renderWithProviders(
     <Routes>
       <Route path="/estudio/versiones/:id/unidades/nueva" element={<NewUnitPage />} />
       <Route path="/estudio/versiones/:id" element={<p>La versión</p>} />
     </Routes>,
-    { modules: [studioModule()], route: `/estudio/versiones/${id}/unidades/nueva` }
+    { modules: [studioModule()], route: `/estudio/versiones/${id}/unidades/nueva`, language }
   )
 }
 
@@ -63,5 +63,15 @@ describe('NewUnitPage: una unidad del borrador', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Esta versión no está entre las tuyas')
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument())
+  })
+
+  it.each([
+    ['en', ['Order', 'Title', 'Description', 'Objectives (one per line)', 'Estimated hours']],
+    ['es', ['Orden', 'Título', 'Descripción', 'Objetivos (uno por línea)', 'Horas estimadas']]
+  ])('las etiquetas de los campos salen en %s', async (language, labels) => {
+    renderPage(firstDraftDetail.id, [{ path: detailPath(firstDraftDetail.id), body: firstDraftDetail }], language)
+
+    await screen.findByText(labels[0]!)
+    for (const label of labels) expect(screen.getByText(label)).toBeInTheDocument()
   })
 })

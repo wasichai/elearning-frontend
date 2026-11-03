@@ -111,6 +111,34 @@ const es = {
     subtitle: 'De la unidad {{order}}. {{title}}',
     unitGone: 'Esta unidad ya no está en la versión'
   },
+  // las etiquetas de los campos de estos formularios: la metadata de Wasichai solo tiene un idioma (ADR-070 de Wasichai). claves: objeto y campo
+  // de model/model.json del backend, y en español, su misma etiqueta. un campo sin clave muestra la del servidor
+  recordForm: {
+    curso: {
+      codigo: 'Código',
+      slug: 'Identificador en URL',
+      titulo: 'Título',
+      resumen: 'Resumen',
+      idioma: 'Idioma (BCP 47)',
+      nivel: 'Nivel',
+      conocimientos_previos: 'Conocimientos previos',
+      categoria: 'Categoría'
+    },
+    unidad: {
+      orden: 'Orden',
+      titulo: 'Título',
+      descripcion: 'Descripción',
+      objetivos: 'Objetivos (uno por línea)',
+      horas_estimadas: 'Horas estimadas'
+    },
+    leccion: {
+      orden: 'Orden',
+      titulo: 'Título',
+      tipo: 'Tipo',
+      duracion_minutos: 'Duración estimada (minutos)',
+      resumen: 'Resumen'
+    }
+  },
   syllabus: {
     title: 'Contenido',
     empty: 'Esta versión aún no tiene unidades.',
@@ -317,6 +345,32 @@ const en: typeof es = {
     title: 'New lesson',
     subtitle: 'In unit {{order}}. {{title}}',
     unitGone: 'This unit is no longer in the version'
+  },
+  recordForm: {
+    curso: {
+      codigo: 'Code',
+      slug: 'URL slug',
+      titulo: 'Title',
+      resumen: 'Summary',
+      idioma: 'Language (BCP 47)',
+      nivel: 'Level',
+      conocimientos_previos: 'Prior knowledge',
+      categoria: 'Category'
+    },
+    unidad: {
+      orden: 'Order',
+      titulo: 'Title',
+      descripcion: 'Description',
+      objetivos: 'Objectives (one per line)',
+      horas_estimadas: 'Estimated hours'
+    },
+    leccion: {
+      orden: 'Order',
+      titulo: 'Title',
+      tipo: 'Type',
+      duracion_minutos: 'Estimated duration (minutes)',
+      resumen: 'Summary'
+    }
   },
   syllabus: {
     title: 'Content',
