@@ -36,7 +36,17 @@ export const IMPORT_JOB_ID = 'f1e2d3c4-0000-4000-8000-000000000001'
 export const IMPORTED_VERSION_ID = 'a1b2c3d4-0000-4000-8000-000000000009'
 export const SOURCE = `wasichai/manual-sgspe@${ANY_SHA}:manual/maestro.adoc`
 
-export const pendingJob = { id: IMPORT_JOB_ID, status: 'PENDIENTE', error: null, versionId: null, report: null }
+export const pendingJob = {
+  id: IMPORT_JOB_ID,
+  status: 'PENDIENTE',
+  error: null,
+  versionId: null,
+  report: null,
+  source: SOURCE,
+  courseId: courseRecords.content[0]!.id,
+  createdAt: '2026-11-02T14:05:00Z',
+  finishedAt: null
+}
 export const runningJob = { ...pendingJob, status: 'EN_CURSO' }
 
 export const importReport = {
@@ -49,11 +59,12 @@ export const importReport = {
   lessons: 11,
   problemCount: 3,
   problems: [
-    { kind: 'MISSING_IMAGE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/acceso.adoc`, line: 12, detail: 'img/portal.png' },
-    { kind: 'MISSING_INCLUDE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/maestro.adoc`, line: 8, detail: 'anexos.adoc' },
-    { kind: 'MISSING_IMAGE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc`, line: 0, detail: 'img/caja.png' }
-  ]
+    { kind: 'MISSING_IMAGE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/acceso.adoc`, line: 12, detail: 'img/portal.png', severity: 'CHECK' },
+    { kind: 'MISSING_INCLUDE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/maestro.adoc`, line: 8, detail: 'anexos.adoc', severity: 'GAP' },
+    { kind: 'MISSING_IMAGE', origin: `wasichai/manual-sgspe@${ANY_SHA}:manual/pagos.adoc`, line: 0, detail: 'img/caja.png', severity: 'CHECK' }
+  ],
+  problemsBySeverity: { GAP: 1, CHECK: 2 }
 }
 
-export const doneJob = { ...pendingJob, status: 'HECHO', versionId: IMPORTED_VERSION_ID, report: importReport }
-export const failedJob = { ...pendingJob, status: 'FALLIDO', error: 'manual/maestro.adoc does not exist at this commit' }
+export const doneJob = { ...pendingJob, status: 'HECHO', versionId: IMPORTED_VERSION_ID, report: importReport, finishedAt: '2026-11-02T14:07:00Z' }
+export const failedJob = { ...pendingJob, status: 'FALLIDO', error: 'manual/maestro.adoc does not exist at this commit', finishedAt: '2026-11-02T14:06:00Z' }

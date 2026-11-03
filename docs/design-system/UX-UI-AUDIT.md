@@ -142,6 +142,8 @@ Comprobado el 3 de noviembre de 2026 en el código y en el navegador, no en los 
 | T6  | El lema ya no sale en el menú ni en el login; en `/`, solo para quien administra o con los permisos en error (W13)                                                  |
 | W2–W15 | Limitaciones de `@wasichai/*`, salvo W7, ya resuelta, y W14, que ya no impide el primer borrador: no se parchean aquí                                                                               |
 
+**Importación (#161).** Ya no hay límite de contrato en estos dos puntos: la gravedad del informe viene del servidor y se retiró `SEVERITY`; una importación se retoma al volver a la pantalla, por `GET studio/import`. Límite que queda: la lista da hasta 50 trabajos y los terminados se purgan a los 30 días.
+
 **Accesibilidad automática.** axe-core 4.14 con `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` y `wcag22aa`, en los escenarios de `e2e/visual` a 390 y 1440 px, en claro, oscuro y modo lectura. Dentro de `main` y de los diálogos no quedan infracciones; fuera, solo W8. Es evidencia automática: axe no comprueba la mayoría de los criterios de WCAG y no entra en el `iframe` aislado de la lectura, así que esto no afirma que se cumpla WCAG 2.2 AA.
 
 ## Dependencias entre cambios

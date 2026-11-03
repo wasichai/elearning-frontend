@@ -168,7 +168,11 @@ const job = (run: ImportRun) => ({
   status: run.status,
   error: null,
   versionId: run.versionId,
-  report: run.status === 'HECHO' ? { ...importReport, source: run.source } : null
+  report: run.status === 'HECHO' ? { ...importReport, source: run.source } : null,
+  source: run.source,
+  courseId: run.course.id,
+  createdAt: '2026-11-02T14:05:00Z',
+  finishedAt: run.status === 'HECHO' ? '2026-11-02T14:07:00Z' : null
 })
 
 // encolar: 400 una fuente mal formada o un curso que no es un id, 403 un origen no permitido, 404 un curso que no existe
@@ -242,6 +246,8 @@ function pollImport(state: StudioState, id: string): Reply {
 function simulateImport(state: StudioState, method: string, url: URL, body: unknown): Reply | undefined {
   if (method === 'GET' && url.pathname === COURSE_RECORDS) return { status: 200, body: courseRecords }
   if (method === 'GET' && url.pathname === `${IMPORT}/sources`) return { status: 200, body: importSources }
+  // el más reciente primero; listar no hace avanzar los trabajos
+  if (method === 'GET' && url.pathname === IMPORT) return { status: 200, body: [...state.imports].reverse().map(job) }
   if (method === 'POST' && url.pathname === IMPORT) return startImport(state, (body ?? {}) as { source?: string; courseId?: string })
   const jobMatch = /^\/api\/lms\/studio\/import\/([^/]+)$/.exec(url.pathname)
   if (method === 'GET' && jobMatch) return pollImport(state, decodeURIComponent(jobMatch[1]!))

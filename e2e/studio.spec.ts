@@ -137,6 +137,29 @@ test('un creador importa un manual: encola, sigue el trabajo, lee el informe y a
   expect(api.unexpected).toEqual([])
 })
 
+test('quien sale de una importación en curso la retoma al volver a la pantalla', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto('/estudio/importar')
+  await expect(page.getByRole('region', { name: 'Tus importaciones' })).toContainText('Aún no tienes importaciones')
+
+  await page.getByLabel('Commit').fill(IMPORT_SHA)
+  await page.getByLabel('Ruta del maestro').fill('manual/maestro.adoc')
+  await page.getByRole('combobox', { name: 'Curso' }).click()
+  await page.getByRole('option', { name: 'Introducción al SGSPE (SGSPE-101)' }).click()
+  await page.getByRole('button', { name: 'Importar como borrador' }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Estado de la importación' })).toBeVisible()
+
+  // recargar pierde el estado de la pantalla, no el trabajo
+  await page.reload()
+  const jobs = page.getByRole('region', { name: 'Tus importaciones' })
+  await expect(jobs.getByRole('listitem')).toHaveCount(1)
+  await jobs.getByRole('button', { name: /^Seguir la importación/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Importación terminada' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('region', { name: 'Informe' })).toBeVisible()
+  expect(api.studioRequests.filter((request) => request === 'POST /api/lms/studio/import')).toHaveLength(1)
+  expect(api.unexpected).toEqual([])
+})
+
 test('si el servidor no permite el origen (403), la importación lo explica', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true, as: 'creator' })
   api.failOnce((url, method) => method === 'POST' && url.pathname === '/api/lms/studio/import', 403, 'Origen no permitido')

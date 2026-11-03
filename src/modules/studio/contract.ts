@@ -89,6 +89,8 @@ export const IMPORT_PROBLEM_KINDS = [
   'DUPLICATE_ANCHOR',
   'FILE_TOO_LARGE'
 ] as const
+// GAP: esa parte del manual no se leyó y al temario le pueden faltar unidades o lecciones. CHECK: se leyó; queda algo que revisar
+export const IMPORT_SEVERITIES = ['GAP', 'CHECK'] as const
 // el servidor guarda el sha en minúsculas y exige los 40 caracteres
 export const SHA_PATTERN = /^[0-9a-f]{40}$/
 
@@ -96,8 +98,9 @@ export const SHA_PATTERN = /^[0-9a-f]{40}$/
 export const importSourceSchema = z.object({ repository: z.string().regex(/^[^/\s@:]+\/[^/\s@:]+$/), sha: z.string().regex(SHA_PATTERN).nullable() })
 export const importSourceListSchema = z.array(importSourceSchema)
 
-// line 0 es el archivo entero
-const importProblem = z.object({ kind: z.enum(IMPORT_PROBLEM_KINDS), origin: z.string(), line: count, detail: z.string() })
+// line 0 es el archivo entero. la gravedad la decide el servidor, también para «cualquier tipo nuevo»: por eso kind es texto, y
+// IMPORT_PROBLEM_KINDS solo dice cuáles tienen nombre propio en la interfaz
+const importProblem = z.object({ kind: z.string().min(1), origin: z.string(), line: count, detail: z.string(), severity: z.enum(IMPORT_SEVERITIES) })
 
 export const importReportSchema = z.object({
   source: z.string(),
@@ -109,7 +112,9 @@ export const importReportSchema = z.object({
   lessons: count,
   // todos los encontrados; problems trae a lo sumo 500
   problemCount: count,
-  problems: z.array(importProblem)
+  problems: z.array(importProblem),
+  // cuenta todos, también los que problems no trae
+  problemsBySeverity: z.object({ GAP: count, CHECK: count })
 })
 
 export const importJobSchema = z.object({
@@ -118,8 +123,16 @@ export const importJobSchema = z.object({
   // el motivo de FALLIDO, o el último fallo pasajero mientras se reintenta
   error: z.string().nullable(),
   versionId: z.string().min(1).nullable(),
-  report: importReportSchema.nullable()
+  report: importReportSchema.nullable(),
+  // lo pedido: owner/repo@sha:ruta y el curso
+  source: z.string().min(1),
+  courseId: z.string().min(1),
+  createdAt: instant,
+  finishedAt: instant.nullable()
 })
+
+// a lo sumo 50, de quien llama, el más reciente primero: pendientes, en curso y terminados aún retenidos
+export const importJobListSchema = z.array(importJobSchema)
 
 // los cursos que la persona puede leer, por la API de registros de Wasichai (objeto curso de model/model.json)
 export const courseRecordPageSchema = z.object({
@@ -128,6 +141,7 @@ export const courseRecordPageSchema = z.object({
 
 export type ImportStatus = (typeof IMPORT_STATUSES)[number]
 export type ImportProblemKind = (typeof IMPORT_PROBLEM_KINDS)[number]
+export type ImportSeverity = (typeof IMPORT_SEVERITIES)[number]
 export type ImportSource = z.infer<typeof importSourceSchema>
 export type ImportReport = z.infer<typeof importReportSchema>
 export type ImportProblem = z.infer<typeof importProblem>

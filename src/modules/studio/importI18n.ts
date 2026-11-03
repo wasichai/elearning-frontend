@@ -53,8 +53,8 @@ const es = {
   },
   statusHint: {
     PENDIENTE:
-      'El trabajo espera su turno. Esta página consulta su estado cada pocos segundos. Si sales, el trabajo sigue, pero no podrás volver a este informe.',
-    EN_CURSO: 'Se está leyendo el manual y creando el borrador. Si sales, el trabajo sigue, pero no podrás volver a este informe.',
+      'El trabajo espera su turno. Esta página consulta su estado cada pocos segundos. Si sales, el trabajo sigue y podrás retomarlo desde esta pantalla.',
+    EN_CURSO: 'Se está leyendo el manual y creando el borrador. Si sales, el trabajo sigue y podrás retomarlo desde esta pantalla.',
     HECHO: 'El borrador está listo: revísalo y edítalo antes de enviarlo a revisión.',
     FALLIDO: 'No se creó ningún borrador.'
   },
@@ -69,8 +69,33 @@ const es = {
     openDraft: 'Abrir el borrador',
     retry: 'Revisar y reintentar',
     another: 'Importar otro manual',
-    notFound: 'Esta importación no está entre las tuyas',
-    notFoundHint: 'Solo quien pidió una importación puede seguirla.'
+    back: 'Volver a tus importaciones',
+    notFound: 'Esta importación ya no está disponible',
+    notFoundHint: 'Solo la ve quien la pidió, y las terminadas se guardan 30 días.'
+  },
+  jobs: {
+    title: 'Tus importaciones',
+    retention: 'Hasta las 50 más recientes. Las terminadas se guardan 30 días; después salen de esta lista y el borrador sigue en «Mis versiones».',
+    loading: 'Cargando tus importaciones…',
+    empty: 'Aún no tienes importaciones. Las que pidas quedarán aquí, aunque salgas de esta pantalla.',
+    failed: 'No pudimos cargar tus importaciones. Puedes importar igual.',
+    refused: 'No puedes ver tus importaciones.',
+    active_one: '{{count}} importación en marcha',
+    active_other: '{{count}} importaciones en marcha',
+    status: {
+      PENDIENTE: 'En cola',
+      EN_CURSO: 'Importando',
+      HECHO: 'Terminada',
+      FALLIDO: 'Falló'
+    },
+    requested: 'Pedida el {{date}}',
+    finished: 'Terminó el {{date}}',
+    follow: 'Seguir la importación',
+    report: 'Ver el informe',
+    reason: 'Ver el motivo',
+    actionFor: '{{action}}: {{subject}}',
+    more: 'Ver {{count}} más',
+    less: 'Ver menos'
   },
   report: {
     title: 'Informe',
@@ -86,14 +111,15 @@ const es = {
     problems_other: '{{value}} problemas. Un problema no detiene la importación: revisa esas partes en el borrador.',
     truncated: 'Se muestran {{shown}} de {{total}}.',
     bySeverity: 'Problemas por gravedad',
-    partial: 'Las cifras por gravedad cuentan solo los que se muestran.',
+    partial: 'Las cifras por gravedad cuentan todos; la lista, solo los que se muestran.',
     group: '{{kind}} ({{value}})',
+    otherKind: 'Otro tipo de problema',
     line: '{{origin}}, línea {{line}}',
     wholeFile: '{{origin}}, el archivo entero'
   },
   severity: {
-    gap: 'Puede faltar temario',
-    check: 'A revisar'
+    GAP: 'Puede faltar temario',
+    CHECK: 'A revisar'
   },
   steps: {
     label: 'Pasos de la importación',
@@ -184,8 +210,8 @@ const en: typeof es = {
   },
   statusHint: {
     PENDIENTE:
-      'The job is waiting for its turn. This page checks its status every few seconds. If you leave, the job continues, but you will not be able to come back to this report.',
-    EN_CURSO: 'The manual is being read and the draft created. If you leave, the job continues, but you will not be able to come back to this report.',
+      'The job is waiting for its turn. This page checks its status every few seconds. If you leave, the job continues and you can pick it up from this screen.',
+    EN_CURSO: 'The manual is being read and the draft created. If you leave, the job continues and you can pick it up from this screen.',
     HECHO: 'The draft is ready: review and edit it before sending it for review.',
     FALLIDO: 'No draft was created.'
   },
@@ -200,8 +226,33 @@ const en: typeof es = {
     openDraft: 'Open the draft',
     retry: 'Review and try again',
     another: 'Import another manual',
-    notFound: 'This import is not among yours',
-    notFoundHint: 'Only the person who requested an import can follow it.'
+    back: 'Back to your imports',
+    notFound: 'This import is no longer available',
+    notFoundHint: 'Only the person who requested it can see it, and finished ones are kept for 30 days.'
+  },
+  jobs: {
+    title: 'Your imports',
+    retention: 'Up to the 50 most recent. Finished ones are kept for 30 days; after that they leave this list and the draft stays in “My versions”.',
+    loading: 'Loading your imports…',
+    empty: 'You have no imports yet. The ones you request will stay here, even if you leave this screen.',
+    failed: 'We could not load your imports. You can still import.',
+    refused: 'You cannot see your imports.',
+    active_one: '{{count}} import running',
+    active_other: '{{count}} imports running',
+    status: {
+      PENDIENTE: 'Queued',
+      EN_CURSO: 'Importing',
+      HECHO: 'Finished',
+      FALLIDO: 'Failed'
+    },
+    requested: 'Requested on {{date}}',
+    finished: 'Finished on {{date}}',
+    follow: 'Follow the import',
+    report: 'See the report',
+    reason: 'See the reason',
+    actionFor: '{{action}}: {{subject}}',
+    more: 'Show {{count}} more',
+    less: 'Show less'
   },
   report: {
     title: 'Report',
@@ -217,14 +268,15 @@ const en: typeof es = {
     problems_other: '{{value}} problems. A problem does not stop the import: check those parts in the draft.',
     truncated: 'Showing {{shown}} of {{total}}.',
     bySeverity: 'Problems by severity',
-    partial: 'The figures by severity only count the ones shown.',
+    partial: 'The figures by severity count all of them; the list, only the ones shown.',
     group: '{{kind}} ({{value}})',
+    otherKind: 'Another kind of problem',
     line: '{{origin}}, line {{line}}',
     wholeFile: '{{origin}}, the whole file'
   },
   severity: {
-    gap: 'Syllabus may be incomplete',
-    check: 'To check'
+    GAP: 'Syllabus may be incomplete',
+    CHECK: 'To check'
   },
   steps: {
     label: 'Import steps',
