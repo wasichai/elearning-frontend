@@ -5,7 +5,7 @@ import { Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioModule } from './module'
 import { NewCoursePage } from './NewCoursePage'
-import { courseDefinition, firstDraftDetail, newCourseRecord, problem } from './test/fixtures'
+import { courseDefinition, firstDraftDetail, newCourseRecord, objectField, problem } from './test/fixtures'
 
 // de «Nuevo curso» al primer borrador: el formulario de metadatos de core y, al guardarlo, POST studio/courses/{id}/versions (#270)
 
@@ -17,8 +17,8 @@ const AUTHOR = { curso: ['READ', 'CREATE'], version_curso: ['READ', 'CREATE'] }
 let fetchMock: FetchMock
 afterEach(() => fetchMock?.restore())
 
-function renderPage(routes: MockRoute[], objects: Record<string, string[]> = AUTHOR, language?: string) {
-  fetchMock = mockFetch([{ path: DEFINITION, body: courseDefinition }, { method: 'POST', path: COURSES, status: 201, body: newCourseRecord }, ...routes])
+function renderPage(routes: MockRoute[], objects: Record<string, string[]> = AUTHOR, language?: string, definition: unknown = courseDefinition) {
+  fetchMock = mockFetch([{ path: DEFINITION, body: definition }, { method: 'POST', path: COURSES, status: 201, body: newCourseRecord }, ...routes])
   return renderWithProviders(
     <Routes>
       <Route path="/estudio/cursos/nuevo" element={<NewCoursePage />} />
@@ -115,5 +115,49 @@ describe('NewCoursePage: de «Nuevo curso» al primer borrador', () => {
     renderPage([{ method: 'POST', path: DRAFT, status: 201, body: firstDraftDetail }], AUTHOR, 'en')
 
     expect(screen.getByRole('heading', { level: 1, name: 'New course' })).toBeInTheDocument()
+  })
+
+  // los campos de «curso» en model/model.json del backend: su etiqueta en la metadata solo tiene un idioma (ADR-070 de Wasichai)
+  const fullCourse = {
+    ...courseDefinition,
+    fields: [
+      ...courseDefinition.fields,
+      objectField('resumen', 'Resumen', 'LONG_TEXT'),
+      objectField('idioma', 'Idioma (BCP 47)', 'TEXT'),
+      objectField('nivel', 'Nivel', 'TEXT'),
+      objectField('conocimientos_previos', 'Conocimientos previos', 'LONG_TEXT'),
+      objectField('categoria', 'Categoría', 'TEXT')
+    ]
+  }
+
+  it.each([
+    ['en', ['Code', 'URL slug', 'Title', 'Summary', 'Language (BCP 47)', 'Level', 'Prior knowledge', 'Category']],
+    ['es', ['Código', 'Identificador en URL', 'Título', 'Resumen', 'Idioma (BCP 47)', 'Nivel', 'Conocimientos previos', 'Categoría']]
+  ])('las etiquetas de los campos salen en %s', async (language, labels) => {
+    renderPage([], AUTHOR, language, fullCourse)
+
+    await screen.findByLabelText(new RegExp(labels[0]!))
+    for (const label of labels) expect(screen.getByText(label)).toBeInTheDocument()
+  })
+
+  it('un campo sin traducción muestra la etiqueta del servidor', async () => {
+    const withNew = { ...courseDefinition, fields: [...courseDefinition.fields, objectField('nuevo_campo', 'Campo nuevo', 'TEXT')] }
+    renderPage([], AUTHOR, 'en', withNew)
+
+    expect(await screen.findByLabelText('Campo nuevo')).toBeInTheDocument()
+  })
+
+  it('en inglés envía los mismos nombres de campo', async () => {
+    const user = userEvent.setup()
+    renderPage([{ method: 'POST', path: DRAFT, status: 201, body: firstDraftDetail }], AUTHOR, 'en')
+
+    await user.type(await screen.findByLabelText(/Code/), 'NUEVO-101')
+    await user.type(screen.getByLabelText(/URL slug/), 'nuevo-101')
+    await user.type(screen.getByLabelText(/Title/), 'Curso nuevo')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(await screen.findByText('Borrador abierto')).toBeInTheDocument()
+    const post = fetchMock.calls.find((call) => call.method === 'POST' && call.path.includes(COURSES))
+    expect(post?.body).toMatchObject({ attributes: { codigo: 'NUEVO-101', slug: 'nuevo-101', titulo: 'Curso nuevo' } })
   })
 })

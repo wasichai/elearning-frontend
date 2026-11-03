@@ -159,7 +159,7 @@ export const noLessonsDetail = {
   ]
 }
 
-const objectField = (name: string, label: string, type: string, required = false, position = 0, relationTarget: string | null = null) => ({
+export const objectField = (name: string, label: string, type: string, required = false, position = 0, relationTarget: string | null = null) => ({
   id: `f-${name}`,
   name,
   label,
@@ -204,8 +204,10 @@ export const unitDefinition = objectDefinition('unidad', 'Unidad', [
   objectField('orden', 'Orden', 'INTEGER', true, 0),
   objectField('titulo', 'Título', 'TEXT', true, 1),
   objectField('descripcion', 'Descripción', 'LONG_TEXT', false, 2),
-  objectField('referencia_fuente', 'Fuente', 'TEXT', false, 3),
-  objectField('version_curso', 'Versión del curso', 'RELATION', true, 4, 'version_curso')
+  objectField('objetivos', 'Objetivos (uno por línea)', 'LONG_TEXT', false, 3),
+  objectField('horas_estimadas', 'Horas estimadas', 'DECIMAL', false, 4),
+  objectField('referencia_fuente', 'Fuente', 'TEXT', false, 5),
+  objectField('version_curso', 'Versión del curso', 'RELATION', true, 6, 'version_curso')
 ])
 
 export const lessonDefinition = objectDefinition('leccion', 'Lección', [

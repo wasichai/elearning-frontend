@@ -26,6 +26,11 @@ export function StudioRecordForm({ objectName, form, initial, fixed, onSaved, on
   if (definition.isError && !definition.data) return <ErrorState error={definition.error} onRetry={() => void definition.refetch()} />
   if (!definition.data) return <LoadingState label={t('newCourse.loading')} />
   if (!policy.canCreate) return <WritePolicyNotice policy={policy} />
+  // la etiqueta de la metadata solo tiene un idioma (ADR-070 de Wasichai): la del módulo, si la hay, y si no la del servidor. solo cambia lo que se lee
+  const localized = {
+    ...definition.data,
+    fields: definition.data.fields.map((field) => ({ ...field, label: t(`recordForm.${objectName}.${field.name}`, { defaultValue: field.label }) }))
+  }
   const submit = async (payload: RecordPayload, reason?: string) => {
     setError(null)
     setViolations([])
@@ -39,7 +44,7 @@ export function StudioRecordForm({ objectName, form, initial, fixed, onSaved, on
   }
   return (
     <DynamicForm
-      definition={definition.data}
+      definition={localized}
       form={form}
       record={initial}
       submitting={save.isPending}
