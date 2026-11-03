@@ -244,6 +244,43 @@ describe('ImportPage: mis importaciones', () => {
     expect(await region.findByRole('button', { name: /^Seguir la importación/ })).toBeInTheDocument()
   })
 
+  it('un tipo de problema nuevo no degrada el bloque, y su informe se lee', async () => {
+    const user = userEvent.setup()
+    const novel = {
+      ...doneJob,
+      report: {
+        ...doneJob.report,
+        problemCount: 1,
+        problems: [{ kind: 'NEW_KIND', origin: 'a', line: 1, detail: 'detalle nuevo', severity: 'GAP' }],
+        problemsBySeverity: { GAP: 1, CHECK: 0 }
+      }
+    }
+    renderImport(page([novel], { path: JOB, body: novel }))
+
+    const region = within(await block())
+    await user.click(await region.findByRole('button', { name: /^Ver el informe/ }))
+    const report = within(await screen.findByRole('region', { name: 'Informe' }))
+    expect(report.getByRole('heading', { level: 3, name: 'Otro tipo de problema (1)' })).toBeInTheDocument()
+    expect(report.getByText('detalle nuevo')).toBeInTheDocument()
+  })
+
+  it('en inglés, el tipo de problema nuevo también tiene título', async () => {
+    const user = userEvent.setup()
+    const novel = {
+      ...doneJob,
+      report: {
+        ...doneJob.report,
+        problemCount: 1,
+        problems: [{ kind: 'NEW_KIND', origin: 'a', line: 1, detail: 'x', severity: 'CHECK' }],
+        problemsBySeverity: { GAP: 0, CHECK: 1 }
+      }
+    }
+    renderImport(page([novel], { path: JOB, body: novel }), 'en')
+
+    await user.click(await screen.findByRole('button', { name: /^See the report/ }))
+    expect(await screen.findByRole('heading', { level: 3, name: 'Another kind of problem (1)' })).toBeInTheDocument()
+  })
+
   it('una lista con el contrato roto también degrada solo su bloque', async () => {
     renderImport(page([{ ...pendingJob, createdAt: 'ayer' }]))
     expect(await within(await block()).findByText(/^No pudimos cargar tus importaciones/)).toBeInTheDocument()

@@ -98,8 +98,9 @@ export const SHA_PATTERN = /^[0-9a-f]{40}$/
 export const importSourceSchema = z.object({ repository: z.string().regex(/^[^/\s@:]+\/[^/\s@:]+$/), sha: z.string().regex(SHA_PATTERN).nullable() })
 export const importSourceListSchema = z.array(importSourceSchema)
 
-// line 0 es el archivo entero. la gravedad la decide el servidor
-const importProblem = z.object({ kind: z.enum(IMPORT_PROBLEM_KINDS), origin: z.string(), line: count, detail: z.string(), severity: z.enum(IMPORT_SEVERITIES) })
+// line 0 es el archivo entero. la gravedad la decide el servidor, también para «cualquier tipo nuevo»: por eso kind es texto, y
+// IMPORT_PROBLEM_KINDS solo dice cuáles tienen nombre propio en la interfaz
+const importProblem = z.object({ kind: z.string().min(1), origin: z.string(), line: count, detail: z.string(), severity: z.enum(IMPORT_SEVERITIES) })
 
 export const importReportSchema = z.object({
   source: z.string(),

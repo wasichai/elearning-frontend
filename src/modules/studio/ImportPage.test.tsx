@@ -293,6 +293,44 @@ describe('ImportPage: el resultado', () => {
     expect(report.getByText('Inclusión que no existe (1)').parentElement).toHaveTextContent('A revisar')
   })
 
+  it('un tipo de problema nuevo se ve bajo un título genérico, ordenado por la gravedad del servidor', async () => {
+    const user = userEvent.setup()
+    const novel = {
+      ...doneJob,
+      report: {
+        ...importReport,
+        problemCount: 5,
+        problems: [
+          { kind: 'NEW_CHECK', origin: 'a', line: 1, detail: 'detalle a revisar', severity: 'CHECK' },
+          { kind: 'MISSING_IMAGE', origin: 'b', line: 2, detail: 'imagen', severity: 'CHECK' },
+          { kind: 'NEW_GAP', origin: 'c', line: 3, detail: 'detalle sin leer', severity: 'GAP' },
+          // un nombre que existe en cualquier objeto no es una traducción
+          { kind: 'constructor', origin: 'd', line: 4, detail: 'otro sin leer', severity: 'GAP' },
+          { kind: 'MISSING_INCLUDE', origin: 'e', line: 5, detail: 'inclusión', severity: 'GAP' }
+        ],
+        problemsBySeverity: { GAP: 3, CHECK: 2 }
+      }
+    }
+    renderImport(baseRoutes({ method: 'POST', path: IMPORT, status: 202, body: pendingJob }, jobRoute(novel)))
+    await fillForm(user)
+    await user.click(screen.getByRole('button', { name: 'Importar como borrador' }))
+
+    const report = within(await screen.findByRole('region', { name: 'Informe' }))
+    expect(screen.queryByText('No pudimos leer la respuesta del servidor')).not.toBeInTheDocument()
+    const headings = report.getAllByRole('heading', { level: 3 })
+    expect(headings.map((heading) => heading.textContent)).toEqual([
+      'Inclusión que no existe (1)',
+      'Otro tipo de problema (2)',
+      'Imagen que no existe (1)',
+      'Otro tipo de problema (1)'
+    ])
+    expect(headings[1]!.parentElement).toHaveTextContent('Puede faltar temario')
+    expect(headings[3]!.parentElement).toHaveTextContent('A revisar')
+    expect(report.getByText('detalle sin leer')).toBeInTheDocument()
+    expect(report.getByText('otro sin leer')).toBeInTheDocument()
+    expect(report.getByText('detalle a revisar')).toBeInTheDocument()
+  })
+
   it('un informe recortado dice cuántos problemas hay en total, con los totales del servidor; sin problemas, lo dice', async () => {
     const user = userEvent.setup()
     const truncated = { ...doneJob, report: { ...importReport, problemCount: 812, problemsBySeverity: { GAP: 300, CHECK: 512 } } }

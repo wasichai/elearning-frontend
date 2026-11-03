@@ -113,6 +113,7 @@ const es = {
     bySeverity: 'Problemas por gravedad',
     partial: 'Las cifras por gravedad cuentan todos; la lista, solo los que se muestran.',
     group: '{{kind}} ({{value}})',
+    otherKind: 'Otro tipo de problema',
     line: '{{origin}}, línea {{line}}',
     wholeFile: '{{origin}}, el archivo entero'
   },
@@ -269,6 +270,7 @@ const en: typeof es = {
     bySeverity: 'Problems by severity',
     partial: 'The figures by severity count all of them; the list, only the ones shown.',
     group: '{{kind}} ({{value}})',
+    otherKind: 'Another kind of problem',
     line: '{{origin}}, line {{line}}',
     wholeFile: '{{origin}}, the whole file'
   },

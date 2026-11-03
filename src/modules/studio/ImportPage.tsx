@@ -519,6 +519,8 @@ function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void })
 
 const COUNTS = ['units', 'lessons', 'sections', 'files', 'includes', 'images'] as const
 
+const isKnownKind = (kind: string): kind is ImportProblemKind => (IMPORT_PROBLEM_KINDS as readonly string[]).includes(kind)
+
 const SEVERITY_ICON: Record<ImportSeverity, LucideIcon> = { GAP: CircleAlert, CHECK: TriangleAlert }
 const SEVERITY_TONE: Record<ImportSeverity, string> = { GAP: 'text-danger', CHECK: 'text-warning' }
 
@@ -527,13 +529,15 @@ const SEVERITY_TONE: Record<ImportSeverity, string> = { GAP: 'text-danger', CHEC
 function Report({ report }: { report: ImportReport }) {
   const { t, i18n } = useTranslation('studio')
   const locale = i18n.language
-  const groups = IMPORT_SEVERITIES.flatMap((severity) =>
-    IMPORT_PROBLEM_KINDS.map((kind) => ({
-      kind,
-      severity,
-      problems: report.problems.filter((problem) => problem.kind === kind && problem.severity === severity)
-    }))
-  ).filter((group) => group.problems.length > 0)
+  // por gravedad del servidor; dentro, los tipos conocidos en su orden y al final los que la interfaz aún no nombra
+  const groups = IMPORT_SEVERITIES.flatMap((severity) => {
+    const problems = report.problems.filter((problem) => problem.severity === severity)
+    const unnamed = problems.filter((problem) => !isKnownKind(problem.kind))
+    return [
+      ...IMPORT_PROBLEM_KINDS.map((kind) => ({ kind, severity, problems: problems.filter((problem) => problem.kind === kind) })),
+      { kind: null, severity, problems: unnamed }
+    ]
+  }).filter((group) => group.problems.length > 0)
   const partial = report.problems.length < report.problemCount
   return (
     <Section title={t('import.report.title')}>
@@ -572,20 +576,24 @@ function Report({ report }: { report: ImportReport }) {
         ))}
       </dl>
       {groups.map((group) => (
-        <ProblemGroup key={`${group.severity}:${group.kind}`} {...group} />
+        <ProblemGroup key={`${group.severity}:${group.kind ?? ''}`} {...group} />
       ))}
     </Section>
   )
 }
 
-function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind; severity: ImportSeverity; problems: ImportProblem[] }) {
+// kind null: los tipos que la interfaz aún no nombra
+function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind | null; severity: ImportSeverity; problems: ImportProblem[] }) {
   const { t, i18n } = useTranslation('studio')
   const Icon = SEVERITY_ICON[severity]
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
         <h3 className="text-base font-semibold text-ink">
-          {t('import.report.group', { kind: t(`import.kind.${kind}`), value: formatNumber(problems.length, i18n.language) })}
+          {t('import.report.group', {
+            kind: kind ? t(`import.kind.${kind}`) : t('import.report.otherKind'),
+            value: formatNumber(problems.length, i18n.language)
+          })}
         </h3>
         <span className={`inline-flex items-center gap-1 text-sm ${SEVERITY_TONE[severity]}`}>
           <Icon aria-hidden="true" className="size-4 shrink-0" />

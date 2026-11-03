@@ -14,6 +14,12 @@ describe('contrato de la importación', () => {
     expect(parseContract(courseRecordPageSchema, 'cursos', { content: [{ id: 'c', attributes: { titulo: null } }] }).content).toHaveLength(1)
   })
 
+  it('acepta un tipo de problema nuevo: el contrato le da gravedad a «cualquier tipo nuevo»', () => {
+    const report = { ...importReport, problems: [{ ...importReport.problems[0], kind: 'NEW_KIND', severity: 'GAP' }] }
+    const [job] = parseContract(importJobListSchema, 'GET studio/import', [{ ...doneJob, report }])
+    expect(job?.report?.problems[0]).toMatchObject({ kind: 'NEW_KIND', severity: 'GAP' })
+  })
+
   it('acepta la lista de trabajos con lo pedido y sus fechas, y una lista vacía', () => {
     const jobs = parseContract(importJobListSchema, 'GET studio/import', [runningJob, doneJob, failedJob])
     expect(jobs.map((job) => job.status)).toEqual(['EN_CURSO', 'HECHO', 'FALLIDO'])
@@ -37,7 +43,8 @@ describe('contrato de la importación', () => {
 
   it.each([
     ['estado desconocido', { ...pendingJob, status: 'CANCELADO' }, 'status'],
-    ['problema desconocido', { ...doneJob, report: { ...importReport, problems: [{ ...importReport.problems[0], kind: 'TYPO' }] } }, 'kind'],
+    ['problema con tipo vacío', { ...doneJob, report: { ...importReport, problems: [{ ...importReport.problems[0], kind: '' }] } }, 'kind'],
+    ['problema sin tipo', { ...doneJob, report: { ...importReport, problems: [{ ...importReport.problems[0], kind: undefined }] } }, 'kind'],
     ['línea negativa', { ...doneJob, report: { ...importReport, problems: [{ ...importReport.problems[0], line: -1 }] } }, 'line'],
     ['informe sin recuento', { ...doneJob, report: { ...importReport, problemCount: undefined } }, 'problemCount'],
     ['sin id', { ...pendingJob, id: '' }, 'id'],
