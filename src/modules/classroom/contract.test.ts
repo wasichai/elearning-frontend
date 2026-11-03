@@ -39,6 +39,31 @@ const withLesson = (patch: Record<string, unknown>) => ({
 })
 
 describe('contrato del aula', () => {
+  describe('logros (RF-AUL-08)', () => {
+    const withAchievements = (achievements: unknown) => ({ ...classroom, achievements })
+
+    it('acepta los tres tipos del documento y una fecha nula o ausente', () => {
+      const achievements = [
+        { kind: 'UNIT_COMPLETED', at: '2026-11-03T15:20:00Z', ref: 'uni-1' },
+        { kind: 'ASSESSMENT_PASSED', at: null, ref: 'eva-final' },
+        { kind: 'CERTIFICATE_ISSUED', ref: 'K7Q2-M9XW-4RTB' }
+      ]
+      expect(parseContract(classroomSchema, 'classroom', withAchievements(achievements)).achievements).toEqual(achievements)
+    })
+
+    it('un tipo nuevo del servidor no tumba el aula: el documento no cierra el vocabulario', () => {
+      const parsed = parseContract(classroomSchema, 'classroom', withAchievements([{ kind: 'NUEVO_TIPO', at: null, ref: 'x' }]))
+      expect(parsed.achievements[0]?.kind).toBe('NUEVO_TIPO')
+    })
+
+    it('rechaza lo que el contrato no permite: sin la lista, una fecha que no es un instante, sin ref', () => {
+      const { achievements: _achievements, ...without } = classroom
+      expect(() => parseContract(classroomSchema, 'classroom', without)).toThrow(ContractError)
+      expect(() => parseContract(classroomSchema, 'classroom', withAchievements([{ kind: 'UNIT_COMPLETED', at: 'ayer', ref: 'uni-1' }]))).toThrow(ContractError)
+      expect(() => parseContract(classroomSchema, 'classroom', withAchievements([{ kind: 'UNIT_COMPLETED', at: null, ref: '' }]))).toThrow(ContractError)
+    })
+  })
+
   it('acepta los ejemplos del documento', () => {
     expect(parseContract(enrollmentListSchema, 'enrollments', [enrollment, finishedEnrollment])).toHaveLength(2)
     expect(parseContract(enrollmentSchema, 'enrollment', finishedEnrollment).nextLesson).toBeNull()

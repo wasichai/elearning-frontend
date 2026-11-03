@@ -41,6 +41,7 @@ const notStarted = { status: 'NO_INICIADA', startedAt: null, completedAt: null, 
 
 export const classroom = {
   ...enrollment,
+  achievements: [],
   units: [
     {
       id: 'uni-1',
@@ -169,6 +170,7 @@ export const assessmentClassroom = {
   ...otherEnrollment,
   progress: { completedLessons: 1, totalLessons: 3, percent: 33 },
   nextLesson: { id: 'lec-eva', title: 'Evaluación final', unitOrder: 1, lessonOrder: 2 },
+  achievements: [],
   units: [
     {
       id: 'uni-sg-1',

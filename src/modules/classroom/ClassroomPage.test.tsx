@@ -333,4 +333,52 @@ describe('ClassroomPage: errores', () => {
     expect(alert).toHaveTextContent('error 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
+
+  // RF-AUL-08: los logros salen del aula que ya se leyó, en el panel del temario junto al avance
+  describe('logros', () => {
+    const achieved = {
+      ...classroom,
+      achievements: [{ kind: 'UNIT_COMPLETED', at: '2026-10-28T15:30:00Z', ref: 'uni-1' }]
+    }
+    const paths = () => fetchMock.calls.map((call) => call.url).sort()
+
+    it('el aula sin logros no pinta la sección', async () => {
+      renderClassroom([{ path: CLASSROOM, body: classroom }])
+      await lessonHeading('Recorrido por la pantalla')
+      expect(screen.queryByRole('region', { name: 'Logros' })).toBeNull()
+    })
+
+    it('se ven junto al avance y antes del temario, sin mover la lección abierta', async () => {
+      renderClassroom([{ path: CLASSROOM, body: achieved }])
+      await lessonHeading('Recorrido por la pantalla')
+      const region = screen.getByRole('region', { name: 'Logros' })
+      expect(within(region).getByRole('link', { name: /^El trámite de anuncios.*Unidad completada/ })).toHaveAttribute(
+        'href',
+        '/mis-cursos/mat-srtm-1?leccion=lec-html'
+      )
+      const progress = screen.getByRole('progressbar', { name: 'Progreso del curso' })
+      expect(progress.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(region.compareDocumentPosition(units()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('un tipo desconocido no tumba el aula', async () => {
+      renderClassroom([{ path: CLASSROOM, body: { ...achieved, achievements: [...achieved.achievements, { kind: 'NUEVO_TIPO', at: null, ref: 'x' }] } }])
+      expect(await lessonHeading('Recorrido por la pantalla')).toBeInTheDocument()
+      expect(within(screen.getByRole('region', { name: 'Logros' })).getAllByRole('listitem')).toHaveLength(1)
+    })
+
+    it('no añaden peticiones: los datos ya vienen en el aula', async () => {
+      const first = renderClassroom([{ path: CLASSROOM, body: classroom }])
+      await lessonHeading('Recorrido por la pantalla')
+      await waitFor(() => expect(fetchMock.calls.length).toBeGreaterThan(0))
+      const without = paths()
+      first.unmount()
+      fetchMock.restore()
+      files?.restore()
+
+      renderClassroom([{ path: CLASSROOM, body: achieved }])
+      await lessonHeading('Recorrido por la pantalla')
+      await waitFor(() => expect(paths()).toEqual(without))
+    })
+  })
 })

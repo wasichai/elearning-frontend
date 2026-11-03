@@ -12,6 +12,10 @@ export { WRAP } from '../../shared/buttons'
 // la columna de la lección: título, material y pie comparten borde, y caen sobre el texto de la lectura, centrada a 68ch en su iframe
 export const LESSON_COLUMN = 'mx-auto w-full max-w-[49.625rem] px-4 sm:px-6'
 
+// las filas del panel del temario: las unidades y lecciones, y los logros
+export const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus'
+export const UNIT_ROW = '-mx-2 flex min-h-13 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 hover:bg-surface-muted'
+
 // el avance como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina
 // con knots (y no más de MAX_KNOTS) la vista es el quipu en lugar de la línea: el progressbar y su texto no cambian
 export function ProgressBar({ progress, label, size = 'md', knots }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md'; knots?: KnotData[] }) {
