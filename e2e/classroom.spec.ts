@@ -373,3 +373,107 @@ for (const width of [360, 390, 1024, 1440, 1920])
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
       expect(overflow).toBeLessThanOrEqual(0)
     })
+
+// RF-AUL-08: los logros, en el panel del temario junto al avance
+const achievements = (page: Page) => page.getByRole('region', { name: 'Logros' })
+
+test('sin logros no hay sección; al completar la última lección de la unidad aparece el logro y enlaza a ella', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+  await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeVisible()
+  await expect(achievements(page)).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Marcar como completada' }).click()
+
+  const link = achievements(page).getByRole('link', { name: /^La liquidación.*Unidad completada/ })
+  await expect(link).toBeVisible()
+  await expect(link.locator('time')).toHaveAttribute('datetime', /^\d{4}-/)
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
+  await achievements(page)
+    .getByRole('link', { name: /^La liquidación/ })
+    .click()
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+})
+
+test('la evaluación aprobada y el certificado enlazan a su lección y a su certificado; a 390 px, desde la hoja del temario', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, courseComplete: true, certificateIssued: true })
+  await page.setViewportSize({ width: 390, height: 844 })
+  // la simulación no emite el certificado al cargar: se añade a la respuesta
+  const url = '**/api/lms/classroom/enrollments/mat-sgspe-1'
+  await page.goto('/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1')
+  const data = await page.evaluate(() => fetch('/api/lms/classroom/enrollments/mat-sgspe-1').then((response) => response.json()))
+  await page.route(url, (route) =>
+    route.fulfill({
+      json: { ...data, achievements: [...data.achievements, { kind: 'CERTIFICATE_ISSUED', at: '2026-11-05T09:00:00Z', ref: 'K7Q2-M9XW-4RTB' }] }
+    })
+  )
+  await page.reload()
+
+  await page.getByRole('button', { name: 'Temario' }).click()
+  await achievements(page)
+    .getByRole('link', { name: /^Evaluación final.*Evaluación aprobada/ })
+    .click()
+  await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1?leccion=lec-eva')
+  // la hoja se cerró al elegir
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Temario' }).click()
+  await achievements(page)
+    .getByRole('link', { name: /^Certificado emitido.*5 nov 2026/ })
+    .click()
+  await expect(page).toHaveURL('/certificados/K7Q2-M9XW-4RTB')
+})
+
+test('fecha nula, referencia sin resolver y tipo desconocido no rompen el aula', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  await page.goto('/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1')
+  const data = await page.evaluate(() => fetch('/api/lms/classroom/enrollments/mat-sgspe-1').then((response) => response.json()))
+  await page.route('**/api/lms/classroom/enrollments/mat-sgspe-1', (route) =>
+    route.fulfill({
+      json: {
+        ...data,
+        achievements: [
+          { kind: 'ASSESSMENT_PASSED', at: '2026-11-04T10:05:00Z', ref: 'eva-de-otra-version' },
+          { kind: 'NUEVO_TIPO', at: '2026-11-04T10:06:00Z', ref: 'x' },
+          { kind: 'UNIT_COMPLETED', at: null, ref: 'uni-sg-1' }
+        ]
+      }
+    })
+  )
+  await page.reload()
+
+  await expect(page.getByRole('heading', { level: 2, name: 'Qué es el SGSPE' })).toBeVisible()
+  const rows = achievements(page).getByRole('listitem')
+  await expect(rows).toHaveCount(2)
+  await expect(rows.first()).toHaveText(/Evaluación aprobada.*4 nov 2026/)
+  await expect(rows.first().getByRole('link')).toHaveCount(0)
+  await expect(rows.last().getByRole('link', { name: /^El SGSPE/ })).toBeVisible()
+  await expect(rows.last().locator('time')).toHaveCount(0)
+})
+
+test('los logros no añaden peticiones: las lecturas del aula son las mismas con ellos y sin ellos', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  const path = '/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1'
+  await page.goto(path)
+  await page.waitForLoadState('networkidle')
+  let reads: string[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'GET' && new URL(request.url()).pathname.startsWith('/api/')) reads.push(new URL(request.url()).pathname)
+  })
+  const load = async () => {
+    reads = []
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+    return [...reads].sort()
+  }
+  const without = await load()
+  await expect(achievements(page)).toHaveCount(0)
+
+  const data = await page.evaluate(() => fetch('/api/lms/classroom/enrollments/mat-sgspe-1').then((response) => response.json()))
+  await page.route('**/api/lms/classroom/enrollments/mat-sgspe-1', (route) =>
+    route.fulfill({ json: { ...data, achievements: [{ kind: 'UNIT_COMPLETED', at: '2026-11-03T15:20:00Z', ref: 'uni-sg-1' }] } })
+  )
+  const withThem = await load()
+  await expect(achievements(page)).toBeVisible()
+  expect(withThem).toEqual(without)
+})

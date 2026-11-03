@@ -115,6 +115,17 @@ const es = {
     unitEmpty: 'Esta unidad todavía no tiene lecciones.',
     finished: 'Este curso está finalizado: puedes repasarlo, pero ya no se registra avance ni se empiezan intentos.'
   },
+  // los logros de la matrícula (RF-AUL-08): hechos con fecha, sin puntos ni medallas
+  achievements: {
+    title: 'Logros',
+    count_one: '{{count}} logro',
+    count_other: '{{count}} logros',
+    kind: {
+      UNIT_COMPLETED: 'Unidad completada',
+      ASSESSMENT_PASSED: 'Evaluación aprobada',
+      CERTIFICATE_ISSUED: 'Certificado emitido'
+    }
+  },
   // el marco del curso: su ruta, sus pestañas y sus cifras
   course: {
     breadcrumbs: 'Ruta',
@@ -635,6 +646,16 @@ const en: typeof es = {
     finished: 'This course is finished: you can review it, but progress is no longer recorded and no new attempts can be started.'
   },
   // the course frame: its path, tabs and figures
+  achievements: {
+    title: 'Achievements',
+    count_one: '{{count}} achievement',
+    count_other: '{{count}} achievements',
+    kind: {
+      UNIT_COMPLETED: 'Unit completed',
+      ASSESSMENT_PASSED: 'Assessment passed',
+      CERTIFICATE_ISSUED: 'Certificate issued'
+    }
+  },
   course: {
     breadcrumbs: 'Breadcrumb',
     sections: 'Course sections',

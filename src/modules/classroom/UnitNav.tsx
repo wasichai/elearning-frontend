@@ -5,16 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
 import { lessonIcon } from '../../shared/lessonIcon'
+import { Achievements } from './Achievements'
 import { isDone, type Classroom, type Lesson, type Unit } from './contract'
 import { CourseFigures } from './CourseFrame'
-import { OfferingDates, ProgressBar, useOpenLabel } from './parts'
+import { OfferingDates, ProgressBar, ROW_FOCUS, UNIT_ROW, useOpenLabel } from './parts'
 import { courseKnots, Knot, knotOf } from './Quipu'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
-const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus'
-const UNIT_ROW = '-mx-2 flex min-h-13 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 hover:bg-surface-muted'
-
-// el temario: el resumen del curso (su avance y sus fechas) y las unidades con sus lecciones, de las que solo la actual se abre por sí sola.
+// el temario: el resumen del curso (su avance, sus fechas y sus logros) y las unidades con sus lecciones, de las que solo la actual se abre por sí sola.
 // en escritorio va en el panel lateral; en el móvil, en una hoja inferior. quien lo monta dice qué hacer al elegir una lección
 export function UnitNav({
   classroom,
@@ -35,6 +33,7 @@ export function UnitNav({
         <CourseFigures classroom={classroom} lessons={false} stacked />
         <OfferingDates offering={classroom.offering} />
       </div>
+      <Achievements classroom={classroom} units={units} onNavigate={onNavigate} />
       <nav aria-label={t('classroom.units')} className="border-t border-border">
         <ol className="flex flex-col divide-y divide-border">
           {units.map((unit) => (
