@@ -65,6 +65,9 @@ export const newVersionSchema = z.object({ id: z.string().min(1), number: z.numb
 // las versiones de un curso por la API de registros de Wasichai: solo importa si hay alguna
 export const versionRecordPageSchema = z.object({ content: z.array(z.object({ id: z.string().min(1) })) })
 
+// vacía es sin ninguna lección, tenga o no unidades: no se puede enviar a revisión
+export const hasLessons = (version: { units: { lessons: unknown[] }[] }) => version.units.some((unit) => unit.lessons.length > 0)
+
 export type VersionStatus = (typeof VERSION_STATUSES)[number]
 export type StudioVersion = z.infer<typeof studioVersionSchema>
 export type StudioVersionDetail = z.infer<typeof studioVersionDetailSchema>

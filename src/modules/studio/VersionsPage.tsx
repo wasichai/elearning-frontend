@@ -1,5 +1,6 @@
 import { EmptyState, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
@@ -172,11 +173,12 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
   const { t, i18n } = useTranslation('studio')
   const links = useWasichaiLinks()
   const submit = useSubmitVersion(version.id)
+  const home = useRef<HTMLElement>(null)
   const locale = i18n.language
   const headingId = `version-${version.id}`
   const name = { course: version.course.title, number: version.number }
   return (
-    <article aria-labelledby={headingId} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4">
+    <article ref={home} tabIndex={-1} aria-labelledby={headingId} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 outline-none">
       <div className="flex min-w-0 flex-col gap-1.5">
         <h3 id={headingId} className="text-base font-semibold text-ink">
           <Link
@@ -200,9 +202,14 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
           {submit.isSuccess ? t('version.submitted') : ''}
         </p>
       </div>
-      {version.status === 'BORRADOR' ? (
-        <SubmitVersionButton version={version} submit={submit} variant={primary ? 'primary' : 'secondary'} ariaLabel={t('versions.submitLabel', name)} />
-      ) : null}
+      <SubmitVersionButton
+        version={version}
+        submit={submit}
+        variant={primary ? 'primary' : 'secondary'}
+        ariaLabel={t('versions.submitLabel', name)}
+        offered={version.status === 'BORRADOR'}
+        focusHome={home}
+      />
     </article>
   )
 }

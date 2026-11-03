@@ -14,9 +14,10 @@ const COURSE_RECORDS = '/api/objects/curso/records'
 // lo que necesitan «Nuevo curso» y «Añadir una unidad», de la API de registros y metadatos de Wasichai
 const VERSION_RECORDS = '/api/objects/version_curso/records'
 const UNIT_RECORDS = '/api/objects/unidad/records'
+const LESSON_RECORDS = '/api/objects/leccion/records'
 const COURSE_DEFINITION = '/api/metadata/objects/curso'
 const UNIT_DEFINITION = '/api/metadata/objects/unidad'
-const RECORD_APIS = [COURSE_RECORDS, VERSION_RECORDS, UNIT_RECORDS, COURSE_DEFINITION, UNIT_DEFINITION]
+const RECORD_APIS = [COURSE_RECORDS, VERSION_RECORDS, UNIT_RECORDS, LESSON_RECORDS, COURSE_DEFINITION, UNIT_DEFINITION]
 
 // lo que atiende esta simulación: el estudio y la lista de cursos del formulario de importación
 export const isStudio = (url: URL) => url.pathname.startsWith(STUDIO) || RECORD_APIS.includes(url.pathname)
@@ -271,6 +272,22 @@ function simulateRecords(state: StudioState, method: string, url: URL, body: unk
     version.units.push({ id, order: attributes.orden, title: attributes.titulo, lessons: [] })
     return { status: 201, body: { id, createdAt: null, updatedAt: null, attributes } }
   }
+  if (method === 'POST' && url.pathname === LESSON_RECORDS) {
+    const attributes = (body as { attributes: { orden: number; titulo: string; tipo: string; unidad: string } }).attributes
+    const unit = state.versions.flatMap((version) => version.units).find((candidate) => candidate.id === attributes.unidad)
+    if (!unit) return { status: 404, body: problem(404, 'Unidad no encontrada') }
+    const id = `l-${unit.id}-${unit.lessons.length + 1}`
+    unit.lessons.push({
+      id,
+      order: attributes.orden,
+      title: attributes.titulo,
+      type: attributes.tipo,
+      sourceRef: null,
+      hasAssessment: false,
+      resources: 0
+    } as Lesson)
+    return { status: 201, body: { id, createdAt: null, updatedAt: null, attributes } }
+  }
   return undefined
 }
 
@@ -291,6 +308,8 @@ export function simulateStudio(state: StudioState, method: string, url: URL, bod
   if (method === 'GET' && versionMatch[2] === 'diff') return { status: 200, body: diffOf(state, version) }
   if (method === 'POST' && versionMatch[2] === 'submit') {
     if (version.status !== 'BORRADOR') return { status: 409, body: problem(409, 'Solo se envía a revisión un borrador') }
+    // lo que hará el servidor (aún lo acepta con 200): el mismo código que arriba, y la interfaz no se fía de él ni de su detail
+    if (version.units.every((unit) => unit.lessons.length === 0)) return { status: 409, body: problem(409, 'A version without lessons cannot be submitted') }
     version.status = 'EN_REVISION'
     version.updatedAt = new Date().toISOString()
     return { status: 200, body: summary(version) }

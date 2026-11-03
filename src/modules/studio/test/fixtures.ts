@@ -150,6 +150,15 @@ export const firstDraftDetail = {
   units: []
 }
 
+// un borrador con unidades y sin ninguna lección: tampoco se puede enviar
+export const noLessonsDetail = {
+  ...firstDraftDetail,
+  units: [
+    { id: 'u-vacia-2', order: 2, title: 'Pagos', lessons: [] },
+    { id: 'u-vacia-1', order: 1, title: 'Primeros pasos', lessons: [] }
+  ]
+}
+
 const objectField = (name: string, label: string, type: string, required = false, position = 0, relationTarget: string | null = null) => ({
   id: `f-${name}`,
   name,
@@ -166,7 +175,11 @@ const objectField = (name: string, label: string, type: string, required = false
   editable: true
 })
 
-const objectDefinition = (name: string, label: string, fields: ReturnType<typeof objectField>[]) => ({
+const objectDefinition = (
+  name: string,
+  label: string,
+  fields: (Omit<ReturnType<typeof objectField>, 'defaultValue' | 'enumOptions'> & { defaultValue: string | null; enumOptions: string[] | null })[]
+) => ({
   id: `o-${name}`,
   name,
   label,
@@ -193,4 +206,18 @@ export const unitDefinition = objectDefinition('unidad', 'Unidad', [
   objectField('descripcion', 'Descripción', 'LONG_TEXT', false, 2),
   objectField('referencia_fuente', 'Fuente', 'TEXT', false, 3),
   objectField('version_curso', 'Versión del curso', 'RELATION', true, 4, 'version_curso')
+])
+
+export const lessonDefinition = objectDefinition('leccion', 'Lección', [
+  objectField('orden', 'Orden', 'INTEGER', true, 0),
+  objectField('titulo', 'Título', 'TEXT', true, 1),
+  {
+    ...objectField('tipo', 'Tipo', 'ENUM', true, 2),
+    defaultValue: 'LECTURA',
+    enumOptions: ['LECTURA', 'VIDEO', 'PRESENTACION', 'LABORATORIO', 'EVALUACION', 'SESION']
+  },
+  objectField('duracion_minutos', 'Duración en minutos', 'INTEGER', false, 3),
+  objectField('resumen', 'Resumen', 'LONG_TEXT', false, 4),
+  objectField('referencia_fuente', 'Fuente', 'TEXT', false, 5),
+  objectField('unidad', 'Unidad', 'RELATION', true, 6, 'unidad')
 ])
