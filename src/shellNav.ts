@@ -1,5 +1,6 @@
-import { CORE_MODULE_ID, CORE_ROUTE_PATHS, type CallerPermissions, type ResolvedNavItem, type ShellNav } from '@wasichai/core'
+import { CORE_MODULE_ID, CORE_ROUTE_PATHS, type CallerPermissions, type HomeRoute, type ResolvedNavItem, type ShellNav } from '@wasichai/core'
 import { matchPath } from 'react-router'
+import { CLASSROOM_ROUTES } from './modules/classroom/routes'
 
 // la sección de administración es un estado del menú (issue #141, ADR-0005 del backend): una sola app, un solo router y
 // ninguna URL nueva. el servidor decide igual (403): esto solo evita ofrecer lo que no le sirve a quien entró
@@ -26,3 +27,7 @@ export const shellNav: ShellNav = (groups, { pathname, permissions }) => {
   const inSection = canAdminister(permissions) && isCoreRoute(pathname)
   return groups.map((group) => ({ ...group, items: group.items.filter((item) => isCoreItem(item) === inSection) })).filter((group) => group.items.length > 0)
 }
+
+// el destino de «Inicio» (issue #142): quien no administra aterriza en «Mis cursos»; quien administra conserva el panel de core.
+// core solo la llama con los permisos ya en la mano: mientras cargan muestra «Cargando» y, si fallan, abre su panel
+export const homeRoute: HomeRoute = (permissions) => (canAdminister(permissions) ? null : CLASSROOM_ROUTES.enrollments)

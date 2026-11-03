@@ -121,8 +121,9 @@ No se parchean aquí (CLAUDE.md, regla 7); se piden en `wasichai-ui` con este pr
 | W10 | El cajón móvil del shell funciona (Esc, foco atrapado y devuelto), pero es un `aside` sin `role="dialog"` ni nombre                 | Un lector de pantalla no anuncia que se abrió un diálogo                       |
 | W11 | `ConfirmDialog` y `ReasonDialog` no devuelven el foco al cerrarse: Radix lo devuelve a un trigger que no tienen                     | `ReturnFocus` en `src/shared`, hasta que `@wasichai/ui` lo resuelva            |
 | W12 | «Auditoría» no trae icono en el menú; los títulos de grupo del menú van en mayúsculas                                               | Se usan tal cual                                                               |
-| W13 | `/` y `/login` son de core: `/` da a cada perfil el lema «Plataforma de aplicaciones geoespaciales configurables» y «Objetos: 0», sin camino a su trabajo; el login propone el correo de la semilla en desarrollo | Lo trata #142 |
+| W13 | **Resuelta en parte con `homeRoute` de 1.6.0 (#142).** Quien no administra aterriza en «Mis cursos» y no monta el panel de core. Ese panel, con el lema «Plataforma de aplicaciones geoespaciales configurables», sigue en `/` para quien administra y, con `GET /auth/me/permissions` en error, para todos: core no llama a `homeRoute` sin permisos | Con error, una persona ve el panel, sin bucle y con «Mis cursos» en el menú. El login propone el correo de la semilla solo en desarrollo (`env.DEV`) |
 | W14 | El formulario de registros de core no admite valores iniciales, y `version_curso` exige que `autor_id` sea el UUID de quien crea, que ninguna pantalla muestra | Por eso el estudio no enlaza a `links.newRecord('version_curso')`: una primera versión solo llega importando (#141). Pide cambio en `@wasichai/core` o en el backend |
+| W15 | «Inicio» es un enlace fijo del shell: sin una opción para ocultarlo o renombrarlo, quien no administra tiene en `/mis-cursos` dos entradas a la misma pantalla, ambas con `aria-current` | Dos ítems marcados en «Mis cursos»; decidir si se pide en `@wasichai/core` (#142) |
 
 ## Estado tras el rediseño
 
@@ -138,8 +139,8 @@ Comprobado el 3 de noviembre de 2026 en el código y en el navegador, no en los 
 | A3  | Los encabezados están resueltos; `input type=date` sigue con el formato del navegador (también `mm/dd/yyyy` en una interfaz en español) |
 | E6  | El título de la lección y el `h1` del documento se repiten si el documento empieza por el mismo título: es contenido del autor, y su HTML no se reescribe |
 | T5  | Las entradas del LMS llevan icono; «Auditoría», de core, no (W12)                                                                   |
-| T6  | El lema ya no sale en el menú ni en el login, pero sí en `/`, que es de core (W13)                                                  |
-| W2–W14 | Limitaciones de `@wasichai/*`, salvo W7, ya resuelta: no se parchean aquí                                                                               |
+| T6  | El lema ya no sale en el menú ni en el login; en `/`, solo para quien administra o con los permisos en error (W13)                                                  |
+| W2–W15 | Limitaciones de `@wasichai/*`, salvo W7, ya resuelta: no se parchean aquí                                                                               |
 
 **Accesibilidad automática.** axe-core 4.14 con `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa` y `wcag22aa`, en los escenarios de `e2e/visual` a 390 y 1440 px, en claro, oscuro y modo lectura. Dentro de `main` y de los diálogos no quedan infracciones; fuera, solo W8. Es evidencia automática: axe no comprueba la mayoría de los criterios de WCAG y no entra en el `iframe` aislado de la lectura, así que esto no afirma que se cumpla WCAG 2.2 AA.
 

@@ -27,3 +27,26 @@ test('un estudiante que escribe /admin/users recibe 403 y su menú no cambia', a
   await expect(menu(page).getByRole('link', { name: 'Mis cursos', exact: true })).toBeVisible()
   for (const name of ['Administración', 'Objetos', 'Usuarios']) await expect(menu(page).getByRole('link', { name, exact: true })).toHaveCount(0)
 })
+
+// el destino de «Inicio» (#142), con los permisos que responde el backend de verdad
+test('un estudiante aterriza en «Mis cursos» sin pedir los datos del panel de core, también desde /', async ({ page, request }) => {
+  const panelData: string[] = []
+  page.on('request', (sent) => {
+    if (new URL(sent.url()).pathname === '/api/objects') panelData.push(sent.url())
+  })
+  await signIn(page, await newStudent(request))
+  await expect(page).toHaveURL('/mis-cursos')
+  await page.goto('/')
+  await expect(page).toHaveURL('/mis-cursos')
+  await expect(page.getByRole('heading', { level: 1, name: 'Mis cursos' })).toBeVisible()
+  expect(panelData).toEqual([])
+})
+
+test('quien administra conserva el panel de core en /', async ({ page }) => {
+  await signIn(page, ADMIN)
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('heading', { level: 1, name: 'Inicio' })).toBeVisible()
+  await page.reload()
+  await expect(page).toHaveURL('/')
+  await expect(menu(page).getByRole('link', { name: 'Administración', exact: true })).toBeVisible()
+})

@@ -1,10 +1,11 @@
 import { CORE_ROUTE_PATHS, coreModule, createRegistry, type CallerPermissions, type ResolvedNavGroup } from '@wasichai/core'
 import { describe, expect, it } from 'vitest'
 import { modules } from './modules'
-import { canAdminister, isCoreRoute, shellNav } from './shellNav'
+import { canAdminister, homeRoute, isCoreRoute, shellNav } from './shellNav'
 
 // los grupos de verdad, los que WasichaiApp pasa a shellNav: si core cambia cómo nombra sus entradas, esto falla aquí
-const { navGroups } = createRegistry([coreModule, ...modules])
+const registry = createRegistry([coreModule, ...modules])
+const { navGroups } = registry
 
 const ACCOUNT_OF = {
   estudiante: { admin: false, capabilities: [], objects: { curso: ['READ'], matricula: ['READ', 'CREATE'] } },
@@ -120,5 +121,23 @@ describe('shellNav', () => {
     const before = navGroups.map((group) => group.items.length)
     shellNav(navGroups, { pathname: '/admin/users', permissions: ADMIN })
     expect(navGroups.map((group) => group.items.length)).toEqual(before)
+  })
+})
+
+describe('homeRoute', () => {
+  it.each(Object.entries(ACCOUNT_OF))('sin permiso de administrar, %s aterriza en «Mis cursos»', (_, permissions) => {
+    const route = registry.routes.find((candidate) => candidate.key === homeRoute(permissions))
+    expect(route?.path).toBe('/mis-cursos')
+  })
+
+  it.each([
+    ['admin', ADMIN],
+    ['MANAGE_ORGANIZATION', MANAGER]
+  ])('con permiso (%s) conserva el panel de core', (_, permissions) => {
+    expect(homeRoute(permissions)).toBeNull()
+  })
+
+  it('una respuesta sin capacidades no da el panel', () => {
+    expect(homeRoute({ admin: false, objects: {} })).not.toBeNull()
   })
 })

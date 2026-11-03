@@ -166,9 +166,9 @@ test.describe('con permiso', () => {
 })
 
 test('los ítems del menú miden 44 px y el actual se marca con algo más que el color', async ({ page }) => {
-  await fakeApi(page, { signedIn: true })
-  await page.goto('/mis-cursos')
-  const current = menu(page).getByRole('link', { name: 'Mis cursos', exact: true })
+  await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto('/estudio')
+  const current = menu(page).getByRole('link', { name: 'Mis versiones', exact: true })
   await expect(current).toHaveAttribute('aria-current', 'page')
   const home = menu(page).getByRole('link', { name: 'Inicio', exact: true })
   await expect(home).not.toHaveAttribute('aria-current', 'page')
