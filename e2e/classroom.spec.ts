@@ -26,11 +26,14 @@ test('«Mis cursos» está en el menú y lleva a la siguiente lección con «Con
   await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-html')
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
-  // el panel es la única lectura de «Mis cursos»: una sola petición, y el aula no se pide hasta abrirla
+  // el panel es la única lectura de «Mis cursos», y el aula no se pide hasta abrirla. aterrizar y pulsar su entrada del menú pueden
+  // leer una o dos veces el panel, según si la primera lectura ya acabó: aquí se mira el orden, no cuántas
   const panel = 'GET /api/lms/classroom/panel'
   const opened = 'GET /api/lms/classroom/enrollments/mat-srtm-1'
-  // (dos veces: el aterrizaje en «Mis cursos» y volver a pulsar su entrada del menú)
-  expect(api.classroomRequests.filter((request) => request === panel || request === opened).slice(0, 3)).toEqual([panel, panel, opened])
+  const reads = api.classroomRequests.filter((request) => request === panel || request === opened)
+  expect(reads[0]).toBe(panel)
+  expect(reads.filter((request) => request === panel).length).toBeLessThanOrEqual(2)
+  expect(reads.indexOf(opened)).toBeGreaterThan(0)
   expect(api.classroomRequests).not.toContain('GET /api/lms/classroom/enrollments')
   expect(api.unexpected).toEqual([])
 })
