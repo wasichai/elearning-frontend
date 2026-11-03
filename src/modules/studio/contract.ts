@@ -62,6 +62,9 @@ export const studioVersionDetailSchema = studioVersionSchema.extend({
 // lo que responde la versión nueva: basta su identidad para abrirla (el servidor puede mandar el detalle entero)
 export const newVersionSchema = z.object({ id: z.string().min(1), number: z.number().int().positive(), status: z.enum(VERSION_STATUSES) })
 
+// las versiones de un curso por la API de registros de Wasichai: solo importa si hay alguna
+export const versionRecordPageSchema = z.object({ content: z.array(z.object({ id: z.string().min(1) })) })
+
 export type VersionStatus = (typeof VERSION_STATUSES)[number]
 export type StudioVersion = z.infer<typeof studioVersionSchema>
 export type StudioVersionDetail = z.infer<typeof studioVersionDetailSchema>

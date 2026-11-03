@@ -97,7 +97,8 @@ function Actions({ version }: { version: StudioVersionDetail }) {
             <Button asChild variant="secondary" className="min-h-11">
               <Link to={links.record(VERSION_OBJECT, version.id)}>{t('version.edit')}</Link>
             </Button>
-            <SubmitVersionButton version={version} submit={submit} variant="primary" />
+            {/* una versión vacía aún no tiene qué revisar: la primera acción es añadir contenido (Syllabus) */}
+            <SubmitVersionButton version={version} submit={submit} variant={version.units.length === 0 ? 'secondary' : 'primary'} />
           </>
         ) : (
           <NewVersionButton source={version} label={t('version.copy')} variant={finished ? 'primary' : 'secondary'} />
@@ -145,9 +146,27 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
   const links = useWasichaiLinks()
   const sorted = [...version.units].sort((a, b) => a.order - b.order)
   return (
-    <Section title={t('syllabus.title')}>
+    <Section
+      title={t('syllabus.title')}
+      action={
+        draft && sorted.length > 0 ? (
+          <Button asChild variant="secondary" className="min-h-11">
+            <Link to={links.to(STUDIO_ROUTES.newUnit, { id: version.id })}>{t('syllabus.addUnit')}</Link>
+          </Button>
+        ) : undefined
+      }
+    >
       {sorted.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t('syllabus.empty')}</p>
+        <div className="flex flex-col items-start gap-3">
+          <p className="max-w-prose text-sm text-ink-muted">{t(draft ? 'syllabus.emptyDraft' : 'syllabus.empty')}</p>
+          {/* lo que el servidor pone a la v1 vacía (#270): el curso no tiene duración ni modalidad */}
+          {draft && version.number === 1 ? <p className="max-w-prose text-sm text-ink-muted">{t('syllabus.firstDraftDefaults')}</p> : null}
+          {draft ? (
+            <Button asChild variant="primary" className="min-h-11">
+              <Link to={links.to(STUDIO_ROUTES.newUnit, { id: version.id })}>{t('syllabus.addFirstUnit')}</Link>
+            </Button>
+          ) : null}
+        </div>
       ) : (
         <ol className="flex flex-col gap-6">
           {sorted.map((unit: StudioUnit) => (

@@ -1,7 +1,8 @@
-import { EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { CordBanner } from '../../shared/CordBanner'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
@@ -14,8 +15,11 @@ import { ImportLink } from './ImportLink'
 import { NewCourseLink } from './NewCourseLink'
 import { VERSION_BADGE } from '../../shared/VersionStatusLine'
 import { useProblemText } from './parts'
+import { canCreateCourse, canReadCourses } from './permissions'
 import { STUDIO_ROUTES } from './routes'
 import { NewVersionButton, SubmitVersionButton } from './VersionActions'
+
+const COURSE_OBJECT = 'curso'
 
 // cuánto pide una versión a quien la escribe, de más a menos: un borrador con comentarios, un borrador, una que espera a otra
 // persona y una que ya terminó. lo demás conserva el orden del servidor (las más recientes primero)
@@ -69,7 +73,7 @@ export function VersionsPage() {
         subtitle={t('versions.subtitle')}
         actions={
           <>
-            <NewCourseLink />
+            <NewCourseLink variant={query.data?.length === 0 ? 'primary' : 'secondary'} />
             <ImportLink />
           </>
         }
@@ -91,13 +95,32 @@ export function VersionsPage() {
   )
 }
 
+// un curso no tiene dueño en el contrato y un curso sin versiones no sale en GET studio/versions: esta lista no puede decir cuáles son
+// «tuyos». la vuelta a uno es la lista de cursos de core, que dice lo que es, y el panel de su ficha (FirstDraftPanel)
+function CoursesHint() {
+  const { t } = useTranslation('studio')
+  const { permissions } = useAuth()
+  const links = useWasichaiLinks()
+  if (!canReadCourses(permissions)) return null
+  return (
+    <p className="flex max-w-prose flex-col items-start gap-1 text-sm text-ink-muted">
+      <span>{t('versions.coursesHint')}</span>
+      <Link to={links.records(COURSE_OBJECT)} className={TEXT_LINK}>
+        {t('versions.allCourses')}
+      </Link>
+    </p>
+  )
+}
+
 function VersionList({ versions }: { versions: StudioVersion[] }) {
   const { t } = useTranslation('studio')
+  const { permissions } = useAuth()
   if (versions.length === 0)
     return (
-      <EmptyState title={t('versions.empty')}>
-        <p>{t('versions.emptyHint')}</p>
-      </EmptyState>
+      <>
+        <EmptyState title={t('versions.empty')}>{canCreateCourse(permissions) ? <p>{t('versions.emptyHint')}</p> : null}</EmptyState>
+        <CoursesHint />
+      </>
     )
   const groups = groupByCourse(versions)
   const primary = firstAction(groups)
@@ -106,6 +129,7 @@ function VersionList({ versions }: { versions: StudioVersion[] }) {
       {groups.map((group) => (
         <CourseVersions key={group.course.id} group={group} primary={primary} />
       ))}
+      <CoursesHint />
     </div>
   )
 }

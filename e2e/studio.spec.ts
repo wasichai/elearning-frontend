@@ -20,7 +20,7 @@ test('un creador encuentra «Mis versiones» en el menú y envía su borrador a 
   await expect(page).toHaveURL('/estudio')
   await expect(page.getByRole('heading', { level: 1, name: 'Mis versiones' })).toBeVisible()
   await expect(page.getByRole('article')).toHaveCount(2)
-  await expect(page.getByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('href', '/data/objects/curso/records/new')
+  await expect(page.getByRole('link', { name: 'Nuevo curso' })).toHaveAttribute('href', '/estudio/cursos/nuevo')
   const published = page.getByRole('article').filter({ has: page.getByRole('heading', { name: 'Introducción al SGSPE — versión 1' }) })
   await expect(published).toContainText('Publicada')
   await expect(published).toContainText('1 comentario por atender')
@@ -203,4 +203,30 @@ test('la comparación no desborda a 360 con títulos muy largos y sus plegados s
   await summary.focus()
   await page.keyboard.press('Enter')
   await expect(folded).toBeVisible()
+})
+
+test('de «Nuevo curso» al primer borrador vacío, y de ahí a su primera unidad, sin salir del estudio', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'creator' })
+  await page.goto('/estudio')
+
+  await page.getByRole('link', { name: 'Nuevo curso' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Nuevo curso' })).toBeVisible()
+  await page.getByLabel(/Código/).fill('NUEVO-101')
+  await page.getByLabel(/Identificador/).fill('nuevo-101')
+  await page.getByLabel(/Título/).fill('Curso nuevo')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Curso nuevo' })).toBeVisible()
+  await expect(page).toHaveURL(/\/estudio\/versiones\/[^/]+$/)
+  await expect(page.getByText('Versión 1 · NUEVO-101')).toBeVisible()
+  await expect(page.getByText(/aún no tiene unidades/)).toBeVisible()
+
+  await page.getByRole('link', { name: 'Añadir la primera unidad' }).click()
+  await expect(page.getByLabel(/Orden/)).toHaveValue('1')
+  await page.getByLabel(/Título/).fill('Primeros pasos')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+
+  await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Primeros pasos' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Añadir la primera unidad' })).toHaveCount(0)
+  expect(api.unexpected).toEqual([])
 })

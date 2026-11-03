@@ -373,6 +373,74 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
 
 // la importación contra GitHub no se prueba aquí (sin red controlada ni orígenes configurados). lo que sí se comprueba sin
 // red: un origen fuera de la lista no se encola (403) y quien no crea versiones no importa
+// de «Nuevo curso» al borrador abierto, sin importar (front#161, elearning-backend#270): lo que el formulario pide de verdad, el borrador
+// vacío a nombre de la creadora, su primera unidad, y la vuelta a un curso sin versiones desde su ficha
+test('un creador llega de «Nuevo curso» a un primer borrador vacío y le añade su primera unidad', async ({ browser, baseURL, request }) => {
+  test.setTimeout(120_000)
+  const creatorApi = client(request, await token(request, CREATOR.email, CREATOR.password))
+  const creator = await browserFor(browser, baseURL, CREATOR)
+  const code = `NUEVO-${RUN}`
+  const title = `Curso nuevo ${RUN}`
+  try {
+    const { page } = creator
+    await page.goto('/estudio')
+    await page.getByRole('link', { name: 'Nuevo curso' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Nuevo curso' })).toBeVisible()
+    await page.getByLabel(/Código/).fill(code)
+    await page.getByLabel(/Identificador/).fill(`nuevo-${RUN}`)
+    await page.getByLabel(/Título/).fill(title)
+    await page.getByLabel(/Idioma/).fill('es')
+    await page.getByLabel(/Nivel/).click()
+    await page.getByRole('option', { name: 'INICIAL' }).click()
+    await page.getByRole('button', { name: 'Guardar' }).click()
+
+    await expect(page).toHaveURL(/\/estudio\/versiones\/[^/]+$/)
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+    await expect(page.getByText(`Versión 1 · ${code}`)).toBeVisible()
+    await expect(page.getByText(/aún no tiene unidades/)).toBeVisible()
+    await expect(page.getByText('Borrador', { exact: true }).first()).toBeVisible()
+    const draftId = new URL(page.url()).pathname.split('/').pop()!
+    const draft = await json<VersionDetail>(await creatorApi.get(`/api/lms/studio/versions/${draftId}`), 200, 'GET el borrador')
+    expect(draft.units).toEqual([])
+
+    // enviarla vacía: el servidor lo aceptaría, así que el diálogo avisa; aquí no se envía
+    await page.getByRole('button', { name: 'Enviar a revisión' }).click()
+    const dialog = page.getByRole('dialog', { name: '¿Enviar a revisión?' })
+    await expect(dialog).toContainText('aún no tiene unidades')
+    await dialog.getByRole('button', { name: 'Volver' }).click()
+
+    // la siguiente acción lleva a un formulario que no pregunta la versión
+    await page.getByRole('link', { name: 'Añadir la primera unidad' }).click()
+    await expect(page.getByLabel(/Orden/)).toHaveValue('1')
+    await expect(page.getByLabel(/Versión del curso/)).toHaveCount(0)
+    await page.getByLabel(/Título/).fill('Primeros pasos')
+    await page.getByRole('button', { name: 'Guardar' }).click()
+    await expect(page.getByRole('heading', { level: 3, name: 'Unidad 1. Primeros pasos' })).toBeVisible()
+
+    // el borrador ya está en «Mis versiones»
+    await page.getByRole('navigation', { name: 'Ruta' }).getByRole('link', { name: 'Mis versiones' }).click()
+    await expect(page.getByRole('heading', { level: 2, name: title })).toBeVisible()
+
+    // un curso guardado sin borrador: se recupera desde su ficha, una sola vez
+    const orphan = await json<{ id: string }>(
+      await creatorApi.post('/api/objects/curso/records', {
+        attributes: { codigo: `SUELTO-${RUN}`, slug: `suelto-${RUN}`, titulo: `Curso suelto ${RUN}`, idioma: 'es', nivel: 'INICIAL' }
+      }),
+      201,
+      'crear un curso sin versiones'
+    )
+    await page.goto(`/data/objects/curso/records/${orphan.id}`)
+    await page.getByRole('button', { name: 'Crear primer borrador' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: `Curso suelto ${RUN}` })).toBeVisible()
+    await expect(page.getByText(`Versión 1 · SUELTO-${RUN}`)).toBeVisible()
+    await page.goto(`/data/objects/curso/records/${orphan.id}`)
+    await expect(page.getByRole('heading', { name: /Historial/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Crear primer borrador' })).toHaveCount(0)
+  } finally {
+    await creator.context.close()
+  }
+})
+
 test('la importación rechaza un origen no permitido y a quien no puede importar, sin salir a la red', async ({ browser, baseURL, request }) => {
   const creatorApi = client(request, await token(request, CREATOR.email, CREATOR.password))
   const mine = await json<Version[]>(await creatorApi.get('/api/lms/studio/versions'), 200, 'GET studio/versions')

@@ -1,0 +1,52 @@
+import { DynamicForm, ErrorState, formError, LoadingState, useObjectDefinition, useSaveRecord, useWritePolicy, WritePolicyNotice } from '@wasichai/core'
+import type { FieldViolation, Form, RecordItem, RecordPayload } from '@wasichai/core'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+
+interface StudioRecordFormProps {
+  objectName: string
+  // solo estos campos, si se dan; los demás no se piden ni se validan
+  form?: Form
+  initial?: RecordItem
+  // lo que el estudio ya sabe y no pregunta
+  fixed?: Record<string, unknown>
+  onSaved: (created: RecordItem) => void
+  onCancel: () => void
+}
+
+// crear un registro dentro del estudio, con el formulario de metadatos de core y sus reglas: lo mismo que su pantalla de registro nuevo,
+// salvo adónde lleva al guardar. core solo sabe abrir el registro creado
+export function StudioRecordForm({ objectName, form, initial, fixed, onSaved, onCancel }: StudioRecordFormProps) {
+  const { t } = useTranslation('studio')
+  const definition = useObjectDefinition(objectName)
+  const save = useSaveRecord(objectName)
+  const policy = useWritePolicy(objectName)
+  const [error, setError] = useState<string | null>(null)
+  const [violations, setViolations] = useState<FieldViolation[]>([])
+  if (definition.isError && !definition.data) return <ErrorState error={definition.error} onRetry={() => void definition.refetch()} />
+  if (!definition.data) return <LoadingState label={t('newCourse.loading')} />
+  if (!policy.canCreate) return <WritePolicyNotice policy={policy} />
+  const submit = async (payload: RecordPayload, reason?: string) => {
+    setError(null)
+    setViolations([])
+    try {
+      onSaved(await save.mutateAsync({ payload: { ...payload, attributes: { ...payload.attributes, ...fixed } }, reason }))
+    } catch (cause) {
+      const refused = formError(cause)
+      setError(refused.message)
+      setViolations(refused.violations)
+    }
+  }
+  return (
+    <DynamicForm
+      definition={definition.data}
+      form={form}
+      record={initial}
+      submitting={save.isPending}
+      error={error}
+      violations={violations}
+      onCancel={onCancel}
+      onSubmit={(payload, reason) => void submit(payload, reason)}
+    />
+  )
+}

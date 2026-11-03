@@ -4,5 +4,7 @@ export const STUDIO_MODULE_ID = 'studio'
 export const STUDIO_ROUTES = {
   versions: `${STUDIO_MODULE_ID}:versions`,
   version: `${STUDIO_MODULE_ID}:version`,
-  import: `${STUDIO_MODULE_ID}:import`
+  import: `${STUDIO_MODULE_ID}:import`,
+  newCourse: `${STUDIO_MODULE_ID}:newCourse`,
+  newUnit: `${STUDIO_MODULE_ID}:newUnit`
 } as const

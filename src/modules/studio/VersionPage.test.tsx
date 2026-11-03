@@ -4,7 +4,17 @@ import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '
 import { Route, Routes } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioModule } from './module'
-import { createdVersion, draftDetail, draftDiff, draftVersion, problem, publishedDetail, publishedDiff, publishedVersion } from './test/fixtures'
+import {
+  createdVersion,
+  draftDetail,
+  draftDiff,
+  draftVersion,
+  firstDraftDetail,
+  problem,
+  publishedDetail,
+  publishedDiff,
+  publishedVersion
+} from './test/fixtures'
 import { VersionPage } from './VersionPage'
 
 // una versión propia (ADR-0018): su temario, editarla en Wasichai si es borrador, enviarla a revisión, ver comentarios y
@@ -279,5 +289,66 @@ describe('VersionPage: errores e idioma', () => {
     expect(screen.getByText('Requested changes')).toBeInTheDocument()
     expect(screen.getByText('Reading · 1 resource')).toBeInTheDocument()
     expect(await within(screen.getByRole('region', { name: 'Changes' })).findByText(/This is the first version of this course/)).toBeInTheDocument()
+  })
+
+  describe('un borrador sin unidades', () => {
+    const emptyRoutes: MockRoute[] = [
+      { path: detailPath(firstDraftDetail.id), body: firstDraftDetail },
+      { path: diffPath(firstDraftDetail.id), body: { baseVersion: null, units: [] } }
+    ]
+    const renderEmpty = () => {
+      fetchMock = mockFetch(emptyRoutes)
+      return renderWithProviders(
+        <Routes>
+          <Route path="/estudio/versiones/:id" element={<VersionPage />} />
+        </Routes>,
+        { modules: [studioModule()], route: `/estudio/versiones/${firstDraftDetail.id}` }
+      )
+    }
+
+    it('la siguiente acción es añadir la primera unidad, no enviarla, y dice con qué valores se creó', async () => {
+      renderEmpty()
+
+      const add = await screen.findByRole('link', { name: 'Añadir la primera unidad' })
+      expect(add).toHaveAttribute('href', `/estudio/versiones/${firstDraftDetail.id}/unidades/nueva`)
+      expect(add).toHaveAttribute('data-variant', 'primary')
+      expect(screen.getByRole('button', { name: 'Enviar a revisión' })).toHaveAttribute('data-variant', 'secondary')
+      expect(screen.getByText(/modalidad asíncrona/)).toBeInTheDocument()
+    })
+
+    it('enviarla vacía avisa de lo que pasa: el servidor la acepta y deja de poder editarse', async () => {
+      const user = userEvent.setup()
+      renderEmpty()
+
+      await user.click(await screen.findByRole('button', { name: 'Enviar a revisión' }))
+
+      expect(await screen.findByRole('dialog', { name: '¿Enviar a revisión?' })).toHaveTextContent('aún no tiene unidades')
+    })
+
+    it('con unidades, enviar sigue siendo la primera acción y añadir otra es secundaria', async () => {
+      fetchMock = mockFetch([{ path: detailPath(draftDetail.id), body: draftDetail }, ANY_DIFF])
+      renderWithProviders(
+        <Routes>
+          <Route path="/estudio/versiones/:id" element={<VersionPage />} />
+        </Routes>,
+        { modules: [studioModule()], route: `/estudio/versiones/${draftDetail.id}` }
+      )
+
+      expect(await screen.findByRole('button', { name: 'Enviar a revisión' })).toHaveAttribute('data-variant', 'primary')
+      expect(screen.getByRole('link', { name: 'Añadir una unidad' })).toHaveAttribute('data-variant', 'secondary')
+    })
+
+    it('una versión que no es borrador no ofrece añadir unidades', async () => {
+      fetchMock = mockFetch([{ path: detailPath(publishedDetail.id), body: publishedDetail }, ANY_DIFF])
+      renderWithProviders(
+        <Routes>
+          <Route path="/estudio/versiones/:id" element={<VersionPage />} />
+        </Routes>,
+        { modules: [studioModule()], route: `/estudio/versiones/${publishedDetail.id}` }
+      )
+
+      expect(await screen.findByText('Solo lectura')).toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /^Añadir/ })).not.toBeInTheDocument()
+    })
   })
 })
