@@ -135,6 +135,11 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+      # el borrador de lecciones renderiza su AsciiDoc a HTML con Asciidoctor (ADR-0018 §7 del backend), la misma versión fija de su CI
+      - name: Asciidoctor
+        run: |
+          sudo gem install --no-document asciidoctor:2.0.26
+          asciidoctor --version
       # RF-MED-04 (e2e/real/classroom-without-ai.spec.ts): la canalización de IA sin proveedor, con el doble determinista. su
       # fuente es la de la unidad de demostración del backend, en el mismo commit que se compila, el único origen permitido
       - name: Fuente de la canalización de IA
