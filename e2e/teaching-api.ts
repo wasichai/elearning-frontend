@@ -17,6 +17,8 @@ export type Reply = { status: number; body: unknown }
 
 export const TEACHING = '/api/lms/teaching/'
 const OFFERINGS = '/api/lms/teaching/offerings'
+const PANEL = '/api/lms/teaching/panel'
+const QUEUE_PREVIEW = 5
 
 export interface TeachingOptions {
   // sin ninguna edición asignada
@@ -161,9 +163,28 @@ function simulateSession(state: TeachingState, method: string, id: string, actio
   return undefined
 }
 
+// una página como la del servidor: size vale 25 si falta y se acota a 1–200, page a ≥ 0
+export function onePage<T>(list: T[], url: URL): T[] {
+  const size = Math.min(200, Math.max(1, Number(url.searchParams.get('size') ?? 25)))
+  const page = Math.max(0, Number(url.searchParams.get('page') ?? 0))
+  return list.slice(page * size, (page + 1) * size)
+}
+
+// las canceladas fuera; las ya terminadas las quita la pantalla con su reloj, que es el que fijan las pruebas (el de la simulación es el real)
+function panelOf(state: TeachingState) {
+  return state.offerings.map((item) => ({
+    ...item,
+    upcomingSessions: (state.sessions[item.code] ?? [])
+      .filter((session) => session.status !== 'CANCELADA')
+      .sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+    oldestPending: (state.queues[item.code] ?? []).slice(0, QUEUE_PREVIEW)
+  }))
+}
+
 export function simulateTeaching(state: TeachingState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!url.pathname.startsWith(TEACHING)) return undefined
   if (method === 'GET' && url.pathname === OFFERINGS) return { status: 200, body: state.offerings }
+  if (method === 'GET' && url.pathname === PANEL) return { status: 200, body: onePage(panelOf(state), url) }
   const [code, rest] = url.pathname
     .slice(OFFERINGS.length + 1)
     .split(/\/(.*)/s)

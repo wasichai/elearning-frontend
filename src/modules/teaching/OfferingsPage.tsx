@@ -1,5 +1,4 @@
-import { useQueries } from '@tanstack/react-query'
-import { EmptyState, useApiClient, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CalendarDays, ClipboardCheck, Users, type LucideIcon } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
@@ -12,54 +11,54 @@ import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader, Section, Skeleton, Stat, StatList } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { upcomingSessions } from '../../shared/sessions'
-import { offeringSessionsQuery, queueQuery, useOfferings } from './api'
-import type { TeachingOffering } from './contract'
+import { useOfferings, useTeachingPanel } from './api'
+import type { TeachingOffering, TeachingPanelItem } from './contract'
 import { GradingTray } from './GradingTray'
-import { byWork, panelFigures, panelPlan } from './panel'
+import { byWork, isLive, panelFigures } from './panel'
 import { OfferingStatusBadge, useProblemText } from './parts'
 import { CLASSROOM_ENROLLMENTS_ROUTE, TEACHING_ROUTES } from './routes'
 import { SessionAgenda } from './SessionAgenda'
 
 const NO_OFFERINGS: TeachingOffering[] = []
+const NO_ITEMS: TeachingPanelItem[] = []
 
 // «Mis ediciones», el panel docente: las cifras de lo asignado, lo que espera corrección, lo que viene en la agenda y una tarjeta
-// por edición. las cifras salen de la lista; la bandeja y la agenda, de una consulta por edición que falla por su cuenta
+// por edición. todo sale de una sola lectura, el panel, que ya trae las ediciones. si falla, solo se pide la lista de ediciones: las
+// cifras y las tarjetas siguen a la vista y la bandeja y la agenda dicen que no pudieron, sin datos a medias. solo si tampoco llega, la
+// pantalla entera explica el problema
 export function OfferingsPage() {
   const { t } = useTranslation('teaching')
-  const client = useApiClient()
-  const query = useOfferings()
-  const offerings = useMemo(() => byWork(query.data ?? NO_OFFERINGS), [query.data])
-  const plan = useMemo(() => panelPlan(offerings), [offerings])
-  // las mismas consultas (y caché) que la cola y las sesiones de cada edición
-  const queues = useQueries({ queries: plan.grading.map((offering) => queueQuery(client, offering.code)) })
-  const sessionLists = useQueries({ queries: plan.agenda.map((offering) => offeringSessionsQuery(client, offering.code)) })
-  useRefetchOnRevisit(() => {
-    void query.refetch()
-    ;[...queues, ...sessionLists].forEach((list) => void list.refetch())
-  })
-  const { title, description } = useProblemText(query.error, 'offerings')
+  const panel = useTeachingPanel()
+  const list = useOfferings({ enabled: panel.isError })
+  const read = panel.isError ? undefined : panel.data
+  const listed: TeachingOffering[] | undefined = read ?? list.data
+  const offerings = useMemo(() => byWork(listed ?? NO_OFFERINGS), [listed])
+  const items = useMemo(() => byWork(read ?? NO_ITEMS), [read])
+  const reload = () => {
+    void panel.refetch()
+    if (panel.isError) void list.refetch()
+  }
+  useRefetchOnRevisit(reload)
+  const retryPanel = () => void panel.refetch()
+  const { title, description } = useProblemText(list.error, 'offerings')
   const now = Date.now()
-  // cuántas sesiones vienen, solo de las ediciones cuya lista se leyó: de las demás no se da cifra
-  const upcoming = new Map(
-    plan.agenda.flatMap((offering, index) => {
-      const data = sessionLists[index]?.data
-      return data ? [[offering.code, upcomingSessions(data, now).length] as const] : []
-    })
-  )
+  // cuántas sesiones vienen, solo de las ediciones vivas y con el panel leído: de las demás no se da cifra
+  const upcoming = new Map(items.filter(isLive).map((item) => [item.code, upcomingSessions(item.upcomingSessions, now).length] as const))
+  const figures = panelFigures(offerings)
   const hasOfferings = offerings.length > 0
   return (
     <>
       <ScreenHeader title={t('offerings.title')} subtitle={t('offerings.subtitle')} width="wide">
-        {hasOfferings ? <Figures offerings={offerings} /> : null}
+        {hasOfferings ? <Figures figures={figures} /> : null}
       </ScreenHeader>
       <ScreenBody width="wide">
-        {query.isError ? (
+        {panel.isError && list.isError ? (
           <ProblemState title={title} description={description}>
-            <Button variant="secondary" className="min-h-11" onClick={() => void query.refetch()}>
+            <Button variant="secondary" className="min-h-11" onClick={reload}>
               {t('problem.retry')}
             </Button>
           </ProblemState>
-        ) : !query.data ? (
+        ) : !listed ? (
           <PanelSkeleton />
         ) : !hasOfferings ? (
           <NoOfferings />
@@ -67,10 +66,11 @@ export function OfferingsPage() {
           // el orden del documento es el del móvil (bandeja, agenda, ediciones); desde lg, la agenda pasa al riel
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-[auto_1fr] lg:gap-x-10">
             <div className="flex min-w-0 flex-col lg:col-start-1 lg:row-start-1">
-              <GradingTray offerings={plan.grading} queries={queues} capped={plan.gradingCapped} />
+              {/* sin nada por corregir o sin ediciones vivas, el bloque no tendría nada que leer: no hay de qué avisar */}
+              <GradingTray items={items} loading={panel.isPending} error={panel.isError && figures.pending > 0 ? panel.error : null} onRetry={retryPanel} />
             </div>
             <aside aria-label={t('panel.rail')} className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:border-border lg:pl-8">
-              <SessionAgenda offerings={plan.agenda} queries={sessionLists} capped={plan.agendaCapped} />
+              <SessionAgenda items={items} loading={panel.isPending} failed={panel.isError && offerings.some(isLive)} onRetry={retryPanel} />
             </aside>
             <div className="min-w-0 lg:col-start-1 lg:row-start-2">
               <Section title={t('panel.offerings')}>
@@ -90,10 +90,9 @@ export function OfferingsPage() {
   )
 }
 
-function Figures({ offerings }: { offerings: TeachingOffering[] }) {
+function Figures({ figures }: { figures: ReturnType<typeof panelFigures> }) {
   const { t, i18n } = useTranslation('teaching')
   const format = (value: number) => formatNumber(value, i18n.language)
-  const figures = panelFigures(offerings)
   return (
     <StatList className="pb-5">
       <Stat label={t('panel.figures.offerings')} value={format(figures.offerings)} />
@@ -153,7 +152,7 @@ function Access({ to, icon: Icon, children }: { to: string; icon?: LucideIcon; c
 }
 
 // una edición es un objeto: su tarjeta, con su banda, sus datos y sus tres accesos con la cifra de cada uno. ninguno es primario.
-// sin leer sus sesiones (terminada, fuera del tope, o aún no llegan) no se da cifra de ellas: el acceso se queda en «Sesiones»
+// sin agenda (terminada) o sin el panel leído no se da cifra de sus sesiones: el acceso se queda en «Sesiones»
 function OfferingCard({ offering, upcoming }: { offering: TeachingOffering; upcoming?: number }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()

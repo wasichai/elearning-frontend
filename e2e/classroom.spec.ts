@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { enrollment } from '../src/modules/classroom/test/fixtures'
 import { fakeApi } from './api'
 
 // el aula del estudiante con la API simulada y una sesión de estudiante
@@ -25,10 +26,12 @@ test('«Mis cursos» está en el menú y lleva a la siguiente lección con «Con
   await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-html')
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
-  // el riel también lee el aula y las sesiones de cada matrícula: el orden se comprueba entre estas dos peticiones
-  const list = 'GET /api/lms/classroom/enrollments'
+  // el panel es la única lectura de «Mis cursos»: una sola petición, y el aula no se pide hasta abrirla
+  const panel = 'GET /api/lms/classroom/panel'
   const opened = 'GET /api/lms/classroom/enrollments/mat-srtm-1'
-  expect(api.classroomRequests.filter((request) => request === list || request === opened).slice(0, 2)).toEqual([list, opened])
+  // (dos veces: el aterrizaje en «Mis cursos» y volver a pulsar su entrada del menú)
+  expect(api.classroomRequests.filter((request) => request === panel || request === opened).slice(0, 3)).toEqual([panel, panel, opened])
+  expect(api.classroomRequests).not.toContain('GET /api/lms/classroom/enrollments')
   expect(api.unexpected).toEqual([])
 })
 
@@ -112,7 +115,7 @@ test('«Mis cursos» muestra el avance que guardó el servidor', async ({ page }
   await expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeVisible()
 })
 
-// el panel ya leyó el aula: entrar en ella sale de la caché, pero STARTED se envía igual y el avance se ve al volver
+// STARTED se envía una sola vez al entrar y el avance se ve al volver
 test('entrar desde el panel inicia la lección una sola vez y al volver se ve lo que guardó el servidor', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos')
@@ -166,28 +169,57 @@ test.describe('el panel del estudiante', () => {
     expect(api.unexpected).toEqual([])
   })
 
-  test('si fallan las sesiones solo lo dice su bloque y «Reintentar» lo recupera', async ({ page }) => {
+  test('si falla el panel, los cursos siguen, lo dicen sus dos bloques y «Reintentar» lo recupera', async ({ page }) => {
     await page.clock.setFixedTime(BEFORE_SESSION)
     const api = await fakeApi(page, { signedIn: true })
-    api.failOnce((url) => url.pathname.endsWith('/mat-sgspe-1/sessions'), 503)
+    api.failOnce((url) => url.pathname === '/api/lms/classroom/panel', 503)
     await page.goto('/mis-cursos')
 
     const sessions = page.getByRole('region', { name: 'Próximas sesiones' })
     await expect(sessions.getByRole('alert')).toContainText('No pudimos cargar tus próximas sesiones.')
-    await expect(page.getByRole('alert')).toHaveCount(1)
+    await expect(page.getByRole('region', { name: 'Evaluaciones pendientes' }).getByRole('alert')).toContainText('No pudimos cargar tus evaluaciones.')
     await expect(page.getByRole('region', { name: 'Continuar aprendiendo' }).getByRole('link', { name: /^Continuar/ })).toBeVisible()
-    await expect(page.getByRole('region', { name: 'Evaluaciones pendientes' }).getByRole('link', { name: /Evaluación final/ })).toBeVisible()
     await expect(page.getByText(/próximos 7 días/)).toHaveCount(0)
+    // en la buena no se pide: esta lista solo existe para no dejar la pantalla en blanco
+    expect(api.classroomRequests.filter((request) => request === 'GET /api/lms/classroom/enrollments')).toHaveLength(1)
 
     await sessions.getByRole('button', { name: 'Reintentar las sesiones' }).click()
     await expect(sessions.getByRole('link', { name: /Recuperación de la consulta/ })).toBeVisible()
     await expect(page.getByRole('alert')).toHaveCount(0)
   })
 
+  test('con más matrículas que una página las lee todas; si falla una posterior, no da por completo lo leído', async ({ page }) => {
+    const api = await fakeApi(page, { signedIn: true })
+    const COUNT = 130
+    const read: number[] = []
+    let down = true
+    await page.route('**/api/lms/classroom/panel*', (route) => {
+      const { searchParams } = new URL(route.request().url())
+      const number = Number(searchParams.get('page'))
+      const size = Number(searchParams.get('size'))
+      read.push(number)
+      if (number === 1 && down) return route.fulfill({ status: 500, json: { status: 500, title: 'Error', detail: 'fallo' } })
+      const rows = Array.from({ length: COUNT }, (_, index) => ({ ...enrollment, id: `mat-${index}`, upcomingSessions: [], pendingAssessments: [] }))
+      return route.fulfill({ json: rows.slice(number * size, (number + 1) * size) })
+    })
+    await page.route('**/api/lms/classroom/enrollments', (route) => route.fulfill({ json: [enrollment] }))
+    await page.goto('/mis-cursos')
+
+    await expect(page.getByRole('region', { name: 'Próximas sesiones' }).getByRole('alert')).toBeVisible()
+    await expect(page.getByRole('article')).toHaveCount(1)
+
+    down = false
+    await page.getByRole('button', { name: 'Reintentar las sesiones' }).click()
+    await expect(page.getByRole('article')).toHaveCount(COUNT)
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    expect(read).toEqual([0, 1, 0, 1])
+    expect(api.classroomRequests.filter((request) => /enrollments\/mat-/.test(request))).toEqual([])
+  })
+
   test('sin matrículas ofrece el catálogo', async ({ page }) => {
     // sin SRTM queda SGSPE, que la simulación siempre tiene: se vacía la lista para ver el estado vacío
     await fakeApi(page, { signedIn: true })
-    await page.route('**/api/lms/classroom/enrollments', (route) => route.fulfill({ json: [] }))
+    await page.route('**/api/lms/classroom/panel*', (route) => route.fulfill({ json: [] }))
     await page.goto('/mis-cursos')
     await expect(page.getByText('Todavía no estás matriculado en ningún curso')).toBeVisible()
     await page.getByRole('link', { name: 'Ver el catálogo' }).click()

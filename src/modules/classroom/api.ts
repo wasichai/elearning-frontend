@@ -6,6 +6,7 @@ import {
   attemptSchema,
   certificateSchema,
   completionSchema,
+  classroomPanelSchema,
   classroomSchema,
   submissionSchema,
   enrollmentListSchema,
@@ -16,6 +17,7 @@ import {
   type Certificate,
   type CompletionStatus,
   type Classroom,
+  type ClassroomPanelItem,
   type Enrollment,
   type LessonEventType,
   type LessonProgress,
@@ -54,9 +56,30 @@ export async function fetchClassroom(client: ApiClient, enrollmentId: string, si
   return parseContract(classroomSchema, `GET classroom/enrollments/${enrollmentId}`, body)
 }
 
+const PANEL_PATH = '/lms/classroom/panel'
+// lo que se pide de una vez: el contrato acota size a 1–200
+export const PANEL_PAGE_SIZE = 100
+// por si un servidor nunca diera una página corta: nadie cursa tantas a la vez, y pasarlo es un fallo, no una lista completa
+export const MAX_PANEL_PAGES = 20
+
+// todas las páginas, o ningún dato: una página con menos de size es la última, y si una falla, falla todo. entre dos páginas la lista
+// puede moverse: una matrícula repetida cuenta una vez
+export async function fetchClassroomPanel(client: ApiClient, signal?: AbortSignal): Promise<ClassroomPanelItem[]> {
+  const items = new Map<string, ClassroomPanelItem>()
+  for (let page = 0; page < MAX_PANEL_PAGES; page++) {
+    const body = await client.request<unknown>(`${PANEL_PATH}?page=${page}&size=${PANEL_PAGE_SIZE}`, { signal })
+    const read = parseContract(classroomPanelSchema, 'GET classroom/panel', body)
+    read.forEach((item) => items.set(item.id, item))
+    if (read.length < PANEL_PAGE_SIZE) return [...items.values()]
+  }
+  throw new Error(`GET classroom/panel: más de ${MAX_PANEL_PAGES} páginas`)
+}
+
 export const classroomKeys = {
   all: ['classroom'] as const,
   enrollments: ['classroom', 'enrollments'] as const,
+  // bajo la lista de matrículas: lo que la invalida (avance, intentos, certificado) también lo vuelve a leer
+  panel: ['classroom', 'enrollments', 'panel'] as const,
   classroom: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId] as const,
   attempt: (attemptId: string) => ['classroom', 'attempt', attemptId] as const,
   sessions: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId, 'sessions'] as const,
@@ -64,16 +87,23 @@ export const classroomKeys = {
   certificate: (code: string) => ['classroom', 'certificate', code] as const
 }
 
-export function useEnrollments() {
+export function useClassroomPanel() {
+  const client = useApiClient()
+  return useQuery({ queryKey: classroomKeys.panel, queryFn: ({ signal }) => fetchClassroomPanel(client, signal), retry: retryNetwork })
+}
+
+// la lista sola: el panel ya la trae, y solo se pide si el panel falla (MyCoursesPage)
+export function useEnrollments({ enabled }: { enabled: boolean }) {
   const client = useApiClient()
   return useQuery({
     queryKey: classroomKeys.enrollments,
     queryFn: ({ signal }) => fetchEnrollments(client, signal),
-    retry: retryNetwork
+    retry: retryNetwork,
+    enabled
   })
 }
 
-// las opciones de una consulta, para leer con useQueries lo mismo y en la misma caché que useClassroom y useSessions
+// las opciones de la consulta, para leer lo mismo y en la misma caché que useClassroom sin volver a pedirlo (Assessment, AttemptResult)
 export function classroomQuery(client: ApiClient, enrollmentId: string) {
   return queryOptions({
     queryKey: classroomKeys.classroom(enrollmentId),
@@ -264,16 +294,9 @@ export async function fetchPublicCertificate(client: ApiClient, code: string, si
   return parseContract(certificateSchema, `GET public/certificates/${code}`, body)
 }
 
-export function sessionsQuery(client: ApiClient, enrollmentId: string) {
-  return queryOptions({
-    queryKey: classroomKeys.sessions(enrollmentId),
-    queryFn: ({ signal }) => fetchSessions(client, enrollmentId, signal),
-    retry: retryNetwork
-  })
-}
-
 export function useSessions(enrollmentId: string) {
-  return useQuery(sessionsQuery(useApiClient(), enrollmentId))
+  const client = useApiClient()
+  return useQuery({ queryKey: classroomKeys.sessions(enrollmentId), queryFn: ({ signal }) => fetchSessions(client, enrollmentId, signal), retry: retryNetwork })
 }
 
 export function useCompletion(enrollmentId: string) {

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { offering } from '../src/modules/teaching/test/fixtures'
 import { fakeApi } from './api'
 
 // el espacio docente (ADR-0016) con la API simulada: sus ediciones y sus matriculados
@@ -89,23 +90,55 @@ test('el panel dice qué hay que hacer: cifras, bandeja con acceso directo y age
   await expect(tray).toContainText('estudiante@demo.local')
   await expect(tray).toContainText('Enviado hace 4 días')
   await expect(page.locator('[data-variant="primary"]')).toHaveCount(1)
+  // el panel es una sola lectura: ni la lista aparte ni la cola o las sesiones de cada edición
+  expect(api.teachingRequests).toEqual(['GET /api/lms/teaching/panel'])
   await tray.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' }).click()
   await expect(page).toHaveURL('/docencia/edicion-sgspe-2026-09/correccion/int-1')
-  expect(api.teachingRequests).toContain('GET /api/lms/teaching/offerings/edicion-sgspe-2026-09/attempts')
   expect(api.unexpected).toEqual([])
 })
 
-test('una cola que falla degrada solo la bandeja: lo dice y el resto del panel se ve', async ({ page }) => {
+test('con más ediciones que una página las lee todas, sin aviso', async ({ page }) => {
   await fakeApi(page, { signedIn: true, as: 'teacher' })
   await page.clock.setFixedTime(NOW)
-  await page.route('**/api/lms/teaching/offerings/*/attempts', (route) =>
-    route.fulfill({ status: 500, json: { status: 500, title: 'Error', detail: 'fallo' } })
+  const COUNT = 130
+  const read: number[] = []
+  await page.route('**/api/lms/teaching/panel*', (route) => {
+    const { searchParams } = new URL(route.request().url())
+    const number = Number(searchParams.get('page'))
+    const size = Number(searchParams.get('size'))
+    read.push(number)
+    const rows = Array.from({ length: COUNT }, (_, index) => ({ ...offering, code: `e-${index}`, pendingAttempts: 0, upcomingSessions: [], oldestPending: [] }))
+    return route.fulfill({ json: rows.slice(number * size, (number + 1) * size) })
+  })
+  await page.goto('/docencia')
+
+  await expect(page.getByRole('article')).toHaveCount(COUNT)
+  await expect(page.getByRole('definition').first()).toHaveText(String(COUNT))
+  expect(read).toEqual([0, 1])
+  await expect(page.getByText(/ediciones con más trabajo/)).toHaveCount(0)
+})
+
+test('si falla el panel, la bandeja y la agenda lo dicen, y las cifras y las tarjetas siguen', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.clock.setFixedTime(NOW)
+  let down = true
+  await page.route('**/api/lms/teaching/panel*', (route) =>
+    down ? route.fulfill({ status: 500, json: { status: 500, title: 'Error', detail: 'fallo' } }) : route.fallback()
   )
   await page.goto('/docencia')
 
-  await expect(page.getByRole('region', { name: 'Por corregir' }).getByRole('alert')).toContainText('No pudimos cargar la cola de corrección')
-  await expect(page.getByRole('complementary', { name: 'Agenda' })).toContainText('Presentación del curso')
+  const tray = page.getByRole('region', { name: 'Por corregir' })
+  await expect(tray.getByRole('alert')).toContainText('No pudimos cargar la cola de corrección')
+  const agenda = page.getByRole('complementary', { name: 'Agenda' })
+  await expect(agenda.getByRole('alert')).toContainText('No pudimos cargar tus próximas sesiones.')
   await expect(page.getByRole('article')).toHaveCount(2)
+  await expect(page.getByRole('definition')).toHaveText(['2', '1', '3'])
+
+  down = false
+  await tray.getByRole('button', { name: 'Reintentar: cola de corrección' }).click()
+  await expect(tray).toContainText('estudiante@demo.local')
+  await expect(agenda).toContainText('Presentación del curso')
+  await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
 test('un estudiante no ve «Docencia» en el menú', async ({ page }) => {

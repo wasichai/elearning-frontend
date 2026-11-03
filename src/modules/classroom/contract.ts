@@ -8,6 +8,7 @@ import {
   type FileRef,
   type QuestionResult as BaseQuestionResult
 } from '../../shared/attempts'
+import { sessionListSchema } from '../../shared/sessions'
 import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
 export { ATTEMPT_STATUSES, QUESTION_TYPES, type Answer, type Question, type QuestionType } from '../../shared/attempts'
@@ -112,6 +113,15 @@ export const assessmentSummarySchema = z
   })
   .refine((assessment) => assessment.attemptsUsed <= assessment.maxAttempts, { message: 'más intentos usados que permitidos', path: ['attemptsUsed'] })
 
+// «Panel del estudiante» en docs/api/lms.md: cada matrícula de «Mis cursos» con lo que tiene por delante. sin plazos: el orden es el del
+// curso. una matrícula que no está activa o ya tiene certificado trae las dos listas vacías
+export const classroomPanelSchema = z.array(
+  enrollmentSchema.extend({
+    upcomingSessions: sessionListSchema,
+    pendingAssessments: z.array(z.object({ lessonId: id, assessment: assessmentSummarySchema }))
+  })
+)
+
 const lesson = z
   .object({
     id,
@@ -154,6 +164,8 @@ export type Lesson = z.infer<typeof lesson>
 export type Resource = z.infer<typeof resource>
 export type ResourceFile = FileRef
 export type AssessmentSummary = z.infer<typeof assessmentSummarySchema>
+export type ClassroomPanelItem = z.infer<typeof classroomPanelSchema>[number]
+export type PendingAssessment = ClassroomPanelItem['pendingAssessments'][number]
 export type Lab = z.infer<typeof labSchema>
 export type LabEnvironment = Lab['environments'][number]
 export type Submission = z.infer<typeof submissionSchema>

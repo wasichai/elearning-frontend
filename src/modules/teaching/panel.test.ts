@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { upcomingSessions, type Session } from '../../shared/sessions'
-import type { PendingAttempt, TeachingOffering } from './contract'
-import { byWork, groupsByOldest, MAX_PANEL_OFFERINGS, oldestFirst, panelFigures, panelPlan, submittedAge } from './panel'
-import { offering, otherOffering, pendingAttempts, teachingSessions } from './test/fixtures'
+import { teachingPanelSchema, type PendingAttempt, type TeachingOffering } from './contract'
+import { byWork, groupsByOldest, hiddenAttempts, MAX_TRAY_ROWS, oldestFirst, panelAgenda, panelFigures, submittedAge } from './panel'
+import { offering, otherOffering, panelItem, pendingAttempts, teachingSessions } from './test/fixtures'
 
 const NOW = Date.parse('2026-11-02T15:00:00Z')
 
@@ -36,29 +36,6 @@ describe('la prioridad de las ediciones', () => {
   })
 })
 
-describe('qué ediciones se leen', () => {
-  it('la cola solo de las que tienen algo por corregir, aunque hayan terminado; las sesiones, de las que siguen vivas', () => {
-    const plan = panelPlan([
-      edition('con-trabajo', { pendingAttempts: 1 }),
-      edition('finalizada-con-trabajo', { status: 'FINALIZADA', pendingAttempts: 2 }),
-      edition('sin-trabajo', { pendingAttempts: 0 }),
-      edition('cancelada', { status: 'CANCELADA', pendingAttempts: 0 })
-    ])
-    expect(plan.grading.map(({ code }) => code)).toEqual(['finalizada-con-trabajo', 'con-trabajo'])
-    expect(plan.agenda.map(({ code }) => code)).toEqual(['con-trabajo', 'sin-trabajo'])
-    expect(plan).toMatchObject({ gradingCapped: false, agendaCapped: false })
-  })
-
-  it('aplica el tope a las de más trabajo y lo avisa', () => {
-    const many = Array.from({ length: MAX_PANEL_OFFERINGS + 2 }, (_, index) => edition(`e${index}`, { pendingAttempts: index + 1 }))
-    const plan = panelPlan(many)
-    expect(plan.grading).toHaveLength(MAX_PANEL_OFFERINGS)
-    expect(plan.grading[0]!.code).toBe(`e${MAX_PANEL_OFFERINGS + 1}`)
-    expect(plan.grading.map(({ code }) => code)).not.toContain('e0')
-    expect(plan).toMatchObject({ gradingCapped: true, agendaCapped: true })
-  })
-})
-
 describe('la bandeja', () => {
   it('ordena las entregas de la más antigua a la más nueva', () => {
     const sorted = oldestFirst([attempt('nueva', '2026-11-02T10:00:00Z'), attempt('vieja', '2026-10-01T10:00:00Z')])
@@ -89,6 +66,44 @@ describe('la bandeja', () => {
 
   it('la antigüedad va en el idioma de la interfaz', () => {
     expect(submittedAge('2026-10-28T15:00:00Z', NOW, 'en')).toBe('5 days ago')
+  })
+})
+
+describe('lo que queda fuera de la bandeja', () => {
+  const queue = (count: number) => Array.from({ length: count }, (_, index) => attempt(`a${index}`, '2026-10-01T10:00:00Z'))
+
+  it('es el total real menos lo que se ve', () => {
+    expect(hiddenAttempts({ pendingAttempts: 42, oldestPending: queue(MAX_TRAY_ROWS) })).toBe(42 - MAX_TRAY_ROWS)
+    expect(hiddenAttempts({ pendingAttempts: MAX_TRAY_ROWS, oldestPending: queue(MAX_TRAY_ROWS) })).toBe(0)
+  })
+
+  it('si trajera más de las que caben, solo cuenta como visibles las que caben', () => {
+    expect(hiddenAttempts({ pendingAttempts: 7, oldestPending: queue(7) })).toBe(7 - MAX_TRAY_ROWS)
+  })
+
+  it('con menos de las que caben ya es la cola entera, aunque el total diga más: los intentos propios no se corrigen', () => {
+    expect(hiddenAttempts({ pendingAttempts: 3, oldestPending: queue(2) })).toBe(0)
+  })
+
+  it('un total atrasado nunca da una cifra negativa', () => {
+    expect(hiddenAttempts({ pendingAttempts: 1, oldestPending: queue(MAX_TRAY_ROWS) })).toBe(0)
+  })
+})
+
+describe('la agenda del panel', () => {
+  const inNovember = (id: string, day: number) => session({ id, start: `2026-11-${day}T13:00:00Z`, end: `2026-11-${day}T14:00:00Z` })
+  const panel = teachingPanelSchema.parse([
+    panelItem(offering, { upcomingSessions: [inNovember('luego', 20)] }),
+    panelItem(otherOffering, { upcomingSessions: [inNovember('pronto', 10)] }),
+    panelItem({ ...otherOffering, code: 'terminada', status: 'FINALIZADA' }, { upcomingSessions: [inNovember('de-una-terminada', 15)] }),
+    panelItem({ ...otherOffering, code: 'cancelada', status: 'CANCELADA' }, { upcomingSessions: [inNovember('de-una-cancelada', 16)] })
+  ])
+
+  it('funde las de las ediciones vivas, la más próxima primero, cada una con su edición', () => {
+    expect(panelAgenda(panel, NOW).map((row) => [row.id, row.offering.code])).toEqual([
+      ['pronto', otherOffering.code],
+      ['luego', offering.code]
+    ])
   })
 })
 

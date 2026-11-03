@@ -130,6 +130,29 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
 })
 
+test('«Mis cursos» lee el panel del servidor, sin la lista aparte ni una petición por matrícula', async ({ page }) => {
+  test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
+  const read: string[] = []
+  page.on('request', (sent) => {
+    const { pathname } = new URL(sent.url())
+    if (pathname.startsWith('/api/lms/classroom/')) read.push(pathname)
+  })
+  const answered = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/lms/classroom/panel')
+  await signIn(page, { email: 'estudiante@demo.wasichai-learning.test', password: DEMO_PASSWORD! })
+  await page.goto('/mis-cursos')
+
+  const response = await answered
+  expect(response.status()).toBe(200)
+  const panel = (await response.json()) as { course: { title: string }; upcomingSessions: unknown[]; pendingAssessments: unknown[] }[]
+  const mine = panel.find((item) => COURSE.test(item.course.title))
+  expect(mine, 'el panel trae la matrícula del estudiante demo').toBeDefined()
+  expect(Array.isArray(mine!.upcomingSessions) && Array.isArray(mine!.pendingAssessments)).toBe(true)
+
+  await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })).toBeVisible()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  expect(new Set(read)).toEqual(new Set(['/api/lms/classroom/panel']))
+})
+
 test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page }) => {
   test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
   await signIn(page, { email: 'estudiante@demo.wasichai-learning.test', password: DEMO_PASSWORD! })

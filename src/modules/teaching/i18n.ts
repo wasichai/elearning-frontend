@@ -25,7 +25,6 @@ const es = {
     noUpcoming: 'Sin sesiones próximas',
     upcoming_one: '{{value}} próxima sesión',
     upcoming_other: '{{value}} próximas sesiones',
-    capped: 'Aquí se leen las {{count}} ediciones con más trabajo. Las demás, desde su tarjeta.',
     figures: {
       offerings: 'Ediciones asignadas',
       pending: 'Intentos por corregir',
@@ -39,12 +38,12 @@ const es = {
       age: 'Enviado {{age}}',
       more_one: 'Ver {{value}} entrega más en la cola',
       more_other: 'Ver {{value}} entregas más en la cola',
-      retry: 'Reintentar: cola de {{course}}'
+      retry: 'Reintentar: cola de corrección'
     },
     agenda: {
       title: 'Próximas sesiones',
       none: 'No tienes sesiones próximas.',
-      failed: 'No pudimos cargar las sesiones de {{courses}}.',
+      failed: 'No pudimos cargar tus próximas sesiones.',
       retry: 'Reintentar: sesiones',
       running: 'En curso',
       toAttendance: 'Pasar asistencia',
@@ -447,7 +446,6 @@ const en: typeof es = {
     noUpcoming: 'No upcoming sessions',
     upcoming_one: '{{value}} upcoming session',
     upcoming_other: '{{value}} upcoming sessions',
-    capped: 'This reads the {{count}} offerings with the most work. Open the others from their card.',
     figures: {
       offerings: 'Assigned offerings',
       pending: 'Attempts to grade',
@@ -461,12 +459,12 @@ const en: typeof es = {
       age: 'Submitted {{age}}',
       more_one: 'See {{value}} more submission in the queue',
       more_other: 'See {{value}} more submissions in the queue',
-      retry: 'Retry: queue of {{course}}'
+      retry: 'Retry: grading queue'
     },
     agenda: {
       title: 'Upcoming sessions',
       none: 'You have no upcoming sessions.',
-      failed: 'We could not load the sessions of {{courses}}.',
+      failed: 'We could not load your upcoming sessions.',
       retry: 'Retry: sessions',
       running: 'In progress',
       toAttendance: 'Take attendance',

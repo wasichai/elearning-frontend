@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { enrollmentListSchema, classroomSchema, type Classroom, type Enrollment } from './contract'
+import { classroomPanelSchema, enrollmentListSchema, type Enrollment } from './contract'
 import { sessionListSchema, upcomingSessions, type Session } from '../../shared/sessions'
-import { groupEnrollments, pendingAssessments, pickPrimary, railEnrollments, MAX_RAIL_COURSES, sessionsWithin } from './dashboard'
-import { assessmentClassroom, assessmentSummary, classroom, enrollment, finishedEnrollment, otherEnrollment, sessions } from './test/fixtures'
+import { groupEnrollments, pickPrimary, railEnrollments, railItems, sessionsWithin } from './dashboard'
+import { assessmentSummary, enrollment, finishedEnrollment, otherEnrollment, panelItem, sessions } from './test/fixtures'
 
 const parse = (list: unknown[]): Enrollment[] => enrollmentListSchema.parse(list)
 const withProgress = (completedLessons: number, totalLessons: number) => ({
@@ -72,19 +72,43 @@ describe('los grupos del panel', () => {
   })
 })
 
-describe('las matrículas que lee el riel', () => {
+describe('las matrículas del riel', () => {
   it('solo las activas, la principal primero', () => {
     const list = parse([otherEnrollment, enrollment, { ...finishedEnrollment, status: 'FINALIZADA' }, { ...enrollment, id: 'retirada', status: 'RETIRADA' }])
-    const rail = railEnrollments(groupEnrollments(list))
-    expect(rail.read.map((item) => item.id)).toEqual([enrollment.id, otherEnrollment.id])
-    expect(rail.capped).toBe(false)
+    expect(railEnrollments(groupEnrollments(list)).map((item) => item.id)).toEqual([enrollment.id, otherEnrollment.id])
   })
 
-  it('con un tope, y dice que lo aplicó', () => {
-    const list = parse(Array.from({ length: MAX_RAIL_COURSES + 2 }, (_, index) => ({ ...enrollment, id: `mat-${index}` })))
-    const rail = railEnrollments(groupEnrollments(list))
-    expect(rail.read).toHaveLength(MAX_RAIL_COURSES)
-    expect(rail.capped).toBe(true)
+  // antes: «con un tope, y dice que lo aplicó»
+  it('todas, por muchas que sean', () => {
+    const list = parse(Array.from({ length: 40 }, (_, index) => ({ ...enrollment, id: `mat-${index}` })))
+    expect(railEnrollments(groupEnrollments(list))).toHaveLength(40)
+  })
+})
+
+describe('lo que trae el riel', () => {
+  const NOW = Date.parse('2026-09-01T00:00:00Z')
+  const pending = { lessonId: 'lec-eva', assessment: assessmentSummary }
+  const panel = classroomPanelSchema.parse([
+    panelItem(enrollment, { upcomingSessions: [sessions[2]], pendingAssessments: [pending] }),
+    panelItem(otherEnrollment, { upcomingSessions: [sessions[0]], pendingAssessments: [pending] }),
+    panelItem({ ...enrollment, id: 'cerrada', status: 'FINALIZADA' }, { upcomingSessions: [sessions[0]], pendingAssessments: [pending] })
+  ])
+  const active = panel.slice(0, 2)
+
+  it('funde las sesiones de las activas, la más próxima primero, cada una con su matrícula', () => {
+    const { sessions: rows } = railItems(active, panel, NOW)
+    expect(rows.map((row) => [row.id, row.enrollment.id])).toEqual([
+      [sessions[0]!.id, otherEnrollment.id],
+      [sessions[2]!.id, enrollment.id]
+    ])
+  })
+
+  it('las evaluaciones van en el orden de las matrículas del riel, sin las de una que no está en él', () => {
+    expect(railItems([...active].reverse(), panel, NOW).assessments.map((row) => row.enrollment.id)).toEqual([otherEnrollment.id, enrollment.id])
+  })
+
+  it('una matrícula que el panel no trae no aporta nada', () => {
+    expect(railItems(active, panel.slice(1), NOW).assessments.map((row) => row.enrollment.id)).toEqual([otherEnrollment.id])
   })
 })
 
@@ -106,40 +130,5 @@ describe('las próximas sesiones', () => {
     const day = 24 * 3600 * 1000
     expect(sessionsWithin(upcomingSessions(list, start - 7 * day + 1000), start - 7 * day + 1000, 7)).toHaveLength(1)
     expect(sessionsWithin(upcomingSessions(list, start - 7 * day - 1000), start - 7 * day - 1000, 7)).toHaveLength(0)
-  })
-})
-
-describe('las evaluaciones pendientes', () => {
-  const lessonWith = (assessment: object | null, overrides: object = {}): Classroom => {
-    const base = structuredClone(assessmentClassroom) as Record<string, unknown> & { units: { lessons: Record<string, unknown>[] }[] }
-    const lesson = base.units[0]!.lessons.find((candidate) => candidate.id === 'lec-eva')!
-    Object.assign(lesson, { assessment }, overrides)
-    return classroomSchema.parse(base)
-  }
-  const pendingOf = (data: Classroom) => pendingAssessments(data).map((item) => item.lesson.id)
-
-  it('una sin hacer y con intentos', () => {
-    expect(pendingOf(lessonWith({ ...assessmentSummary }))).toEqual(['lec-eva'])
-  })
-
-  it('sin intentos, ya no está pendiente', () => {
-    expect(pendingOf(lessonWith({ ...assessmentSummary, attemptsUsed: assessmentSummary.maxAttempts }))).toEqual([])
-  })
-
-  it('sin intentos pero con uno abierto, sí', () => {
-    expect(pendingOf(lessonWith({ ...assessmentSummary, attemptsUsed: assessmentSummary.maxAttempts, openAttemptId: 'int-1' }))).toEqual(['lec-eva'])
-  })
-
-  it('aprobada, ya no', () => {
-    const progress = { status: 'APROBADA', startedAt: '2026-09-08T14:00:00Z', completedAt: '2026-09-08T15:00:00Z', evidence: 'X' }
-    expect(pendingOf(lessonWith({ ...assessmentSummary }, { progress }))).toEqual([])
-  })
-
-  it('una que aún no se puede hacer (NOT_YET), tampoco', () => {
-    expect(pendingOf(lessonWith({ ...assessmentSummary }, { completion: 'NOT_YET' }))).toEqual([])
-  })
-
-  it('una lección sin evaluación no cuenta', () => {
-    expect(pendingAssessments(classroomSchema.parse(classroom))).toEqual([])
   })
 })

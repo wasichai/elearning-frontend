@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import {
   assessmentClassroom,
+  assessmentSummary,
   classroom,
   enrollment,
   finishedEnrollment,
@@ -14,7 +15,11 @@ import { problem } from '../../../src/modules/catalog/test/fixtures'
 import { student, type Scenario } from '../scenario'
 
 const ENROLLMENTS = '**/api/lms/classroom/enrollments'
-const SESSIONS = '**/api/lms/classroom/enrollments/*/sessions'
+const PANEL = '**/api/lms/classroom/panel*'
+// los elementos del panel: la matrícula con lo que tiene por delante. por defecto, nada
+const panelRows = (...rows: object[]) => rows.map((row) => ({ upcomingSessions: [], pendingAssessments: [], ...row }))
+const serving = (page: Page, rows: unknown[]) => page.route(PANEL, (route) => route.fulfill({ json: rows }))
+const down = { status: 503, contentType: 'application/problem+json', json: problem(503, 'Caído') }
 
 // la simulación se prepara antes de cargar: aquí se le gana con una ruta propia y se vuelve a cargar la pantalla.
 // el reloj se fija antes de la sesión de noviembre de los ejemplos, para que la captura no cambie con la fecha
@@ -44,6 +49,11 @@ const titled = (data: { course: object }) => ({ json: { ...data, course: { ...da
 const emptyCourse = { ...classroom, units: [], nextLesson: null, progress: { completedLessons: 0, totalLessons: 0, percent: 0 } }
 const LONG_TITLE = 'Procedimientos de fiscalización y determinación de deudas tributarias municipales para gestores de rentas'
 
+const enrollmentAtStart = {
+  ...enrollment,
+  progress: { completedLessons: 0, totalLessons: 3, percent: 0 },
+  nextLesson: { ...enrollment.nextLesson, id: 'lec-html', title: 'Tipos de anuncio', lessonOrder: 1 }
+}
 const certified = { ...finishedEnrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }
 const finished = { ...finishedEnrollment, id: 'mat-fin-1', status: 'FINALIZADA', course: { slug: 'catastro', code: 'CAT-1', title: 'Catastro urbano' } }
 const longTitle = {
@@ -141,7 +151,7 @@ export const classroomScenarios: Scenario[] = [
     name: 'student-courses-empty',
     path: '/mis-cursos',
     api: student,
-    act: (page) => panelAt(page, () => page.route(ENROLLMENTS, (route) => route.fulfill({ json: [] })))
+    act: (page) => panelAt(page, () => serving(page, []))
   },
   { name: 'student-courses-rail', path: '/mis-cursos', api: student, act: (page) => panelAt(page) },
   {
@@ -149,70 +159,105 @@ export const classroomScenarios: Scenario[] = [
     path: '/mis-cursos',
     api: student,
     act: (page) =>
-      panelAt(page, () => page.route(ENROLLMENTS, (route) => route.fulfill({ json: [{ ...enrollment, id: 'mat-srtm-1' }, longTitle, finished, certified] })))
+      panelAt(page, () =>
+        serving(
+          page,
+          panelRows(
+            { ...enrollment, id: 'mat-srtm-1' },
+            { ...longTitle, upcomingSessions: [sessions.at(-1)], pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }] },
+            finished,
+            certified
+          )
+        )
+      )
   },
   {
     name: 'student-courses-completed',
     path: '/mis-cursos',
     api: student,
-    act: (page) => panelAt(page, () => page.route(ENROLLMENTS, (route) => route.fulfill({ json: [certified] })))
+    act: (page) => panelAt(page, () => serving(page, panelRows(certified)))
   },
   {
-    name: 'student-courses-sessions-error',
+    // el panel falla y la lista de matrículas llega: los cursos siguen y el riel lo dice
+    name: 'student-courses-rail-error',
+    path: '/mis-cursos',
+    api: student,
+    act: (page) => panelAt(page, () => page.route(PANEL, (route) => route.fulfill(down)))
+  },
+  {
+    // la primera página llega y la segunda falla: lo leído no se da por completo
+    name: 'student-courses-later-page-error',
     path: '/mis-cursos',
     api: student,
     act: (page) =>
-      panelAt(page, () => page.route(SESSIONS, (route) => route.fulfill({ status: 503, contentType: 'application/problem+json', json: problem(503, 'Caído') })))
+      panelAt(page, () =>
+        page.route(PANEL, (route) => {
+          if (route.request().url().includes('page=0')) {
+            const size = Number(new URL(route.request().url()).searchParams.get('size'))
+            return route.fulfill({ json: panelRows(...Array.from({ length: size }, (_, index) => ({ ...enrollment, id: `mat-${index}` }))) })
+          }
+          return route.fulfill(down)
+        })
+      )
   },
   {
     name: 'student-courses-many-sessions',
     path: '/mis-cursos',
     api: student,
-    act: (page) =>
-      panelAt(page, () =>
-        page.route(SESSIONS, (route) => {
-          const [base] = sessions.slice(-1)
-          const next = Array.from({ length: 7 }, (_, index) => ({
-            ...base,
-            id: `s-${index}`,
-            title: `Consulta ${index + 1}`,
-            start: `2026-11-${14 + index}T13:00:00Z`,
-            end: `2026-11-${14 + index}T14:00:00Z`,
-            originalSessionId: null
-          }))
-          return route.fulfill({ json: route.request().url().includes('mat-sgspe-1') ? next : [] })
-        })
-      )
+    act: (page) => {
+      const [base] = sessions.slice(-1)
+      const next = Array.from({ length: 7 }, (_, index) => ({
+        ...base,
+        id: `s-${index}`,
+        title: `Consulta ${index + 1}`,
+        start: `2026-11-${14 + index}T13:00:00Z`,
+        end: `2026-11-${14 + index}T14:00:00Z`,
+        originalSessionId: null
+      }))
+      const sgspe = {
+        ...assessmentClassroom,
+        units: undefined,
+        upcomingSessions: next,
+        pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }]
+      }
+      return panelAt(page, () => serving(page, panelRows(enrollmentAtStart, sgspe)))
+    }
   },
   {
     name: 'student-courses-error',
     path: '/mis-cursos',
     api: student,
     act: (page) =>
-      panelAt(page, () =>
-        page.route(ENROLLMENTS, (route) => route.fulfill({ status: 503, contentType: 'application/problem+json', json: problem(503, 'Caído') }))
-      )
+      panelAt(page, async () => {
+        await page.route(PANEL, (route) => route.fulfill(down))
+        await page.route(ENROLLMENTS, (route) => route.fulfill(down))
+      })
   },
   {
-    // la lista nunca llega: la geometría del panel mientras carga
+    // el panel nunca llega: la geometría de la pantalla mientras carga
     name: 'student-courses-loading',
     path: '/mis-cursos',
     api: student,
     act: async (page) => {
-      await page.route(ENROLLMENTS, () => undefined)
+      await page.route(PANEL, () => undefined)
       await page.reload({ waitUntil: 'load' })
       await page.waitForTimeout(300)
     }
   },
   {
-    // la lista llega, el riel no: los dos bloques cargando
+    // al reintentar tras un fallo: la lista ya está a la vista y los dos bloques cargan
     name: 'student-courses-rail-loading',
     path: '/mis-cursos',
     api: student,
     act: async (page) => {
-      await page.route('**/api/lms/classroom/enrollments/**', () => undefined)
-      await page.reload({ waitUntil: 'load' })
-      await page.getByRole('region', { name: /^(Continuar aprendiendo|Continue learning)$/ }).waitFor()
+      await page.route(PANEL, (route) => route.fulfill(down))
+      await page.reload()
+      const retry = page.getByRole('button', { name: /^(Reintentar las sesiones|Retry the sessions)$/ })
+      await retry.waitFor()
+      await page.unroute(PANEL)
+      await page.route(PANEL, () => undefined)
+      await retry.click()
+      await page.getByRole('status').first().waitFor()
     }
   },
   { name: 'student-course', path: '/mis-cursos/mat-srtm-1', api: student },
