@@ -135,9 +135,19 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+      # RF-MED-04 (e2e/real/classroom-without-ai.spec.ts): la canalización de IA sin proveedor, con el doble determinista. su
+      # fuente es la de la unidad de demostración del backend, en el mismo commit que se compila, el único origen permitido
+      - name: Fuente de la canalización de IA
+        run: |
+          sha="$(git -C backend rev-parse HEAD)"
+          echo "LMS_IMPORTER_ALLOWED_SOURCES=wasichai/elearning-backend@$sha" >> "$GITHUB_ENV"
+          echo "E2E_AI_SOURCE=wasichai/elearning-backend@$sha:docs/ai/evaluations/demo-unit/fuente/manual.adoc" >> "$GITHUB_ENV"
       - name: Backend en marcha
         working-directory: backend
         env:
+          # sin ninguna clave de proveedor de IA: lo publicado tiene que funcionar igual (RF-MED-04)
+          ANTHROPIC_API_KEY: ''
+          OPENAI_API_KEY: ''
           WASICHAI_DB_HOST: 127.0.0.1
           WASICHAI_DB_PORT: '5436'
           WASICHAI_DB_NAME: elearning
