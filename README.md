@@ -191,6 +191,18 @@ no ve ni decide la versión (`404`). La importación desde GitHub no se prueba (
 que un origen fuera de la lista y quien no puede importar reciben `403`. Cada ejecución publica una versión nueva de
 `TRAMITE-101`, el curso de la demo reservado a este recorrido: ningún otro lo usa.
 
+Y el aula sin proveedor de IA (`e2e/real/classroom-without-ai.spec.ts`, RF-MED-04): con el backend sin
+`ANTHROPIC_API_KEY` ni `OPENAI_API_KEY`, una autora nueva recorre por la API la canalización (brief, análisis, diseño y
+borrador de lecciones) y cada paso lo hace el doble determinista; quita las preguntas abiertas del borrador, el revisor lo
+valida (la opinión de consistencia se salta) y lo ve en su bandeja como «Generado sin IA, ilustrativo», lo aprueba, y el
+administrador publica las lecturas y la versión. Un estudiante matriculado ve todas las unidades y lecciones con su resumen,
+abre cada lectura y completa todo, evaluaciones incluidas, hasta el 100 %, sin que ninguna pantalla llame a `/api/lms/ai` ni
+muestre un error o una carga pendiente. Necesita `E2E_AI_SOURCE` (`owner/repo@sha:ruta`, la fuente de la unidad de
+demostración del backend, `docs/ai/evaluations/demo-unit/fuente/manual.adoc`) y ese repositorio en
+`LMS_IMPORTER_ALLOWED_SOURCES` del backend, que la lee de GitHub; sin la variable, se salta. En CI se usa el commit del
+backend que se compila; por eso allí el backend tiene un origen permitido y la parte de `editorial.spec.ts` que mira la
+pantalla de importación sin orígenes se salta. Publica un curso (`@publishes`) y lo retira al terminar.
+
 Antes, el backend tiene que estar en marcha en el perfil `dev` y con los datos de demostración aplicados: sigue
 [la puesta en marcha del backend](https://github.com/wasichai/elearning-backend/blob/main/docs/development/getting-started.md)
 (`elearning-backend/docs/development/getting-started.md`) hasta `python3 model/apply.py --demo`. El catálogo público se

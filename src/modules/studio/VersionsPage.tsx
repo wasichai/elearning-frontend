@@ -9,6 +9,7 @@ import { formatInstant, formatNumber } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
+import { GeneratorBadge } from '../../shared/GeneratorBadge'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { useSubmitVersion, useVersions } from './api'
 import type { StudioVersion } from './contract'
@@ -17,7 +18,7 @@ import { NewCourseLink } from './NewCourseLink'
 import { VERSION_BADGE } from '../../shared/VersionStatusLine'
 import { useProblemText } from './parts'
 import { canCreateCourse, canReadCourses } from './permissions'
-import { STUDIO_ROUTES } from './routes'
+import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
 import { NewVersionButton, SubmitVersionButton } from './VersionActions'
 
 const COURSE_OBJECT = 'curso'
@@ -191,6 +192,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
         </h3>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink-muted">
           <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
+          <GeneratorBadge namespace={STUDIO_MODULE_ID} generator={version.generator} />
           {version.openComments > 0 ? (
             <StatusBadge state="warning">
               {t('versions.openComments', { count: version.openComments, value: formatNumber(version.openComments, locale) })}

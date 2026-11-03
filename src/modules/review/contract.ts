@@ -8,6 +8,8 @@ export { versionDiffSchema, type VersionDiff } from '../../shared/diff'
 
 // el ciclo editorial de version_curso (model/model.json del backend)
 export const VERSION_STATUSES = ['BORRADOR', 'EN_REVISION', 'APROBADA', 'PUBLICADA', 'RETIRADA'] as const
+// quién generó el borrador de una versión (#288): un proveedor de IA o el doble determinista; null, una persona
+export const GENERATORS = ['MODEL', 'DETERMINISTIC'] as const
 // PEDIR_CAMBIOS devuelve a BORRADOR; RECHAZAR pasa a RETIRADA. el motivo es obligatorio salvo al aprobar
 export const DECISIONS = ['APROBAR', 'PEDIR_CAMBIOS', 'RECHAZAR'] as const
 
@@ -22,7 +24,9 @@ export const studioVersionSchema = z.object({
   authorId: z.string().nullable(),
   reviewerId: z.string().nullable(),
   updatedAt: instant.nullable(),
-  openComments: count
+  openComments: count,
+  // un backend anterior no lo manda: escrita a mano
+  generator: z.enum(GENERATORS).nullable().default(null)
 })
 
 export const studioVersionListSchema = z.array(studioVersionSchema)

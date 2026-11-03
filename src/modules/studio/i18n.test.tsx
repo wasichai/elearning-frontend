@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { IMPORT_PROBLEM_KINDS, IMPORT_STATUSES, LESSON_TYPES, REVIEW_DECISIONS, VERSION_STATUSES } from './contract'
+import { IMPORT_PROBLEM_KINDS, IMPORT_STATUSES, LESSON_TYPES, GENERATORS, REVIEW_DECISIONS, VERSION_STATUSES } from './contract'
 import { studioMessages } from './i18n'
 
 type Tree = { [key: string]: string | Tree }
@@ -39,6 +39,7 @@ describe('textos del estudio', () => {
   it('cada valor de las enumeraciones tiene su texto', () => {
     const composed = [
       ...VERSION_STATUSES.flatMap((status) => [`status.${status}`, `statusHint.${status}`]),
+      ...GENERATORS.map((generator) => `generator.${generator}`),
       ...LESSON_TYPES.map((type) => `lessonType.${type}`),
       ...REVIEW_DECISIONS.map((decision) => `decision.${decision}`),
       ...['invalid', 'notFound', 'conflict', 'refused', 'server', 'network', 'contract'].flatMap((kind) => [

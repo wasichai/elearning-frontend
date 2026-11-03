@@ -459,3 +459,32 @@ describe('VersionPage: errores e idioma', () => {
     })
   })
 })
+
+// RF-IA-03, RF-IA-08: el distintivo informa; no oculta ni habilita acciones
+describe('VersionPage: el origen del borrador', () => {
+  it.each([
+    ['DETERMINISTIC', 'Generado sin IA, ilustrativo'],
+    ['MODEL', 'Generado con IA']
+  ] as const)('una versión con generator %s lleva «%s» en la cabecera', async (generator, text) => {
+    renderVersion(draftVersion.id, [{ path: detailPath(draftVersion.id), body: { ...draftDetail, generator } }])
+
+    const banner = within(await screen.findByRole('banner'))
+    expect(await banner.findByText(text)).toBeInTheDocument()
+    expect(banner.getByText(text).closest('[data-generator]')).toHaveAttribute('data-generator', generator)
+    expect(document.querySelectorAll('[data-generator]')).toHaveLength(1)
+    expect(screen.getByRole('link', { name: 'Editar la versión' })).toBeInTheDocument()
+  })
+
+  it('una versión escrita a mano no lleva distintivo', async () => {
+    renderVersion(draftVersion.id, [{ path: detailPath(draftVersion.id), body: { ...draftDetail, generator: null } }])
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Introducción al SGSPE' })).toBeInTheDocument()
+    expect(document.querySelector('[data-generator]')).toBeNull()
+  })
+
+  it('en inglés', async () => {
+    renderVersion(draftVersion.id, [{ path: detailPath(draftVersion.id), body: { ...draftDetail, generator: 'MODEL' } }], 'en')
+
+    expect(await within(await screen.findByRole('banner')).findByText('AI-generated')).toBeInTheDocument()
+  })
+})

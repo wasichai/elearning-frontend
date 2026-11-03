@@ -464,3 +464,33 @@ describe('VersionReviewPage: revisar una versión', () => {
     expect(screen.getByRole('region', { name: 'Decision history' })).toBeInTheDocument()
   })
 })
+
+// RF-IA-03, RF-IA-08: el distintivo informa; aprobar sigue siendo del revisor y lo decide el servidor
+describe('VersionReviewPage: el origen del borrador', () => {
+  it.each([
+    ['DETERMINISTIC', 'Generado sin IA, ilustrativo'],
+    ['MODEL', 'Generado con IA']
+  ] as const)('una versión con generator %s lleva «%s» en la cabecera y se sigue pudiendo decidir', async (generator, text) => {
+    renderVersion([{ path: VERSION, body: { ...versionDetail, generator } }])
+
+    const banner = within(await screen.findByRole('banner'))
+    expect(await banner.findByText(text)).toBeInTheDocument()
+    expect(banner.getByText(text).closest('[data-generator]')).toHaveAttribute('data-generator', generator)
+    expect(document.querySelectorAll('[data-generator]')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Aprobar' })).toBeEnabled()
+  })
+
+  it('una versión escrita a mano no lleva distintivo', async () => {
+    renderVersion([{ path: VERSION, body: { ...versionDetail, generator: null } }])
+
+    expect(await screen.findByRole('button', { name: 'Aprobar' })).toBeInTheDocument()
+    expect(document.querySelector('[data-generator]')).toBeNull()
+    expect(screen.queryByText(/^Generado/)).not.toBeInTheDocument()
+  })
+
+  it('en inglés', async () => {
+    renderVersion([{ path: VERSION, body: { ...versionDetail, generator: 'DETERMINISTIC' } }], { language: 'en' })
+
+    expect(await within(await screen.findByRole('banner')).findByText('Generated without AI, illustrative')).toBeInTheDocument()
+  })
+})

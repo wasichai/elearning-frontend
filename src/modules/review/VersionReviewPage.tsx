@@ -8,6 +8,7 @@ import { WRAP } from '../../shared/buttons'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { Notice } from '../../shared/Notice'
 import { Breadcrumbs, ScreenBody, ScreenHeader, Section } from '../../shared/Screen'
+import { GeneratorBadge } from '../../shared/GeneratorBadge'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useLeaveGuard } from '../../shared/useLeaveGuard'
 import { VersionDiffSection } from '../../shared/VersionDiff'
@@ -52,7 +53,14 @@ export function VersionReviewPage() {
             ]}
           />
         }
-        meta={version ? <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge> : undefined}
+        meta={
+          version ? (
+            <>
+              <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
+              <GeneratorBadge namespace={REVIEW_MODULE_ID} generator={version.generator} />
+            </>
+          ) : undefined
+        }
       />
       <ScreenBody width="wide">
         {query.isError ? (

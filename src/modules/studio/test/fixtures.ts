@@ -15,7 +15,8 @@ export const draftVersion = {
   authorId: AUTHOR_ID,
   reviewerId: null,
   updatedAt: '2026-10-30T15:20:00Z',
-  openComments: 0
+  openComments: 0,
+  generator: null
 }
 
 // la versión publicada de la que salió, con lo que comentó y decidió el revisor
@@ -27,7 +28,8 @@ export const publishedVersion = {
   authorId: AUTHOR_ID,
   reviewerId: REVIEWER_ID,
   updatedAt: '2026-09-01T12:00:00Z',
-  openComments: 1
+  openComments: 1,
+  generator: null
 }
 
 export const units = [

@@ -101,3 +101,54 @@ describe('InboxPage: la bandeja del revisor', () => {
     expect(fetchMock.calls.filter((call) => call.path === INBOX)).toHaveLength(2)
   })
 })
+
+// RF-IA-03, RF-IA-08: de dónde salió el borrador, como información; no cambia lo que se puede hacer
+describe('InboxPage: el origen del borrador', () => {
+  it('distingue lo generado con IA, lo generado sin IA (ilustrativo) y lo escrito a mano, sin tocar «Revisar»', async () => {
+    renderInbox([
+      {
+        path: INBOX,
+        body: [
+          { ...versionInReview, generator: 'DETERMINISTIC' },
+          { ...otherVersionInReview, generator: 'MODEL' },
+          { ...versionInReview, id: 'ver-sgspe-3', number: 3, generator: null }
+        ]
+      }
+    ])
+
+    const [deterministic, model, manual] = (await screen.findAllByRole('article')).map((item) => within(item))
+    expect(deterministic!.getByText('Generado sin IA, ilustrativo').closest('[data-generator]')).toHaveAttribute('data-generator', 'DETERMINISTIC')
+    expect(deterministic!.queryByText('Generado con IA')).not.toBeInTheDocument()
+    expect(model!.getByText('Generado con IA').closest('[data-generator]')).toHaveAttribute('data-generator', 'MODEL')
+    expect(model!.queryByText('Generado sin IA, ilustrativo')).not.toBeInTheDocument()
+    expect(manual!.queryByText(/^Generado/)).not.toBeInTheDocument()
+    expect(document.querySelectorAll('[data-generator]')).toHaveLength(2)
+    expect(deterministic!.getByRole('link', { name: 'Revisar SGSPE-101, versión 2' })).toBeInTheDocument()
+  })
+
+  it('un backend que aún no manda el origen se lee como escrito a mano', async () => {
+    const withoutGenerator = Object.fromEntries(Object.entries(versionInReview).filter(([key]) => key !== 'generator'))
+    renderInbox([{ path: INBOX, body: [withoutGenerator] }])
+
+    expect(await screen.findByRole('article')).toBeInTheDocument()
+    expect(document.querySelector('[data-generator]')).toBeNull()
+  })
+
+  it('en inglés', async () => {
+    renderInbox(
+      [
+        {
+          path: INBOX,
+          body: [
+            { ...versionInReview, generator: 'DETERMINISTIC' },
+            { ...otherVersionInReview, generator: 'MODEL' }
+          ]
+        }
+      ],
+      'en'
+    )
+
+    expect(await screen.findByText('Generated without AI, illustrative')).toBeInTheDocument()
+    expect(screen.getByText('AI-generated')).toBeInTheDocument()
+  })
+})

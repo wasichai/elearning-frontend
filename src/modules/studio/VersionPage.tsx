@@ -9,6 +9,7 @@ import { formatDateTime, formatInstant, formatNumber } from '../../shared/format
 import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
 import { Breadcrumbs, ScreenBody, ScreenHeader, Section } from '../../shared/Screen'
+import { GeneratorBadge } from '../../shared/GeneratorBadge'
 import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { VersionDiffSection } from '../../shared/VersionDiff'
 import { VERSION_BADGE, VersionStatusLine } from '../../shared/VersionStatusLine'
@@ -53,7 +54,14 @@ export function VersionPage() {
             ]}
           />
         }
-        meta={version ? <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge> : undefined}
+        meta={
+          version ? (
+            <>
+              <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
+              <GeneratorBadge namespace={STUDIO_MODULE_ID} generator={version.generator} />
+            </>
+          ) : undefined
+        }
         actions={version ? <Actions key={version.id} version={version} /> : undefined}
       />
       <ScreenBody width="wide">
