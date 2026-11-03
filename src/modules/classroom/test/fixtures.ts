@@ -490,3 +490,11 @@ export const labClassroom = {
   ...classroom,
   units: [{ ...classroom.units[0]!, lessons: [...classroom.units[0]!.lessons, labLesson] }, classroom.units[1]!]
 }
+
+// un elemento de GET classroom/panel: la matrícula con lo que tiene por delante. por defecto, nada
+export const panelItem = (base: object, rest: { upcomingSessions?: unknown[]; pendingAssessments?: unknown[] } = {}) => ({
+  ...base,
+  upcomingSessions: [],
+  pendingAssessments: [],
+  ...rest
+})

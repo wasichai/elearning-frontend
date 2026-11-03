@@ -3,6 +3,7 @@ import { sessionListSchema, sessionSchema } from '../../shared/sessions'
 import {
   attemptSchema,
   certificateSchema,
+  classroomPanelSchema,
   classroomSchema,
   completionSchema,
   ContractError,
@@ -25,6 +26,7 @@ import {
   labClassroom,
   labLesson,
   openAttempt,
+  panelItem,
   sessions,
   submission,
   submittedAttempt
@@ -245,5 +247,35 @@ describe('contrato de sesiones, finalización y certificado (F3)', () => {
     ['horas como texto', { ...certificate, totalHours: '18' }, 'totalHours']
   ])('rechaza un certificado: %s', (_case, body, hint) => {
     expect(() => parseContract(certificateSchema, 'certificate', body)).toThrow(hint)
+  })
+})
+
+describe('contrato del panel del estudiante', () => {
+  const item = panelItem(enrollment, { upcomingSessions: [sessions[0]], pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }] })
+
+  it('acepta el ejemplo del documento, listas vacías, una lista vacía de elementos y campos nuevos', () => {
+    const [read] = parseContract(classroomPanelSchema, 'panel', [item])
+    expect(read?.id).toBe(enrollment.id)
+    expect(read?.upcomingSessions[0]?.id).toBe(sessions[0]!.id)
+    expect(read?.pendingAssessments[0]?.assessment.title).toBe(assessmentSummary.title)
+    expect(parseContract(classroomPanelSchema, 'panel', [panelItem(finishedEnrollment)])[0]?.pendingAssessments).toEqual([])
+    expect(parseContract(classroomPanelSchema, 'panel', [])).toEqual([])
+    expect(parseContract(classroomPanelSchema, 'panel', [{ ...item, nuevo: 1 }])).toHaveLength(1)
+  })
+
+  it.each([
+    ['sin sus sesiones', { ...item, upcomingSessions: undefined }, 'upcomingSessions'],
+    ['sin sus evaluaciones', { ...item, pendingAssessments: null }, 'pendingAssessments'],
+    ['una sesión que no es https', { ...item, upcomingSessions: [{ ...sessions[0], link: 'http://x.test' }] }, 'https'],
+    ['una evaluación sin lección', { ...item, pendingAssessments: [{ lessonId: '', assessment: assessmentSummary }] }, 'lessonId'],
+    [
+      'más intentos usados que permitidos',
+      { ...item, pendingAssessments: [{ lessonId: 'l', assessment: { ...assessmentSummary, attemptsUsed: 9 } }] },
+      'intentos'
+    ],
+    ['una matrícula rota', { ...item, progress: null }, 'progress']
+  ])('rechaza %s', (_case, body, hint) => {
+    expect(() => parseContract(classroomPanelSchema, 'GET classroom/panel', [body])).toThrow(ContractError)
+    expect(() => parseContract(classroomPanelSchema, 'GET classroom/panel', [body])).toThrow(hint)
   })
 })

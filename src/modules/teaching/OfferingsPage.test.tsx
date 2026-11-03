@@ -3,24 +3,24 @@ import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { Link } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MAX_PANEL_PAGES, PANEL_PAGE_SIZE } from './api'
 import { teachingModule } from './module'
 import { OfferingsPage } from './OfferingsPage'
-import { MAX_PANEL_OFFERINGS, MAX_TRAY_ROWS } from './panel'
-import { offering, otherOffering, pendingAttempts, problem, teachingSessions } from './test/fixtures'
+import { MAX_TRAY_ROWS } from './panel'
+import { offering, otherOffering, panelItem, pendingAttempts, problem, teachingSessions } from './test/fixtures'
 
 const OFFERINGS = '/lms/teaching/offerings'
+const PANEL = '/lms/teaching/panel'
 const queuePath = (code: string) => `${OFFERINGS}/${code}/attempts`
-const sessionsPath = (code: string) => `${OFFERINGS}/${code}/sessions`
-
-// las rutas de una edición sin nada que leer
-const quiet = (code: string): MockRoute[] => [
-  { path: queuePath(code), body: [] },
-  { path: sessionsPath(code), body: [] }
-]
+// lo que el panel ya trae y antes se leía aparte por edición: su cola o sus sesiones
+const PER_OFFERING = /^\/lms\/teaching\/offerings\/./
+const pageOf = (page: number) => new RegExp(`^/lms/teaching/panel\\?page=${page}&size=${PANEL_PAGE_SIZE}$`)
+const panelOf = (...items: object[]): MockRoute => ({ path: PANEL, body: items.map((item) => ('oldestPending' in item ? item : panelItem(item))) })
+const panelDown = (status = 500): MockRoute => ({ path: PANEL, status, body: problem(status, 'fallo') })
 
 const SGSPE = offering.code
 const SRTM = otherOffering.code
-const OFFERING_ROUTES: MockRoute[] = [{ path: queuePath(SGSPE), body: pendingAttempts }, { path: sessionsPath(SGSPE), body: teachingSessions }, ...quiet(SRTM)]
+const BOTH = [panelItem(offering, { oldestPending: pendingAttempts, upcomingSessions: teachingSessions }), panelItem(otherOffering)]
 
 let fetchMock: FetchMock
 beforeEach(() => vi.setSystemTime(new Date('2026-11-02T15:00:00Z')))
@@ -35,11 +35,11 @@ function renderOfferings(routes: MockRoute[], language?: string) {
 }
 
 const figure = (label: string) => screen.getByText(label).parentElement!.querySelector('dd')!.textContent
-const called = (path: string) => fetchMock.calls.filter((call) => call.path === path).length
+const called = (path: string) => fetchMock.calls.filter((call) => call.path.split('?')[0] === path).length
 
 describe('OfferingsPage: el panel docente', () => {
   it('cuenta ediciones, intentos por corregir y matriculados con sumas exactas', async () => {
-    renderOfferings([{ path: OFFERINGS, body: [offering, otherOffering] }, ...OFFERING_ROUTES])
+    renderOfferings([panelOf(...BOTH)])
 
     expect(screen.getByRole('heading', { level: 1, name: 'Mis ediciones' })).toBeInTheDocument()
     expect(screen.getByText('Cargando tus ediciones…')).toBeInTheDocument()
@@ -50,7 +50,7 @@ describe('OfferingsPage: el panel docente', () => {
   })
 
   it('una tarjeta por edición, con lo que más espera primero, su estado, sus fechas en su zona y sus tres accesos', async () => {
-    renderOfferings([{ path: OFFERINGS, body: [otherOffering, offering] }, ...OFFERING_ROUTES])
+    renderOfferings([panelOf(...[...BOTH].reverse())])
 
     const items = await screen.findAllByRole('article')
     expect(items.map((item) => within(item).getByRole('heading').textContent)).toEqual(['Introducción al SGSPE', 'Licencias de anuncios con SRTM'])
@@ -69,21 +69,118 @@ describe('OfferingsPage: el panel docente', () => {
     expect(screen.queryByText(new RegExp(`edición ${SGSPE}`))).not.toBeInTheDocument()
   })
 
-  it('sin leer sus sesiones, la tarjeta no da una cifra que no sabe', async () => {
-    const closed = { ...otherOffering, status: 'FINALIZADA' }
-    renderOfferings([{ path: OFFERINGS, body: [closed] }])
+  it('una edición terminada no tiene agenda: su tarjeta no da cifra y sus sesiones no se pintan', async () => {
+    const closed = panelItem({ ...otherOffering, status: 'FINALIZADA' }, { upcomingSessions: teachingSessions })
+    renderOfferings([panelOf(closed)])
 
     const card = within(await screen.findByRole('article'))
     expect(card.getByRole('link', { name: 'Sesiones' })).toHaveAttribute('href', `/docencia/${SRTM}/sesiones`)
     expect(card.getByText('Finalizada')).toBeInTheDocument()
-    expect(called(sessionsPath(SRTM))).toBe(0)
+    expect(screen.getByText('No tienes sesiones próximas.')).toBeInTheDocument()
+  })
+
+  it('una sola lectura: ni la lista de ediciones aparte ni una petición por edición', async () => {
+    renderOfferings([panelOf(...BOTH)])
+
+    await screen.findByText('estudiante@demo.local')
+    expect(called(PANEL)).toBe(1)
+    expect(called(OFFERINGS)).toBe(0)
+    expect(fetchMock.calls.filter((call) => PER_OFFERING.test(call.path))).toEqual([])
+  })
+
+  // antes: «avisa cuando el tope deja ediciones sin leer»
+  it('con más ediciones que una página las lee todas, recorriendo páginas, sin ningún aviso, y las cifras son exactas', async () => {
+    const many = Array.from({ length: PANEL_PAGE_SIZE + 2 }, (_, index) =>
+      panelItem(
+        { ...offering, code: `e${index}`, pendingAttempts: 1 },
+        { oldestPending: [{ ...pendingAttempts[0]!, attemptId: `int-${index}`, email: `persona${index}@demo.local` }] }
+      )
+    )
+    renderOfferings([
+      { path: pageOf(0), body: many.slice(0, PANEL_PAGE_SIZE) },
+      { path: pageOf(1), body: many.slice(PANEL_PAGE_SIZE) }
+    ])
+
+    await screen.findAllByRole('article')
+    expect(screen.getAllByRole('article')).toHaveLength(many.length)
+    expect(figure('Ediciones asignadas')).toBe(String(many.length))
+    expect(figure('Intentos por corregir')).toBe(String(many.length))
+    expect(screen.getByText(`persona${PANEL_PAGE_SIZE + 1}@demo.local`)).toBeInTheDocument()
+    expect(fetchMock.calls.map((call) => call.path).filter((path) => path.startsWith('/lms/'))).toEqual([
+      `${PANEL}?page=0&size=${PANEL_PAGE_SIZE}`,
+      `${PANEL}?page=1&size=${PANEL_PAGE_SIZE}`
+    ])
+    expect(screen.queryByText(/ediciones con más trabajo/)).not.toBeInTheDocument()
+  })
+
+  describe('si no se puede leer el panel', () => {
+    it('la bandeja y la agenda lo dicen, las tarjetas y las cifras siguen y «Reintentar» lo recupera', async () => {
+      const routes: MockRoute[] = [panelDown(), { path: OFFERINGS, body: [offering, otherOffering] }]
+      renderOfferings(routes)
+
+      const tray = within((await screen.findByRole('heading', { level: 2, name: 'Por corregir' })).closest('section')!)
+      const alert = await tray.findByRole('alert')
+      expect(alert).toHaveTextContent('No pudimos cargar la cola de corrección')
+      expect(tray.queryByText('No tienes entregas por corregir.')).not.toBeInTheDocument()
+      const agenda = within(screen.getByRole('heading', { level: 2, name: 'Próximas sesiones' }).closest('section')!)
+      expect(agenda.getByRole('alert')).toHaveTextContent('No pudimos cargar tus próximas sesiones.')
+      expect(screen.getAllByRole('article')).toHaveLength(2)
+      expect(figure('Intentos por corregir')).toBe('1')
+      // sin leer sus sesiones, la tarjeta no da cifra
+      expect(screen.getAllByRole('link', { name: 'Sesiones' })).toHaveLength(2)
+
+      routes[0] = panelOf(...BOTH)
+      await userEvent.click(within(alert).getByRole('button', { name: 'Reintentar: cola de corrección' }))
+      expect(await tray.findByText('estudiante@demo.local')).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      expect(fetchMock.calls.filter((call) => PER_OFFERING.test(call.path))).toEqual([])
+    })
+
+    it('sin nada por corregir ni ediciones vivas, no avisa de bloques que no tendrían nada', async () => {
+      renderOfferings([panelDown(), { path: OFFERINGS, body: [{ ...otherOffering, status: 'FINALIZADA' }] }])
+
+      expect(await screen.findByText('No tienes entregas por corregir.')).toBeInTheDocument()
+      expect(screen.getByText('No tienes sesiones próximas.')).toBeInTheDocument()
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('si falla una página posterior, no da por completo lo leído: sin filas de la bandeja y con las cifras de toda la lista', async () => {
+      const first = Array.from({ length: PANEL_PAGE_SIZE }, (_, index) =>
+        panelItem({ ...offering, code: `e${index}`, pendingAttempts: 1 }, { oldestPending: pendingAttempts, upcomingSessions: teachingSessions })
+      )
+      const all = [...first.map(({ upcomingSessions: _sessions, oldestPending: _queue, ...rest }) => rest), { ...offering, code: 'ultima', pendingAttempts: 3 }]
+      renderOfferings([
+        { path: pageOf(0), body: first },
+        { path: pageOf(1), status: 500, body: problem(500, 'fallo') },
+        { path: OFFERINGS, body: all }
+      ])
+
+      const tray = within((await screen.findByRole('heading', { level: 2, name: 'Por corregir' })).closest('section')!)
+      expect(await tray.findByRole('alert')).toHaveTextContent('No pudimos cargar la cola de corrección')
+      expect(tray.queryByRole('link', { name: /^Corregir/ })).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: /Presentación del curso/ })).not.toBeInTheDocument()
+      expect(figure('Intentos por corregir')).toBe(String(PANEL_PAGE_SIZE + 3))
+      expect(screen.getAllByRole('article')).toHaveLength(all.length)
+    })
+
+    it('si las páginas nunca terminan, para en el límite de seguridad y lo trata como un fallo', async () => {
+      const full = Array.from({ length: PANEL_PAGE_SIZE }, (_, index) => panelItem({ ...offering, code: `e${index}`, pendingAttempts: 0 }))
+      renderOfferings([
+        { path: /^\/lms\/teaching\/panel\?/, body: full },
+        { path: OFFERINGS, body: [offering] }
+      ])
+
+      expect((await screen.findAllByRole('alert'))[0]).toHaveTextContent('No pudimos cargar')
+      expect(called(PANEL)).toBe(MAX_PANEL_PAGES)
+      expect(screen.getAllByRole('article')).toHaveLength(1)
+    })
   })
 
   describe('la bandeja «Por corregir»', () => {
     const tray = async () => within((await screen.findByRole('heading', { level: 2, name: 'Por corregir' })).closest('section')!)
 
-    it('trae correo, lección, antigüedad y acceso directo, y lee solo las colas con algo pendiente', async () => {
-      renderOfferings([{ path: OFFERINGS, body: [offering, otherOffering] }, ...OFFERING_ROUTES])
+    it('trae correo, lección, antigüedad y acceso directo, sin leer ninguna cola', async () => {
+      renderOfferings([panelOf(...BOTH)])
 
       const section = await tray()
       expect(await section.findByText('estudiante@demo.local')).toBeInTheDocument()
@@ -94,19 +191,14 @@ describe('OfferingsPage: el panel docente', () => {
         `/docencia/${SGSPE}/correccion/int-1`
       )
       expect(section.getByRole('link', { name: 'Ver la cola' })).toHaveAttribute('href', `/docencia/${SGSPE}/correccion`)
-      expect(called(queuePath(SGSPE))).toBe(1)
+      expect(called(queuePath(SGSPE))).toBe(0)
       expect(called(queuePath(SRTM))).toBe(0)
     })
 
     it('agrupa por edición si hay más de una, con la entrega más antigua arriba, y solo esa es primaria', async () => {
-      const busy = { ...otherOffering, pendingAttempts: 1 }
       const older = { ...pendingAttempts[0]!, attemptId: 'int-9', email: 'ana.torres@demo.local', lessonTitle: 'Práctica', submittedAt: '2026-10-01T10:00:00Z' }
       renderOfferings([
-        { path: OFFERINGS, body: [offering, busy] },
-        { path: queuePath(SGSPE), body: pendingAttempts },
-        { path: sessionsPath(SGSPE), body: [] },
-        { path: queuePath(SRTM), body: [older] },
-        { path: sessionsPath(SRTM), body: [] }
+        panelOf(panelItem(offering, { oldestPending: pendingAttempts }), panelItem({ ...otherOffering, pendingAttempts: 1 }, { oldestPending: [older] }))
       ])
 
       const section = await tray()
@@ -124,71 +216,52 @@ describe('OfferingsPage: el panel docente', () => {
     })
 
     it('una entrega sin correo lo dice', async () => {
-      renderOfferings([
-        { path: OFFERINGS, body: [offering] },
-        { path: queuePath(SGSPE), body: [{ ...pendingAttempts[0], email: null }] },
-        { path: sessionsPath(SGSPE), body: [] }
-      ])
+      renderOfferings([panelOf(panelItem(offering, { oldestPending: [{ ...pendingAttempts[0], email: null }] }))])
 
       expect(await (await tray()).findByText('Sin correo registrado')).toBeInTheDocument()
     })
 
-    it('muestra un máximo de entregas y lleva a la cola para las demás', async () => {
-      const queue = Array.from({ length: MAX_TRAY_ROWS + 2 }, (_, index) => ({ ...pendingAttempts[0]!, attemptId: `int-${index}` }))
-      renderOfferings([
-        { path: OFFERINGS, body: [{ ...offering, pendingAttempts: queue.length }] },
-        { path: queuePath(SGSPE), body: queue },
-        { path: sessionsPath(SGSPE), body: [] }
-      ])
+    const queueOf = (count: number) => Array.from({ length: count }, (_, index) => ({ ...pendingAttempts[0]!, attemptId: `int-${index}` }))
+
+    // antes contaba las filas de la cola entera, que ya no se lee: el total sale de pendingAttempts
+    it('muestra los que trae el panel y lleva a la cola para los demás, con el total real', async () => {
+      renderOfferings([panelOf(panelItem({ ...offering, pendingAttempts: 42 }, { oldestPending: queueOf(MAX_TRAY_ROWS) }))])
 
       const section = await tray()
-      expect(await section.findByRole('link', { name: 'Ver 2 entregas más en la cola' })).toHaveAttribute('href', `/docencia/${SGSPE}/correccion`)
+      expect(await section.findByRole('link', { name: `Ver ${42 - MAX_TRAY_ROWS} entregas más en la cola` })).toHaveAttribute(
+        'href',
+        `/docencia/${SGSPE}/correccion`
+      )
       expect(section.getAllByRole('link', { name: /^Corregir/ })).toHaveLength(MAX_TRAY_ROWS)
+      expect(figure('Intentos por corregir')).toBe('42')
     })
 
-    it('sin nada por corregir lo dice, sin primaria y sin pedir ninguna cola', async () => {
-      renderOfferings([{ path: OFFERINGS, body: [otherOffering] }, ...quiet(SRTM)])
+    it('con la bandeja justa, o con menos filas de las que caben, no promete más', async () => {
+      renderOfferings([panelOf(panelItem({ ...offering, pendingAttempts: MAX_TRAY_ROWS }, { oldestPending: queueOf(MAX_TRAY_ROWS) }))])
+      expect((await (await tray()).findAllByRole('link', { name: /^Corregir/ })).length).toBe(MAX_TRAY_ROWS)
+      expect(screen.queryByRole('link', { name: /más en la cola/ })).not.toBeInTheDocument()
+    })
+
+    it('si el total cuenta entregas que la cola no enseña, menos filas de las que caben son la cola entera', async () => {
+      // pendingAttempts cuenta todos los enviados; la cola deja fuera los propios de quien la mira
+      renderOfferings([panelOf(panelItem({ ...offering, pendingAttempts: 3 }, { oldestPending: queueOf(2) }))])
+
+      expect(await (await tray()).findAllByRole('link', { name: /^Corregir/ })).toHaveLength(2)
+      expect(screen.queryByRole('link', { name: /más en la cola/ })).not.toBeInTheDocument()
+    })
+
+    it('sin nada por corregir lo dice, sin primaria', async () => {
+      renderOfferings([panelOf(otherOffering)])
 
       const section = await tray()
       expect(section.getByText('No tienes entregas por corregir.')).toBeInTheDocument()
-      expect(called(queuePath(SRTM))).toBe(0)
       expect(document.querySelector('[data-variant="primary"]')).toBeNull()
     })
 
-    it('una cola que falla degrada solo su bloque: lo dice, deja reintentar y lo demás se ve', async () => {
-      const busy = { ...otherOffering, pendingAttempts: 1 }
-      const routes: MockRoute[] = [
-        { path: OFFERINGS, body: [offering, busy] },
-        { path: queuePath(SGSPE), status: 500, body: problem(500, 'fallo') },
-        { path: sessionsPath(SGSPE), body: teachingSessions },
-        { path: queuePath(SRTM), body: [{ ...pendingAttempts[0]!, attemptId: 'int-9', email: 'ana.torres@demo.local' }] },
-        { path: sessionsPath(SRTM), body: [] }
-      ]
-      renderOfferings(routes)
+    it('una edición con total pero sin filas a la vista no se pinta', async () => {
+      renderOfferings([panelOf({ ...panelItem(offering), pendingAttempts: 1 })])
 
-      const section = await tray()
-      const alert = await section.findByRole('alert')
-      expect(alert).toHaveTextContent('No pudimos cargar la cola de corrección')
-      expect(await section.findByText('ana.torres@demo.local')).toBeInTheDocument()
-      expect(screen.getAllByRole('article')).toHaveLength(2)
-      expect(await screen.findByText('Presentación del curso')).toBeInTheDocument()
-
-      routes[1] = { path: queuePath(SGSPE), body: pendingAttempts }
-      await userEvent.click(within(alert).getByRole('button', { name: 'Reintentar: cola de Introducción al SGSPE' }))
-      expect(await section.findByText('estudiante@demo.local')).toBeInTheDocument()
-      expect(section.queryByRole('alert')).not.toBeInTheDocument()
-      expect(called(queuePath(SRTM))).toBe(1)
-    })
-
-    it('avisa cuando el tope deja ediciones sin leer', async () => {
-      const many = Array.from({ length: MAX_PANEL_OFFERINGS + 1 }, (_, index) => ({ ...offering, code: `e${index}` }))
-      renderOfferings([{ path: OFFERINGS, body: many }, ...many.flatMap(({ code }) => quiet(code))])
-
-      expect(
-        (await screen.findAllByText(`Aquí se leen las ${MAX_PANEL_OFFERINGS} ediciones con más trabajo. Las demás, desde su tarjeta.`)).length
-      ).toBeGreaterThan(0)
-      await waitFor(() => expect(called(queuePath('e0'))).toBe(1))
-      expect(called(queuePath(`e${MAX_PANEL_OFFERINGS}`))).toBe(0)
+      expect((await tray()).getByText('No tienes entregas por corregir.')).toBeInTheDocument()
     })
   })
 
@@ -196,7 +269,7 @@ describe('OfferingsPage: el panel docente', () => {
     const agenda = async () => within((await screen.findByRole('heading', { level: 2, name: 'Próximas sesiones' })).closest('section')!)
 
     it('trae las futuras no canceladas, con día de la semana, hora y zona, y enlaza a las sesiones de la edición', async () => {
-      renderOfferings([{ path: OFFERINGS, body: [offering, otherOffering] }, ...OFFERING_ROUTES])
+      renderOfferings([panelOf(...BOTH)])
 
       const section = await agenda()
       const row = await section.findByRole('link', { name: /Presentación del curso/ })
@@ -210,13 +283,7 @@ describe('OfferingsPage: el panel docente', () => {
 
     it('con ediciones en zonas distintas, cada fila dice la suya', async () => {
       const madridSession = { ...teachingSessions[0]!, id: 'ses-9', title: 'En Madrid', timeZone: 'Europe/Madrid' }
-      renderOfferings([
-        { path: OFFERINGS, body: [offering, otherOffering] },
-        { path: queuePath(SGSPE), body: [] },
-        { path: sessionsPath(SGSPE), body: teachingSessions },
-        { path: queuePath(SRTM), body: [] },
-        { path: sessionsPath(SRTM), body: [madridSession] }
-      ])
+      renderOfferings([panelOf(panelItem(offering, { upcomingSessions: teachingSessions }), panelItem(otherOffering, { upcomingSessions: [madridSession] }))])
 
       const section = await agenda()
       const madrid = await section.findByRole('link', { name: /En Madrid/ })
@@ -228,10 +295,7 @@ describe('OfferingsPage: el panel docente', () => {
 
     it('la sesión en curso lo dice y lleva a pasar asistencia', async () => {
       const running = { ...teachingSessions[0]!, start: '2026-11-02T14:30:00Z', end: '2026-11-02T16:00:00Z' }
-      renderOfferings([
-        { path: OFFERINGS, body: [{ ...offering, pendingAttempts: 0 }] },
-        { path: sessionsPath(SGSPE), body: [running] }
-      ])
+      renderOfferings([panelOf(panelItem({ ...offering, pendingAttempts: 0 }, { upcomingSessions: [running] }))])
 
       const row = await (await agenda()).findByRole('link', { name: /Presentación del curso/ })
       expect(row).toHaveAttribute('href', `/docencia/${SGSPE}/sesiones/ses-1/asistencia`)
@@ -240,46 +304,20 @@ describe('OfferingsPage: el panel docente', () => {
     })
 
     it('una reprogramada lo dice', async () => {
-      renderOfferings([
-        { path: OFFERINGS, body: [{ ...offering, pendingAttempts: 0 }] },
-        { path: sessionsPath(SGSPE), body: [{ ...teachingSessions[0]!, status: 'REPROGRAMADA' }] }
-      ])
+      renderOfferings([panelOf(panelItem({ ...offering, pendingAttempts: 0 }, { upcomingSessions: [{ ...teachingSessions[0]!, status: 'REPROGRAMADA' }] }))])
 
       expect(await (await agenda()).findByRole('link', { name: /Reprogramada/ })).toBeInTheDocument()
     })
 
     it('sin sesiones por delante lo dice', async () => {
-      renderOfferings([
-        { path: OFFERINGS, body: [{ ...offering, pendingAttempts: 0 }] },
-        { path: sessionsPath(SGSPE), body: [teachingSessions[1]] }
-      ])
+      renderOfferings([panelOf({ ...offering, pendingAttempts: 0 })])
 
       expect(await (await agenda()).findByText('No tienes sesiones próximas.')).toBeInTheDocument()
-    })
-
-    it('unas sesiones que fallan degradan solo su bloque: dice de qué curso, deja reintentar y la tarjeta no da cifra', async () => {
-      const routes: MockRoute[] = [
-        { path: OFFERINGS, body: [offering] },
-        { path: queuePath(SGSPE), body: pendingAttempts },
-        { path: sessionsPath(SGSPE), status: 500, body: problem(500, 'fallo') }
-      ]
-      renderOfferings(routes)
-
-      const section = await agenda()
-      const alert = await section.findByRole('alert')
-      expect(alert).toHaveTextContent('No pudimos cargar las sesiones de Introducción al SGSPE.')
-      expect(screen.getByRole('link', { name: 'Sesiones' })).toBeInTheDocument()
-      expect(await screen.findByText('estudiante@demo.local')).toBeInTheDocument()
-
-      routes[2] = { path: sessionsPath(SGSPE), body: teachingSessions }
-      await userEvent.click(within(alert).getByRole('button', { name: 'Reintentar: sesiones' }))
-      expect(await section.findByRole('link', { name: /Presentación del curso/ })).toBeInTheDocument()
-      expect(section.queryByRole('alert')).not.toBeInTheDocument()
     })
   })
 
   it('sin ediciones asignadas lo dice con claridad, sin cifras en cero ni bloques vacíos', async () => {
-    renderOfferings([{ path: OFFERINGS, body: [] }])
+    renderOfferings([panelOf()])
 
     expect(await screen.findByText('No tienes ediciones asignadas')).toBeInTheDocument()
     expect(screen.getByText(/Cuando la coordinación te asigne/)).toBeInTheDocument()
@@ -289,7 +327,7 @@ describe('OfferingsPage: el panel docente', () => {
   })
 
   it('un error del servidor se explica y deja reintentar', async () => {
-    renderOfferings([{ path: OFFERINGS, status: 500, body: problem(500, 'fallo') }])
+    renderOfferings([panelDown(), { path: OFFERINGS, status: 500, body: problem(500, 'fallo') }])
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar tus ediciones')
@@ -297,8 +335,20 @@ describe('OfferingsPage: el panel docente', () => {
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 
+  it('«Reintentar», con todo caído, recupera el panel', async () => {
+    const routes: MockRoute[] = [panelDown(), { path: OFFERINGS, status: 500, body: problem(500, 'fallo') }]
+    renderOfferings(routes)
+
+    const retry = await screen.findByRole('button', { name: 'Reintentar' })
+    routes[0] = panelOf(...BOTH)
+    await userEvent.click(retry)
+
+    expect(await screen.findAllByRole('article')).toHaveLength(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('quien no puede leer las ediciones no ve el panel: un 403 se explica, sin cifras ni tarjetas', async () => {
-    renderOfferings([{ path: OFFERINGS, status: 403, body: problem(403, 'prohibido') }])
+    renderOfferings([panelDown(403), { path: OFFERINGS, status: 403, body: problem(403, 'prohibido') }])
 
     expect(await screen.findByRole('alert')).toBeInTheDocument()
     expect(screen.queryByText('Ediciones asignadas')).not.toBeInTheDocument()
@@ -306,21 +356,15 @@ describe('OfferingsPage: el panel docente', () => {
   })
 
   it('una respuesta fuera de contrato no muestra datos a medias', async () => {
-    renderOfferings([{ path: OFFERINGS, body: [{ ...offering, enrolled: '2' }] }])
+    const broken = { ...offering, enrolled: '2' }
+    renderOfferings([panelOf(broken), { path: OFFERINGS, body: [broken] }])
 
     expect(await screen.findByText('No pudimos leer la respuesta del servidor')).toBeInTheDocument()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
   })
 
   it('en inglés', async () => {
-    renderOfferings(
-      [
-        { path: OFFERINGS, body: [offering] },
-        { path: queuePath(SGSPE), body: pendingAttempts },
-        { path: sessionsPath(SGSPE), body: teachingSessions }
-      ],
-      'en'
-    )
+    renderOfferings([panelOf(BOTH[0]!)], 'en')
 
     expect(screen.getByRole('heading', { level: 1, name: 'My offerings' })).toBeInTheDocument()
     expect(await screen.findByRole('link', { name: '2 students' })).toBeInTheDocument()
@@ -331,8 +375,8 @@ describe('OfferingsPage: el panel docente', () => {
   })
 
   // el menú lleva a la misma ruta: la página no se vuelve a montar y solo cambia la entrada del historial (#76)
-  it('con el panel abierto, volver a pulsar su entrada del menú lo vuelve a pedir, con sus bloques, y pinta lo nuevo', async () => {
-    const routes: MockRoute[] = [{ path: OFFERINGS, body: [offering] }, ...OFFERING_ROUTES]
+  it('con el panel abierto, volver a pulsar su entrada del menú lo vuelve a pedir y pinta lo nuevo', async () => {
+    const routes: MockRoute[] = [panelOf(BOTH[0]!)]
     fetchMock = mockFetch(routes)
     renderWithProviders(
       <>
@@ -343,14 +387,12 @@ describe('OfferingsPage: el panel docente', () => {
     )
     expect(await screen.findAllByRole('article')).toHaveLength(1)
     await screen.findByText('estudiante@demo.local')
-    expect(called(OFFERINGS)).toBe(1)
-    expect(called(queuePath(SGSPE))).toBe(1)
+    expect(called(PANEL)).toBe(1)
 
-    routes[0] = { path: OFFERINGS, body: [offering, otherOffering] }
+    routes[0] = panelOf(...BOTH)
     await userEvent.click(screen.getByRole('link', { name: 'Menú' }))
 
     await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2))
-    expect(called(OFFERINGS)).toBe(2)
-    await waitFor(() => expect(called(queuePath(SGSPE))).toBe(2))
+    expect(called(PANEL)).toBe(2)
   })
 })

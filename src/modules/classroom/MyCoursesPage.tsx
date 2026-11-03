@@ -7,10 +7,10 @@ import { CordBanner } from '../../shared/CordBanner'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader, Section, Skeleton } from '../../shared/Screen'
-import { useEnrollments } from './api'
+import { useClassroomPanel, useEnrollments } from './api'
 import type { Enrollment } from './contract'
 import { allLessonsDone, canContinue, groupEnrollments, railEnrollments, type EnrollmentGroups } from './dashboard'
-import { DashboardRail, useRailData } from './DashboardRail'
+import { DashboardRail, railData, type RailData } from './DashboardRail'
 import { OfferingDates, ProgressBar, useProblemText, WRAP } from './parts'
 import { summaryKnots } from './Quipu'
 import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
@@ -19,31 +19,33 @@ import { StatusBadge } from './StatusBadge'
 const NO_ENROLLMENTS: Enrollment[] = []
 
 // «Mis cursos», el panel del estudiante: arriba por dónde seguir, debajo el resto de sus cursos y al lado lo que tiene por
-// delante. el panel solo depende de la lista de matrículas: lo del riel falla por su cuenta (DashboardRail)
+// delante. todo sale de una sola lectura, el panel, que ya trae las matrículas. si falla, solo se piden las matrículas: los cursos siguen
+// a la vista y el riel dice que no pudo, sin datos a medias. solo si tampoco llegan, la pantalla entera explica el problema
 export function MyCoursesPage() {
   const { t } = useTranslation('classroom')
-  const query = useEnrollments()
-  const groups = useMemo(() => groupEnrollments(query.data ?? NO_ENROLLMENTS), [query.data])
-  const rail = useMemo(() => railEnrollments(groups), [groups])
-  const railData = useRailData(rail.read, rail.capped)
-  useRefetchOnRevisit(() => {
-    void query.refetch()
-    railData.refetch()
-  })
+  const panel = useClassroomPanel()
+  const list = useEnrollments({ enabled: panel.isError })
+  const read = panel.isError ? undefined : panel.data
+  const enrollments = read ?? list.data
+  const groups = useMemo(() => groupEnrollments(enrollments ?? NO_ENROLLMENTS), [enrollments])
+  const active = useMemo(() => railEnrollments(groups), [groups])
+  const reload = () => {
+    void panel.refetch()
+    if (panel.isError) void list.refetch()
+  }
+  useRefetchOnRevisit(reload)
+  const rail = railData(active, read, { loading: panel.isPending, failed: panel.isError, retry: () => void panel.refetch() })
   return (
     <>
-      <ScreenHeader
-        title={t('enrollments.title')}
-        subtitle={<Greeting hasCourses={Boolean(query.data?.length)} sessionsThisWeek={railData.sessionsThisWeek} />}
-      />
+      <ScreenHeader title={t('enrollments.title')} subtitle={<Greeting hasCourses={Boolean(enrollments?.length)} sessionsThisWeek={rail.sessionsThisWeek} />} />
       <ScreenBody>
-        {query.isError ? (
-          <EnrollmentsProblem error={query.error} onRetry={() => void query.refetch()} />
-        ) : query.data ? (
-          query.data.length === 0 ? (
+        {panel.isError && list.isError ? (
+          <EnrollmentsProblem error={list.error} onRetry={reload} />
+        ) : enrollments ? (
+          enrollments.length === 0 ? (
             <NoEnrollments />
           ) : (
-            <Dashboard groups={groups} total={query.data.length} railData={railData} railCount={rail.read.length} capped={rail.capped} />
+            <Dashboard groups={groups} total={enrollments.length} railData={rail} railCount={active.length} />
           )
         ) : (
           <DashboardSkeleton />
@@ -119,19 +121,7 @@ function DashboardSkeleton() {
 // una columna en el móvil (con «Continuar» primero y el riel debajo); cuerpo y riel desde lg
 const PANEL = 'grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-10'
 
-function Dashboard({
-  groups,
-  total,
-  railData,
-  railCount,
-  capped
-}: {
-  groups: EnrollmentGroups
-  total: number
-  railData: ReturnType<typeof useRailData>
-  railCount: number
-  capped: boolean
-}) {
+function Dashboard({ groups, total, railData, railCount }: { groups: EnrollmentGroups; total: number; railData: RailData; railCount: number }) {
   const { t } = useTranslation('classroom')
   const { primary, inProgress, completed, withdrawn } = groups
   // con un solo curso las cifras no dicen nada que no se vea; y sin cifras ni nada que leer, el riel sobra
@@ -149,7 +139,7 @@ function Dashboard({
         <CourseSection title={t('dashboard.completed')} enrollments={completed} />
         <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} />
       </div>
-      {hasRail ? <DashboardRail data={railData} showBlocks={railCount > 0} capped={capped} figures={figures} /> : null}
+      {hasRail ? <DashboardRail data={railData} showBlocks={railCount > 0} figures={figures} /> : null}
     </div>
   )
 }

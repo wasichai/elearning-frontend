@@ -1,4 +1,3 @@
-import type { UseQueryResult } from '@tanstack/react-query'
 import { useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
@@ -6,26 +5,27 @@ import { Link } from 'react-router'
 import { TEXT_LINK, WRAP } from '../../shared/buttons'
 import { formatDateTime, formatNumber } from '../../shared/format'
 import { Section, Skeleton } from '../../shared/Screen'
-import type { PendingAttempt, TeachingOffering } from './contract'
-import { groupsByOldest, MAX_PANEL_OFFERINGS, MAX_TRAY_ROWS, oldestFirst, submittedAge } from './panel'
+import type { PendingAttempt, TeachingPanelItem } from './contract'
+import { groupsByOldest, hiddenAttempts, MAX_TRAY_ROWS, oldestFirst, submittedAge } from './panel'
 import { BlockProblem, EmailText, useProblemText } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 interface TrayGroup {
-  offering: TeachingOffering
-  query: UseQueryResult<PendingAttempt[]>
+  offering: TeachingPanelItem
   attempts: PendingAttempt[]
 }
 
-// la bandeja «Por corregir»: lo enviado que espera, lo más antiguo arriba, con el acceso directo a cada corrección. cada cola falla
-// por su cuenta. la única primaria de la pantalla es la entrega que más espera: si no hay ninguna a la vista, no hay primaria
-export function GradingTray({ offerings, queries, capped }: { offerings: TeachingOffering[]; queries: UseQueryResult<PendingAttempt[]>[]; capped: boolean }) {
+// la bandeja «Por corregir»: lo enviado que espera, lo más antiguo arriba, con el acceso directo a cada corrección. sale del panel: si no
+// se pudo leer, lo dice sin filas a medias. la única primaria de la pantalla es la entrega que más espera: si no hay ninguna a la vista,
+// no hay primaria
+export function GradingTray({ items, loading, error, onRetry }: { items: TeachingPanelItem[]; loading: boolean; error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('teaching')
   const links = useWasichaiLinks()
-  // la lista de ediciones puede ir por detrás de su cola: lo que ya no tiene entregas, ni falla ni carga, no se pinta
+  const { title: problem } = useProblemText(error, 'queue')
+  // el total puede contar entregas que su cola no enseña (los intentos propios): lo que no tiene filas no se pinta
   const groups = groupsByOldest(
-    offerings.map<TrayGroup>((offering, index) => ({ offering, query: queries[index]!, attempts: oldestFirst(queries[index]!.data ?? []) }))
-  ).filter(({ query, attempts }) => attempts.length > 0 || query.isError || query.isPending)
+    items.filter((item) => item.oldestPending.length > 0).map((offering): TrayGroup => ({ offering, attempts: oldestFirst(offering.oldestPending) }))
+  )
   const only = groups.length === 1 ? groups[0]!.offering : undefined
   const first = groups[0]?.attempts[0]?.attemptId
   return (
@@ -40,7 +40,15 @@ export function GradingTray({ offerings, queries, capped }: { offerings: Teachin
         ) : undefined
       }
     >
-      {groups.length === 0 ? <p className="text-sm text-ink-muted">{t('panel.tray.none')}</p> : null}
+      {error ? <BlockProblem text={problem} retryLabel={t('panel.tray.retry')} onRetry={onRetry} /> : null}
+      {loading ? (
+        <div role="status" className="flex flex-col gap-3 border-y border-border py-4">
+          <span className="sr-only">{t('queue.loading')}</span>
+          <Skeleton className="h-4 w-3/5" />
+          <Skeleton className="h-4 w-2/5" />
+        </div>
+      ) : null}
+      {!loading && !error && groups.length === 0 ? <p className="text-sm text-ink-muted">{t('panel.tray.none')}</p> : null}
       {only ? (
         <TrayBody group={groups[0]!} primary={first} />
       ) : (
@@ -58,37 +66,23 @@ export function GradingTray({ offerings, queries, capped }: { offerings: Teachin
           ))}
         </div>
       )}
-      {capped ? <p className="text-sm text-ink-muted">{t('panel.capped', { count: MAX_PANEL_OFFERINGS })}</p> : null}
     </Section>
   )
 }
 
-function TrayBody({ group: { offering, query, attempts }, primary }: { group: TrayGroup; primary?: string }) {
+function TrayBody({ group: { offering, attempts }, primary }: { group: TrayGroup; primary?: string }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
-  const { title } = useProblemText(query.error, 'queue')
-  const hidden = attempts.length - MAX_TRAY_ROWS
+  const hidden = hiddenAttempts(offering)
   return (
     <>
-      {query.isError ? (
-        <BlockProblem text={title} retryLabel={t('panel.tray.retry', { course: offering.course.title })} onRetry={() => void query.refetch()} />
-      ) : null}
-      {query.isPending ? (
-        <div role="status" className="flex flex-col gap-3 border-y border-border py-4">
-          <span className="sr-only">{t('queue.loading')}</span>
-          <Skeleton className="h-4 w-3/5" />
-          <Skeleton className="h-4 w-2/5" />
-        </div>
-      ) : null}
-      {attempts.length > 0 ? (
-        <ul className="flex flex-col divide-y divide-border border-y border-border">
-          {attempts.slice(0, MAX_TRAY_ROWS).map((attempt) => (
-            <li key={attempt.attemptId} className="@container">
-              <TrayRow code={offering.code} timeZone={offering.timeZone} attempt={attempt} primary={attempt.attemptId === primary} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ul className="flex flex-col divide-y divide-border border-y border-border">
+        {attempts.slice(0, MAX_TRAY_ROWS).map((attempt) => (
+          <li key={attempt.attemptId} className="@container">
+            <TrayRow code={offering.code} timeZone={offering.timeZone} attempt={attempt} primary={attempt.attemptId === primary} />
+          </li>
+        ))}
+      </ul>
       {hidden > 0 ? (
         <Link to={links.to(TEACHING_ROUTES.queue, { code: offering.code })} className={`${TEXT_LINK} self-start`}>
           {t('panel.tray.more', { count: hidden, value: formatNumber(hidden, i18n.language) })}

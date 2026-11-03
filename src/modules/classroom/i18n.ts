@@ -52,9 +52,6 @@ const es = {
       completed: 'Completados'
     },
     loading: 'Cargando tu resumen…',
-    partial: 'Lo que ves puede estar incompleto.',
-    capped_one: 'Se revisa tu primer curso en curso.',
-    capped_other: 'Se revisan tus primeros {{count}} cursos en curso.',
     sessions: {
       title: 'Próximas sesiones',
       none: 'Nada programado',
@@ -66,7 +63,7 @@ const es = {
     assessments: {
       title: 'Evaluaciones pendientes',
       none: 'Nada pendiente',
-      failed: 'No pudimos cargar todas tus evaluaciones.',
+      failed: 'No pudimos cargar tus evaluaciones.',
       retry: 'Reintentar las evaluaciones',
       more_one: 'Y {{count}} evaluación más en tus cursos.',
       more_other: 'Y {{count}} evaluaciones más en tus cursos.',
@@ -582,9 +579,6 @@ const en: typeof es = {
       completed: 'Completed'
     },
     loading: 'Loading your summary…',
-    partial: 'What you see may be incomplete.',
-    capped_one: 'Only your first course in progress is checked.',
-    capped_other: 'Only your first {{count}} courses in progress are checked.',
     sessions: {
       title: 'Upcoming sessions',
       none: 'Nothing scheduled',
@@ -596,7 +590,7 @@ const en: typeof es = {
     assessments: {
       title: 'Pending assessments',
       none: 'Nothing pending',
-      failed: 'We could not load all your assessments.',
+      failed: 'We could not load your assessments.',
       retry: 'Retry the assessments',
       more_one: 'And {{count}} more assessment in your courses.',
       more_other: 'And {{count}} more assessments in your courses.',

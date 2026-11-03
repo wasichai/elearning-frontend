@@ -149,7 +149,24 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     const teacher = await browserFor(browser, baseURL, TEACHER)
     try {
       const { page: desk } = teacher
+      const answered = desk.waitForResponse((response) => new URL(response.url()).pathname === '/api/lms/teaching/panel')
       await desk.getByRole('link', { name: 'Mis ediciones' }).click()
+      // el panel docente lee el servidor: la edición, con su total y el principio de su cola (de otras ejecuciones puede traer otras entregas)
+      const response = await answered
+      expect(response.status()).toBe(200)
+      const panel = (await response.json()) as { code: string; pendingAttempts: number; upcomingSessions: unknown[]; oldestPending: unknown[] }[]
+      const assigned = panel.find((item) => item.code === OFFERING)
+      expect(assigned, 'el panel trae la edición asignada').toBeDefined()
+      expect(assigned!.pendingAttempts).toBeGreaterThan(0)
+      expect(assigned!.oldestPending.length).toBeGreaterThan(0)
+      expect(Array.isArray(assigned!.upcomingSessions)).toBe(true)
+      await expect(
+        desk
+          .getByRole('region', { name: 'Por corregir' })
+          .getByRole('link', { name: /^Corregir «/ })
+          .first()
+      ).toBeVisible()
+      await expect(desk.getByRole('alert')).toHaveCount(0)
       // la tarjeta ya no escribe el código crudo de la edición: se reconoce por su destino
       await desk
         .getByRole('article')

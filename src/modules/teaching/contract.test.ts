@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { attendanceRowListSchema, ContractError, parseContract, pendingAttemptListSchema, rosterSchema, teachingOfferingListSchema } from './contract'
+import {
+  attendanceRowListSchema,
+  ContractError,
+  parseContract,
+  pendingAttemptListSchema,
+  rosterSchema,
+  teachingOfferingListSchema,
+  teachingPanelSchema
+} from './contract'
 import { attemptSchema } from '../../shared/attempts'
 import { sessionListSchema } from '../../shared/sessions'
-import { attemptGraded, attemptToGrade, attendanceRows, offering, otherOffering, pendingAttempts, roster, teachingSessions } from './test/fixtures'
+import { attemptGraded, attemptToGrade, attendanceRows, offering, otherOffering, panelItem, pendingAttempts, roster, teachingSessions } from './test/fixtures'
 
 const student = roster[0]!
 
@@ -63,5 +71,30 @@ describe('contrato de corrección, sesiones y asistencia', () => {
     ['sin matrícula', [{ ...attendanceRows[0], enrollmentId: '' }], 'enrollmentId']
   ])('rechaza la asistencia: %s', (_case, body, hint) => {
     expect(() => parseContract(attendanceRowListSchema, 'attendance', body)).toThrow(hint)
+  })
+})
+
+describe('contrato del panel docente', () => {
+  const item = panelItem(offering, { upcomingSessions: teachingSessions, oldestPending: pendingAttempts })
+
+  it('acepta el ejemplo del documento, listas vacías, una lista vacía de elementos y campos nuevos', () => {
+    const [read] = parseContract(teachingPanelSchema, 'panel', [item])
+    expect(read?.code).toBe(offering.code)
+    expect(read?.upcomingSessions[0]?.attendance).toBeUndefined()
+    expect(read?.oldestPending[0]?.attemptId).toBe(pendingAttempts[0]!.attemptId)
+    expect(parseContract(teachingPanelSchema, 'panel', [panelItem(otherOffering)])[0]?.oldestPending).toEqual([])
+    expect(parseContract(teachingPanelSchema, 'panel', [])).toEqual([])
+    expect(parseContract(teachingPanelSchema, 'panel', [{ ...item, nuevo: 1 }])).toHaveLength(1)
+  })
+
+  it.each([
+    ['sin sus sesiones', { ...item, upcomingSessions: undefined }, 'upcomingSessions'],
+    ['sin su cola', { ...item, oldestPending: null }, 'oldestPending'],
+    ['una sesión que no es https', { ...item, upcomingSessions: [{ ...teachingSessions[0], link: 'http://x.test' }] }, 'https'],
+    ['una entrega sin preguntas por corregir', { ...item, oldestPending: [{ ...pendingAttempts[0], pendingQuestions: 0 }] }, 'pendingQuestions'],
+    ['un total que no es un número', { ...item, pendingAttempts: '3' }, 'pendingAttempts']
+  ])('rechaza %s', (_case, body, hint) => {
+    expect(() => parseContract(teachingPanelSchema, 'GET teaching/panel', [body])).toThrow(ContractError)
+    expect(() => parseContract(teachingPanelSchema, 'GET teaching/panel', [body])).toThrow(hint)
   })
 })

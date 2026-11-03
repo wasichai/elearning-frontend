@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ATTENDANCE_STATUSES } from '../../shared/sessions'
+import { ATTENDANCE_STATUSES, sessionListSchema } from '../../shared/sessions'
 import { civilDate, ENROLLMENT_STATUSES, ianaTimeZone, OFFERING_STATUSES, progressSummarySchema } from '../../shared/contract'
 
 export { ContractError, parseContract } from '../../shared/contract'
@@ -59,6 +59,15 @@ export const pendingAttemptListSchema = z.array(
   })
 )
 
+// el panel docente (GET teaching/panel): cada edición asignada con sus próximas sesiones y el principio de su cola; el total, en
+// pendingAttempts, y la cola entera, en GET …/attempts
+export const teachingPanelSchema = z.array(
+  teachingOfferingSchema.extend({
+    upcomingSessions: sessionListSchema,
+    oldestPending: pendingAttemptListSchema
+  })
+)
+
 // la asistencia de una sesión: una fila por matriculado; status es null mientras no se ha registrado
 export const attendanceRowListSchema = z.array(
   z.object({
@@ -77,5 +86,6 @@ export type WeekDay = (typeof WEEK_DAYS)[number]
 export type PendingAttempt = z.infer<typeof pendingAttemptListSchema>[number]
 export type AttendanceRow = z.infer<typeof attendanceRowListSchema>[number]
 export type TeachingOffering = z.infer<typeof teachingOfferingSchema>
+export type TeachingPanelItem = z.infer<typeof teachingPanelSchema>[number]
 export type RosterEntry = z.infer<typeof rosterEntrySchema>
 export type RosterAssessment = z.infer<typeof rosterAssessment>
