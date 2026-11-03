@@ -178,6 +178,23 @@ function summary(lessons: LessonData[]) {
   return { completedLessons, totalLessons, percent: totalLessons === 0 ? 0 : Math.floor((completedLessons * 100) / totalLessons) }
 }
 
+// los logros, derivados como el servidor (ClassroomReader): sin at, al final. el certificado se añade al emitirlo y se conserva
+function achievementsOf(units: ClassroomData['units'], previous: Classroom['achievements']): Classroom['achievements'] {
+  const completed = units
+    .filter((unit) => unit.progress.totalLessons > 0 && unit.progress.completedLessons === unit.progress.totalLessons)
+    .map((unit) => {
+      const dates = unit.lessons.filter((lesson) => lesson.completion !== 'NOT_YET').flatMap((lesson) => lesson.progress.completedAt ?? [])
+      return { kind: 'UNIT_COMPLETED', at: dates.sort().at(-1) ?? null, ref: unit.id }
+    })
+  const passed = units
+    .flatMap((unit) => unit.lessons)
+    .filter((lesson) => lesson.assessment?.best?.passed === true)
+    .map((lesson) => ({ kind: 'ASSESSMENT_PASSED', at: lesson.progress.completedAt ?? null, ref: lesson.assessment!.id }))
+  const issued = previous.filter((achievement) => achievement.kind === 'CERTIFICATE_ISSUED')
+  const key = (at: string | null | undefined) => at ?? '\uffff'
+  return [...completed, ...passed, ...issued].sort((a, b) => key(a.at).localeCompare(key(b.at)))
+}
+
 function recount(data: ClassroomData): ClassroomData {
   const units = data.units.map((unit) => ({ ...unit, progress: summary(unit.lessons) }))
   const next = units
@@ -186,6 +203,7 @@ function recount(data: ClassroomData): ClassroomData {
   return {
     ...data,
     units,
+    achievements: achievementsOf(units, data.achievements),
     progress: summary(units.flatMap((unit) => unit.lessons)),
     nextLesson: next ? { id: next.lesson.id, title: next.lesson.title, unitOrder: next.unit.order, lessonOrder: next.lesson.order } : null
   }
@@ -248,7 +266,11 @@ function issueCertificate(state: ClassroomState, data: ClassroomData, body: unkn
     rules: completion.rules
   }
   state.certificates.set(issued.code, issued)
-  Object.assign(data, { status: 'FINALIZADA', certificateCode: issued.code })
+  Object.assign(data, {
+    status: 'FINALIZADA',
+    certificateCode: issued.code,
+    achievements: [...data.achievements, { kind: 'CERTIFICATE_ISSUED', at: issued.issuedAt, ref: issued.code }]
+  })
   return { status: 201, body: issued }
 }
 
@@ -274,7 +296,7 @@ function simulateEnroll(state: ClassroomState, body: unknown): Reply {
 type ClassroomState = ReturnType<typeof classroomState>
 
 function enrollmentOf(data: ClassroomData) {
-  const { units: _units, ...enrollmentFields } = data
+  const { units: _units, achievements: _achievements, ...enrollmentFields } = data
   return enrollmentFields
 }
 
