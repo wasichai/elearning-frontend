@@ -116,7 +116,8 @@ function UpcomingStep({ enrollmentId, upcoming, pending, focus }: { enrollmentId
   return (
     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       {pending ? <p className="text-sm text-ink-muted">{t('completion.pending')}</p> : null}
-      <p aria-hidden="true" className="min-w-0 truncate text-sm text-ink-muted">
+      {/* con el temario abierto a 1024 no cabe y quedaría cortado; el título sigue en «Siguiente», sobre el pie */}
+      <p aria-hidden="true" className="min-w-0 truncate text-sm text-ink-muted sm:hidden xl:block">
         {upcoming.lesson.title}
       </p>
       <Button asChild className={`${WRAP} shrink-0`}>
