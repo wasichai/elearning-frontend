@@ -294,7 +294,8 @@ const es = {
     incorrect: 'Incorrecta',
     comment: 'Comentario del docente',
     solution: 'Respuesta correcta: {{answer}}',
-    accepted: 'Respuestas aceptadas: {{answers}}'
+    accepted: 'Respuestas aceptadas: {{answers}}',
+    review: 'Para repasar:'
   },
   sessions: {
     title: 'Sesiones en vivo',
@@ -812,7 +813,8 @@ const en: typeof es = {
     incorrect: 'Incorrect',
     comment: 'Teacher’s comment',
     solution: 'Correct answer: {{answer}}',
-    accepted: 'Accepted answers: {{answers}}'
+    accepted: 'Accepted answers: {{answers}}',
+    review: 'To review:'
   },
   sessions: {
     title: 'Live sessions',

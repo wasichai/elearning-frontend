@@ -147,6 +147,32 @@ test('desde el resultado se reintenta si quedan intentos y, con el último gasta
   expect(api.unexpected).toEqual([])
 })
 
+test('el resultado enlaza a la lección de repaso de una pregunta, y al volver atrás sigue el resultado', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true })
+  await start(page)
+  await page.getByRole('radio', { name: 'La municipalidad' }).check()
+  await submitAttempt(page)
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+  const attemptUrl = page.url()
+
+  const reviewed = page.getByRole('article', { name: '3. El SGSPE registra los expedientes.' })
+  await expect(reviewed.getByText('Para repasar:')).toBeVisible()
+  // sin lección de repaso, ni enlace ni hueco
+  const plain = page.getByRole('article', { name: '1. ¿Quién otorga la licencia de anuncio?' })
+  await expect(plain.getByRole('link')).toHaveCount(0)
+  await expect(plain.getByText('Para repasar:')).toHaveCount(0)
+
+  await reviewed.getByRole('link', { name: 'Qué es el SGSPE' }).click()
+  await expect(page).toHaveURL('/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1')
+  await expect(page.getByRole('heading', { level: 2, name: 'Qué es el SGSPE' })).toBeVisible()
+
+  await page.goBack()
+  await expect(page).toHaveURL(attemptUrl)
+  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+  await expect(reviewed.getByRole('link', { name: 'Qué es el SGSPE' })).toBeVisible()
+  expect(api.unexpected).toEqual([])
+})
+
 // lo que recibe el foco no queda bajo la cabecera fija, y esta no se mete bajo la barra de la lección
 async function expectClearOfHeader(page: Page, target: ReturnType<Page['getByRole']>) {
   await expect(async () => {

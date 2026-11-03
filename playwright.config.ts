@@ -25,7 +25,13 @@ export default defineConfig({
     timezoneId: 'America/Lima',
     trace: 'retain-on-failure'
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // @publishes publica un curso, que entra en el catálogo: corre cuando ya acabaron las demás, que cuentan sus cursos (e2e/real/smoke.spec.ts)
+  projects: real
+    ? [
+        { name: 'chromium', grepInvert: /@publishes/, use: { ...devices['Desktop Chrome'] } },
+        { name: 'publishes', grep: /@publishes/, dependencies: ['chromium'], use: { ...devices['Desktop Chrome'] } }
+      ]
+    : [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
     command: `yarn build && yarn preview --port ${PORT} --strictPort`,
     url: `${BASE_URL}/cursos`,

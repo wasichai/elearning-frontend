@@ -134,7 +134,24 @@ describe('contrato de las evaluaciones (F3)', () => {
     expect(() => parseContract(classroomSchema, 'GET classroom/enrollments/x', body)).toThrow(hint)
   })
 
+  it('conserva la lección de repaso del resultado, también vacía, y no la pide en un intento abierto', () => {
+    const outcomes = (body: unknown) => parseContract(attemptSchema, 'attempt', body).result?.questions ?? []
+    expect(outcomes(gradedAttempt).find((outcome) => outcome.questionId === 'p-tf')?.reviewLessonId).toBe('lec-sgspe-1')
+    expect(outcomes(gradedAttempt).find((outcome) => outcome.questionId === 'p-single')?.reviewLessonId).toBeNull()
+    expect(outcomes(gradedAttempt).find((outcome) => outcome.questionId === 'p-open')?.comment).toBe('Falta citar la ordenanza.')
+    expect(parseContract(attemptSchema, 'attempt', openAttempt).result).toBeNull()
+  })
+
+  const withReview = (reviewLessonId: unknown) => ({
+    ...gradedAttempt,
+    result: { ...gradedAttempt.result, questions: [{ ...gradedAttempt.result.questions[0]!, reviewLessonId }] }
+  })
+  const { reviewLessonId: _reviewLessonId, ...withoutReview } = gradedAttempt.result.questions[0]!
+
   it.each([
+    ['lección de repaso vacía', withReview(''), 'reviewLessonId'],
+    ['lección de repaso que no es texto', withReview(7), 'reviewLessonId'],
+    ['lección de repaso que falta', { ...gradedAttempt, result: { ...gradedAttempt.result, questions: [withoutReview] } }, 'reviewLessonId'],
     ['un intento abierto con resultado (filtraría soluciones)', { ...openAttempt, result: gradedAttempt.result }, 'result'],
     ['un intento enviado sin resultado', { ...submittedAttempt, result: null }, 'result'],
     ['estado desconocido', { ...openAttempt, status: 'EXPIRED' }, 'status'],

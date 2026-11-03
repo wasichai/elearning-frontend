@@ -687,6 +687,73 @@ describe('el resultado', () => {
     expect(screen.queryByText(/^Respuestas aceptadas/)).not.toBeInTheDocument()
   })
 
+  describe('la lección de repaso', () => {
+    const REVIEW = 'Qué es el SGSPE'
+    const tfQuestion = () => within(screen.getByRole('article', { name: '3. El SGSPE registra los expedientes.' }))
+    const renderResult = (body: object, classroomBody: object = assessmentClassroom, language?: string) =>
+      renderAssessment(
+        [
+          { path: CLASSROOM, body: classroomBody },
+          { path: ATTEMPT, body }
+        ],
+        '?leccion=lec-eva&intento=int-1',
+        {},
+        language
+      )
+    const reviewing = (reviewLessonId: string | null) => {
+      const copy = structuredClone(gradedAttempt)
+      for (const outcome of copy.result.questions) outcome.reviewLessonId = reviewLessonId as never
+      return copy
+    }
+
+    it('enlaza con su título a esa lección del curso, solo en la pregunta que la tiene', async () => {
+      renderResult(gradedAttempt)
+
+      await screen.findByRole('img', { name: 'Nota: 80 %' })
+      expect(tfQuestion().getByRole('link', { name: REVIEW })).toHaveAttribute('href', '/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1')
+      expect(tfQuestion().getByText('Para repasar:')).toBeInTheDocument()
+      const single = within(screen.getByRole('article', { name: '1. ¿Quién otorga la licencia de anuncio?' }))
+      expect(single.queryByRole('link')).not.toBeInTheDocument()
+      expect(single.queryByText('Para repasar:')).not.toBeInTheDocument()
+    })
+
+    it('sale aunque no se muestren las soluciones y aunque la pregunta espere corrección', async () => {
+      const pending = structuredClone(submittedAttempt)
+      for (const outcome of pending.result.questions) outcome.reviewLessonId = (outcome.questionId === 'p-open' ? 'lec-sgspe-1' : null) as never
+      renderResult(pending)
+
+      await screen.findByText('Pendiente de corrección', { selector: '[role="status"] *' })
+      expect(within(screen.getByRole('article', { name: '5. Explica cómo se liquida una licencia.' })).getByRole('link', { name: REVIEW })).toHaveAttribute(
+        'href',
+        '/mis-cursos/mat-sgspe-1?leccion=lec-sgspe-1'
+      )
+    })
+
+    it('sigue enlazando con la matrícula finalizada: su aula queda legible', async () => {
+      renderResult(reviewing('lec-sgspe-1'), { ...assessmentClassroom, status: 'FINALIZADA' })
+
+      await screen.findByRole('img', { name: 'Nota: 80 %' })
+      expect(tfQuestion().getByRole('link', { name: REVIEW })).toBeInTheDocument()
+    })
+
+    it('una lección que el aula no trae no rompe el resultado: la fila queda sin enlace ni hueco', async () => {
+      renderResult(reviewing('lec-retirada'))
+
+      await screen.findByRole('img', { name: 'Nota: 80 %' })
+      expect(tfQuestion().getByText('Incorrecta')).toBeInTheDocument()
+      expect(tfQuestion().queryByRole('link')).not.toBeInTheDocument()
+      expect(screen.queryByText('Para repasar:')).not.toBeInTheDocument()
+    })
+
+    it('en inglés, con las mismas claves', async () => {
+      renderResult(gradedAttempt, assessmentClassroom, 'en')
+
+      await screen.findByRole('img', { name: 'Grade: 80%' })
+      expect(tfQuestion().getByText('To review:')).toBeInTheDocument()
+      expect(tfQuestion().getByRole('link', { name: REVIEW })).toBeInTheDocument()
+    })
+  })
+
   const failedAttempt = (percent: number) => ({
     ...gradedAttempt,
     result: { ...gradedAttempt.result, score: 6, percent, passed: false }
