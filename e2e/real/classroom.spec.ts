@@ -142,7 +142,7 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
 
 // la lección de repaso (elearning-backend#309): la demo no enlaza ninguna y lo publicado no cambia, así que la prueba escribe su propio curso.
 // sin soluciones (NUNCA): el repaso sale igual, y sigue ahí con el intento ya cerrado
-test('el resultado de un intento enlaza a la lección de repaso que da el servidor, y solo en su pregunta', async ({ page, request }) => {
+test('el resultado de un intento enlaza a la lección de repaso que da el servidor, y solo en su pregunta', { tag: '@publishes' }, async ({ page, request }) => {
   test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
   test.setTimeout(120_000)
   const run = randomUUID().slice(0, 8)
@@ -179,44 +179,54 @@ test('el resultado de un intento enlaza a la lección de repaso que da el servid
   await creator(`/api/lms/studio/versions/${version.id}/submit`, {}, 200)
   await reviewer(`/api/lms/review/versions/${version.id}/decision`, { decision: 'APROBAR', reason: null }, 200)
   await admin(`/api/lms/review/versions/${version.id}/publish`, {}, 200)
-  const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
-  await admin('/api/objects/edicion_curso/records', {
-    attributes: {
-      codigo: code,
-      version_curso: version.id,
-      estado: 'INSCRIPCION_ABIERTA',
-      fecha_inicio: day(0),
-      fecha_fin: day(30),
-      zona_horaria: 'America/Lima',
-      inscripcion_desde: day(-1),
-      inscripcion_hasta: day(5)
-    }
-  })
+  // retirarla al acabar saca el curso del catálogo: una segunda ejecución sobre la misma base sigue contando los de la demo
+  const adminHeaders = { Authorization: `Bearer ${await token(request, ADMIN.email, ADMIN.password)}` }
+  try {
+    const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Lima' })
+    await admin('/api/objects/edicion_curso/records', {
+      attributes: {
+        codigo: code,
+        version_curso: version.id,
+        estado: 'INSCRIPCION_ABIERTA',
+        fecha_inicio: day(0),
+        fecha_fin: day(30),
+        zona_horaria: 'America/Lima',
+        inscripcion_desde: day(-1),
+        inscripcion_hasta: day(5)
+      }
+    })
 
-  const student = await newStudent(request)
-  const enrolled = await (await as(student.email, student.password))('/api/lms/enrollments', { offering: code })
-  await signIn(page, student)
-  await page.goto(`/mis-cursos/${enrolled.id}?leccion=${assessed}`)
-  await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
-  await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
-  await page.getByRole('group', { name: '1. Con repaso' }).getByRole('radio', { name: 'Incorrecta' }).check()
-  await page.getByRole('group', { name: '2. Sin repaso' }).getByRole('radio', { name: 'Correcta' }).check()
-  await page.getByRole('button', { name: 'Entregar' }).click()
-  await page.getByRole('dialog', { name: '¿Entregar el intento?' }).getByRole('button', { name: 'Entregar' }).click()
-  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
-  const attemptUrl = page.url()
+    const student = await newStudent(request)
+    const enrolled = await (await as(student.email, student.password))('/api/lms/enrollments', { offering: code })
+    await signIn(page, student)
+    await page.goto(`/mis-cursos/${enrolled.id}?leccion=${assessed}`)
+    await page.getByRole('button', { name: /^Comenzar intento 1 de / }).click()
+    await page.getByRole('dialog', { name: '¿Comenzar el intento?' }).getByRole('button', { name: 'Comenzar' }).click()
+    await page.getByRole('group', { name: '1. Con repaso' }).getByRole('radio', { name: 'Incorrecta', exact: true }).check()
+    await page.getByRole('group', { name: '2. Sin repaso' }).getByRole('radio', { name: 'Correcta', exact: true }).check()
+    await page.getByRole('button', { name: 'Entregar' }).click()
+    await page.getByRole('dialog', { name: '¿Entregar el intento?' }).getByRole('button', { name: 'Entregar' }).click()
+    await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+    const attemptUrl = page.url()
 
-  const reviewed = page.getByRole('article', { name: '1. Con repaso' })
-  const plain = page.getByRole('article', { name: '2. Sin repaso' })
-  await expect(reviewed.getByRole('link', { name: reviewTitle })).toHaveAttribute('href', `/mis-cursos/${enrolled.id}?leccion=${reading}`)
-  await expect(plain.getByRole('link')).toHaveCount(0)
-  await expect(page.getByText(/^Respuesta correcta/)).toHaveCount(0)
+    const reviewed = page.getByRole('article', { name: '1. Con repaso' })
+    const plain = page.getByRole('article', { name: '2. Sin repaso' })
+    await expect(reviewed.getByRole('link', { name: reviewTitle })).toHaveAttribute('href', `/mis-cursos/${enrolled.id}?leccion=${reading}`)
+    await expect(plain.getByRole('link')).toHaveCount(0)
+    await expect(page.getByText(/^Respuesta correcta/)).toHaveCount(0)
 
-  // con el intento ya cerrado, tras recargar, y de ida y vuelta
-  await page.reload()
-  await reviewed.getByRole('link', { name: reviewTitle }).click()
-  await expect(page.getByRole('heading', { level: 2, name: reviewTitle })).toBeVisible()
-  await page.goBack()
-  await expect(page).toHaveURL(attemptUrl)
-  await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+    // con el intento ya cerrado, tras recargar, y de ida y vuelta
+    await page.reload()
+    await reviewed.getByRole('link', { name: reviewTitle }).click()
+    await expect(page.getByRole('heading', { level: 2, name: reviewTitle })).toBeVisible()
+    await page.goBack()
+    await expect(page).toHaveURL(attemptUrl)
+    await expect(page.getByRole('heading', { level: 3, name: 'Resultado del intento 1' })).toBeVisible()
+  } finally {
+    const retired = await request.patch(`${API_URL}/api/objects/version_curso/records/${version.id}`, {
+      headers: adminHeaders,
+      data: { attributes: { estado: 'RETIRADA' } }
+    })
+    expect(retired.status(), 'retirar la versión de la prueba').toBe(200)
+  }
 })
