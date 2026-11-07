@@ -1,5 +1,6 @@
 import { BookOpen } from 'lucide-react'
-import type { WasichaiModule } from '@wasichai/core'
+import type { CallerPermissions, WasichaiModule } from '@wasichai/core'
+import { canLearn } from '../../shared/learning'
 import { classroomMessages } from './i18n'
 import { CLASSROOM_MODULE_ID } from './routes'
 
@@ -7,8 +8,11 @@ export { CLASSROOM_MODULE_ID, CLASSROOM_ROUTES } from './routes'
 
 // el aula del estudiante (ADR-0012 y ADR-0016 del backend): sus cursos, su progreso, evaluaciones, sesiones y certificado,
 // con sesión (chrome 'shell'); la verificación pública del certificado, sin ella (chrome 'public').
-// la entrada de menú no lleva `visible`: el shell solo se pinta con sesión, cualquiera con sesión puede tener matrículas
-// y quien no tenga ninguna ve el panel vacío con el camino al catálogo. qué matrículas ve cada uno lo decide el servidor.
+// el menú «Mis cursos» se ofrece a quien puede leer sus matrículas (src/shared/learning.ts); quien no se matriculó ve el
+// panel vacío con el camino al catálogo. sin saber aún los permisos (cargando o con error) se ofrece igual: es el trabajo
+// de la mayoría y la página explica un 403. qué matrículas ve cada uno lo decide el servidor.
+const offerMyCourses = (permissions: CallerPermissions | null) => permissions === null || canLearn(permissions)
+
 export function classroomModule(): WasichaiModule {
   return {
     id: CLASSROOM_MODULE_ID,
@@ -33,7 +37,7 @@ export function classroomModule(): WasichaiModule {
     ],
     // antes que los grupos de core (datos 10): para un estudiante, aprender es lo primero del menú
     navGroups: [{ id: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.group`, order: 5 }],
-    nav: [{ group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments', icon: BookOpen }],
+    nav: [{ group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments', visible: offerMyCourses, icon: BookOpen }],
     i18n: classroomMessages
   }
 }

@@ -59,13 +59,23 @@ const REVIEWER_PERMISSIONS = { admin: false, capabilities: [], objects: { curso:
 // quien administra la plataforma: admin y MANAGE_ORGANIZATION, tal como responde el backend, y por eso la sección de administración
 export const ADMINISTRATOR = { id: 'u-admin', email: 'admin@demo.local', displayName: 'Ana Administradora', organizationId: 'org-demo', roles: ['ADMIN'] }
 const ADMINISTRATOR_PERMISSIONS = { admin: true, capabilities: ['MANAGE_METADATA', 'MANAGE_ORGANIZATION', 'MANAGE_TENANTS'], objects: {} }
+// una autoridad académica: lee cursos y aprueba créditos, sin matrículas, docencia, estudio ni revisión (como la de la demo)
+export const AUTHORITY = {
+  id: 'u-autoridad',
+  email: 'autoridad@demo.local',
+  displayName: 'Aurelia Autoridad',
+  organizationId: 'org-demo',
+  roles: ['AUTORIDAD']
+}
+const AUTHORITY_PERMISSIONS = { admin: false, capabilities: [], objects: { curso: ['READ'], categoria: ['READ'], version_curso: ['READ', 'APROBAR_CREDITOS'] } }
 // quién inicia sesión en la simulación, con sus permisos
 const ACCOUNTS = {
   student: { user: STUDENT, permissions: STUDENT_PERMISSIONS },
   teacher: { user: TEACHER, permissions: TEACHER_PERMISSIONS },
   creator: { user: CREATOR, permissions: CREATOR_PERMISSIONS },
   reviewer: { user: REVIEWER, permissions: REVIEWER_PERMISSIONS },
-  administrator: { user: ADMINISTRATOR, permissions: ADMINISTRATOR_PERMISSIONS }
+  administrator: { user: ADMINISTRATOR, permissions: ADMINISTRATOR_PERMISSIONS },
+  authority: { user: AUTHORITY, permissions: AUTHORITY_PERMISSIONS }
 }
 type Account = (typeof ACCOUNTS)[keyof typeof ACCOUNTS]
 
@@ -81,7 +91,7 @@ export interface FakeApiOptions extends TeachingOptions {
   // con sesión: token y usuario en el almacenamiento antes de cargar la página
   signedIn?: boolean
   // quién inicia sesión: el estudiante (por defecto), un docente con ediciones asignadas, un creador de contenido, un revisor o
-  // quien administra la plataforma
+  // quien administra la plataforma o una autoridad sin ninguna sección del LMS
   as?: keyof typeof ACCOUNTS
   // ya matriculada en el curso de SRTM (por defecto); sin matrícula, la ficha la crea con POST /api/lms/enrollments
   enrolled?: boolean

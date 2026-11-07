@@ -2,6 +2,7 @@ import { CORE_NAMESPACE, useAppTitle, useAuth, useWasichaiLinks } from '@wasicha
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { canLearn } from './learning'
 import { QuipuMark } from './QuipuMark'
 import { screenContainer, type ScreenWidth } from './Screen'
 
@@ -11,7 +12,8 @@ const MY_COURSES_ROUTE = 'classroom:enrollments'
 const MY_COURSES_LABEL = 'classroom:nav.myCourses'
 
 // el marco de las páginas públicas (catálogo, verificación de certificados): sin shell ni menú, el nombre del producto
-// vuelve al catálogo si está registrado, y a la derecha está la entrada: «Mis cursos» con sesión, «Iniciar sesión» sin ella.
+// vuelve al catálogo si está registrado, y a la derecha está la entrada: «Mis cursos» con sesión y matrículas, «Inicio» con
+// sesión y sin ellas (lo resuelve el homeRoute de la app, nunca un 403), «Iniciar sesión» sin sesión.
 // no sale al imprimir: una página impresa no lleva navegación. con fullBleed la página pone sus propios márgenes: bandas a todo el ancho
 export function PublicLayout({ children, width = 'content', fullBleed = false }: { children: ReactNode; width?: ScreenWidth; fullBleed?: boolean }) {
   const { appName } = useAppTitle()
@@ -47,16 +49,21 @@ export function PublicLayout({ children, width = 'content', fullBleed = false }:
 
 function PublicEntry() {
   const { t } = useTranslation(CORE_NAMESPACE)
-  const { user } = useAuth()
+  const { user, permissions } = useAuth()
   const links = useWasichaiLinks()
   const linkClass = 'inline-flex min-h-11 items-center rounded-sm px-1 text-sm font-medium text-link underline-offset-4 hover:underline'
-  if (user && links.has(MY_COURSES_ROUTE))
+  if (user && canLearn(permissions) && links.has(MY_COURSES_ROUTE))
     return (
       <Link to={links.to(MY_COURSES_ROUTE)} className={linkClass}>
         {t(MY_COURSES_LABEL)}
       </Link>
     )
-  if (user) return null
+  if (user)
+    return (
+      <Link to={links.home()} className={linkClass}>
+        {t('nav.home')}
+      </Link>
+    )
   return (
     <Link to={links.login()} className={linkClass}>
       {t('auth.signIn')}

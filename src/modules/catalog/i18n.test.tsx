@@ -9,6 +9,7 @@ import { DURATION_KEYS } from './FilterBar'
 import { catalogMessages } from './i18n'
 import { catalogModule } from './module'
 import { coursePage } from './test/fixtures'
+import { learningGroup } from './test/learningGroup'
 
 type Tree = { [key: string]: string | Tree }
 
@@ -74,7 +75,7 @@ describe('textos del catálogo', () => {
   it('la página se lee en inglés, con fechas en inglés', async () => {
     fetchMock = mockFetch([{ path: '/lms/public/catalog/courses', body: coursePage }])
 
-    renderWithProviders(<CatalogPage />, { modules: [catalogModule()], route: '/cursos', user: null, permissions: null, language: 'en' })
+    renderWithProviders(<CatalogPage />, { modules: [catalogModule(), learningGroup], route: '/cursos', user: null, permissions: null, language: 'en' })
 
     expect(await screen.findByText('2 courses')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Course catalog' })).toBeInTheDocument()

@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { CatalogPage } from './CatalogPage'
 import { catalogModule } from './module'
 import { coursePage, courseSummary, emptyPage, problem } from './test/fixtures'
+import { learningGroup } from './test/learningGroup'
 
 const COURSES = '/lms/public/catalog/courses'
 let fetchMock: FetchMock
@@ -31,7 +32,7 @@ function renderCatalog(routes: MockRoute[], route = '/cursos') {
       </Routes>
       <Location />
     </>,
-    { modules: [catalogModule()], config: { appName: 'Aula Abierta' }, route, user: null, permissions: null }
+    { modules: [catalogModule(), learningGroup], config: { appName: 'Aula Abierta' }, route, user: null, permissions: null }
   )
 }
 

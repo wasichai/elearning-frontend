@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { CourseDetailPage } from './CourseDetailPage'
 import { catalogModule } from './module'
 import { courseDetail, problem } from './test/fixtures'
+import { learningGroup } from './test/learningGroup'
 
 const COURSE = '/lms/public/catalog/courses/srtm-anuncios'
 let fetchMock: FetchMock
@@ -19,7 +20,7 @@ function renderCourse(routes: MockRoute[], route = '/cursos/srtm-anuncios') {
       <Route path="/cursos" element={<p>catálogo</p>} />
       <Route path="/cursos/:slug" element={<CourseDetailPage />} />
     </Routes>,
-    { modules: [catalogModule()], route, user: null, permissions: null }
+    { modules: [catalogModule(), learningGroup], route, user: null, permissions: null }
   )
 }
 

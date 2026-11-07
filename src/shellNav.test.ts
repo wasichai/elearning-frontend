@@ -9,9 +9,11 @@ const { navGroups } = registry
 
 const ACCOUNT_OF = {
   estudiante: { admin: false, capabilities: [], objects: { curso: ['READ'], matricula: ['READ', 'CREATE'] } },
-  docente: { admin: false, capabilities: [], objects: { curso: ['READ'], docente_edicion: ['READ'] } },
+  docente: { admin: false, capabilities: [], objects: { curso: ['READ'], docente_edicion: ['READ'], matricula: ['READ', 'CREATE'] } },
   creador: { admin: false, capabilities: [], objects: { curso: ['READ', 'CREATE', 'UPDATE'], version_curso: ['READ', 'CREATE', 'UPDATE'] } },
-  revisor: { admin: false, capabilities: [], objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR'] } }
+  revisor: { admin: false, capabilities: [], objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR'] } },
+  // la cuenta de autoridad de la demo: lee cursos y aprueba créditos, sin matrículas (GET /lms/classroom/enrollments le da 403)
+  autoridad: { admin: false, capabilities: [], objects: { curso: ['READ'], version_curso: ['READ', 'UPDATE', 'APROBAR_CREDITOS', 'VER_TODAS'] } }
 } satisfies Record<string, CallerPermissions>
 const ADMIN: CallerPermissions = { admin: true, capabilities: ['MANAGE_ORGANIZATION'], objects: {} }
 const MANAGER: CallerPermissions = { admin: false, capabilities: ['MANAGE_ORGANIZATION'], objects: {} }
@@ -104,8 +106,17 @@ describe('shellNav', () => {
     expect(items).not.toContain(PUBLISH_ENTRY)
   })
 
-  it.each(Object.entries(ACCOUNT_OF))('%s llega a sus términos desde el menú', (_, permissions) => {
+  it.each(Object.entries(ACCOUNT_OF))('%s llega a sus términos y al catálogo desde el menú', (_, permissions) => {
     expect(menu('/mis-cursos', permissions).items).toContain('terms:nav.entry')
+    expect(menu('/mis-cursos', permissions).items).toContain('catalog:nav.courses')
+  })
+
+  it('«Mis cursos» solo se ofrece a quien puede leer sus matrículas', () => {
+    expect(menu('/mis-cursos', ACCOUNT_OF.estudiante).items).toContain('classroom:nav.myCourses')
+    expect(menu('/cursos', ACCOUNT_OF.autoridad).items).not.toContain('classroom:nav.myCourses')
+    expect(menu('/mis-cursos', ADMIN).items).toContain('classroom:nav.myCourses')
+    // administrar la organización no da matrículas: el servidor respondería 403
+    expect(menu('/mis-cursos', MANAGER).items).not.toContain('classroom:nav.myCourses')
   })
 
   describe.each([
@@ -118,7 +129,7 @@ describe('shellNav', () => {
       expect(groups).not.toContain('data')
       expect(groups).not.toContain('administration')
       expect(items).toContain('administration:nav.entry')
-      expect(items).toContain('classroom:nav.myCourses')
+      expect(items).toContain('catalog:nav.courses')
       expect(items).toContain('terms:nav.entry')
       expect(items).not.toContain(PUBLISH_ENTRY)
     })
@@ -141,6 +152,7 @@ describe('shellNav', () => {
       expect(groups).not.toContain('administration')
       expect(groups).not.toContain('platform')
       expect(items).toContain('classroom:nav.myCourses')
+      expect(items).toContain('catalog:nav.courses')
     })
   })
 
@@ -152,9 +164,25 @@ describe('shellNav', () => {
 })
 
 describe('homeRoute', () => {
-  it.each(Object.entries(ACCOUNT_OF))('sin permiso de administrar, %s aterriza en «Mis cursos»', (_, permissions) => {
-    const route = registry.routes.find((candidate) => candidate.key === homeRoute(permissions))
-    expect(route?.path).toBe('/mis-cursos')
+  const pathOf = (permissions: CallerPermissions) => registry.routes.find((candidate) => candidate.key === homeRoute(permissions))?.path
+
+  // la primera sección del LMS que el servidor le deja abrir, por permiso y nunca por rol: nadie aterriza en un 403
+  it.each([
+    ['estudiante', '/mis-cursos'],
+    ['docente', '/mis-cursos'],
+    ['creador', '/estudio'],
+    ['revisor', '/revision']
+  ] as const)('%s aterriza en %s', (account, path) => {
+    expect(pathOf(ACCOUNT_OF[account])).toBe(path)
+  })
+
+  it('quien enseña y no tiene matrículas aterriza en su docencia', () => {
+    expect(pathOf({ admin: false, objects: { docente_edicion: ['READ'] } })).toBe('/docencia')
+  })
+
+  // el catálogo es público, sin shell: no tendría menú ni cierre de sesión
+  it('sin ninguna sección del LMS (la autoridad), el panel de core, dentro del shell', () => {
+    expect(homeRoute(ACCOUNT_OF.autoridad)).toBeNull()
   })
 
   it.each([
@@ -164,7 +192,7 @@ describe('homeRoute', () => {
     expect(homeRoute(permissions)).toBeNull()
   })
 
-  it('una respuesta sin capacidades no da el panel', () => {
-    expect(homeRoute({ admin: false, objects: {} })).not.toBeNull()
+  it('una respuesta sin capacidades no da el panel a quien tiene matrículas', () => {
+    expect(homeRoute({ admin: false, objects: { matricula: ['READ'] } })).not.toBeNull()
   })
 })
