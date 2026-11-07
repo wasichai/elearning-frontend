@@ -11,9 +11,9 @@ export function useFocusOnClose<T extends HTMLElement>(open: boolean) {
   return opener
 }
 
-// ConfirmDialog, ReasonDialog y un Dialog sin DialogTrigger pierden el foco al cerrarse: Radix lo devuelve a su trigger y no tienen. esto
-// lo devuelve a lo que estaba enfocado al abrirlos, salvo que ya no exista o que el foco haya ido a otro sitio (el título de lo que se abrió).
-// se monta con el diálogo y va a la vez que él. mientras @wasichai/ui no lo resuelva
+// un Dialog sin DialogTrigger pierde el foco al cerrarse: Radix lo devuelve a su trigger y no tiene. esto lo devuelve a lo que estaba
+// enfocado al abrirlo, salvo que ya no exista o que el foco haya ido a otro sitio (el título de lo que se abrió). se monta con el diálogo
+// y va a la vez que él. ConfirmDialog y ReasonDialog ya lo hacen solos desde @wasichai/ui 1.7.0: no lo necesitan
 export function ReturnFocus({ children }: { children?: ReactNode }) {
   const [opener] = useState(() => document.activeElement)
   useEffect(

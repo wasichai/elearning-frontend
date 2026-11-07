@@ -2,14 +2,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError, LoadingState, useApiClient, useAuth } from '@wasichai/core'
 import { Button, ConfirmDialog, Input, Label, Textarea } from '@wasichai/ui'
 import { CircleAlert } from 'lucide-react'
-import { useId, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { WRAP } from '../../shared/buttons'
 import { parseContract } from '../../shared/contract'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
-import { ReturnFocus } from '../../shared/ReturnFocus'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { TERMS_KEY, TERMS_PATH, termsVersionSchema, useTermsView, type TermsVersion, type TermsView } from '../../shared/terms'
 import { useLeaveGuard } from '../../shared/useLeaveGuard'
@@ -125,6 +124,13 @@ function PublishForm({ current, onDirty, onPublished }: { current: TermsVersion 
   const leave = useLeaveGuard((text !== initialText || days !== initialDays) && !publish.isSuccess)
 
   const focusFirst = (found: FieldErrors) => setTimeout(() => (found.text ? textField : daysField).current?.focus())
+  // el 400 cierra el diálogo, que devuelve el foco al botón que lo abrió (@wasichai/ui 1.7.0): el campo lo toma después
+  const focusAfterClose = useRef<FieldErrors | null>(null)
+  useEffect(() => {
+    if (confirming || !focusAfterClose.current) return
+    focusFirst(focusAfterClose.current)
+    focusAfterClose.current = null
+  }, [confirming])
 
   const validate = (): FieldErrors => {
     const trimmed = text.trim()
@@ -163,7 +169,7 @@ function PublishForm({ current, onDirty, onPublished }: { current: TermsVersion 
           setErrors(found)
           setConfirming(false)
           publish.reset()
-          focusFirst(found)
+          focusAfterClose.current = found
         }
       }
     )
@@ -220,34 +226,30 @@ function PublishForm({ current, onDirty, onPublished }: { current: TermsVersion 
         </Button>
       </div>
       {confirming ? (
-        <ReturnFocus>
-          <ConfirmDialog
-            variant="primary"
-            title={t('publish.confirmTitle')}
-            description={t('publish.confirmDescription')}
-            confirmLabel={publish.isPending ? t('publish.publishing') : t('publish.confirm')}
-            cancelLabel={t('publish.cancel')}
-            busy={publish.isPending}
-            error={dialogError}
-            onCancel={() => {
-              publish.reset()
-              setConfirming(false)
-            }}
-            onConfirm={onConfirm}
-          />
-        </ReturnFocus>
+        <ConfirmDialog
+          variant="primary"
+          title={t('publish.confirmTitle')}
+          description={t('publish.confirmDescription')}
+          confirmLabel={publish.isPending ? t('publish.publishing') : t('publish.confirm')}
+          cancelLabel={t('publish.cancel')}
+          busy={publish.isPending}
+          error={dialogError}
+          onCancel={() => {
+            publish.reset()
+            setConfirming(false)
+          }}
+          onConfirm={onConfirm}
+        />
       ) : null}
       {leave.leaving ? (
-        <ReturnFocus>
-          <ConfirmDialog
-            title={t('publish.leaveTitle')}
-            description={t('publish.leaveDescription')}
-            confirmLabel={t('publish.leave')}
-            cancelLabel={t('publish.stay')}
-            onCancel={leave.stay}
-            onConfirm={leave.leave}
-          />
-        </ReturnFocus>
+        <ConfirmDialog
+          title={t('publish.leaveTitle')}
+          description={t('publish.leaveDescription')}
+          confirmLabel={t('publish.leave')}
+          cancelLabel={t('publish.stay')}
+          onCancel={leave.stay}
+          onConfirm={leave.leave}
+        />
       ) : null}
     </form>
   )
