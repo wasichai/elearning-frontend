@@ -2,6 +2,13 @@ import { CORE_MODULE_ID, CORE_ROUTE_PATHS, type CallerPermissions, type HomeRout
 import { matchPath } from 'react-router'
 import { PUBLISH_TERMS_PATH } from './modules/administration/routes'
 import { CLASSROOM_ROUTES } from './modules/classroom/routes'
+import { canReview } from './modules/review/permissions'
+import { REVIEW_ROUTES } from './modules/review/routes'
+import { canAuthor } from './modules/studio/permissions'
+import { STUDIO_ROUTES } from './modules/studio/routes'
+import { canTeach } from './modules/teaching/module'
+import { TEACHING_ROUTES } from './modules/teaching/routes'
+import { canLearn } from './shared/learning'
 
 // la sección de administración es un estado del menú (issue #141, ADR-0005 del backend): una sola app, un solo router y
 // ninguna URL nueva. el servidor decide igual (403): esto solo evita ofrecer lo que no le sirve a quien entró
@@ -36,6 +43,16 @@ export const shellNav: ShellNav = (groups, { pathname, permissions }) => {
   return groups.map((group) => ({ ...group, items: group.items.filter((item) => isSectionItem(item) === inSection) })).filter((group) => group.items.length > 0)
 }
 
-// el destino de «Inicio» (issue #142): quien no administra aterriza en «Mis cursos»; quien administra conserva el panel de core.
-// core solo la llama con los permisos ya en la mano: mientras cargan muestra «Cargando» y, si fallan, abre su panel
-export const homeRoute: HomeRoute = (permissions) => (canAdminister(permissions) ? null : CLASSROOM_ROUTES.enrollments)
+// el destino de «Inicio» (issue #142): quien administra conserva el panel de core; los demás, la primera sección del LMS
+// que el servidor les deja abrir, con los mismos predicados que sus menús. nunca por rol, y nadie aterriza en un 403.
+// sin ninguna (una autoridad que solo aprueba créditos), también el panel: queda dentro del shell, con su menú y su
+// cierre de sesión, y solo lista lo que la API le deja ver. core solo la llama con los permisos ya en la mano
+const HOME_SECTIONS: ReadonlyArray<readonly [(permissions: CallerPermissions | null) => boolean, string]> = [
+  [canLearn, CLASSROOM_ROUTES.enrollments],
+  [canTeach, TEACHING_ROUTES.offerings],
+  [canAuthor, STUDIO_ROUTES.versions],
+  [canReview, REVIEW_ROUTES.inbox]
+]
+
+export const homeRoute: HomeRoute = (permissions) =>
+  canAdminister(permissions) ? null : (HOME_SECTIONS.find(([allowed]) => allowed(permissions))?.[1] ?? null)

@@ -6,6 +6,7 @@ import { coursesPath, fetchCourse, fetchCourses, filtersFromSearch, filtersToSea
 import { ContractError } from './contract'
 import { catalogModule } from './module'
 import { courseDetail, coursePage } from './test/fixtures'
+import { learningGroup } from './test/learningGroup'
 
 const COURSES = '/lms/public/catalog/courses'
 let fetchMock: FetchMock | undefined
@@ -114,7 +115,7 @@ describe('useCourses con useCatalogFilters', () => {
   it('pide lo que dice la URL de la página', async () => {
     fetchMock = mockFetch([{ path: COURSES, body: coursePage }])
 
-    renderWithProviders(<Probe />, { modules: [catalogModule()], user: null, permissions: null, route: '/cursos?level=AVANZADO&q=srtm&page=2' })
+    renderWithProviders(<Probe />, { modules: [catalogModule(), learningGroup], user: null, permissions: null, route: '/cursos?level=AVANZADO&q=srtm&page=2' })
 
     expect(await screen.findByText('total 2')).toBeInTheDocument()
     await waitFor(() => expect(fetchMock?.calls).toHaveLength(1))

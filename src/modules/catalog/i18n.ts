@@ -1,5 +1,6 @@
 // textos del módulo, espacio de nombres 'catalog' (= id del módulo)
 const es = {
+  nav: { courses: 'Catálogo' },
   catalog: {
     title: 'Catálogo de cursos',
     subtitle: 'Cursos abiertos, con su carga de trabajo y sus próximas ediciones.',
@@ -244,6 +245,7 @@ const es = {
 
 // mismas claves que es: el tipo lo exige al compilar e i18n.test.ts lo comprueba hoja a hoja
 const en: typeof es = {
+  nav: { courses: 'Catalog' },
   catalog: {
     title: 'Course catalog',
     subtitle: 'Open courses, with their workload and upcoming offerings.',

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { CourseDetailPage } from './CourseDetailPage'
 import { catalogModule } from './module'
 import { courseDetail, problem } from './test/fixtures'
+import { learningGroup } from './test/learningGroup'
 
 const COURSE = '/lms/public/catalog/courses/srtm-anuncios'
 const ENROLLMENTS = '/lms/enrollments'
@@ -17,6 +18,7 @@ const ACTION = /^Matricularme en la edición 9 nov\s–\s4 dic 2026$/
 // el aula es otro módulo: para la ficha basta que su ruta exista en el registro con la clave 'classroom:classroom'
 const classroomStub: WasichaiModule = {
   id: 'classroom',
+  navGroups: learningGroup.navGroups,
   routes: [{ id: 'classroom', path: 'mis-cursos/:enrollmentId', chrome: 'shell', component: () => null }]
 }
 
@@ -389,7 +391,7 @@ describe('matricularse desde la ficha', () => {
   })
 
   it('sin el módulo del aula registrado, la ficha no ofrece matricularse', async () => {
-    renderCourse([], { modules: [catalogModule()] })
+    renderCourse([], { modules: [catalogModule(), learningGroup] })
 
     const section = await offerings()
     expect(section.getByText('Inscripción abierta')).toBeInTheDocument()

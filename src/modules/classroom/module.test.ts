@@ -17,7 +17,7 @@ describe('classroomModule', () => {
     ])
   })
 
-  it('pone «Mis cursos» en su propio grupo del menú, antes que los de core y visible para cualquiera con sesión', () => {
+  it('pone «Mis cursos» en su propio grupo del menú, antes que los de core, para quien puede leer sus matrículas', () => {
     const registry = createRegistry([coreModule, classroomModule()])
     const learning = registry.navGroups.find((group) => group.id === 'learning')
 
@@ -25,9 +25,13 @@ describe('classroomModule', () => {
     expect(learning).toMatchObject({ labelKey: 'classroom:nav.group' })
     expect(learning?.items).toHaveLength(1)
     expect(learning?.items[0]).toMatchObject({ labelKey: 'classroom:nav.myCourses', to: '/mis-cursos', disabled: false })
-    // sin condición de permisos: un estudiante sin ningún permiso de objeto también la ve
-    const student = { admin: false, objects: {} }
-    expect(learning?.items[0]?.visible?.(student) ?? true).toBe(true)
+    // cortesía: el servidor responde 403 a GET /lms/classroom/enrollments sin matricula: READ
+    const visible = learning?.items[0]?.visible
+    expect(visible?.({ admin: false, objects: { matricula: ['READ'] } })).toBe(true)
+    expect(visible?.({ admin: true, objects: {} })).toBe(true)
+    expect(visible?.({ admin: false, objects: { curso: ['READ'] } })).toBe(false)
+    // sin saber aún los permisos (cargando o con error) se ofrece: la página explica un 403
+    expect(visible?.(null)).toBe(true)
   })
 
   it('los enlaces se construyen por clave de ruta', () => {

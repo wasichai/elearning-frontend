@@ -1,7 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 import { fakeApi, type FakeApiOptions } from './api'
 
-// el destino de «Inicio» (issue #142): quien no administra aterriza en «Mis cursos»; quien administra conserva el panel de core
+// el destino de «Inicio» (issue #142): quien administra conserva el panel de core; los demás, la primera sección del LMS que el
+// servidor les deja abrir (aula, docencia, estudio, revisión), por permiso; sin ninguna, también el panel. nadie aterriza en un 403
 
 const OBJECTS = '/api/objects'
 const TAGLINE = 'Plataforma de aplicaciones geoespaciales configurables'
@@ -28,47 +29,64 @@ async function watchPanel(page: Page) {
   }
 }
 
-const NOT_ADMINISTERING: [string, FakeApiOptions][] = [
-  ['un estudiante', { signedIn: true }],
-  ['un docente', { signedIn: true, as: 'teacher' }],
-  ['un creador', { signedIn: true, as: 'creator' }],
-  ['un revisor', { signedIn: true, as: 'reviewer' }]
+// sin matricula: READ, GET /lms/classroom/enrollments responde 403: el creador y el revisor de la demo no tienen matrículas
+const NOT_ADMINISTERING: [string, FakeApiOptions, string, string][] = [
+  ['un estudiante', { signedIn: true }, '/mis-cursos', 'Mis cursos'],
+  ['un docente', { signedIn: true, as: 'teacher' }, '/mis-cursos', 'Mis cursos'],
+  ['un creador', { signedIn: true, as: 'creator' }, '/estudio', 'Mis versiones'],
+  ['un revisor', { signedIn: true, as: 'reviewer' }, '/revision', 'Bandeja de revisión']
 ]
 
-for (const [who, options] of NOT_ADMINISTERING) {
-  test(`${who} aterriza en «Mis cursos» desde /, también al recargar, sin montar el panel`, async ({ page }) => {
+for (const [who, options, path, title] of NOT_ADMINISTERING) {
+  test(`${who} aterriza en ${path} desde /, también al recargar, sin montar el panel`, async ({ page }) => {
     const watch = await watchPanel(page)
     const api = await fakeApi(page, options)
+    const landing = page.getByRole('heading', { level: 1, name: title })
     await page.goto('/')
-    await expect(page).toHaveURL('/mis-cursos')
-    await expect(myCourses(page)).toBeVisible()
+    await expect(page).toHaveURL(path)
+    await expect(landing).toBeVisible()
     await page.reload()
-    await expect(page).toHaveURL('/mis-cursos')
-    await expect(myCourses(page)).toBeVisible()
+    await expect(page).toHaveURL(path)
+    await expect(landing).toBeVisible()
     // y por «Inicio», desde otra pantalla
     await page.goto('/cursos')
     await page.goto('/')
-    await expect(page).toHaveURL('/mis-cursos')
-    await expect(home(page)).toHaveAttribute('href', '/mis-cursos')
+    await expect(page).toHaveURL(path)
+    await expect(home(page)).toHaveAttribute('href', path)
     expect(watch.requests).toEqual([])
     expect(await watch.sawPanel()).toBe(false)
     expect(api.unexpected).toEqual([])
   })
 }
 
-test('quien no administra vuelve a «Mis cursos» con «Inicio» y la atrás no queda atrapada en /', async ({ page }) => {
-  await fakeApi(page, { signedIn: true, as: 'creator' })
-  await page.goto('/estudio')
-  await expect(page.getByRole('heading', { level: 1, name: 'Mis versiones' })).toBeVisible()
+test('quien no administra vuelve a su inicio con «Inicio» y la atrás no queda atrapada en /', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'teacher' })
+  await page.goto('/docencia')
+  await expect(page.getByRole('heading', { level: 1, name: 'Mis ediciones' })).toBeVisible()
   await home(page).click()
   await expect(page).toHaveURL('/mis-cursos')
   await page.goBack()
-  await expect(page).toHaveURL('/estudio')
+  await expect(page).toHaveURL('/docencia')
   // la redirección reemplaza a /: atrás no vuelve a ella
   await page.goto('/')
   await expect(page).toHaveURL('/mis-cursos')
   await page.goBack()
-  await expect(page).toHaveURL('/estudio')
+  await expect(page).toHaveURL('/docencia')
+})
+
+// el catálogo es público, sin shell: ahí no tendría menú ni cierre de sesión. el panel solo lista lo que la API le deja ver
+test('sin ninguna sección del LMS, el inicio es el panel de core y el catálogo no le ofrece «Mis cursos»', async ({ page }) => {
+  const api = await fakeApi(page, { signedIn: true, as: 'authority' })
+  await page.goto('/')
+  await expect(page).toHaveURL('/')
+  await expect(panel(page)).toBeVisible()
+  await expect(menu(page).getByRole('link', { name: 'Catálogo', exact: true })).toBeVisible()
+  await expect(menu(page).getByRole('link', { name: 'Mis cursos', exact: true })).toHaveCount(0)
+  await page.goto('/cursos')
+  await expect(page.getByRole('heading', { level: 1, name: 'Catálogo de cursos' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Mis cursos', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Inicio', exact: true })).toHaveAttribute('href', '/')
+  expect(api.unexpected).toEqual([])
 })
 
 test.describe('quien administra', () => {
