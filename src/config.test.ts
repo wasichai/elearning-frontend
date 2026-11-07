@@ -1,5 +1,7 @@
 import { resolveConfig } from '@wasichai/core'
+import { isValidElement } from 'react'
 import { describe, expect, it } from 'vitest'
+import { QuipuMark } from './shared/QuipuMark'
 import { homeRoute, shellNav } from './shellNav'
 import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
 import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
@@ -19,7 +21,7 @@ describe('createConfig', () => {
   it('arma el config de la app y core lo acepta tal cual', () => {
     const config = createConfig({ VITE_APP_NAME: 'Aula Abierta', DEV: false })
 
-    expect(resolveConfig(config)).toEqual({
+    expect(resolveConfig({ ...config, appLogo: undefined })).toEqual({
       apiBaseUrl: '/api',
       appName: 'Aula Abierta',
       appTagline: '',
@@ -32,6 +34,11 @@ describe('createConfig', () => {
       shellNav,
       homeRoute
     })
+  })
+
+  it('la marca Quipu acompaña al nombre en el shell y el login', () => {
+    const logo = createConfig({ DEV: false }).appLogo
+    expect(isValidElement(logo) && logo.type).toBe(QuipuMark)
   })
 
   it('propone el administrador de la semilla solo en desarrollo', () => {

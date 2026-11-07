@@ -171,29 +171,27 @@ export function NewVersionButton({ source, label, ariaLabel, variant }: { source
         {copy.isPending ? t('version.copying') : label}
       </Button>
       {asking ? (
-        <ReturnFocus>
-          <ConfirmDialog
-            variant="primary"
-            title={t('version.copyTitle')}
-            description={t('version.copyDescription', { number: source.number })}
-            confirmLabel={t('version.copyConfirm')}
-            cancelLabel={t('version.cancel')}
-            busy={copy.isPending}
-            error={copy.error ? describe(copy.error) : null}
-            onCancel={() => {
-              copy.reset()
-              setAsking(false)
-            }}
-            onConfirm={() =>
-              copy.mutate(source.id, {
-                onSuccess: (created) => {
-                  setAsking(false)
-                  void navigate(links.to(STUDIO_ROUTES.version, { id: created.id }))
-                }
-              })
-            }
-          />
-        </ReturnFocus>
+        <ConfirmDialog
+          variant="primary"
+          title={t('version.copyTitle')}
+          description={t('version.copyDescription', { number: source.number })}
+          confirmLabel={t('version.copyConfirm')}
+          cancelLabel={t('version.cancel')}
+          busy={copy.isPending}
+          error={copy.error ? describe(copy.error) : null}
+          onCancel={() => {
+            copy.reset()
+            setAsking(false)
+          }}
+          onConfirm={() =>
+            copy.mutate(source.id, {
+              onSuccess: (created) => {
+                setAsking(false)
+                void navigate(links.to(STUDIO_ROUTES.version, { id: created.id }))
+              }
+            })
+          }
+        />
       ) : null}
     </>
   )

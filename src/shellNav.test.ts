@@ -164,7 +164,8 @@ describe('shellNav', () => {
 })
 
 describe('homeRoute', () => {
-  const pathOf = (permissions: CallerPermissions) => registry.routes.find((candidate) => candidate.key === homeRoute(permissions))?.path
+  const LOADED = { permissionsFailed: false }
+  const pathOf = (permissions: CallerPermissions) => registry.routes.find((candidate) => candidate.key === homeRoute(permissions, LOADED))?.path
 
   // la primera sección del LMS que el servidor le deja abrir, por permiso y nunca por rol: nadie aterriza en un 403
   it.each([
@@ -182,17 +183,22 @@ describe('homeRoute', () => {
 
   // el catálogo es público, sin shell: no tendría menú ni cierre de sesión
   it('sin ninguna sección del LMS (la autoridad), el panel de core, dentro del shell', () => {
-    expect(homeRoute(ACCOUNT_OF.autoridad)).toBeNull()
+    expect(homeRoute(ACCOUNT_OF.autoridad, LOADED)).toBeNull()
   })
 
   it.each([
     ['admin', ADMIN],
     ['MANAGE_ORGANIZATION', MANAGER]
   ])('con permiso (%s) conserva el panel de core', (_, permissions) => {
-    expect(homeRoute(permissions)).toBeNull()
+    expect(homeRoute(permissions, LOADED)).toBeNull()
+  })
+
+  // core la llama sin permisos y con permissionsFailed: nadie tiene sección propia, así que el panel, como antes de 1.7.0
+  it('si los permisos no llegan, el panel de core', () => {
+    expect(homeRoute({ admin: false, objects: {}, capabilities: [] }, { permissionsFailed: true })).toBeNull()
   })
 
   it('una respuesta sin capacidades no da el panel a quien tiene matrículas', () => {
-    expect(homeRoute({ admin: false, objects: { matricula: ['READ'] } })).not.toBeNull()
+    expect(homeRoute({ admin: false, objects: { matricula: ['READ'] } }, LOADED)).not.toBeNull()
   })
 })

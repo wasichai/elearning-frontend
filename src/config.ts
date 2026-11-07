@@ -1,4 +1,6 @@
 import type { WasichaiConfig } from '@wasichai/core'
+import { createElement } from 'react'
+import { QuipuMark } from './shared/QuipuMark'
 import { homeRoute, shellNav } from './shellNav'
 import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
 
@@ -36,6 +38,8 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     appName: appName(env),
     // sin el lema por defecto de Wasichai, que habla de otro producto; el nombre basta
     appTagline: '',
+    // la marca junto al nombre: barra lateral, cajón, barra estrecha y login. core la deja aria-hidden
+    appLogo: createElement(QuipuMark, { className: 'size-7' }),
     storagePrefix: 'elearning',
     languages: ['es', 'en'],
     timeZone: 'America/Lima',

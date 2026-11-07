@@ -8,7 +8,6 @@ import { ContractError } from '../../shared/contract'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { Notice } from '../../shared/Notice'
 import { ProblemState } from '../../shared/ProblemState'
-import { ReturnFocus } from '../../shared/ReturnFocus'
 import { ScreenBody, ScreenHeader, Section, Stat, StatList, screenContainer } from '../../shared/Screen'
 import { RETURN_TO_PARAM, acceptanceState, safeReturnTo, useTermsView, type TermsAcceptance, type TermsVersion, type TermsView } from '../../shared/terms'
 import { canAdminister } from '../../shellNav'
@@ -292,18 +291,16 @@ function Withdraw({ onDone }: { onDone: (outcome: WithdrawOutcome) => void }) {
         </Button>
       </div>
       {confirming ? (
-        <ReturnFocus>
-          <ConfirmDialog
-            title={t('withdraw.confirmTitle')}
-            description={t('withdraw.confirmDescription')}
-            confirmLabel={withdraw.isPending ? t('withdraw.withdrawing') : t('withdraw.confirm')}
-            cancelLabel={t('withdraw.cancel')}
-            busy={withdraw.isPending}
-            error={withdraw.error ? t('withdraw.failed') : undefined}
-            onCancel={close}
-            onConfirm={onConfirm}
-          />
-        </ReturnFocus>
+        <ConfirmDialog
+          title={t('withdraw.confirmTitle')}
+          description={t('withdraw.confirmDescription')}
+          confirmLabel={withdraw.isPending ? t('withdraw.withdrawing') : t('withdraw.confirm')}
+          cancelLabel={t('withdraw.cancel')}
+          busy={withdraw.isPending}
+          error={withdraw.error ? t('withdraw.failed') : undefined}
+          onCancel={close}
+          onConfirm={onConfirm}
+        />
       ) : null}
     </Section>
   )
