@@ -8,6 +8,7 @@ import { TEXT_LINK } from '../../shared/buttons'
 import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from '../../shared/format'
 import { lessonIcon } from '../../shared/lessonIcon'
+import { Initials } from '../../shared/Initials'
 import { Notice } from '../../shared/Notice'
 import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody, ScreenHeader, Section, Skeleton, screenContainer } from '../../shared/Screen'
@@ -176,12 +177,7 @@ function CourseView({ course }: { course: CourseDetail }) {
               <ul className="flex flex-col divide-y divide-border">
                 {course.teachers.map((teacher) => (
                   <li key={teacher.name} className="flex gap-3 py-3 text-sm first:pt-0 last:pb-0">
-                    <span
-                      aria-hidden="true"
-                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-strong"
-                    >
-                      {initials(teacher.name)}
-                    </span>
+                    <Initials of={teacher.name} />
                     <div className="flex min-w-0 flex-col gap-1">
                       <p className="font-medium text-ink">
                         {teacher.name}
@@ -317,19 +313,6 @@ function OnThisPage({ sections }: { sections: Record<SectionKey, boolean> }) {
       </ul>
     </nav>
   )
-}
-
-// las iniciales de un nombre («Diego Docente (demo)» → DD), sin lo que va entre paréntesis
-function initials(name: string): string {
-  const words = name
-    .replace(/\(.*?\)/g, ' ')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]!.toLocaleUpperCase())
-    .join('')
 }
 
 // una fuente de un repositorio (owner/repo@commit:ruta) se lee por el nombre de su documento; la referencia exacta queda debajo

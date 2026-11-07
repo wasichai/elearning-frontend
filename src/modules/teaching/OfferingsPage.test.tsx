@@ -38,6 +38,15 @@ const figure = (label: string) => screen.getByText(label).parentElement!.querySe
 const called = (path: string) => fetchMock.calls.filter((call) => call.path.split('?')[0] === path).length
 
 describe('OfferingsPage: el panel docente', () => {
+  it('con todas las ediciones en una zona, la dice una vez, en «Tus ediciones», y no en cada tarjeta', async () => {
+    renderOfferings([panelOf(...BOTH)])
+
+    const items = await screen.findAllByRole('article')
+    for (const item of items) expect(within(item).queryByText(/Perú/)).not.toBeInTheDocument()
+    const offerings = within(screen.getByRole('heading', { level: 2, name: 'Tus ediciones' }).closest('section')!)
+    expect(offerings.getAllByText(/^Fechas en hora .*Perú$/)).toHaveLength(1)
+  })
+
   it('cuenta ediciones, intentos por corregir y matriculados con sumas exactas', async () => {
     renderOfferings([panelOf(...BOTH)])
 
@@ -47,6 +56,20 @@ describe('OfferingsPage: el panel docente', () => {
     expect(figure('Ediciones asignadas')).toBe('2')
     expect(figure('Intentos por corregir')).toBe('1')
     expect(figure('Matriculados')).toBe('3')
+    // una cifra, no una alerta: lo que hay que hacer con ella está en la bandeja, justo debajo
+    const pending = screen.getByText('Intentos por corregir').parentElement!
+    expect(pending.innerHTML).not.toMatch(/text-notice/)
+  })
+
+  it('con ediciones en zonas distintas, cada tarjeta dice la suya', async () => {
+    const [first, second] = BOTH
+    const madrid = { ...second!, timeZone: 'Europe/Madrid' }
+    renderOfferings([panelOf(first!, madrid)])
+
+    const items = await screen.findAllByRole('article')
+    expect(items.map((item) => within(item).getByText(/^Fechas en /).textContent)).toHaveLength(2)
+    // y la sección no añade la suya: solo las dos de las tarjetas
+    expect(within(screen.getByRole('heading', { level: 2, name: 'Tus ediciones' }).closest('section')!).getAllByText(/^Fechas en /)).toHaveLength(2)
   })
 
   it('una tarjeta por edición, con lo que más espera primero, su estado, sus fechas en su zona y sus tres accesos', async () => {
@@ -59,7 +82,8 @@ describe('OfferingsPage: el panel docente', () => {
     expect(first.getByText('SGSPE-101')).toBeInTheDocument()
     expect(first.getByText('En curso')).toBeInTheDocument()
     expect(first.getByText('7 sept – 16 oct 2026')).toBeInTheDocument()
-    expect(first.getByText(/Fechas en /)).toBeInTheDocument()
+    // la zona, compartida por las dos, la dice «Tus ediciones»
+    expect(first.queryByText(/Fechas en /)).not.toBeInTheDocument()
     expect(first.getByRole('link', { name: '2 matriculados' })).toHaveAttribute('href', `/docencia/${SGSPE}`)
     expect(first.getByRole('link', { name: '1 intento por corregir' })).toHaveAttribute('href', `/docencia/${SGSPE}/correccion`)
     expect(await first.findByRole('link', { name: '1 próxima sesión' })).toHaveAttribute('href', `/docencia/${SGSPE}/sesiones`)
@@ -184,6 +208,9 @@ describe('OfferingsPage: el panel docente', () => {
 
       const section = await tray()
       expect(await section.findByText('estudiante@demo.local')).toBeInTheDocument()
+      // la inicial de quien entregó, para recorrer la lista de un vistazo; el lector de pantalla ya tiene el correo
+      const avatar = section.getAllByText('E').find((element) => element.getAttribute('data-slot') === 'avatar')!
+      expect(avatar).toHaveAttribute('aria-hidden', 'true')
       expect(section.getByText('Evaluación final')).toBeInTheDocument()
       expect(section.getByText('Enviado hace 4 días')).toBeInTheDocument()
       expect(section.getByRole('link', { name: 'Corregir «Evaluación final» de estudiante@demo.local' })).toHaveAttribute(

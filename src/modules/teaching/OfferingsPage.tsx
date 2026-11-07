@@ -46,6 +46,9 @@ export function OfferingsPage() {
   const upcoming = new Map(items.filter(isLive).map((item) => [item.code, upcomingSessions(item.upcomingSessions, now).length] as const))
   const figures = panelFigures(offerings)
   const hasOfferings = offerings.length > 0
+  // la zona de todas las ediciones, si es una sola: se dice una vez, en «Tus ediciones», y no en cada tarjeta
+  const zones = new Set(offerings.map((offering) => offering.timeZone))
+  const zone = zones.size === 1 ? [...zones][0] : undefined
   return (
     <>
       <ScreenHeader title={t('offerings.title')} subtitle={t('offerings.subtitle')} width="wide">
@@ -73,11 +76,11 @@ export function OfferingsPage() {
               <SessionAgenda items={items} loading={panel.isPending} failed={panel.isError && offerings.some(isLive)} onRetry={retryPanel} />
             </aside>
             <div className="min-w-0 lg:col-start-1 lg:row-start-2">
-              <Section title={t('panel.offerings')}>
+              <Section title={t('panel.offerings')} description={zone ? <ZoneNote zone={zone} /> : undefined}>
                 <ul className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                   {offerings.map((offering) => (
                     <li key={offering.code} className="min-w-0">
-                      <OfferingCard offering={offering} upcoming={upcoming.get(offering.code)} />
+                      <OfferingCard offering={offering} upcoming={upcoming.get(offering.code)} showZone={zone === undefined} />
                     </li>
                   ))}
                 </ul>
@@ -96,7 +99,8 @@ function Figures({ figures }: { figures: ReturnType<typeof panelFigures> }) {
   return (
     <StatList className="pb-5">
       <Stat label={t('panel.figures.offerings')} value={format(figures.offerings)} />
-      <Stat label={t('panel.figures.pending')} value={format(figures.pending)} tone={figures.pending > 0 ? 'review' : undefined} />
+      {/* una cifra neutra: lo que hay que hacer con ella está en la bandeja «Por corregir», justo debajo */}
+      <Stat label={t('panel.figures.pending')} value={format(figures.pending)} />
       <Stat label={t('panel.figures.enrolled')} value={format(figures.enrolled)} />
     </StatList>
   )
@@ -153,7 +157,12 @@ function Access({ to, icon: Icon, children }: { to: string; icon?: LucideIcon; c
 
 // una edición es un objeto: su tarjeta, con su banda, sus datos y sus tres accesos con la cifra de cada uno. ninguno es primario.
 // sin agenda (terminada) o sin el panel leído no se da cifra de sus sesiones: el acceso se queda en «Sesiones»
-function OfferingCard({ offering, upcoming }: { offering: TeachingOffering; upcoming?: number }) {
+function ZoneNote({ zone }: { zone: string }) {
+  const { t, i18n } = useTranslation('teaching')
+  return <>{t('offering.timeZone', { zone: timeZoneLabel(zone, i18n.language) })}</>
+}
+
+function OfferingCard({ offering, upcoming, showZone }: { offering: TeachingOffering; upcoming?: number; showZone: boolean }) {
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
   const locale = i18n.language
@@ -176,7 +185,7 @@ function OfferingCard({ offering, upcoming }: { offering: TeachingOffering; upco
         <p className="text-sm text-ink-muted">{course.code}</p>
         <p className="flex flex-wrap gap-x-3 text-sm text-ink-muted">
           <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
-          <span>{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span>
+          {showZone ? <span>{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
         </p>
       </div>
       <div className="mt-auto grid grid-cols-1 divide-y divide-border border-t border-border @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">

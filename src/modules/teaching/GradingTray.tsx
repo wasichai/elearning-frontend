@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { TEXT_LINK, WRAP } from '../../shared/buttons'
 import { formatDateTime, formatNumber } from '../../shared/format'
+import { Initials } from '../../shared/Initials'
 import { Section, Skeleton } from '../../shared/Screen'
 import type { PendingAttempt, TeachingPanelItem } from './contract'
 import { groupsByOldest, hiddenAttempts, MAX_TRAY_ROWS, oldestFirst, submittedAge } from './panel'
@@ -100,6 +101,7 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
   const student = attempt.email ?? t('roster.noEmail')
   return (
     <div className="flex items-center gap-3 py-2.5 sm:gap-6">
+      {attempt.email ? <Initials of={attempt.email} className="hidden size-8 text-xs @md:flex" /> : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 @xl:flex-row @xl:items-center @xl:gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
           <span className="font-medium text-ink">{attempt.email ? <EmailText email={attempt.email} /> : student}</span>
