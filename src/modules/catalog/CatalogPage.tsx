@@ -135,7 +135,7 @@ const FILTER_LABELS: Record<string, string> = {
 
 function CatalogProblem({ error, onRetry, onClear }: { error: unknown; onRetry: () => void; onClear: () => void }) {
   const { t } = useTranslation('catalog')
-  const { kind, title, description } = useProblemText(error, 'catalog')
+  const { kind, title, description, technical } = useProblemText(error, 'catalog')
   // un 400 nombra los parámetros rechazados: se muestran con el nombre del filtro, no el del parámetro
   const details =
     kind === 'invalid' && error instanceof ApiError
@@ -145,7 +145,7 @@ function CatalogProblem({ error, onRetry, onClear }: { error: unknown; onRetry: 
         })
       : []
   return (
-    <ProblemState title={title} description={description} details={details}>
+    <ProblemState title={title} description={description} details={details} technical={technical}>
       {kind === 'invalid' ? (
         <Button variant="secondary" onClick={onClear}>
           {t('filters.clear')}

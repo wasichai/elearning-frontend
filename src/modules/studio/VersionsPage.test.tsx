@@ -266,7 +266,7 @@ describe('VersionsPage: mis versiones', () => {
     const first = renderVersions([{ path: VERSIONS, status: 500, body: problem(500, 'fallo') }])
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar tus versiones')
-    expect(alert).toHaveTextContent('error 500')
+    expect(alert).toHaveTextContent('Código del error: 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()

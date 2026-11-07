@@ -358,7 +358,7 @@ describe('OfferingsPage: el panel docente', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar tus ediciones')
-    expect(alert).toHaveTextContent('error 500')
+    expect(alert).toHaveTextContent('Código del error: 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 

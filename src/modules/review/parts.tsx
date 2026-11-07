@@ -8,16 +8,17 @@ import { problemKind, ProblemState } from '../../shared/ProblemState'
 export type ReviewResource = 'inbox' | 'version'
 
 // un fallo al leer: un 404 es una respuesta (lo ajeno y lo inexistente no se distinguen) y no se reintenta; lo demás, sí.
-// el estado HTTP queda a la vista para quien tenga que reportarlo
+// el estado HTTP va aparte y plegado, para quien tenga que reportarlo
 export function QueryProblem({ error, resource, onRetry }: { error: unknown; resource: ReviewResource; onRetry: () => void }) {
   const { t } = useTranslation('review')
   const kind = problemKind(error)
   const status = error instanceof ApiError ? error.status : undefined
   const title = t(`problem.${resource}.${kind}`)
   if (kind === 'notFound') return <ProblemState title={title} description={t('problem.notFoundHint')} />
-  const description = t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
+  const description = t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`)
+  const technical = status === undefined ? undefined : { summary: t('problem.technical'), text: t('problem.code', { status }) }
   return (
-    <ProblemState title={title} description={description}>
+    <ProblemState title={title} description={description} technical={technical}>
       <Button variant="secondary" size="sm" onClick={onRetry}>
         {t('problem.retry')}
       </Button>

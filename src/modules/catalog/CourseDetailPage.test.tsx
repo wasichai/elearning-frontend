@@ -256,7 +256,7 @@ describe('CourseDetailPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar el curso')
-    expect(alert).toHaveTextContent('error 503')
+    expect(alert).toHaveTextContent('Código del error: 503')
 
     fetchMock.restore()
     fetchMock = mockFetch([{ path: COURSE, body: courseDetail }])
@@ -270,7 +270,7 @@ describe('CourseDetailPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos abrir este curso')
-    expect(alert).toHaveTextContent('error 401')
+    expect(alert).toHaveTextContent('Código del error: 401')
   })
 
   it('una ficha fuera de contrato no se pinta a medias', async () => {

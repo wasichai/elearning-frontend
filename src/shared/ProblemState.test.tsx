@@ -57,6 +57,22 @@ describe('ProblemState', () => {
     expect(alert.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 
+  it('el código técnico va aparte, plegado: no dentro de la frase que lee la persona', () => {
+    render(
+      <ProblemState
+        title="No pudimos cargar tus cursos"
+        description="Tu cuenta no tiene acceso."
+        technical={{ summary: 'Detalles', text: 'Código del error: 403' }}
+      />
+    )
+
+    const alert = within(screen.getByRole('alert'))
+    expect(alert.getByText('Tu cuenta no tiene acceso.')).not.toHaveTextContent('403')
+    const details = alert.getByText('Detalles').closest('details')!
+    expect(details).not.toHaveAttribute('open')
+    expect(details).toHaveTextContent('Código del error: 403')
+  })
+
   it('sin descripción ni detalles solo dice qué pasó', () => {
     render(<ProblemState title="Algo falló" />)
 

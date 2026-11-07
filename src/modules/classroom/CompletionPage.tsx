@@ -20,10 +20,10 @@ export function CompletionPage() {
 function CompletionPanel({ classroom }: { classroom: Classroom }) {
   const { t } = useTranslation('classroom')
   const query = useCompletion(classroom.id)
-  const { title, description } = useProblemText(query.error, 'completion')
+  const { title, description, technical } = useProblemText(query.error, 'completion')
   if (query.isError)
     return (
-      <ProblemState title={title} description={description}>
+      <ProblemState title={title} description={description} technical={technical}>
         <Button variant="secondary" onClick={() => void query.refetch()}>
           {t('problem.retry')}
         </Button>

@@ -182,12 +182,14 @@ const es = {
       contract: 'No pudimos leer la respuesta del servidor'
     },
     notFoundHint: 'Solo ves las versiones en revisión que te tocan. El enlace puede ser de otra versión, o se asignó a otra persona.',
+    technical: 'Detalles',
+    code: 'Código del error: {{status}}',
     hint: {
       invalid: 'El servidor no aceptó la petición. Inténtalo de nuevo.',
       notFound: 'Puede que ya no exista.',
       conflict: 'El servidor no lo aceptó en este momento. Inténtalo de nuevo.',
       refused: 'Revisar versiones exige el permiso de aprobar, y nadie revisa su propia versión. Si crees que deberías, pide acceso a la coordinación.',
-      server: 'El servidor tuvo un problema (error {{status}}). Inténtalo de nuevo en unos minutos.',
+      server: 'El servidor no pudo responder. Inténtalo de nuevo en unos minutos.',
       network: 'Comprueba tu conexión e inténtalo de nuevo.',
       unexpected: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
       contract: 'La respuesta no tiene el formato que esta página espera; suele pasar durante una actualización. Inténtalo de nuevo en unos minutos.'
@@ -377,13 +379,15 @@ const en: typeof es = {
       contract: 'We could not read the server response'
     },
     notFoundHint: 'You only see the versions in review that are yours. The link may be for another version, or it was assigned to someone else.',
+    technical: 'Details',
+    code: 'Error code: {{status}}',
     hint: {
       invalid: 'The server did not accept the request. Try again.',
       notFound: 'It may no longer exist.',
       conflict: 'The server did not accept it right now. Try again.',
       refused:
         'Reviewing versions needs the approve permission, and nobody reviews their own version. If you think you should, ask the coordination for access.',
-      server: 'The server had a problem (error {{status}}). Try again in a few minutes.',
+      server: 'The server could not respond. Try again in a few minutes.',
       network: 'Check your connection and try again.',
       unexpected: 'An unexpected error happened. Try again.',
       contract: 'The response is not in the format this page expects; this usually happens during an update. Try again in a few minutes.'

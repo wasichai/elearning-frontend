@@ -17,7 +17,7 @@ import type { TeachingOffering } from './contract'
 
 export type TeachingResource = 'offerings' | 'roster' | 'queue' | 'attempt' | 'sessions' | 'attendance'
 
-// el texto de un error, por tipo; el estado HTTP queda a la vista para quien tenga que reportarlo
+// el texto de un error, por tipo; el estado HTTP va aparte y plegado, para quien tenga que reportarlo
 export function useProblemText(error: unknown, resource: TeachingResource) {
   const { t } = useTranslation('teaching')
   const kind = problemKind(error)
@@ -25,7 +25,8 @@ export function useProblemText(error: unknown, resource: TeachingResource) {
   return {
     kind,
     title: t(`problem.${resource}.${kind}`),
-    description: t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
+    description: t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`),
+    technical: status === undefined ? undefined : { summary: t('problem.technical'), text: t('problem.code', { status }) }
   }
 }
 
@@ -125,7 +126,7 @@ export function useLeaveDialog(dirty: boolean) {
 // un fallo al leer: un 404 es una respuesta (lo ajeno y lo inexistente no se distinguen) y no se reintenta; lo demás, sí
 export function QueryProblem({ error, resource, onRetry }: { error: unknown; resource: TeachingResource; onRetry: () => void }) {
   const { t } = useTranslation('teaching')
-  const { kind, title, description } = useProblemText(error, resource)
+  const { kind, title, description, technical } = useProblemText(error, resource)
   if (kind === 'notFound')
     return (
       <div role="alert" className="flex max-w-prose flex-col gap-2 py-6">
@@ -134,7 +135,7 @@ export function QueryProblem({ error, resource, onRetry }: { error: unknown; res
       </div>
     )
   return (
-    <ProblemState title={title} description={description}>
+    <ProblemState title={title} description={description} technical={technical}>
       <Button variant="secondary" size="sm" onClick={onRetry}>
         {t('problem.retry')}
       </Button>

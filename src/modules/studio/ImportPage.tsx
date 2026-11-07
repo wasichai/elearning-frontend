@@ -183,6 +183,10 @@ function ImportSteps({ stage }: { stage: ImportStatus | 'form' }) {
   )
 }
 
+// el estado HTTP, aparte y plegado
+const technical = (t: ReturnType<typeof useTranslation<'studio'>>['t'], status: number | undefined) =>
+  status === undefined ? undefined : { summary: t('problem.technical'), text: t('problem.code', { status }) }
+
 // sin permiso, el servidor responde 403 a los orígenes: se explica qué hace falta, sin reintentar
 function SourcesProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('studio')
@@ -191,9 +195,9 @@ function SourcesProblem({ error, onRetry }: { error: unknown; onRetry: () => voi
   const description =
     kind === 'refused' && status === 403
       ? t('import.problem.refusedHint')
-      : t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
+      : t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`)
   return (
-    <ProblemState title={t(`import.problem.${kind}`)} description={description}>
+    <ProblemState title={t(`import.problem.${kind}`)} description={description} technical={technical(t, status)}>
       {status === 403 ? null : (
         <Button variant="secondary" size="sm" onClick={onRetry}>
           {t('problem.retry')}
@@ -508,7 +512,8 @@ function JobProblem({ error, onRetry }: { error: unknown; onRetry: () => void })
   return (
     <ProblemState
       title={t(`import.problem.${kind}`)}
-      description={t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })}
+      description={t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`)}
+      technical={technical(t, status)}
     >
       <Button variant="secondary" size="sm" onClick={onRetry}>
         {t('problem.retry')}

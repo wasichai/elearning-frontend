@@ -66,7 +66,11 @@ export function DraftRecordPage({ title, objectName, form, plan, gone }: DraftRe
       />
       <ScreenBody width="reading">
         {query.isError ? (
-          <ProblemState title={problem.title} description={problem.kind === 'notFound' ? t('problem.notFoundHint') : problem.description} />
+          <ProblemState
+            title={problem.title}
+            description={problem.kind === 'notFound' ? t('problem.notFoundHint') : problem.description}
+            technical={problem.kind === 'notFound' ? undefined : problem.technical}
+          />
         ) : !version ? (
           <LoadingState label={t('version.loading')} />
         ) : version.status !== 'BORRADOR' ? (

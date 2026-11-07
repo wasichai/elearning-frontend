@@ -121,12 +121,22 @@ describe('MyCoursesPage', () => {
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
+  it('un 403 dice que la cuenta no tiene acceso, no que «el servidor rechazó la consulta»', async () => {
+    renderPage([panelDown(403), { path: ENROLLMENTS, status: 403, body: problem(403, 'Forbidden') }])
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Tu cuenta no tiene acceso a esto')
+    expect(alert).not.toHaveTextContent('rechazó')
+  })
+
   it('un error del servidor se explica y «Reintentar» lo recupera', async () => {
     renderPage([panelDown(), { path: ENROLLMENTS, status: 503, body: problem(503, 'caído') }])
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar tus cursos')
-    expect(alert).toHaveTextContent('error 503')
+    // qué pasó y qué hacer, en llano; el código, aparte y plegado, para quien tenga que reportarlo
+    expect(within(alert).getByText(/^El servidor no pudo responder/)).not.toHaveTextContent('503')
+    expect(within(alert).getByText('Detalles').closest('details')).toHaveTextContent('Código del error: 503')
 
     fetchMock.restore()
     fetchMock = mockFetch([panelOf(enrollment)])

@@ -51,10 +51,10 @@ export function AttemptView({ enrollmentId, attemptId, passingPercent, title, ma
 
 function AttemptLoadProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('classroom')
-  const { kind, title, description } = useProblemText(error, 'attempt')
+  const { kind, title, description, technical } = useProblemText(error, 'attempt')
   if (kind === 'notFound') return <Alert tone="notice">{t('attempt.notFound')}</Alert>
   return (
-    <ProblemState title={title} description={description}>
+    <ProblemState title={title} description={description} technical={technical}>
       <Button variant="secondary" onClick={onRetry}>
         {t('problem.retry')}
       </Button>

@@ -96,7 +96,7 @@ describe('las sesiones de la edición', () => {
     fetchMock.restore()
 
     renderPages([{ path: SESSIONS, status: 500, body: problem(500, 'fallo') }])
-    expect(await screen.findByRole('alert')).toHaveTextContent('error 500')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Código del error: 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 
