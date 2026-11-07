@@ -66,8 +66,8 @@ describe('NewUnitPage: una unidad del borrador', () => {
   })
 
   it.each([
-    ['en', ['Order', 'Title', 'Description', 'Objectives (one per line)', 'Estimated hours']],
-    ['es', ['Orden', 'Título', 'Descripción', 'Objetivos (uno por línea)', 'Horas estimadas']]
+    ['en', ['Order', 'Title', 'Description', 'Objectives', 'Estimated hours']],
+    ['es', ['Orden', 'Título', 'Descripción', 'Objetivos', 'Horas estimadas']]
   ])('las etiquetas de los campos salen en %s', async (language, labels) => {
     renderPage(firstDraftDetail.id, [{ path: detailPath(firstDraftDetail.id), body: firstDraftDetail }], language)
 

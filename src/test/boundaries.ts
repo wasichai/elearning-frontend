@@ -55,3 +55,8 @@ const SMALL_BUTTON = /\bsize=\{?\s*["']sm["']\s*\}?/
 export function smallButtons(source: string): string[] {
   return source.split('\n').filter((line) => SMALL_BUTTON.test(line))
 }
+
+// un <EmptyState> sin icono: core pone uno genérico, y el vacío no dice de qué es. el icono va en la misma etiqueta de apertura
+export function emptyStatesWithoutIcon(source: string): string[] {
+  return [...source.matchAll(/<EmptyState\b([^>]|=>)*?\/?>/g)].map(([tag]) => tag).filter((tag) => !/\bicon=\{/.test(tag))
+}

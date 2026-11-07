@@ -90,6 +90,14 @@
     border-radius: var(--radius-lg);
   }
 
+  /* el estado vacío de core (README de @wasichai/core, «Query states») pinta su icono a 32px en el gris de los bordes:
+     casi no se ve. a 40px y en ink-muted dice de qué es el vacío */
+  [data-slot='query-state'][data-state='empty'] > svg {
+    width: 40px;
+    height: 40px;
+    color: var(--ink-muted);
+  }
+
   /* la librería pone sus encabezados de tabla en mayúsculas sostenidas, que Quipu no usa */
   [data-slot='table-head'] {
     text-transform: none;

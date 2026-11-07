@@ -2,6 +2,7 @@ import { EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
 import { Button, Table, Td, Th } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { ClipboardCheck } from 'lucide-react'
 import { WRAP } from '../../shared/buttons'
 import { formatDateTime, formatNumber } from '../../shared/format'
 import { useOfferings, useQueue } from './api'
@@ -23,7 +24,7 @@ export function GradingQueuePage() {
       ) : !query.data ? (
         <LoadingState label={t('queue.loading')} />
       ) : query.data.length === 0 ? (
-        <EmptyState title={t('queue.empty')} />
+        <EmptyState title={t('queue.empty')} icon={ClipboardCheck} />
       ) : (
         <Queue code={code} attempts={query.data} />
       )}

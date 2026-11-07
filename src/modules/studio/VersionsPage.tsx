@@ -1,11 +1,13 @@
-import { EmptyState, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { PenLine } from 'lucide-react'
 import { TEXT_LINK } from '../../shared/buttons'
 import { CordBanner } from '../../shared/CordBanner'
 import { formatInstant, formatNumber } from '../../shared/format'
+import { ListSkeleton } from '../../shared/ListSkeleton'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
@@ -90,7 +92,7 @@ export function VersionsPage() {
         ) : query.data ? (
           <VersionList versions={query.data} />
         ) : (
-          <LoadingState label={t('versions.loading')} />
+          <ListSkeleton label={t('versions.loading')} />
         )}
       </ScreenBody>
     </>
@@ -120,7 +122,9 @@ function VersionList({ versions }: { versions: StudioVersion[] }) {
   if (versions.length === 0)
     return (
       <>
-        <EmptyState title={t('versions.empty')}>{canCreateCourse(permissions) ? <p>{t('versions.emptyHint')}</p> : null}</EmptyState>
+        <EmptyState title={t('versions.empty')} icon={PenLine}>
+          {canCreateCourse(permissions) ? <p>{t('versions.emptyHint')}</p> : null}
+        </EmptyState>
         <CoursesHint />
       </>
     )
@@ -185,7 +189,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
           <Link
             to={links.to(STUDIO_ROUTES.version, { id: version.id })}
             aria-label={t('versions.name', name)}
-            className="inline-flex min-h-11 items-center rounded-sm text-link underline-offset-4 hover:underline sm:min-h-6"
+            className="inline-flex min-h-11 items-center rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline sm:min-h-6"
           >
             {t('versions.number', { number: version.number })}
           </Link>

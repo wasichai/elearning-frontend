@@ -2,6 +2,7 @@ import { ApiError, EmptyState } from '@wasichai/core'
 import { Button, Pagination } from '@wasichai/ui'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LibraryBig, SearchX } from 'lucide-react'
 import { PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody } from '../../shared/Screen'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
@@ -80,21 +81,21 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     // más allá de la última página (una URL vieja o editada) no es lo mismo que no tener resultados
     if (page.totalElements > 0)
       return (
-        <EmptyState title={t('empty.pastLastPage')}>
+        <EmptyState title={t('empty.pastLastPage')} icon={SearchX}>
           <Button variant="secondary" onClick={() => onPage(1)}>
             {t('empty.firstPage')}
           </Button>
         </EmptyState>
       )
     return hasActiveFilters(filters) ? (
-      <EmptyState title={t('empty.filtered')}>
+      <EmptyState title={t('empty.filtered')} icon={SearchX}>
         <p>{t('empty.filteredHint')}</p>
         <Button variant="secondary" onClick={onClear}>
           {t('filters.clear')}
         </Button>
       </EmptyState>
     ) : (
-      <EmptyState title={t('empty.none')} />
+      <EmptyState title={t('empty.none')} icon={LibraryBig} />
     )
   }
 

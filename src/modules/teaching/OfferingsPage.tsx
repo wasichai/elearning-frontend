@@ -1,6 +1,6 @@
 import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { CalendarDays, ClipboardCheck, Users, type LucideIcon } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, GraduationCap, Users, type LucideIcon } from 'lucide-react'
 import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
@@ -112,7 +112,7 @@ function NoOfferings() {
   const { t } = useTranslation('teaching')
   const links = useWasichaiLinks()
   return (
-    <EmptyState title={t('offerings.empty')}>
+    <EmptyState title={t('offerings.empty')} icon={GraduationCap}>
       <p>{t('offerings.emptyHint')}</p>
       {links.has(CLASSROOM_ENROLLMENTS_ROUTE) ? (
         <Button asChild variant="secondary" className="mt-2 min-h-11">

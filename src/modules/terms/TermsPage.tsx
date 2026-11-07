@@ -3,6 +3,7 @@ import { Button, ConfirmDialog } from '@wasichai/ui'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { FileText } from 'lucide-react'
 import { WRAP } from '../../shared/buttons'
 import { ContractError } from '../../shared/contract'
 import { formatInstant, formatNumber } from '../../shared/format'
@@ -58,7 +59,7 @@ function NoTerms() {
   const administers = canAdminister(permissions)
   return (
     <ScreenBody width="reading">
-      <EmptyState title={t('none.title')}>
+      <EmptyState title={t('none.title')} icon={FileText}>
         <p className="max-w-prose">{administers ? t('none.admin') : t('none.person')}</p>
         <div className="mt-3 flex flex-wrap justify-center gap-3">
           {administers && links.has(PUBLISH_TERMS_ROUTE) ? (
