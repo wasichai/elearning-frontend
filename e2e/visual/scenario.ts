@@ -14,3 +14,5 @@ export const teacher: FakeApiOptions = { signedIn: true, as: 'teacher' }
 export const creator: FakeApiOptions = { signedIn: true, as: 'creator' }
 export const reviewer: FakeApiOptions = { signedIn: true, as: 'reviewer' }
 export const administrator: FakeApiOptions = { signedIn: true, as: 'administrator' }
+// sin ninguna sección del LMS: aterriza en el panel de core (#178)
+export const authority: FakeApiOptions = { signedIn: true, as: 'authority' }

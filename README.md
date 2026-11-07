@@ -143,7 +143,8 @@ sesión. `e2e/keyboard.spec.ts` recorre con el teclado los flujos principales: f
 `yarn e2e:visual` (`playwright.visual.config.ts`, `e2e/visual/`) abre cada escenario de `e2e/visual/scenarios/` con la API
 simulada, sobre su propio `yarn dev`. **Es local**: no corre en `yarn e2e` ni en CI, y las capturas de referencia dependen del
 sistema, así que no se commitean (`e2e/visual/*-snapshots/` está en `.gitignore`). Sin `VISUAL_DIR`, compara con las referencias
-de tu máquina; la primera vez las crea.
+de tu máquina; la primera vez las crea. Cada tema e idioma tiene las suyas (`-dark`, `-en` en el nombre): la línea base
+completa son dos tandas, `yarn e2e:visual` y `VISUAL_DARK=1 yarn e2e:visual`.
 
 | Variable           | Para qué                                                                                                    | Por defecto            |
 | ------------------ | ----------------------------------------------------------------------------------------------------------- | ---------------------- |

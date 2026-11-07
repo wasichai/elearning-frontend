@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { administrator, creator, reviewer, student, teacher, type Scenario } from '../scenario'
+import { administrator, authority, creator, reviewer, student, teacher, type Scenario } from '../scenario'
 
 // el menú del shell con y sin permiso, dentro y fuera de las rutas de core (issue #141)
 const LESSON = '/data/objects/leccion/records/l-1'
@@ -16,6 +16,8 @@ const openDrawer = async (page: Page) => {
 }
 
 export const shellScenarios: Scenario[] = [
+  // lo primero que ve cualquiera: la marca Quipu sobre el formulario (#181)
+  { name: 'login', path: '/login' },
   // / lleva a «Mis cursos»: «Inicio» e «Mis cursos» son la misma ruta
   { name: 'shell-student-home', path: '/', api: student },
   { name: 'shell-student', path: '/mis-cursos', api: student, act: openDrawer },
@@ -23,6 +25,10 @@ export const shellScenarios: Scenario[] = [
   { name: 'shell-teacher', path: '/docencia', api: teacher, act: openDrawer },
   { name: 'shell-creator', path: '/estudio', api: creator, act: openDrawer },
   { name: 'shell-creator-core', path: LESSON, api: creator, act: openDrawer },
+  // la autoridad no tiene sección del LMS: el panel de core, con su menú; el catálogo público le ofrece «Inicio»
+  { name: 'shell-authority-home', path: '/', api: authority, act: openDrawer },
+  { name: 'shell-authority-home-closed', path: '/', api: authority },
+  { name: 'shell-authority-catalog', path: '/cursos', api: authority },
   { name: 'shell-reviewer', path: '/revision', api: reviewer, act: openDrawer },
   { name: 'shell-admin', path: '/mis-cursos', api: administrator, act: openDrawer },
   { name: 'shell-admin-home', path: '/', api: administrator, act: openDrawer },

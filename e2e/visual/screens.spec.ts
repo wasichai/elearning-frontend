@@ -6,7 +6,7 @@ import { open, SCENARIOS, VIEWPORTS } from './scenarios'
 const dir = process.env.VISUAL_DIR
 const only = process.env.VISUAL_ONLY?.split(',')
 const viewports = process.env.VISUAL_VIEWPORTS?.split(',') ?? ['phone', 'tablet', 'desktop']
-// el idioma y el tema, en el nombre: una tanda no pisa las capturas de otra
+// el idioma y el tema, en el nombre, también al comparar: la tanda oscura tiene sus propias referencias y no se compara con la clara
 const suffix = [process.env.VISUAL_LANG ?? process.env.VISUAL_LOCALE, process.env.VISUAL_DARK ? 'dark' : undefined]
   .filter(Boolean)
   .map((part) => `-${part}`)
@@ -21,7 +21,7 @@ for (const scenario of SCENARIOS.filter((candidate) => !only || only.includes(ca
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
       expect(overflow, 'desbordamiento horizontal de la página').toBeLessThanOrEqual(0)
       if (dir) await page.screenshot({ path: `${dir}/${scenario.name}-${viewport}${suffix}.png`, fullPage: true })
-      else await expect(page).toHaveScreenshot(`${scenario.name}-${viewport}.png`, { fullPage: true, maxDiffPixelRatio: 0.01, animations: 'disabled' })
+      else await expect(page).toHaveScreenshot(`${scenario.name}-${viewport}${suffix}.png`, { fullPage: true, maxDiffPixelRatio: 0.01, animations: 'disabled' })
     })
   }
 }
