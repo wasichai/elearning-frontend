@@ -43,10 +43,12 @@ export interface DashboardRailProps {
   showBlocks: boolean
   // las cifras, si hay más de un curso que contar
   figures?: { inProgress: number; completed: number }
+  // la zona que la página ya dice para todo: si las sesiones van en ella, el bloque no la repite
+  pageZone?: string
 }
 
 // el riel del panel: en escritorio al lado, en un móvil debajo de todo. sin tarjetas: secciones con filas
-export function DashboardRail({ data, showBlocks, figures }: DashboardRailProps) {
+export function DashboardRail({ data, showBlocks, figures, pageZone }: DashboardRailProps) {
   const { t, i18n } = useTranslation('classroom')
   return (
     <aside aria-label={t('dashboard.rail')} className="flex min-w-0 flex-col gap-8 lg:border-l lg:border-border lg:pl-8">
@@ -58,7 +60,7 @@ export function DashboardRail({ data, showBlocks, figures }: DashboardRailProps)
       ) : null}
       {showBlocks ? (
         <>
-          <SessionsBlock block={data.sessions} />
+          <SessionsBlock block={data.sessions} pageZone={pageZone} />
           <AssessmentsBlock block={data.assessments} />
         </>
       ) : null}
@@ -115,14 +117,14 @@ function BlockBody<T>({
 const ROW_LINK =
   'flex min-h-11 flex-col gap-0.5 py-2.5 text-sm break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
 
-function SessionsBlock({ block }: { block: Block<UpcomingSession> }) {
+function SessionsBlock({ block, pageZone }: { block: Block<UpcomingSession>; pageZone?: string }) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const zones = [...new Set(block.items.slice(0, MAX_ROWS).map((session) => session.timeZone))]
   return (
     <Section
       title={t('dashboard.sessions.title')}
-      description={zones.length === 1 ? t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, i18n.language) }) : undefined}
+      description={zones.length === 1 && zones[0] !== pageZone ? t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, i18n.language) }) : undefined}
     >
       <BlockBody
         block={block}

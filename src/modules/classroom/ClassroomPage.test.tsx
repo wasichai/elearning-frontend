@@ -44,6 +44,29 @@ const unitOf = (name: string) =>
 const openUnit = (name: string) => userEvent.click(within(units()).getByText(new RegExp(`^${name}\\.`)))
 
 describe('ClassroomPage: el aula', () => {
+  it('mientras llega, la forma del aula (cabecera, temario y lección) y el aviso para lectores de pantalla', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando el aula…')
+    expect(document.querySelector("[data-slot='classroom-skeleton']")).not.toBeNull()
+    expect(await screen.findByRole('heading', { level: 1, name: classroom.course.title })).toBeInTheDocument()
+    expect(document.querySelector("[data-slot='classroom-skeleton']")).toBeNull()
+  })
+
+  it('una lección sin empezar no lo dice a la vista (lo dice su nudo), pero sí a un lector de pantalla', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+
+    await lessonHeading('Recorrido por la pantalla')
+    const nav = within(units())
+    await openUnit('Unidad 2')
+    const pending = nav.getByRole('link', { name: 'Guía de liquidación Sin empezar' })
+    expect(within(pending).getByText('Sin empezar')).toHaveClass('sr-only')
+    // la actual sí lo dice: es donde está quien lee
+    const current = nav.getByRole('link', { name: 'Recorrido por la pantalla Sin empezar' })
+    expect(within(current).getByText('Sin empezar')).not.toHaveClass('sr-only')
+    expect(within(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).getByText('Completada')).not.toHaveClass('sr-only')
+  })
+
   it('sin ?leccion abre la siguiente por hacer, con las unidades, su avance y el estado de cada lección', async () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
 

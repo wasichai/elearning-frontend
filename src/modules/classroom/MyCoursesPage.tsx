@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { CordBanner } from '../../shared/CordBanner'
+import { timeZoneLabel } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader, Section, Skeleton } from '../../shared/Screen'
@@ -127,21 +128,35 @@ function Dashboard({ groups, total, railData, railCount }: { groups: EnrollmentG
   // con un solo curso las cifras no dicen nada que no se vea; y sin cifras ni nada que leer, el riel sobra
   const figures = total > 1 ? { inProgress: inProgress.length + (primary ? 1 : 0), completed: completed.length } : undefined
   const hasRail = figures !== undefined || railCount > 0
+  const zone = sharedZone([...(primary ? [primary] : []), ...inProgress, ...completed, ...withdrawn])
+  const showZone = zone === undefined
   return (
     <div className={hasRail ? PANEL : 'flex flex-col'}>
       <div className="flex min-w-0 flex-col gap-10">
         {primary ? (
           <Section title={t('dashboard.continue')}>
-            <PrimaryCourse enrollment={primary} />
+            <PrimaryCourse enrollment={primary} showZone={showZone} />
           </Section>
         ) : null}
-        <CourseSection title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')} enrollments={inProgress} />
-        <CourseSection title={t('dashboard.completed')} enrollments={completed} />
-        <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} />
+        <CourseSection title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')} enrollments={inProgress} showZone={showZone} />
+        <CourseSection title={t('dashboard.completed')} enrollments={completed} showZone={showZone} />
+        <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} showZone={showZone} />
+        {zone ? <ZoneNote zone={zone} /> : null}
       </div>
-      {hasRail ? <DashboardRail data={railData} showBlocks={railCount > 0} figures={figures} /> : null}
+      {hasRail ? <DashboardRail data={railData} showBlocks={railCount > 0} figures={figures} pageZone={zone} /> : null}
     </div>
   )
+}
+
+// la zona de todas las ediciones, si es una sola: entonces se dice una vez por página y no en cada tarjeta
+function sharedZone(enrollments: Enrollment[]): string | undefined {
+  const zones = new Set(enrollments.map((enrollment) => enrollment.offering.timeZone))
+  return zones.size === 1 ? [...zones][0] : undefined
+}
+
+function ZoneNote({ zone }: { zone: string }) {
+  const { t, i18n } = useTranslation('classroom')
+  return <p className="text-xs text-ink-muted">{t('dashboard.timeZone', { zone: timeZoneLabel(zone, i18n.language) })}</p>
 }
 
 const COURSE_LINK = 'inline-flex min-h-11 items-center rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline'
@@ -166,7 +181,7 @@ function CourseTitle({ enrollment }: { enrollment: Enrollment }) {
 
 // el bloque que destaca: el único objeto con tarjeta y banda de la pantalla, la lección exacta y la única primaria.
 // la unidad y la lección se dicen por su número: el resumen de la matrícula no trae el título de la unidad
-function PrimaryCourse({ enrollment }: { enrollment: Enrollment }) {
+function PrimaryCourse({ enrollment, showZone }: { enrollment: Enrollment; showZone: boolean }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const next = enrollment.nextLesson!
@@ -176,7 +191,7 @@ function PrimaryCourse({ enrollment }: { enrollment: Enrollment }) {
       <div className="flex flex-col gap-4 px-5 pt-3 pb-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col">
           <CourseTitle enrollment={enrollment} />
-          <OfferingDates offering={enrollment.offering} />
+          <OfferingDates offering={enrollment.offering} showZone={showZone} />
         </div>
         <div className="flex flex-col gap-1">
           <p className="text-sm text-ink-muted">{t('classroom.position', { unit: next.unitOrder, lesson: next.lessonOrder })}</p>
@@ -196,14 +211,14 @@ function PrimaryCourse({ enrollment }: { enrollment: Enrollment }) {
   )
 }
 
-function CourseSection({ title, enrollments }: { title: string; enrollments: Enrollment[] }) {
+function CourseSection({ title, enrollments, showZone }: { title: string; enrollments: Enrollment[]; showZone: boolean }) {
   if (enrollments.length === 0) return null
   return (
     <Section title={title}>
       <ul className="flex flex-col divide-y divide-border border-y border-border">
         {enrollments.map((enrollment) => (
           <li key={enrollment.id}>
-            <CourseRow enrollment={enrollment} />
+            <CourseRow enrollment={enrollment} showZone={showZone} />
           </li>
         ))}
       </ul>
@@ -220,7 +235,7 @@ function statusLine(enrollment: Enrollment): 'next' | 'finished' | 'closed' | 'n
 
 // un curso que no es el principal: una fila, sin caja; a la derecha su avance y su acción, un enlace y no un botón.
 // las dos columnas caben hasta lg y de nuevo desde xl: en medio, el riel y el menú del shell ya ocupan su sitio
-function CourseRow({ enrollment }: { enrollment: Enrollment }) {
+function CourseRow({ enrollment, showZone }: { enrollment: Enrollment; showZone: boolean }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const params = { enrollmentId: enrollment.id }
@@ -231,7 +246,7 @@ function CourseRow({ enrollment }: { enrollment: Enrollment }) {
     <article className="grid grid-cols-1 gap-x-8 gap-y-2 py-3 sm:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_14rem]">
       <div className="flex min-w-0 flex-col">
         <CourseTitle enrollment={enrollment} />
-        <OfferingDates offering={enrollment.offering} />
+        <OfferingDates offering={enrollment.offering} showZone={showZone} />
         {line === 'withdrawn' ? (
           <p className="mt-2 flex">
             <StatusBadge state="neutral">{t('dashboard.withdrawnBadge')}</StatusBadge>

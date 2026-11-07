@@ -124,7 +124,10 @@ function LessonLink({ enrollmentId, lesson, current, onNavigate }: { enrollmentI
       </span>
       <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
         <span className={`col-span-2 ${current ? 'font-medium' : ''}`}>{lesson.title}</span>{' '}
-        <span className={`col-start-2 row-start-2 self-center text-xs ${statusTone}`}>{t(`lessonStatus.${status}`)}</span>
+        {/* «Sin empezar» lo dice el nudo vacío: a la vista solo lo que avanzó, y la actual; el nombre del enlace lo lleva siempre */}
+        <span className={status === 'NO_INICIADA' && !current ? 'sr-only' : `col-start-2 row-start-2 self-center text-xs ${statusTone}`}>
+          {t(`lessonStatus.${status}`)}
+        </span>
         <span
           id={metaId}
           aria-hidden="true"

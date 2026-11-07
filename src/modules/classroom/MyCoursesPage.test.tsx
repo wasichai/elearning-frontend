@@ -61,7 +61,9 @@ describe('MyCoursesPage', () => {
     expect(card.getByRole('link', { name: enrollment.course.title })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1')
     expect(card.getByText('9 nov – 4 dic 2026')).toBeInTheDocument()
     expect(card.getByText(/· Aún no empieza$/)).toBeInTheDocument()
-    expect(card.getByText(/^Fechas en hora .*Perú$/)).toBeInTheDocument()
+    // todas en la misma zona: se dice una vez por página, no en cada tarjeta
+    expect(card.queryByText(/Perú/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/^Fechas y horas en hora .*Perú$/)).toHaveLength(1)
 
     const bar = card.getByRole('progressbar', { name: 'Progreso del curso' })
     expect(bar).toHaveAttribute('aria-valuenow', '33')
@@ -257,7 +259,19 @@ describe('MyCoursesPage', () => {
     const weekday = new Intl.DateTimeFormat('es', { weekday: 'short', timeZone: 'America/Lima' }).format(new Date(start)).replace('.', '')
     expect(within(row).getByText(new RegExp(`^${weekday}`, 'i')).tagName).toBe('TIME')
     expect(within(row).getByText(new RegExp(`^${weekday}`, 'i'))).toHaveAttribute('datetime', start)
-    expect(block.getByText(/^Horas en .*Perú$/)).toBeInTheDocument()
+    // la zona de sus horas es la de la página: el riel no la repite
+    expect(block.queryByText(/^Horas en/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/^Fechas y horas en hora .*Perú$/)).toHaveLength(1)
+  })
+
+  it('con ediciones en zonas distintas, cada tarjeta dice la suya y no hay nota de página', async () => {
+    const madrid = { ...otherEnrollment, offering: { ...otherEnrollment.offering, timeZone: 'Europe/Madrid' } }
+    renderPage([panelOf(enrollment, madrid)])
+
+    await screen.findByRole('heading', { level: 3, name: enrollment.course.title })
+    expect(within(item(enrollment.course.title)).getByText(/^Fechas en hora .*Perú$/)).toBeInTheDocument()
+    expect(within(item(madrid.course.title)).getByText(/^Fechas en hora .*Europa central$/)).toBeInTheDocument()
+    expect(screen.queryByText(/^Fechas y horas en/)).not.toBeInTheDocument()
   })
 
   it('funde las sesiones de todos los cursos, la más próxima primero, y deja fuera la que terminó con la página abierta', async () => {
