@@ -1,4 +1,5 @@
 import { useWasichaiLinks } from '@wasichai/core'
+import { ChartNoAxesColumnIncreasing, Clock, MonitorPlay } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { CordBanner } from '../../shared/CordBanner'
@@ -6,7 +7,7 @@ import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Skeleton } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
 import type { CourseSummary, NextOffering } from './contract'
-import { AVAILABILITY, IllustrativeMark, offeringState } from './parts'
+import { AVAILABILITY, IconFact, IllustrativeMark, offeringState } from './parts'
 import { CATALOG_ROUTES } from './routes'
 
 const BANNER_HEIGHT = 72
@@ -36,15 +37,16 @@ export function CourseCard({ course }: { course: CourseSummary }) {
           </Link>
         </h3>
         {course.summary ? <p className="line-clamp-2 text-sm text-ink-muted">{course.summary}</p> : null}
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
-          <dt className="text-ink-muted">{t('course.level')}</dt>
-          <dd className="text-ink">{t(`level.${course.level}`)}</dd>
-          <dt className="text-ink-muted">{t('course.modality')}</dt>
-          <dd className="text-ink">{t(`modality.${course.modality}`)}</dd>
-          <dt className="text-ink-muted">{t('course.duration')}</dt>
-          <dd className="text-ink tabular-nums">
+        <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <IconFact icon={ChartNoAxesColumnIncreasing} label={t('course.level')}>
+            {t(`level.${course.level}`)}
+          </IconFact>
+          <IconFact icon={MonitorPlay} label={t('course.modality')}>
+            {t(`modality.${course.modality}`)}
+          </IconFact>
+          <IconFact icon={Clock} label={t('course.duration')}>
             {t('course.durationValue', { count: course.weeks, hours: formatNumber(course.workload.totalHours, i18n.language) })}
-          </dd>
+          </IconFact>
         </dl>
         <Availability offering={course.nextOffering} />
       </div>
@@ -85,10 +87,10 @@ export function CourseCardSkeleton() {
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-3/4" />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-4 w-3/5" />
+        <div className="flex gap-4">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
         </div>
         <div className="mt-auto flex flex-col gap-2 border-t border-border pt-3">
           <Skeleton className="h-4 w-4/5" />
