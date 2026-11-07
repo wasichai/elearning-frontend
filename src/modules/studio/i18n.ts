@@ -123,7 +123,7 @@ const es = {
       slug: 'Identificador en URL',
       titulo: 'Título',
       resumen: 'Resumen',
-      idioma: 'Idioma (BCP 47)',
+      idioma: 'Idioma',
       nivel: 'Nivel',
       conocimientos_previos: 'Conocimientos previos',
       categoria: 'Categoría'
@@ -132,7 +132,7 @@ const es = {
       orden: 'Orden',
       titulo: 'Título',
       descripcion: 'Descripción',
-      objetivos: 'Objetivos (uno por línea)',
+      objetivos: 'Objetivos',
       horas_estimadas: 'Horas estimadas'
     },
     leccion: {
@@ -141,6 +141,17 @@ const es = {
       tipo: 'Tipo',
       duracion_minutos: 'Duración estimada (minutos)',
       resumen: 'Resumen'
+    }
+  },
+  // la ayuda bajo cada campo, en lenguaje llano; sin ella, la descripción del servidor, si la hay
+  recordHelp: {
+    curso: {
+      codigo: 'Lo identifica en los informes y certificados, por ejemplo RENT-101.',
+      slug: 'Lo que va en la dirección del curso: minúsculas y guiones, por ejemplo rentas-municipales.',
+      idioma: 'El idioma en que se imparte: es para español, en para inglés.'
+    },
+    unidad: {
+      objetivos: 'Uno por línea.'
     }
   },
   syllabus: {
@@ -360,7 +371,7 @@ const en: typeof es = {
       slug: 'URL slug',
       titulo: 'Title',
       resumen: 'Summary',
-      idioma: 'Language (BCP 47)',
+      idioma: 'Language',
       nivel: 'Level',
       conocimientos_previos: 'Prior knowledge',
       categoria: 'Category'
@@ -369,7 +380,7 @@ const en: typeof es = {
       orden: 'Order',
       titulo: 'Title',
       descripcion: 'Description',
-      objetivos: 'Objectives (one per line)',
+      objetivos: 'Objectives',
       horas_estimadas: 'Estimated hours'
     },
     leccion: {
@@ -378,6 +389,16 @@ const en: typeof es = {
       tipo: 'Type',
       duracion_minutos: 'Estimated duration (minutes)',
       resumen: 'Summary'
+    }
+  },
+  recordHelp: {
+    curso: {
+      codigo: 'Identifies it in reports and certificates, for example RENT-101.',
+      slug: 'What goes in the course address: lowercase and hyphens, for example municipal-revenue.',
+      idioma: 'The language it is taught in: es for Spanish, en for English.'
+    },
+    unidad: {
+      objetivos: 'One per line.'
     }
   },
   syllabus: {

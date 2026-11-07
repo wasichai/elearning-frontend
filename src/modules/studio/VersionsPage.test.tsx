@@ -23,12 +23,17 @@ describe('VersionsPage: mis versiones', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Mis versiones' })).toBeInTheDocument()
     expect(screen.getByText('Cargando tus versiones…')).toBeInTheDocument()
+    // la forma de la lista mientras llega, no una línea de texto en una pantalla vacía
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando tus versiones…')
+    expect(document.querySelector("[data-slot='list-skeleton']")).not.toBeNull()
     const items = await screen.findAllByRole('article')
     expect(items.map((item) => within(item).getByRole('heading').textContent)).toEqual(['Versión 2', 'Versión 1'])
     expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual(['Introducción al SGSPE'])
     expect(screen.getByText('SGSPE-101')).toBeInTheDocument()
     const draft = within(items[0]!)
     expect(draft.getByRole('link', { name: 'Introducción al SGSPE — versión 2' })).toHaveAttribute('href', `/estudio/versiones/${draftVersion.id}`)
+    // un título que enlaza, en tinta como los de «Mis cursos»: el color de enlace queda para las acciones de texto
+    expect(draft.getByRole('link', { name: 'Introducción al SGSPE — versión 2' })).not.toHaveClass('text-link')
     expect(draft.getByText('Borrador').closest('[data-state]')).toHaveAttribute('data-state', 'todo')
     expect(draft.getByText(/^Actualizada el 30 oct 2026$/)).toBeInTheDocument()
     expect(draft.queryByText(/por atender/)).not.toBeInTheDocument()

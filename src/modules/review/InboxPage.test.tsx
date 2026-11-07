@@ -23,6 +23,9 @@ describe('InboxPage: la bandeja del revisor', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Bandeja de revisión' })).toBeInTheDocument()
     expect(screen.getByText('Cargando la bandeja…')).toBeInTheDocument()
+    // la forma de la lista mientras llega, no una línea de texto en una pantalla vacía
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando la bandeja…')
+    expect(document.querySelector("[data-slot='list-skeleton']")).not.toBeNull()
     const items = await screen.findAllByRole('article')
     expect(items.map((item) => within(item).getByRole('heading').textContent)).toEqual(['Introducción al SGSPE', 'Licencias de anuncios con SRTM'])
     const first = within(items[0]!)

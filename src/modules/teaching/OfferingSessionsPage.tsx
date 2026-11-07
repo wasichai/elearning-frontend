@@ -1,6 +1,6 @@
 import { CHANGE_REASON_MAX_LENGTH, EmptyState, normalizeReason, ReasonDialog, reasonProblem, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Dialog, DialogContent, DialogDescription, DialogTitle, Input, Label, Textarea } from '@wasichai/ui'
-import { BookOpen, FlaskConical, MapPin, MessageCircleQuestion, RotateCcw, Video, type LucideIcon } from 'lucide-react'
+import { BookOpen, CalendarDays, FlaskConical, MapPin, MessageCircleQuestion, RotateCcw, Video, type LucideIcon } from 'lucide-react'
 import { useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TEXT_LINK, WRAP } from '../../shared/buttons'
@@ -81,7 +81,7 @@ function OfferingSessions({ code }: { code: string }) {
               }}
             />
           ) : null}
-          {sessions.length === 0 ? <EmptyState title={t('sessions.empty')} /> : null}
+          {sessions.length === 0 ? <EmptyState title={t('sessions.empty')} icon={CalendarDays} /> : null}
           <SessionGroup title={t('sessions.upcoming')} sessions={upcoming} past={false} code={code} all={sessions} />
           <SessionGroup title={t('sessions.past')} sessions={past} past code={code} all={sessions} />
         </>

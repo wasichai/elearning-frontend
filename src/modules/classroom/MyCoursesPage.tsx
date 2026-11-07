@@ -3,6 +3,7 @@ import { Button } from '@wasichai/ui'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { BookOpen } from 'lucide-react'
 import { CordBanner } from '../../shared/CordBanner'
 import { timeZoneLabel } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
@@ -83,7 +84,7 @@ function NoEnrollments() {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   return (
-    <EmptyState title={t('enrollments.empty')}>
+    <EmptyState title={t('enrollments.empty')} icon={BookOpen}>
       <p>{t('enrollments.emptyHint')}</p>
       {/* el catálogo es otro módulo: se enlaza por su clave de ruta, sin importarlo, y solo si está registrado */}
       {links.has(CATALOG_COURSES_ROUTE) ? (

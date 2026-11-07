@@ -29,7 +29,11 @@ export function StudioRecordForm({ objectName, form, initial, fixed, onSaved, on
   // la etiqueta de la metadata solo tiene un idioma (ADR-070 de Wasichai): la del módulo, si la hay, y si no la del servidor. solo cambia lo que se lee
   const localized = {
     ...definition.data,
-    fields: definition.data.fields.map((field) => ({ ...field, label: t(`recordForm.${objectName}.${field.name}`, { defaultValue: field.label }) }))
+    fields: definition.data.fields.map((field) => ({
+      ...field,
+      label: t(`recordForm.${objectName}.${field.name}`, { defaultValue: field.label }),
+      description: t(`recordHelp.${objectName}.${field.name}`, { defaultValue: field.description ?? '' }) || null
+    }))
   }
   const submit = async (payload: RecordPayload, reason?: string) => {
     setError(null)

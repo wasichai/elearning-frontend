@@ -1,6 +1,6 @@
 import { CHANGE_REASON_MAX_LENGTH, EmptyState, normalizeReason, reasonProblem, useWasichaiLinks } from '@wasichai/core'
 import { Button, Label, Textarea } from '@wasichai/ui'
-import { Check, Clock, Info, X, type LucideIcon } from 'lucide-react'
+import { Check, Clock, Info, UserCheck, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
@@ -46,7 +46,7 @@ export function AttendancePage() {
       ) : !query.data ? (
         <AttendanceSkeleton />
       ) : query.data.length === 0 ? (
-        <EmptyState title={t('attendance.empty')} />
+        <EmptyState title={t('attendance.empty')} icon={UserCheck} />
       ) : (
         <AttendanceForm key={sessionId} code={code} sessionId={sessionId} rows={query.data} onDirty={setDirty} />
       )}

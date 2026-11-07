@@ -16,7 +16,8 @@ const ANY = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(
 const SCOPE = `@scope (${ANY}) to ([data-theme]:not(${ANY}))`
 
 // los hooks públicos que esta hoja puede tocar (README de @wasichai/ui, «Styling hooks»)
-const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert', 'table-head', 'nav-item']
+// y el de los estados de consulta de @wasichai/core (su README, «Query states»)
+const SLOTS = ['button', 'input', 'textarea', 'select-trigger', 'tabs-trigger', 'alert', 'table-head', 'nav-item', 'query-state']
 const VARIANTS = ['primary', 'secondary', 'ghost', 'danger']
 const SIZES = ['sm', 'md', 'icon']
 
@@ -114,10 +115,13 @@ describe('quipu-controls.css', () => {
     expect(selectors.length).toBeGreaterThan(5)
     expect(selectors.filter((selector) => !selector.includes('[data-slot='))).toEqual([])
     const values = (attribute: string) => [...css.matchAll(new RegExp(`\\[${attribute}='([^']+)'\\]`, 'g'))].map(([, value]) => value)
-    for (const [, name] of css.matchAll(/\[(data-[a-z-]+)/g)) expect(['data-theme', 'data-slot', 'data-variant', 'data-size'], name).toContain(name)
+    for (const [, name] of css.matchAll(/\[(data-[a-z-]+)/g))
+      expect(['data-theme', 'data-slot', 'data-variant', 'data-size', 'data-state'], name).toContain(name)
     for (const slot of values('data-slot')) expect(SLOTS, slot).toContain(slot)
     for (const variant of values('data-variant')) expect(VARIANTS, variant).toContain(variant)
     for (const size of values('data-size')) expect(SIZES, size).toContain(size)
+    // data-state, solo el de los estados de consulta de core
+    for (const state of values('data-state')) expect(['empty'], state).toContain(state)
   })
 
   it('no tiene colores propios: solo tokens que ponen los dos temas Quipu', () => {
@@ -201,6 +205,13 @@ describe('quipu-controls.css', () => {
     expect(current.get('font-weight')).toBe('600')
     expect(current.get('box-shadow')).toBe('inset 3px 0 0 var(--shell-ink)')
     expect([...current.keys()].filter((name) => /^(border.*|padding.*|height|min-height)$/.test(name))).toEqual([])
+  })
+
+  it('el icono de un estado vacío se ve: 40px en ink-muted, no el gris de borde de core', () => {
+    const icon = declared("[data-slot='query-state'][data-state='empty'] > svg")
+    expect(icon.get('width')).toBe('40px')
+    expect(icon.get('height')).toBe('40px')
+    expect(icon.get('color')).toBe('var(--ink-muted)')
   })
 
   it('las alertas redondean con radius-lg', () => {

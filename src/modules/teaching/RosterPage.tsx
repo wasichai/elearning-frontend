@@ -1,6 +1,6 @@
 import { EmptyState } from '@wasichai/core'
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, Td, Th } from '@wasichai/ui'
-import { ArrowDown, ArrowUp, ArrowUpDown, Check } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, SearchX, Users } from 'lucide-react'
 import { useId, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router'
@@ -60,7 +60,7 @@ function Roster({ code }: { code: string }) {
       </ProblemState>
     )
   if (!query.data) return <RosterSkeleton />
-  if (query.data.length === 0) return <EmptyState title={t('roster.empty')} />
+  if (query.data.length === 0) return <EmptyState title={t('roster.empty')} icon={Users} />
   return (
     <>
       <Summary entries={query.data} />
@@ -188,7 +188,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
           : ''}
       </p>
       {shown.length === 0 ? (
-        <EmptyState title={t('roster.noResults')}>
+        <EmptyState title={t('roster.noResults')} icon={SearchX}>
           <Button
             variant="secondary"
             className="mt-2 min-h-11"

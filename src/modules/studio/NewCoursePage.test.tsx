@@ -131,13 +131,22 @@ describe('NewCoursePage: de «Nuevo curso» al primer borrador', () => {
   }
 
   it.each([
-    ['en', ['Code', 'URL slug', 'Title', 'Summary', 'Language (BCP 47)', 'Level', 'Prior knowledge', 'Category']],
-    ['es', ['Código', 'Identificador en URL', 'Título', 'Resumen', 'Idioma (BCP 47)', 'Nivel', 'Conocimientos previos', 'Categoría']]
+    ['en', ['Code', 'URL slug', 'Title', 'Summary', 'Language', 'Level', 'Prior knowledge', 'Category']],
+    ['es', ['Código', 'Identificador en URL', 'Título', 'Resumen', 'Idioma', 'Nivel', 'Conocimientos previos', 'Categoría']]
   ])('las etiquetas de los campos salen en %s', async (language, labels) => {
     renderPage([], AUTHOR, language, fullCourse)
 
     await screen.findByLabelText(new RegExp(labels[0]!))
     for (const label of labels) expect(screen.getByText(label)).toBeInTheDocument()
+  })
+
+  it('los campos que lo piden traen una ayuda en lenguaje llano, debajo y unida al campo', async () => {
+    renderPage([], AUTHOR, 'es', fullCourse)
+
+    const language = await screen.findByLabelText(/^Idioma/)
+    expect(screen.queryByText(/BCP 47/)).not.toBeInTheDocument()
+    expect(language.closest('div')!.parentElement).toHaveTextContent('es para español, en para inglés')
+    expect(screen.getByText(/minúsculas y guiones/)).toBeInTheDocument()
   })
 
   it('un campo sin traducción muestra la etiqueta del servidor', async () => {

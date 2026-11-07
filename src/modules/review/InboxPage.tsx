@@ -1,8 +1,10 @@
-import { EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { Inbox } from 'lucide-react'
 import { formatInstant, formatNumber } from '../../shared/format'
+import { ListSkeleton } from '../../shared/ListSkeleton'
 import { useRefetchOnRevisit } from '../../shared/revisit'
 import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { GeneratorBadge } from '../../shared/GeneratorBadge'
@@ -27,7 +29,7 @@ export function InboxPage() {
         ) : query.data ? (
           <VersionList versions={query.data} />
         ) : (
-          <LoadingState label={t('inbox.loading')} />
+          <ListSkeleton label={t('inbox.loading')} />
         )}
       </ScreenBody>
     </>
@@ -38,7 +40,7 @@ function VersionList({ versions }: { versions: StudioVersion[] }) {
   const { t } = useTranslation('review')
   if (versions.length === 0)
     return (
-      <EmptyState title={t('inbox.empty')}>
+      <EmptyState title={t('inbox.empty')} icon={Inbox}>
         <p>{t('inbox.emptyHint')}</p>
       </EmptyState>
     )
