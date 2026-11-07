@@ -1,4 +1,4 @@
-import type { Page, Route } from '@playwright/test'
+import { expect, type Page, type Route } from '@playwright/test'
 import { courseDetail, coursePage, courseSummary, courseWithoutOffering, problem } from '../../../src/modules/catalog/test/fixtures'
 import { isCourse, isCourseList } from '../../api'
 import type { Scenario } from '../scenario'
@@ -121,7 +121,15 @@ async function reloadWith(page: Page, reply: (route: Route) => Promise<void>, ta
 
 const withFullCatalog = (page: Page) => reloadWith(page, (route) => route.fulfill({ json: FULL_CATALOG }))
 const withCourse = (page: Page, course: unknown) => reloadWith(page, (route) => route.fulfill({ json: course }), SRTM)
-const openMoreFilters = (page: Page) => page.getByText(/^(Más filtros|More filters)/).click()
+// «Más filtros» se abre con el catálogo ya pintado (si no, el nuevo render lo vuelve a plegar) y se captura abierto y quieto
+const openMoreFilters = async (page: Page) => {
+  await expect(page.getByText(/^(18 cursos|18 courses)$/).first()).toBeVisible()
+  const level = page.getByLabel(/^(Nivel|Level)$/)
+  await page.getByText(/^(Más filtros|More filters)/).click()
+  await expect(level).toBeVisible()
+  await page.waitForTimeout(300)
+  await expect(level).toBeVisible()
+}
 
 export const catalogScenarios: Scenario[] = [
   { name: 'catalog', path: '/cursos' },
