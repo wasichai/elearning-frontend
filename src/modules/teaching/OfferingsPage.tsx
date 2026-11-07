@@ -40,7 +40,7 @@ export function OfferingsPage() {
   }
   useRefetchOnRevisit(reload)
   const retryPanel = () => void panel.refetch()
-  const { title, description } = useProblemText(list.error, 'offerings')
+  const { title, description, technical } = useProblemText(list.error, 'offerings')
   const now = Date.now()
   // cuántas sesiones vienen, solo de las ediciones vivas y con el panel leído: de las demás no se da cifra
   const upcoming = new Map(items.filter(isLive).map((item) => [item.code, upcomingSessions(item.upcomingSessions, now).length] as const))
@@ -56,7 +56,7 @@ export function OfferingsPage() {
       </ScreenHeader>
       <ScreenBody width="wide">
         {panel.isError && list.isError ? (
-          <ProblemState title={title} description={description}>
+          <ProblemState title={title} description={description} technical={technical}>
             <Button variant="secondary" className="min-h-11" onClick={reload}>
               {t('problem.retry')}
             </Button>

@@ -595,7 +595,7 @@ describe('CatalogPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar el catálogo')
-    expect(alert).toHaveTextContent('error 500')
+    expect(alert).toHaveTextContent('Código del error: 500')
     // el detalle técnico del servidor no se le enseña al público
     expect(alert).not.toHaveTextContent('NullPointerException')
 
@@ -611,7 +611,7 @@ describe('CatalogPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('El catálogo no está disponible')
-    expect(alert).toHaveTextContent('error 403')
+    expect(alert).toHaveTextContent('Código del error: 403')
     expect(within(alert).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     expect(within(alert).queryByRole('button', { name: 'Limpiar filtros' })).not.toBeInTheDocument()
   })
@@ -623,7 +623,7 @@ describe('CatalogPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('El catálogo no está disponible')
-    expect(alert).toHaveTextContent('error 401')
+    expect(alert).toHaveTextContent('Código del error: 401')
     expect(screen.queryByText('Cargando cursos…')).not.toBeInTheDocument()
 
     fetchMock.restore()

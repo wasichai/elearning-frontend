@@ -70,9 +70,9 @@ function Greeting({ hasCourses, sessionsThisWeek }: { hasCourses: boolean; sessi
 
 function EnrollmentsProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('classroom')
-  const { title, description } = useProblemText(error, 'enrollments')
+  const { title, description, technical } = useProblemText(error, 'enrollments')
   return (
-    <ProblemState title={title} description={description}>
+    <ProblemState title={title} description={description} technical={technical}>
       <Button variant="secondary" onClick={onRetry}>
         {t('problem.retry')}
       </Button>

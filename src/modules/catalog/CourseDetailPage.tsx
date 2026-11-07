@@ -50,7 +50,7 @@ function BackToCatalog() {
 
 function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('catalog')
-  const { kind, title, description } = useProblemText(error, 'course')
+  const { kind, title, description, technical } = useProblemText(error, 'course')
   // un 404 es una respuesta, no un fallo: el curso no existe, no está publicado o no es de esta organización
   if (kind === 'notFound')
     return (
@@ -61,7 +61,7 @@ function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void
     )
   return (
     <div className={screenContainer()}>
-      <ProblemState title={title} description={description}>
+      <ProblemState title={title} description={description} technical={technical}>
         <Button variant="secondary" onClick={onRetry}>
           {t('problem.retry')}
         </Button>

@@ -80,10 +80,10 @@ export function VersionPage() {
 // un 404 es una respuesta (lo ajeno y lo inexistente no se distinguen) y no se reintenta; lo demás, sí
 function VersionProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('studio')
-  const { kind, title, description } = useProblemText(error, 'version')
+  const { kind, title, description, technical } = useProblemText(error, 'version')
   if (kind === 'notFound') return <ProblemState title={title} description={t('problem.notFoundHint')} />
   return (
-    <ProblemState title={title} description={description}>
+    <ProblemState title={title} description={description} technical={technical}>
       <Button variant="secondary" size="sm" onClick={onRetry}>
         {t('problem.retry')}
       </Button>

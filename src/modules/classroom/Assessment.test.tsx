@@ -1014,7 +1014,7 @@ describe('errores del intento', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar el intento')
-    expect(alert).toHaveTextContent('error 500')
+    expect(alert).toHaveTextContent('Código del error: 500')
   })
 })
 

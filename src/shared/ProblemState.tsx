@@ -19,15 +19,22 @@ export function problemKind(error: unknown): ProblemKind {
   return error instanceof TypeError ? 'network' : 'server'
 }
 
+// el dato técnico de un fallo (el estado HTTP): para quien tenga que reportarlo, plegado y fuera de la frase que se lee
+export interface ProblemTechnical {
+  summary: string
+  text: string
+}
+
 interface ProblemStateProps {
   title: string
   description?: string
   details?: string[]
+  technical?: ProblemTechnical
   children?: ReactNode
 }
 
 // un error explicado: qué pasó, qué hacer, y la acción para hacerlo. con icono y palabra: el color nunca va solo
-export function ProblemState({ title, description, details = [], children }: ProblemStateProps) {
+export function ProblemState({ title, description, details = [], technical, children }: ProblemStateProps) {
   return (
     <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose gap-3 py-12 text-sm">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-danger" />
@@ -42,6 +49,12 @@ export function ProblemState({ title, description, details = [], children }: Pro
           </ul>
         ) : null}
         {children ? <div className="flex flex-wrap items-center gap-3">{children}</div> : null}
+        {technical ? (
+          <details className="text-xs text-ink-muted">
+            <summary className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-focus">{technical.summary}</summary>
+            <p className="mt-1 font-mono">{technical.text}</p>
+          </details>
+        ) : null}
       </div>
     </div>
   )

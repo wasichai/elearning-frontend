@@ -85,7 +85,7 @@ describe('CertificatePage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos verificar el certificado')
-    expect(alert).toHaveTextContent('error 503')
+    expect(alert).toHaveTextContent('Código del error: 503')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
   })
 

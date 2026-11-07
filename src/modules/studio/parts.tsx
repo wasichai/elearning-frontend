@@ -6,7 +6,7 @@ import { problemKind } from '../../shared/ProblemState'
 
 export type StudioResource = 'versions' | 'version'
 
-// el texto de un error al leer, por tipo; el estado HTTP queda a la vista para quien tenga que reportarlo
+// el texto de un error al leer, por tipo; el estado HTTP va aparte y plegado, para quien tenga que reportarlo
 export function useProblemText(error: unknown, resource: StudioResource) {
   const { t } = useTranslation('studio')
   const kind = problemKind(error)
@@ -14,7 +14,8 @@ export function useProblemText(error: unknown, resource: StudioResource) {
   return {
     kind,
     title: t(`problem.${resource}.${kind}`),
-    description: t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`, { status })
+    description: t(kind === 'server' && status === undefined ? 'problem.hint.unexpected' : `problem.hint.${kind}`),
+    technical: status === undefined ? undefined : { summary: t('problem.technical'), text: t('problem.code', { status }) }
   }
 }
 

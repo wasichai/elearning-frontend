@@ -67,7 +67,7 @@ function CourseSkeleton({ label }: { label: string }) {
 function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
-  const { kind, title, description } = useProblemText(error, 'classroom')
+  const { kind, title, description, technical } = useProblemText(error, 'classroom')
   const back = (
     <Link to={links.to(CLASSROOM_ROUTES.enrollments)} className={TEXT_LINK}>
       {t('classroom.back')}
@@ -83,7 +83,7 @@ function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void
     )
   return (
     <div className="px-4 sm:px-8">
-      <ProblemState title={title} description={description}>
+      <ProblemState title={title} description={description} technical={technical}>
         <Button variant="secondary" onClick={onRetry}>
           {t('problem.retry')}
         </Button>

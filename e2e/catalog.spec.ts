@@ -150,7 +150,11 @@ test('un error del servidor se explica y «Reintentar» lo recupera', async ({ p
 
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('No pudimos cargar el catálogo')
-  await expect(alert).toContainText('El servidor tuvo un problema (error 500). Inténtalo de nuevo en unos minutos.')
+  await expect(alert).toContainText('El servidor no pudo responder. Inténtalo de nuevo en unos minutos.')
+  // el código, aparte y plegado: no está en la frase, pero quien lo reporte lo encuentra en «Detalles»
+  await expect(alert.getByText('Código del error: 500')).toBeHidden()
+  await alert.getByText('Detalles').click()
+  await expect(alert.getByText('Código del error: 500')).toBeVisible()
   await expect(courses(page)).toHaveCount(0)
 
   await alert.getByRole('button', { name: 'Reintentar' }).click()

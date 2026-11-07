@@ -517,12 +517,14 @@ const es = {
       network: 'No pudimos conectar con el servidor',
       contract: 'No pudimos leer la respuesta del servidor'
     },
+    technical: 'Detalles',
+    code: 'Código del error: {{status}}',
     hint: {
-      invalid: 'El servidor no aceptó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      notFound: 'El servidor no reconoce esta dirección (error {{status}}). Inténtalo de nuevo más tarde.',
-      conflict: 'El servidor no aceptó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      refused: 'El servidor rechazó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      server: 'El servidor tuvo un problema (error {{status}}). Inténtalo de nuevo en unos minutos.',
+      invalid: 'No pudimos completar la consulta. Inténtalo de nuevo más tarde.',
+      notFound: 'No encontramos lo que buscabas. Inténtalo de nuevo más tarde.',
+      conflict: 'No pudimos completar la consulta. Inténtalo de nuevo más tarde.',
+      refused: 'Tu cuenta no tiene acceso a esto. Si crees que debería tenerlo, pídeselo a quien administra la plataforma.',
+      server: 'El servidor no pudo responder. Inténtalo de nuevo en unos minutos.',
       network: 'Comprueba tu conexión e inténtalo de nuevo.',
       unexpected: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
       contract: 'La respuesta no tiene el formato que esta página espera; suele pasar durante una actualización. Inténtalo de nuevo en unos minutos.'
@@ -1046,12 +1048,14 @@ const en: typeof es = {
       network: 'We could not reach the server',
       contract: 'We could not read the server response'
     },
+    technical: 'Details',
+    code: 'Error code: {{status}}',
     hint: {
-      invalid: 'The server did not accept the request (error {{status}}). Please try again later.',
-      notFound: 'The server does not recognise this address (error {{status}}). Please try again later.',
-      conflict: 'The server did not accept the request (error {{status}}). Please try again later.',
-      refused: 'The server refused the request (error {{status}}). Please try again later.',
-      server: 'The server had a problem (error {{status}}). Please try again in a few minutes.',
+      invalid: 'We could not complete the request. Please try again later.',
+      notFound: 'We could not find what you were looking for. Please try again later.',
+      conflict: 'We could not complete the request. Please try again later.',
+      refused: 'Your account does not have access to this. If you think it should, ask whoever runs the platform.',
+      server: 'The server could not respond. Please try again in a few minutes.',
       network: 'Check your connection and try again.',
       unexpected: 'Something unexpected went wrong. Please try again.',
       contract: 'The response is not in the format this page expects; this usually happens during an update. Please try again in a few minutes.'

@@ -83,7 +83,7 @@ export function CertificatePage() {
   const { t } = useTranslation('classroom')
   const { code = '' } = useParams()
   const query = usePublicCertificate(code)
-  const { kind, title, description } = useProblemText(query.error, 'certificate')
+  const { kind, title, description, technical } = useProblemText(query.error, 'certificate')
   let body: ReactNode
   if (query.isError)
     body =
@@ -102,7 +102,7 @@ export function CertificatePage() {
         </>
       ) : (
         <div className={screenContainer()}>
-          <ProblemState title={title} description={description}>
+          <ProblemState title={title} description={description} technical={technical}>
             <Button variant="secondary" onClick={() => void query.refetch()}>
               {t('problem.retry')}
             </Button>

@@ -63,7 +63,7 @@ test('un error del servidor en la ficha se explica y «Reintentar» lo recupera'
 
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('No pudimos cargar el curso')
-  await expect(alert).toContainText('error 503')
+  await expect(alert).toContainText('Código del error: 503')
   await alert.getByRole('button', { name: 'Reintentar' }).click()
   await expect(page.getByRole('heading', { level: 1, name: TITLE })).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)

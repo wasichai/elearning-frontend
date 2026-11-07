@@ -42,7 +42,7 @@ export function RosterPage() {
 function Roster({ code }: { code: string }) {
   const { t } = useTranslation('teaching')
   const query = useRoster(code)
-  const { kind, title, description } = useProblemText(query.error, 'roster')
+  const { kind, title, description, technical } = useProblemText(query.error, 'roster')
   // un 404 es una respuesta: la edición no existe o no está asignada a esta persona (el servidor no distingue)
   if (query.isError && kind === 'notFound')
     return (
@@ -53,7 +53,7 @@ function Roster({ code }: { code: string }) {
     )
   if (query.isError)
     return (
-      <ProblemState title={title} description={description}>
+      <ProblemState title={title} description={description} technical={technical}>
         <Button variant="secondary" className="min-h-11" onClick={() => void query.refetch()}>
           {t('problem.retry')}
         </Button>

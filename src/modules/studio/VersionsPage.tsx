@@ -69,7 +69,7 @@ export function VersionsPage() {
   const { t } = useTranslation('studio')
   const query = useVersions()
   useRefetchOnRevisit(query.refetch)
-  const { title, description } = useProblemText(query.error, 'versions')
+  const { title, description, technical } = useProblemText(query.error, 'versions')
   return (
     <>
       <ScreenHeader
@@ -84,7 +84,7 @@ export function VersionsPage() {
       />
       <ScreenBody>
         {query.isError ? (
-          <ProblemState title={title} description={description}>
+          <ProblemState title={title} description={description} technical={technical}>
             <Button variant="secondary" size="sm" onClick={() => void query.refetch()}>
               {t('problem.retry')}
             </Button>

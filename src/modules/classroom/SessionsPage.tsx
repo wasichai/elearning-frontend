@@ -17,10 +17,10 @@ export function SessionsPage() {
 export function Sessions({ enrollmentId, lessonId }: { enrollmentId: string; lessonId?: string }) {
   const { t } = useTranslation('classroom')
   const query = useSessions(enrollmentId)
-  const { title, description } = useProblemText(query.error, 'sessions')
+  const { title, description, technical } = useProblemText(query.error, 'sessions')
   if (query.isError)
     return (
-      <ProblemState title={title} description={description}>
+      <ProblemState title={title} description={description} technical={technical}>
         <Button variant="secondary" onClick={() => void query.refetch()}>
           {t('problem.retry')}
         </Button>

@@ -450,7 +450,7 @@ describe('ImportPage: sin orígenes o sin permiso', () => {
       { path: SOURCES, status: 500, body: problem(500, 'fallo') },
       { path: IMPORT, body: [] }
     ])
-    expect(await screen.findByRole('alert')).toHaveTextContent('error 500')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Código del error: 500')
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
     first.unmount()
     fetchMock.restore()

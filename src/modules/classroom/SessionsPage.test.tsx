@@ -186,7 +186,7 @@ describe('SessionsPage', () => {
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('No pudimos cargar las sesiones')
-    expect(alert).toHaveTextContent('error 500')
+    expect(alert).toHaveTextContent('Código del error: 500')
   })
 
   it('una matrícula ajena (404) es «no está en tus matrículas»', async () => {

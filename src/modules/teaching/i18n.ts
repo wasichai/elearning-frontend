@@ -405,12 +405,14 @@ const es = {
       contract: 'No pudimos leer la respuesta del servidor'
     },
     notFoundHint: 'Solo ves lo que corresponde a las ediciones que tienes asignadas. El enlace puede ser de otra edición, o la asignación ya no está vigente.',
+    technical: 'Detalles',
+    code: 'Código del error: {{status}}',
     hint: {
-      invalid: 'El servidor no aceptó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      notFound: 'El servidor no reconoce esta dirección (error {{status}}).',
-      conflict: 'El servidor no aceptó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      refused: 'El servidor rechazó la consulta (error {{status}}). Inténtalo de nuevo más tarde.',
-      server: 'El servidor tuvo un problema (error {{status}}). Inténtalo de nuevo en unos minutos.',
+      invalid: 'No pudimos completar la consulta. Inténtalo de nuevo más tarde.',
+      notFound: 'No encontramos lo que buscabas. Inténtalo de nuevo más tarde.',
+      conflict: 'No pudimos completar la consulta. Inténtalo de nuevo más tarde.',
+      refused: 'Tu cuenta no tiene acceso a esto. Si crees que debería tenerlo, pídeselo a quien administra la plataforma.',
+      server: 'El servidor no pudo responder. Inténtalo de nuevo en unos minutos.',
       network: 'Comprueba tu conexión e inténtalo de nuevo.',
       unexpected: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
       contract: 'La respuesta no tiene el formato que esta página espera; suele pasar durante una actualización. Inténtalo de nuevo en unos minutos.'
@@ -824,12 +826,14 @@ const en: typeof es = {
       contract: 'We could not read the server response'
     },
     notFoundHint: 'You only see what belongs to the offerings assigned to you. The link may be for another offering, or the assignment is no longer current.',
+    technical: 'Details',
+    code: 'Error code: {{status}}',
     hint: {
-      invalid: 'The server did not accept the request (error {{status}}). Please try again later.',
-      notFound: 'The server does not recognise this address (error {{status}}).',
-      conflict: 'The server did not accept the request (error {{status}}). Please try again later.',
-      refused: 'The server refused the request (error {{status}}). Please try again later.',
-      server: 'The server had a problem (error {{status}}). Please try again in a few minutes.',
+      invalid: 'We could not complete the request. Please try again later.',
+      notFound: 'We could not find what you were looking for. Please try again later.',
+      conflict: 'We could not complete the request. Please try again later.',
+      refused: 'Your account does not have access to this. If you think it should, ask whoever runs the platform.',
+      server: 'The server could not respond. Please try again in a few minutes.',
       network: 'Check your connection and try again.',
       unexpected: 'Something unexpected went wrong. Please try again.',
       contract: 'The response is not in the format this page expects; this usually happens during an update. Please try again in a few minutes.'
