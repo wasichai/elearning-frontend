@@ -48,8 +48,8 @@ export function ProgressBar({ progress, label, size = 'md', knots }: { progress:
   )
 }
 
-// las fechas de la edición son fechas civiles de su zona: se escriben en esa zona y se dice cuál es
-export function OfferingDates({ offering }: { offering: Enrollment['offering'] }) {
+// las fechas de la edición son fechas civiles de su zona: se escriben en esa zona y se dice cuál es, salvo que la página ya lo diga
+export function OfferingDates({ offering, showZone = true }: { offering: Enrollment['offering']; showZone?: boolean }) {
   const { t, i18n } = useTranslation('classroom')
   const locale = i18n.language
   return (
@@ -58,7 +58,7 @@ export function OfferingDates({ offering }: { offering: Enrollment['offering'] }
         <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
         <span> · {t(`offering.status.${offering.status}`)}</span>
       </span>
-      <span className="text-xs leading-5">{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span>
+      {showZone ? <span className="text-xs leading-5">{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
     </p>
   )
 }

@@ -35,6 +35,7 @@ const es = {
   },
   // el panel del estudiante en «Mis cursos»
   dashboard: {
+    timeZone: 'Fechas y horas en {{zone}}',
     greeting: 'Hola, {{name}}.',
     week_one: 'Tienes {{count}} sesión en vivo en los próximos 7 días.',
     week_other: 'Tienes {{count}} sesiones en vivo en los próximos 7 días.',
@@ -564,6 +565,7 @@ const en: typeof es = {
     certificate: 'View the certificate for “{{course}}”'
   },
   dashboard: {
+    timeZone: 'Dates and times in {{zone}}',
     greeting: 'Hello, {{name}}.',
     week_one: 'You have {{count}} live session in the next 7 days.',
     week_other: 'You have {{count}} live sessions in the next 7 days.',
