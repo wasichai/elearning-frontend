@@ -1,4 +1,4 @@
-import { Badge } from '@wasichai/ui'
+import { FlaskConical, type LucideIcon } from 'lucide-react'
 import { useCallback, useSyncExternalStore, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StatusState } from '../../shared/StatusBadge'
@@ -6,9 +6,26 @@ import type { NextOffering } from './contract'
 
 // piezas que comparten la lista y la ficha
 
+// el curso es de demostración: se dice con una marca discreta, no con una insignia de color que compita con el estado de la inscripción
 export function IllustrativeMark() {
   const { t } = useTranslation('catalog')
-  return <Badge className="bg-notice-soft text-notice">{t('course.illustrative')}</Badge>
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+      <FlaskConical aria-hidden="true" className="size-3.5 shrink-0" />
+      {t('course.illustrative')}
+    </span>
+  )
+}
+
+// un dato con icono, dentro de un <dl>: el nombre lo lee el lector de pantalla, la vista se queda con el icono y el valor
+export function IconFact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
+      <dt className="sr-only">{label}</dt>
+      <dd className="text-ink tabular-nums">{children}</dd>
+    </div>
+  )
 }
 
 // un dato con su etiqueta, dentro de un <dl>

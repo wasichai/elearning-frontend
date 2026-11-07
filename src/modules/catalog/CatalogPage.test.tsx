@@ -87,6 +87,10 @@ describe('CatalogPage', () => {
     expect(first.getByText(/9 nov.*4 dic.*2026/)).toBeInTheDocument()
     expect(first.getByText('Inscripción abierta')).toBeInTheDocument()
     expect(first.getByText('Contenido ilustrativo')).toBeInTheDocument()
+    // una marca discreta, no una insignia de color que compita con la de inscripción
+    expect(first.getByText('Contenido ilustrativo').closest("[data-slot='badge']")).toBeNull()
+    // los hechos en una fila con iconos: su nombre lo lee el lector de pantalla
+    for (const label of ['Nivel', 'Modalidad', 'Duración']) expect(first.getByText(label)).toHaveClass('sr-only')
 
     const second = within(items[1]!)
     expect(second.getByText('Sin ediciones programadas por ahora')).toBeInTheDocument()

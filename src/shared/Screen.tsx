@@ -123,7 +123,8 @@ export function Section({
   action,
   children,
   level = 2,
-  className = ''
+  className = '',
+  anchor
 }: {
   title: ReactNode
   description?: ReactNode
@@ -131,11 +132,13 @@ export function Section({
   children: ReactNode
   level?: 2 | 3
   className?: string
+  // el id de la sección, para enlazarla desde un índice («En esta página»); se detiene a un respiro del borde
+  anchor?: string
 }) {
   const id = useId()
   const Heading = `h${level}` as const
   return (
-    <section aria-labelledby={id} className={`flex min-w-0 flex-col gap-3 ${className}`}>
+    <section id={anchor} aria-labelledby={id} className={`flex min-w-0 flex-col gap-3 ${anchor ? 'scroll-mt-6' : ''} ${className}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 flex-col gap-0.5">
           <Heading id={id} className="text-title-3 text-ink">
