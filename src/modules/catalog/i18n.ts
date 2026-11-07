@@ -94,6 +94,8 @@ const es = {
   detail: {
     back: '← Catálogo',
     loading: 'Cargando el curso…',
+    onThisPage: 'En esta página',
+    workloadShort: 'Carga de trabajo',
     about: 'Datos del curso',
     credits: 'Créditos',
     creditsApproved: '{{value}} {{system}}',
@@ -339,6 +341,8 @@ const en: typeof es = {
   detail: {
     back: '← Catalog',
     loading: 'Loading the course…',
+    onThisPage: 'On this page',
+    workloadShort: 'Workload',
     about: 'Course details',
     credits: 'Credits',
     creditsApproved: '{{value}} {{system}}',

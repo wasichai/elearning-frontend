@@ -321,3 +321,42 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
     expect(within(second!).getByText('Esta edición todavía no admite matrículas.')).toBeInTheDocument()
   })
 })
+
+describe('CourseDetailPage: una ficha que se recorre', () => {
+  it('«En esta página» enlaza a cada sección presente, y cada una es su destino', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+
+    const index = within(await screen.findByRole('navigation', { name: 'En esta página' }))
+    const links = index.getAllByRole('link')
+    expect(links.length).toBeGreaterThan(2)
+    for (const link of links) {
+      const target = document.getElementById(link.getAttribute('href')!.slice(1))
+      expect(target, link.textContent!).not.toBeNull()
+      expect(within(target!).getByRole('heading', { level: 2 })).toHaveTextContent(link.textContent!)
+    }
+    expect(index.getByRole('link', { name: 'Temario' })).toHaveAttribute('href', '#temario')
+    // sin fuentes, no hay entrada ni sección
+    expect(index.getByRole('link', { name: 'Fuentes' })).toBeInTheDocument()
+  })
+
+  it('una fuente de un repositorio se lee por su documento; la ruta exacta queda debajo, y el texto libre, tal cual', async () => {
+    const sources = ['wasichai/srtm-backend@6daacd3:docs/manuales/usuario/anuncios-y-padron.adoc', 'Los manuales no declaran licencia.']
+    renderCourse([{ path: COURSE, body: { ...courseDetail, sources } }])
+
+    const items = within(
+      within(await screen.findByRole('heading', { level: 2, name: 'Fuentes' }).then((h) => h.closest('section')!)).getByRole('list')
+    ).getAllByRole('listitem')
+    expect(within(items[0]!).getByText('Anuncios y padron')).toBeInTheDocument()
+    const path = within(items[0]!).getByText('wasichai/srtm-backend@6daacd3:docs/manuales/usuario/anuncios-y-padron.adoc')
+    expect(path).toHaveClass('font-mono')
+    expect(within(items[1]!).getByText('Los manuales no declaran licencia.')).toBeInTheDocument()
+  })
+
+  it('cada docente lleva sus iniciales, que no lee el lector de pantalla', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+
+    const teachers = within(await screen.findByRole('heading', { level: 2, name: 'Docentes' }).then((h) => h.closest('section')!))
+    const initials = teachers.getByText('AQ')
+    expect(initials).toHaveAttribute('aria-hidden', 'true')
+  })
+})

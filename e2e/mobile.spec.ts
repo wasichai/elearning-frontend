@@ -55,8 +55,13 @@ test.describe('la acción de la ficha, al pie', () => {
     expect(Math.round((await bar.boundingBox())!.y + (await bar.boundingBox())!.height)).toBe(640)
 
     // lo que recibe el foco con el teclado no se queda debajo de la barra: la unidad, a la altura de la barra, y Tab desde el enlace anterior
+    // (el último de «En esta página», que va antes del contenido)
     const unit = page.locator('summary').filter({ hasText: 'Unidad 1' })
-    await page.getByRole('link', { name: '← Catálogo' }).evaluate((link: HTMLElement) => link.focus({ preventScroll: true }))
+    await page
+      .getByRole('navigation', { name: 'En esta página' })
+      .getByRole('link')
+      .last()
+      .evaluate((link: HTMLElement) => link.focus({ preventScroll: true }))
     const barTop = (await bar.boundingBox())!.y
     await page.evaluate(
       ([element, top]) => {

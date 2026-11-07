@@ -1,7 +1,7 @@
 import { useAuth, useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Table, Td, Th } from '@wasichai/ui'
-import { Check, ChevronRight, Clock, GraduationCap, Languages, MonitorPlay, ChartNoAxesColumnIncreasing, type LucideIcon } from 'lucide-react'
-import { useId, type ReactNode } from 'react'
+import { Check, ChevronRight, Clock, FileText, GraduationCap, Languages, MonitorPlay, ChartNoAxesColumnIncreasing } from 'lucide-react'
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
@@ -15,7 +15,7 @@ import { StatusBadge } from '../../shared/StatusBadge'
 import { catalogKeys, useCourse, useMyEnrollments, useQueryProblem } from './api'
 import type { CourseDetail, Credits, MyEnrollment, Offering } from './contract'
 import { EnrollAction, GoToCourse } from './EnrollAction'
-import { AVAILABILITY, Fact, IllustrativeMark, offeringState, useMatchesWidth, useOpenLabel } from './parts'
+import { AVAILABILITY, Fact, IconFact, IllustrativeMark, offeringState, useMatchesWidth, useOpenLabel } from './parts'
 import { ProblemState, useProblemText } from './ProblemState'
 import { CATALOG_ROUTES, CLASSROOM_ROUTE } from './routes'
 
@@ -108,6 +108,7 @@ function CourseView({ course }: { course: CourseDetail }) {
   const firstOpen = canEnroll && !current ? course.offerings.find((offering) => offeringState(offering) === 'open') : undefined
   const currentOutsideOfferings = current && !course.offerings.some((offering) => offering.code === current.offering.code)
   const footer = !twoColumns && (current || firstOpen)
+  const shown = sectionsOf(course)
 
   return (
     <article className={`flex flex-col ${footer ? CLEAR_OF_FOOTER : ''}`}>
@@ -140,8 +141,9 @@ function CourseView({ course }: { course: CourseDetail }) {
           <Offerings offerings={course.offerings} enrollments={enrollments} current={current} firstOpen={firstOpen} actionInFooter={!twoColumns} />
         </aside>
         <div className="flex min-w-0 flex-col gap-10 lg:col-start-1 lg:row-start-1">
-          {course.objectives.length + course.learningOutcomes.length > 0 ? (
-            <Section title={t('detail.goals')}>
+          <OnThisPage sections={shown} />
+          {shown.goals ? (
+            <Section title={t('detail.goals')} anchor={ANCHORS.goals}>
               <div className="flex flex-col gap-5">
                 <Lines title={t('detail.objectives')} lines={course.objectives} />
                 <Lines title={t('detail.outcomes')} lines={course.learningOutcomes} />
@@ -151,8 +153,8 @@ function CourseView({ course }: { course: CourseDetail }) {
 
           <Syllabus course={course} />
 
-          {course.requirements || course.prerequisiteKnowledge || course.prerequisiteKnowledgeTags.length > 0 ? (
-            <Section title={t('detail.before')}>
+          {shown.before ? (
+            <Section title={t('detail.before')} anchor={ANCHORS.before}>
               <div className="flex flex-col gap-5">
                 <Knowledge tags={course.prerequisiteKnowledgeTags} text={course.prerequisiteKnowledge} />
                 <Prose title={t('detail.requirements')} text={course.requirements} />
@@ -160,8 +162,8 @@ function CourseView({ course }: { course: CourseDetail }) {
             </Section>
           ) : null}
 
-          {course.assessment || course.certification ? (
-            <Section title={t('detail.assessmentAndCertification')}>
+          {shown.assessment ? (
+            <Section title={t('detail.assessmentAndCertification')} anchor={ANCHORS.assessment}>
               <div className="flex flex-col gap-5">
                 <Prose title={t('detail.assessment')} text={course.assessment} />
                 <Prose title={t('detail.certification')} text={course.certification} />
@@ -169,33 +171,41 @@ function CourseView({ course }: { course: CourseDetail }) {
             </Section>
           ) : null}
 
-          {course.teachers.length > 0 ? (
-            <Section title={t('detail.teachers')}>
+          {shown.teachers ? (
+            <Section title={t('detail.teachers')} anchor={ANCHORS.teachers}>
               <ul className="flex flex-col divide-y divide-border">
                 {course.teachers.map((teacher) => (
-                  <li key={teacher.name} className="flex flex-col gap-1 py-3 text-sm first:pt-0 last:pb-0">
-                    <p className="font-medium text-ink">
-                      {teacher.name}
-                      {teacher.professionalTitle ? <span className="font-normal text-ink-muted"> · {teacher.professionalTitle}</span> : null}
-                    </p>
-                    {teacher.specialties ? <p className="text-ink-muted">{teacher.specialties}</p> : null}
-                    {teacher.bio ? <p className="max-w-prose text-ink">{teacher.bio}</p> : null}
+                  <li key={teacher.name} className="flex gap-3 py-3 text-sm first:pt-0 last:pb-0">
+                    <span
+                      aria-hidden="true"
+                      className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand-strong"
+                    >
+                      {initials(teacher.name)}
+                    </span>
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <p className="font-medium text-ink">
+                        {teacher.name}
+                        {teacher.professionalTitle ? <span className="font-normal text-ink-muted"> · {teacher.professionalTitle}</span> : null}
+                      </p>
+                      {teacher.specialties ? <p className="text-ink-muted">{teacher.specialties}</p> : null}
+                      {teacher.bio ? <p className="max-w-prose text-ink">{teacher.bio}</p> : null}
+                    </div>
                   </li>
                 ))}
               </ul>
             </Section>
           ) : null}
 
-          <Section title={course.credits.system ? t('detail.workloadAndCredits') : t('detail.workload')}>
+          <Section title={course.credits.system ? t('detail.workloadAndCredits') : t('detail.workload')} anchor={ANCHORS.workload}>
             <div className="flex flex-col gap-4">
               <Workload course={course} />
               <CreditsView credits={course.credits} />
             </div>
           </Section>
 
-          {course.sources.length > 0 ? (
-            <Section title={t('detail.sources')}>
-              <Lines lines={course.sources} />
+          {shown.sources ? (
+            <Section title={t('detail.sources')} anchor={ANCHORS.sources}>
+              <Sources sources={course.sources} />
             </Section>
           ) : null}
 
@@ -216,17 +226,6 @@ function CourseView({ course }: { course: CourseDetail }) {
   )
 }
 
-// un dato de la cabecera: icono y valor, con su nombre para quien no ve el icono
-function HeroFact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <Icon aria-hidden="true" className="size-4 shrink-0" />
-      <dt className="sr-only">{label}</dt>
-      <dd className="text-ink tabular-nums">{children}</dd>
-    </div>
-  )
-}
-
 function CourseFacts({ course }: { course: CourseDetail }) {
   const { t, i18n } = useTranslation('catalog')
   const locale = i18n.language
@@ -234,28 +233,137 @@ function CourseFacts({ course }: { course: CourseDetail }) {
   const { system, approved, proposal } = course.credits
   return (
     <dl className="flex flex-wrap gap-x-5 gap-y-1.5">
-      <HeroFact icon={Clock} label={t('course.duration')}>
+      <IconFact icon={Clock} label={t('course.duration')}>
         {t('course.durationValue', { count: course.weeks, hours: n(course.workload.totalHours) })}
-      </HeroFact>
+      </IconFact>
       {system && approved !== null ? (
-        <HeroFact icon={GraduationCap} label={t('detail.credits')}>
+        <IconFact icon={GraduationCap} label={t('detail.credits')}>
           {t('detail.creditsApproved', { value: n(approved), system })}
-        </HeroFact>
+        </IconFact>
       ) : system && proposal ? (
-        <HeroFact icon={GraduationCap} label={t('detail.credits')}>
+        <IconFact icon={GraduationCap} label={t('detail.credits')}>
           {t('detail.creditsProposed', { value: n(proposal.proposed), system })}
-        </HeroFact>
+        </IconFact>
       ) : null}
-      <HeroFact icon={MonitorPlay} label={t('course.modality')}>
+      <IconFact icon={MonitorPlay} label={t('course.modality')}>
         {t(`modality.${course.modality}`)}
-      </HeroFact>
-      <HeroFact icon={ChartNoAxesColumnIncreasing} label={t('course.level')}>
+      </IconFact>
+      <IconFact icon={ChartNoAxesColumnIncreasing} label={t('course.level')}>
         {t(`level.${course.level}`)}
-      </HeroFact>
-      <HeroFact icon={Languages} label={t('detail.language')}>
+      </IconFact>
+      <IconFact icon={Languages} label={t('detail.language')}>
         {languageName(course.language, locale)}
-      </HeroFact>
+      </IconFact>
     </dl>
+  )
+}
+
+// las secciones de la ficha, con su ancla y si el curso tiene de qué hablar en ellas: las pinta la ficha y las enlaza el índice
+const ANCHORS = {
+  goals: 'objetivos',
+  syllabus: 'temario',
+  before: 'antes-de-empezar',
+  assessment: 'evaluacion',
+  teachers: 'docentes',
+  workload: 'carga-de-trabajo',
+  sources: 'fuentes'
+} as const
+type SectionKey = keyof typeof ANCHORS
+// un destino dentro de la misma ficha, no una pantalla: no pasa por useWasichaiLinks
+const fragment = (anchor: string) => `#${anchor}`
+
+function sectionsOf(course: CourseDetail): Record<SectionKey, boolean> {
+  return {
+    goals: course.objectives.length + course.learningOutcomes.length > 0,
+    syllabus: course.units.length > 0,
+    before: Boolean(course.requirements || course.prerequisiteKnowledge || course.prerequisiteKnowledgeTags.length > 0),
+    assessment: Boolean(course.assessment || course.certification),
+    teachers: course.teachers.length > 0,
+    workload: true,
+    sources: course.sources.length > 0
+  }
+}
+
+// el índice de la ficha, al empezar su contenido: una fila de enlaces a sus secciones que, en el móvil, se desliza y, en escritorio, salta de línea
+function OnThisPage({ sections }: { sections: Record<SectionKey, boolean> }) {
+  const { t } = useTranslation('catalog')
+  const titles: Record<SectionKey, string> = {
+    goals: t('detail.goals'),
+    syllabus: t('detail.syllabus'),
+    before: t('detail.before'),
+    assessment: t('detail.assessmentAndCertification'),
+    teachers: t('detail.teachers'),
+    workload: t('detail.workloadShort'),
+    sources: t('detail.sources')
+  }
+  const keys = (Object.keys(ANCHORS) as SectionKey[]).filter((key) => sections[key])
+  if (keys.length < 3) return null
+  return (
+    <nav
+      aria-label={t('detail.onThisPage')}
+      className="-mx-4 -mb-4 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] sm:mx-0 sm:px-0 print:hidden"
+    >
+      <ul className="flex w-max gap-5 lg:w-auto lg:flex-wrap lg:gap-x-5 lg:gap-y-0">
+        {keys.map((key) => (
+          <li key={key}>
+            <a
+              href={fragment(ANCHORS[key])}
+              className="inline-flex min-h-11 items-center text-sm whitespace-nowrap text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus"
+            >
+              {titles[key]}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+// las iniciales de un nombre («Diego Docente (demo)» → DD), sin lo que va entre paréntesis
+function initials(name: string): string {
+  const words = name
+    .replace(/\(.*?\)/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]!.toLocaleUpperCase())
+    .join('')
+}
+
+// una fuente de un repositorio (owner/repo@commit:ruta) se lee por el nombre de su documento; la referencia exacta queda debajo
+const REPOSITORY_SOURCE = /^[\w.-]+\/[\w.-]+@[0-9a-f]{6,40}:(\S+)$/
+
+function sourceTitle(path: string): string {
+  const file = path.split('/').pop() ?? path
+  const name = file
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .trim()
+  return name ? name[0]!.toLocaleUpperCase() + name.slice(1) : file
+}
+
+function Sources({ sources }: { sources: string[] }) {
+  return (
+    <ul className="flex max-w-prose flex-col gap-3 text-sm">
+      {sources.map((source) => {
+        const path = REPOSITORY_SOURCE.exec(source)?.[1]
+        return (
+          <li key={source} className="flex gap-2">
+            <FileText aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+            {path ? (
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-ink">{sourceTitle(path)}</span>
+                <span className="font-mono text-xs break-all text-ink-muted">{source}</span>
+              </span>
+            ) : (
+              <span className="min-w-0 text-ink">{source}</span>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -321,7 +429,7 @@ function Syllabus({ course }: { course: CourseDetail }) {
     lessons: t('detail.syllabusLessons', { count: lessons })
   })
   return (
-    <Section title={t('detail.syllabus')} description={count}>
+    <Section title={t('detail.syllabus')} description={count} anchor={ANCHORS.syllabus}>
       <ol className="flex flex-col divide-y divide-border border-y border-border">
         {units.map((unit, index) => (
           <li key={unit.order}>
