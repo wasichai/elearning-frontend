@@ -17,11 +17,10 @@ import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { formatCivilDate } from '../../shared/format'
-import { PublicHeading } from '../../shared/PublicLayout'
 import { screenContainer } from '../../shared/Screen'
 import { DEFAULT_SORT, type CatalogFilters } from './api'
 import { LEVELS, MODALITIES, NO_KNOWLEDGE, SORTS, type CoursePage } from './contract'
-import { useMatchesWidth } from './parts'
+import { IllustrativeMark, useMatchesWidth } from './parts'
 
 // Radix Select no admite el valor vacío: «todas» viaja como este centinela y en la URL es la ausencia del filtro
 const ALL = 'all'
@@ -115,16 +114,25 @@ interface CatalogBandProps {
 export function CatalogBand({ filters, page, busy, onChange, onRemove, onClear }: CatalogBandProps) {
   const { t, i18n } = useTranslation('catalog')
   const active = activeFilters(filters, page, t, i18n.language)
+  // «Contenido ilustrativo» se dice una vez, aquí, si lo son todos los de la página; si no, solo en la ficha
+  const allIllustrative = !!page && page.content.length > 0 && page.content.every((course) => course.illustrative)
   return (
     <div className="border-b border-border bg-surface">
-      <div className={`${screenContainer()} flex flex-col gap-4 pb-5`}>
-        <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-end lg:gap-10">
-          <PublicHeading title={t('catalog.title')} subtitle={t('catalog.subtitle')} />
-          <SearchForm value={filters.q} onSubmit={(q) => onChange({ q })} />
+      <div className={`${screenContainer()} flex flex-col gap-6 pt-8 pb-6`}>
+        <div className="flex flex-col gap-3">
+          <div className="rule-strong flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-3">
+            <p className="meta text-ink">{t('catalog.eyebrow')}</p>
+            {allIllustrative ? <IllustrativeMark /> : null}
+          </div>
+          <h1 className="text-h2 font-read text-balance text-ink sm:text-h1">{t('catalog.title')}</h1>
+          <p className="text-body font-read max-w-measure text-ink-muted sm:text-reading">{t('catalog.subtitle')}</p>
         </div>
-        <div className="relative flex flex-col gap-3">
-          <CategoryChips selected={filters.category} page={page} onChange={(category) => onChange({ category })} />
-          <MoreFilters filters={filters} page={page} busy={busy} count={active.filter((filter) => filter.inPanel).length} onChange={onChange} />
+        <div className="flex flex-col gap-4 border-t border-border pt-5">
+          <SearchForm value={filters.q} onSubmit={(q) => onChange({ q })} />
+          <div className="relative flex flex-col gap-3">
+            <CategoryChips selected={filters.category} page={page} onChange={(category) => onChange({ category })} />
+            <MoreFilters filters={filters} page={page} busy={busy} count={active.filter((filter) => filter.inPanel).length} onChange={onChange} />
+          </div>
         </div>
         {active.length > 0 ? <ActiveFilters active={active} onRemove={onRemove} onClear={onClear} /> : null}
       </div>
@@ -145,7 +153,7 @@ function SearchForm({ value, onSubmit }: { value: string; onSubmit: (q: string) 
   }
 
   return (
-    <form role="search" onSubmit={submit} className="flex flex-col gap-1.5 lg:pb-6">
+    <form role="search" onSubmit={submit} className="flex max-w-xl flex-col gap-1.5">
       <Label htmlFor={id}>{t('filters.search')}</Label>
       <div className="flex gap-2">
         <Input
@@ -176,8 +184,8 @@ function Chip({ pressed, onClick, children }: ChipProps) {
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 text-left text-sm ${FOCUS} ${
-        pressed ? 'border-brand bg-brand-soft font-medium text-brand-strong' : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3.5 text-left text-sm ${FOCUS} ${
+        pressed ? 'border-brand bg-brand font-semibold text-on-brand' : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
       }`}
     >
       {pressed ? <Check aria-hidden="true" className="size-4 shrink-0" /> : null}

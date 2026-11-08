@@ -101,31 +101,34 @@ test('los filtros activos se ven, se cuentan y se quitan uno a uno; plegado, «M
   await expect(courses(page)).toHaveCount(2)
 })
 
-test('la tarjeta entera lleva a la ficha, y su foco rodea la tarjeta sin que el ::after lo tape', async ({ page }) => {
+test('el título de cada fila es su único enlace y su foco se ve', async ({ page }) => {
   await fakeApi(page)
   await page.goto('/cursos')
-  const card = courses(page).first().getByRole('article')
-  await expect(card).toBeVisible()
-  const link = card.getByRole('link')
+  const row = courses(page).first()
+  await expect(row).toBeVisible()
+  const link = row.getByRole('link')
+  await expect(link).toHaveCount(1)
 
-  await link.focus()
   // se pide por teclado: focus() desde el código no siempre activa :focus-visible
+  await link.focus()
   await page.keyboard.press('Shift+Tab')
   await page.keyboard.press('Tab')
   await expect(link).toBeFocused()
-  const outline = await card.evaluate((element) => {
+  const outline = await link.evaluate((element) => {
     const style = getComputedStyle(element)
     return { style: style.outlineStyle, width: style.outlineWidth, offset: style.outlineOffset }
   })
   expect(outline).toEqual({ style: 'solid', width: '2px', offset: '2px' })
 
-  // un clic en el margen de la tarjeta, fuera del título, también abre la ficha
-  const box = (await card.boundingBox())!
+  // la fila no es un objetivo de clic: solo el título lleva a la ficha
+  const box = (await row.boundingBox())!
   await page.mouse.click(box.x + box.width - 8, box.y + 8)
+  await expect(page).toHaveURL('/cursos')
+  await link.click()
   await expect(page.getByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeVisible()
 })
 
-test('los chips de categoría miden 44 px y la cuadrícula pasa de 2 a 3 columnas', async ({ page }) => {
+test('los chips de categoría miden 44 px y los resultados son una lista de una columna', async ({ page }) => {
   await fakeApi(page)
   await page.setViewportSize({ width: 1024, height: 800 })
   await page.goto('/cursos')
@@ -133,14 +136,9 @@ test('los chips de categoría miden 44 px y la cuadrícula pasa de 2 a 3 columna
 
   const chips = page.getByRole('group', { name: 'Categoría' }).getByRole('button')
   for (const chip of await chips.all()) expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44)
-  const columns = () =>
-    courses(page)
-      .first()
-      .locator('..')
-      .evaluate((list) => getComputedStyle(list).gridTemplateColumns.split(' ').length)
-  expect(await columns()).toBe(2)
-  await page.setViewportSize({ width: 1280, height: 800 })
-  await expect.poll(columns).toBe(3)
+  const [first, second] = [await courses(page).nth(0).boundingBox(), await courses(page).nth(1).boundingBox()]
+  expect(second!.y).toBeGreaterThan(first!.y + first!.height - 1)
+  expect(second!.x).toBe(first!.x)
 })
 
 test('un error del servidor se explica y «Reintentar» lo recupera', async ({ page }) => {
