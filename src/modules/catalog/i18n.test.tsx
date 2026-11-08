@@ -85,7 +85,7 @@ describe('textos del catálogo', () => {
     expect(screen.getByText('Enrollment open')).toBeInTheDocument()
     expect(within(screen.getByRole('list')).getByText('Next offering')).toBeInTheDocument()
     expect(screen.getByText('Catalog · courses and upcoming offerings')).toBeInTheDocument()
-    // solo uno de los dos cursos es ilustrativo: el aviso no sale en el catálogo
-    expect(screen.queryByText('Illustrative content')).not.toBeInTheDocument()
+    // la página es mixta: solo la fila ilustrativa lleva su marca
+    expect(screen.getAllByText('Illustrative content')).toHaveLength(1)
   })
 })

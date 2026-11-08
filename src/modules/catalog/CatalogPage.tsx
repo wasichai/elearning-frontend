@@ -7,7 +7,8 @@ import { PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody } from '../../shared/Screen'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
 import type { CoursePage } from './contract'
-import { CourseRow, CourseRowSkeleton } from './CourseCard'
+import { CourseRow, CourseRowSkeleton } from './CourseRow'
+import { allIllustrative } from './parts'
 import { CatalogBand } from './FilterBar'
 import { ProblemState, useProblemText } from './ProblemState'
 
@@ -103,7 +104,7 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     <div aria-busy={busy} className={`flex flex-col gap-6 transition-opacity ${busy ? 'opacity-60' : ''}`}>
       <ul className={ROWS}>
         {page.content.map((course) => (
-          <CourseRow key={course.slug} course={course} />
+          <CourseRow key={course.slug} course={course} showIllustrative={course.illustrative && !allIllustrative(page)} />
         ))}
       </ul>
       {page.totalPages > 1 ? (

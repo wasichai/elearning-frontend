@@ -20,7 +20,7 @@ import { formatCivilDate } from '../../shared/format'
 import { screenContainer } from '../../shared/Screen'
 import { DEFAULT_SORT, type CatalogFilters } from './api'
 import { LEVELS, MODALITIES, NO_KNOWLEDGE, SORTS, type CoursePage } from './contract'
-import { IllustrativeMark, useMatchesWidth } from './parts'
+import { allIllustrative, IllustrativeMark, useMatchesWidth } from './parts'
 
 // Radix Select no admite el valor vacío: «todas» viaja como este centinela y en la URL es la ausencia del filtro
 const ALL = 'all'
@@ -114,15 +114,14 @@ interface CatalogBandProps {
 export function CatalogBand({ filters, page, busy, onChange, onRemove, onClear }: CatalogBandProps) {
   const { t, i18n } = useTranslation('catalog')
   const active = activeFilters(filters, page, t, i18n.language)
-  // «Contenido ilustrativo» se dice una vez, aquí, si lo son todos los de la página; si no, solo en la ficha
-  const allIllustrative = !!page && page.content.length > 0 && page.content.every((course) => course.illustrative)
+  // «Contenido ilustrativo» se dice una vez, aquí, si lo son todos los de la página; si no, lo lleva cada fila
   return (
     <div className="border-b border-border bg-surface">
       <div className={`${screenContainer()} flex flex-col gap-6 pt-8 pb-6`}>
         <div className="flex flex-col gap-3">
           <div className="rule-strong flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-3">
             <p className="meta text-ink">{t('catalog.eyebrow')}</p>
-            {allIllustrative ? <IllustrativeMark /> : null}
+            {allIllustrative(page) ? <IllustrativeMark /> : null}
           </div>
           <h1 className="text-h2 font-read text-balance text-ink sm:text-h1">{t('catalog.title')}</h1>
           <p className="text-body font-read max-w-measure text-ink-muted sm:text-reading">{t('catalog.subtitle')}</p>

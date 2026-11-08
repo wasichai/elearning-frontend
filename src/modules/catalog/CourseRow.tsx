@@ -6,7 +6,7 @@ import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Skeleton } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
 import type { CourseSummary, NextOffering } from './contract'
-import { AVAILABILITY, IconFact, offeringState } from './parts'
+import { AVAILABILITY, IconFact, IllustrativeMark, offeringState } from './parts'
 import { CATALOG_ROUTES } from './routes'
 
 // dos columnas desde tableta: el curso y, a la derecha, su próxima edición. en un móvil, una debajo de la otra
@@ -15,13 +15,19 @@ const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 
 // una fila del catálogo (docs/design-system/colofon/Catalog.dc.html): la colección en meta, el título como único enlace, el resumen en dos
 // líneas y los datos. el título se corta a dos líneas con el completo en title; la fila entera no es clicable
-export function CourseRow({ course }: { course: CourseSummary }) {
+// showIllustrative: la marca va en la fila solo si la página es mixta; si todos lo son, la dice el encabezado
+export function CourseRow({ course, showIllustrative = false }: { course: CourseSummary; showIllustrative?: boolean }) {
   const { t, i18n } = useTranslation('catalog')
   const links = useWasichaiLinks()
   return (
     <li className={ROW}>
       <div className="flex min-w-0 flex-col gap-2">
-        {course.category ? <p className="meta">{course.category.name}</p> : null}
+        {course.category || showIllustrative ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {course.category ? <p className="meta">{course.category.name}</p> : null}
+            {showIllustrative ? <IllustrativeMark /> : null}
+          </div>
+        ) : null}
         <h3 className="text-h4 font-read text-ink">
           <Link
             to={links.to(CATALOG_ROUTES.course, { slug: course.slug })}

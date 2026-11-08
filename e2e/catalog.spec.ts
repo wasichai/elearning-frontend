@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { fakeApi, isCourseList } from './api'
+import { coursePage, courseSummary } from '../src/modules/catalog/test/fixtures'
 
 // el catálogo público con la API simulada: búsqueda y filtros viajan al servidor, y un fallo se explica y se recupera
 
@@ -159,4 +160,17 @@ test('un error del servidor se explica y «Reintentar» lo recupera', async ({ p
   await expect(courses(page)).toHaveCount(2)
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(api.catalogRequests).toHaveLength(2)
+})
+
+test('a 390 px un título largo con una palabra sin espacios se recorta y no desborda', async ({ page }) => {
+  await fakeApi(page)
+  const long = `Agentes de IA con trazabilidad y revisión humana para procesos públicos ${'y servicios '.repeat(6)}Supercalifragilisticoespialidosoconstitucionalmenteanticonstitucional`
+  await page.route(isCourseList, (route) => route.fulfill({ json: { ...coursePage, content: [{ ...courseSummary, title: long }] } }))
+  await page.setViewportSize({ width: 390, height: 800 })
+  await page.goto('/cursos')
+
+  const link = courses(page).first().getByRole('link')
+  await expect(link).toHaveAttribute('title', long)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  expect(await link.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
 })

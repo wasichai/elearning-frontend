@@ -121,11 +121,21 @@ describe('CatalogPage', () => {
     expect(within(screen.getByRole('list')).queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
   })
 
-  it('illustrative notice stays out of the catalog when only some courses are illustrative', async () => {
+  it('in a mixed page each illustrative row carries its own mark and the header none', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    const items = within(await screen.findByRole('list')).getAllByRole('listitem')
+
+    // solo el primero es ilustrativo: su marca va en su fila y el encabezado no dice nada
+    expect(screen.getAllByText('Contenido ilustrativo')).toHaveLength(1)
+    expect(within(items[0]!).getByText('Contenido ilustrativo')).toBeInTheDocument()
+    expect(within(items[1]!).queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
+  })
+
+  it('the illustrative mark is 14 px', async () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
     await screen.findByRole('list')
 
-    expect(screen.queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
+    expect(screen.getByText('Contenido ilustrativo').closest('span')).toHaveClass('text-secondary')
   })
 
   it('long title is clamped with full title available', async () => {
