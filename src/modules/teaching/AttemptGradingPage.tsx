@@ -13,7 +13,7 @@ import { useDownload } from '../../shared/files'
 import { ReturnFocus } from '../../shared/ReturnFocus'
 import { useGrade, useQueue, useTeachingAttempt } from './api'
 import { draftOf, isDirty, projectedScore, queuePosition, rubricPoints, validPoints, type Draft, type QueuePosition } from './grading'
-import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog } from './parts'
+import { OfferingFrame, QueryProblem, STICKY_BAR, submitterOf, useActionError, useLeaveDialog } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 const isManual = (question: Question) => question.type === 'OPEN' || question.type === 'FILE'
@@ -41,7 +41,9 @@ export function AttemptGradingPage() {
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
         {/* el correo va aquí y no en la cabecera: es una palabra larga que la ensancharía en el móvil */}
         {student ? (
-          <p className="min-w-0 text-sm text-ink-muted [overflow-wrap:anywhere]">{t('grading.student', { student: student.email ?? t('roster.noEmail') })}</p>
+          <p className="min-w-0 text-sm text-ink-muted [overflow-wrap:anywhere]">
+            {t('grading.student', { student: submitterOf(student) ?? t('roster.noEmail') })}
+          </p>
         ) : (
           <span />
         )}
