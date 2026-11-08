@@ -1,4 +1,4 @@
-import { LoadingState, useWasichaiLinks, type Form, type RecordItem } from '@wasichai/core'
+import { useWasichaiLinks, type Form, type RecordItem } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,7 @@ import type { StudioVersionDetail } from './contract'
 import { useProblemText } from './parts'
 import { STUDIO_ROUTES } from './routes'
 import { StudioRecordForm } from './StudioRecordForm'
+import { FormSkeleton } from '../../shared/PageSkeleton'
 
 // lo que el formulario sabe de la versión: lo que propone, lo que no pregunta y qué dice de dónde cuelga
 export interface DraftRecordPlan {
@@ -72,7 +73,7 @@ export function DraftRecordPage({ title, objectName, form, plan, gone }: DraftRe
             technical={problem.kind === 'notFound' ? undefined : problem.technical}
           />
         ) : !version ? (
-          <LoadingState label={t('version.loading')} />
+          <FormSkeleton label={t('version.loading')} />
         ) : version.status !== 'BORRADOR' ? (
           <div className="flex flex-col items-start gap-4">
             <Notice tone="notice" title={t('version.readOnly')}>

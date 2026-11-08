@@ -1,4 +1,4 @@
-import { ApiError, EmptyState, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
+import { ApiError, EmptyState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button, ConfirmDialog } from '@wasichai/ui'
 import { useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +14,7 @@ import { RETURN_TO_PARAM, acceptanceState, safeReturnTo, useTermsView, type Term
 import { canAdminister } from '../../shellNav'
 import { useAcceptTerms, useWithdrawTerms, type Withdrawal } from './api'
 import { PUBLISH_TERMS_ROUTE, TERMS_ROUTES } from './routes'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // los términos de uso de la persona (ADR-0037 del backend): los lee, los acepta y vuelve a lo que hacía, o los retira. publicarlos no es de aquí
 export function TermsPage() {
@@ -25,7 +26,7 @@ export function TermsPage() {
       <ScreenHeader width="reading" title={t('title')} />
       {view.isPending ? (
         <ScreenBody width="reading">
-          <LoadingState label={t('loading')} />
+          <DocumentSkeleton label={t('loading')} />
         </ScreenBody>
       ) : view.isError && !view.data ? (
         <ScreenBody width="reading">

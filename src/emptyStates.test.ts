@@ -12,3 +12,12 @@ describe('estados vacíos', () => {
     expect(emptyStatesWithoutIcon("<EmptyState title={t('a')} icon={Inbox}>")).toEqual([])
   })
 })
+
+// cada pantalla carga con la forma de lo que llega (pendiente de la épica #179), no con el «Cargando…» de core en una pantalla vacía
+const LOADING_STATE = /<LoadingState\b/g
+
+describe('estados de carga', () => {
+  it('ningún módulo carga con <LoadingState>: usa un esqueleto de src/shared', () => {
+    expect(offenders(MODULES_ROOT, (_file, source) => source.match(LOADING_STATE) ?? [], /\.tsx$/)).toEqual([])
+  })
+})

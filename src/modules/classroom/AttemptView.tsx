@@ -1,4 +1,4 @@
-import { ApiError, LoadingState } from '@wasichai/core'
+import { ApiError } from '@wasichai/core'
 import { Alert, Button, Dialog, DialogContent, DialogDescription, DialogTitle } from '@wasichai/ui'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
@@ -14,6 +14,7 @@ import { Countdown, DeadlineNote, useNow } from './Countdown'
 import { useProblemText } from './parts'
 import { emptyAnswer, isAnswered, QuestionField, QuestionIndex } from './Questions'
 import { attemptKnots, Quipu } from './Quipu'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 interface AttemptViewProps {
   enrollmentId: string
@@ -33,7 +34,7 @@ export function AttemptView({ enrollmentId, attemptId, passingPercent, title, ma
   const { t } = useTranslation('classroom')
   const query = useAttempt(attemptId)
   if (query.isError) return <AttemptLoadProblem error={query.error} onRetry={() => void query.refetch()} />
-  if (!query.data) return <LoadingState label={t('attempt.loading')} />
+  if (!query.data) return <DocumentSkeleton label={t('attempt.loading')} />
   if (query.data.status === 'OPEN')
     return <AttemptForm key={query.data.id} enrollmentId={enrollmentId} attempt={query.data} title={title} maxAttempts={maxAttempts} timeZone={timeZone} />
   return (

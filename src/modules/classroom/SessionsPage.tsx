@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState } from '@wasichai/core'
+import { EmptyState } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CalendarDays } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { useSessions } from './api'
 import { CourseSubpage } from './CourseSubpage'
 import { useProblemText } from './parts'
 import { SessionList } from './SessionList'
+import { ListSkeleton } from '../../shared/ListSkeleton'
 
 // las sesiones en vivo de una matrícula (ADR-0016)
 export function SessionsPage() {
@@ -26,7 +27,7 @@ export function Sessions({ enrollmentId, lessonId }: { enrollmentId: string; les
         </Button>
       </ProblemState>
     )
-  if (!query.data) return <LoadingState label={t('sessions.loading')} />
+  if (!query.data) return <ListSkeleton label={t('sessions.loading')} />
   const sessions = lessonId ? query.data.filter((session) => session.lessonId === lessonId) : query.data
   if (sessions.length === 0)
     return lessonId ? (

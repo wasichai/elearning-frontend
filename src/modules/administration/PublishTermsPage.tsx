@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApiError, LoadingState, useApiClient, useAuth } from '@wasichai/core'
+import { ApiError, useApiClient, useAuth } from '@wasichai/core'
 import { Button, ConfirmDialog, Input, Label, Textarea } from '@wasichai/ui'
 import { CircleAlert } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
@@ -13,6 +13,7 @@ import { ScreenBody, ScreenHeader } from '../../shared/Screen'
 import { TERMS_KEY, TERMS_PATH, termsVersionSchema, useTermsView, type TermsVersion, type TermsView } from '../../shared/terms'
 import { useLeaveGuard } from '../../shared/useLeaveGuard'
 import { canAdminister } from '../../shellNav'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 const MAX_TEXT = 100_000
 const MAX_DAYS = 36_500
@@ -49,7 +50,7 @@ export function PublishTermsPage() {
         ) : permissions || permissionsError ? (
           <ProblemState title={t('publish.refused')} description={t('publish.refusedHint')} />
         ) : (
-          <LoadingState label={t('publish.loading')} />
+          <DocumentSkeleton label={t('publish.loading')} />
         )}
       </ScreenBody>
     </>
@@ -61,7 +62,7 @@ function Publish() {
   const view = useTermsView()
   const [published, setPublished] = useState<number | null>(null)
   const notice = useRef<HTMLDivElement>(null)
-  if (view.isPending) return <LoadingState label={t('publish.loading')} />
+  if (view.isPending) return <DocumentSkeleton label={t('publish.loading')} />
   if (!view.data)
     return (
       <ProblemState title={t('publish.loadFailed')} description={t('publish.loadFailedHint')}>

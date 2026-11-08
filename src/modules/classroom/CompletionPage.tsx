@@ -1,4 +1,4 @@
-import { ApiError, LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
+import { ApiError, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, ConfirmDialog, Input, Label } from '@wasichai/ui'
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,7 @@ import { HOLDER_NAME_MAX, type Certificate, type Classroom, type CompletionRule 
 import { CourseSubpage } from './CourseSubpage'
 import { useProblemText, WRAP } from './parts'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // la finalización de una matrícula (ADR-0016): las reglas de la versión, cuáles se cumplen, y el certificado
 export function CompletionPage() {
@@ -29,7 +30,7 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
         </Button>
       </ProblemState>
     )
-  if (!query.data) return <LoadingState label={t('completionPanel.loading')} />
+  if (!query.data) return <DocumentSkeleton label={t('completionPanel.loading')} />
   const completion = query.data
   // sin reglas declaradas se puede pedir el certificado, pero no hay logro que contar: cumplir «nada» no se celebra
   const celebrate = completion.met && completion.rules.length > 0

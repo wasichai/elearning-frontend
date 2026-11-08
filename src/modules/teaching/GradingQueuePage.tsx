@@ -1,4 +1,4 @@
-import { EmptyState, LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button, Table, Td, Th } from '@wasichai/ui'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
@@ -11,6 +11,7 @@ import { OfferingSection } from './OfferingSection'
 import { oldestFirst, submittedAge } from './panel'
 import { EmailText, QueryProblem } from './parts'
 import { TEACHING_ROUTES } from './routes'
+import { ListSkeleton } from '../../shared/ListSkeleton'
 
 // la cola de corrección de una edición: lo enviado que espera al docente, lo más antiguo primero
 export function GradingQueuePage() {
@@ -22,7 +23,7 @@ export function GradingQueuePage() {
       {query.isError ? (
         <QueryProblem error={query.error} resource="queue" onRetry={() => void query.refetch()} />
       ) : !query.data ? (
-        <LoadingState label={t('queue.loading')} />
+        <ListSkeleton label={t('queue.loading')} />
       ) : query.data.length === 0 ? (
         <EmptyState title={t('queue.empty')} icon={ClipboardCheck} />
       ) : (
