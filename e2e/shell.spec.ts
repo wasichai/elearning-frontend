@@ -166,7 +166,7 @@ test.describe('con permiso', () => {
 })
 
 test('los ítems del menú miden 44 px y el actual se marca con algo más que el color', async ({ page }) => {
-  // una pantalla que no es su inicio: si lo fuera, core marcaría también «Inicio»
+  // una pantalla que no es su inicio, para medir «Inicio» sin marcar junto a la actual
   await fakeApi(page, { signedIn: true, as: 'teacher' })
   await page.goto('/docencia')
   const current = menu(page).getByRole('link', { name: 'Mis ediciones', exact: true })
@@ -177,4 +177,28 @@ test('los ítems del menú miden 44 px y el actual se marca con algo más que el
   await expect(current).toHaveCSS('font-weight', '600')
   await expect(current).toHaveCSS('box-shadow', /inset/)
   await expect(home).toHaveCSS('box-shadow', 'none')
+})
+
+// «Inicio» y su sección no se marcan a la vez (H2 de #179, wasichai-ui#176): si «Inicio» lleva a una entrada del menú, solo esa
+// entrada es la actual; si lleva al panel de core, la actual es «Inicio»
+for (const [who, options] of [
+  ['un estudiante', { signedIn: true }],
+  ['un docente', { signedIn: true, as: 'teacher' }]
+] as const) {
+  test(`${who} en su inicio ve marcada solo «Mis cursos»`, async ({ page }) => {
+    await fakeApi(page, options)
+    await page.goto('/mis-cursos')
+    await expect(page.getByRole('heading', { level: 1, name: 'Mis cursos' })).toBeVisible()
+    await expect(menu(page).getByRole('link', { name: 'Mis cursos', exact: true })).toHaveAttribute('aria-current', 'page')
+    await expect(menu(page).getByRole('link', { name: 'Inicio', exact: true })).not.toHaveAttribute('aria-current', 'page')
+    await expect(menu(page).locator('[aria-current="page"]')).toHaveCount(1)
+  })
+}
+
+test('quien administra ve marcada «Inicio» en el panel', async ({ page }) => {
+  await fakeApi(page, { signedIn: true, as: 'authority' })
+  await page.goto('/')
+  await expect(page.getByRole('main')).toBeVisible()
+  await expect(menu(page).getByRole('link', { name: 'Inicio', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(menu(page).locator('[aria-current="page"]')).toHaveCount(1)
 })
