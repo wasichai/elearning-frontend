@@ -248,7 +248,7 @@ function AttemptForm({
     <section aria-labelledby={`attempt-${attempt.id}`} style={sticky.style} className={`@container flex scroll-mt-14 flex-col gap-5 ${CLEAR_HEADER}`}>
       <header
         ref={sticky.ref}
-        className="sticky top-14 z-[9] -mx-4 flex flex-col gap-2 border-b border-border bg-surface px-4 py-2 sm:mx-0 sm:rounded-lg sm:border sm:px-4"
+        className="sticky top-(--classroom-bar,3.5rem) z-[9] -mx-4 flex flex-col gap-2 border-b border-border bg-surface px-4 py-2 sm:mx-0 sm:rounded-lg sm:border sm:px-4"
       >
         <div className="flex flex-col gap-1 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-4">
           <div className="flex min-w-0 flex-col">

@@ -138,6 +138,16 @@ describe('modo lectura de la lección', () => {
     expect(bar.getByRole('button', { name: 'Modo foco' })).toBeInTheDocument()
   })
 
+  it('en modo foco los archivos siguen en el cuerpo: una lección PDF muestra Ver y Descargar', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ mode: false, focus: true }))
+    renderLesson('lec-pdf')
+    expect(await screen.findByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Notas al margen' })).not.toBeInTheDocument()
+    const lesson = within(screen.getByRole('article', { name: 'Guía de liquidación' }))
+    expect(lesson.getByRole('button', { name: 'Ver guia-liquidacion.pdf' })).toBeInTheDocument()
+    expect(lesson.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+  })
+
   it('el modo foco deja solo el texto: pliega el índice y las notas al margen, y se recuerda', async () => {
     const first = renderLesson()
     const focus = within(await tools()).getByRole('button', { name: 'Modo foco' })

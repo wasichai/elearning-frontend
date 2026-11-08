@@ -156,7 +156,7 @@ describe('colofon-controls.css', () => {
   it('una herramienta de barra (ghost en role=toolbar) es un control, no un enlace: tinta, sin subrayado; pulsada, en brand-soft', () => {
     const tool = declared("[role='toolbar'] [data-slot='button'][data-variant='ghost']")
     expect([tool.get('color'), tool.get('text-decoration')]).toEqual(['var(--ink)', 'none'])
-    expect(declared("[role='toolbar'] [data-slot='button'][data-variant='ghost']:hover").get('background-color')).toBe('var(--table-head)')
+    expect(declared("[role='toolbar'] [data-slot='button'][data-variant='ghost']:hover:not(:disabled)").get('background-color')).toBe('var(--table-head)')
     const pressed = declared("[role='toolbar'] [data-slot='button'][data-variant='ghost'][aria-pressed='true']")
     expect([pressed.get('background-color'), pressed.get('color'), pressed.get('box-shadow')]).toEqual([
       'var(--brand-soft)',

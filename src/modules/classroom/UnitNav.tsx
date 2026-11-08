@@ -30,9 +30,15 @@ export function UnitNav({
   titled?: boolean
 }) {
   const { t } = useTranslation('classroom')
+  const titleId = useId()
   return (
-    <section aria-label={t('classroom.index')} className="flex flex-col gap-5">
-      {titled ? <h2 className="meta border-b border-ink px-2 pb-2 text-ink">{t('classroom.index')}</h2> : null}
+    // en la hoja, la nombra ya su DialogTitle: la sección no repite el nombre
+    <section aria-labelledby={titled ? titleId : undefined} className="flex flex-col gap-5">
+      {titled ? (
+        <h2 id={titleId} className="meta border-b border-ink px-2 pb-2 text-ink">
+          {t('classroom.index')}
+        </h2>
+      ) : null}
       <div className="flex flex-col gap-3 px-2">
         <SegmentedProgress units={progressUnits(units)} currentLessonId={currentLessonId} />
         <CourseFigures classroom={classroom} lessons={false} stacked />

@@ -118,6 +118,9 @@ const es = {
     section: '§{{unit}}.{{lesson}}',
     number: '{{unit}}.{{lesson}}',
     folio: '{{position}} / {{total}}',
+    // el título de la pestaña del navegador
+    documentTitle: '{{lesson}} · {{course}} · {{app}}',
+    documentTitleCourse: '{{course}} · {{app}}',
     minutes: '{{value}} min',
     previous: 'Anterior',
     next: 'Siguiente',
@@ -497,6 +500,7 @@ const es = {
     notPdf: 'Este archivo no es un PDF y no se puede ver aquí.',
     // «PDF · 471 kB»
     kind: '{{type}} · {{size}}',
+    document: 'Documento · {{kind}}',
     downloading: 'Descargando…',
     failed: 'No pudimos cargar este recurso.',
     failedStatus: 'No pudimos cargar este recurso. Código del error: {{status}}.',
@@ -688,6 +692,9 @@ const en: typeof es = {
     section: '§{{unit}}.{{lesson}}',
     number: '{{unit}}.{{lesson}}',
     folio: '{{position}} / {{total}}',
+    // el título de la pestaña del navegador
+    documentTitle: '{{lesson}} · {{course}} · {{app}}',
+    documentTitleCourse: '{{course}} · {{app}}',
     minutes: '{{value}} min',
     previous: 'Previous',
     next: 'Next',
@@ -1063,6 +1070,7 @@ const en: typeof es = {
     viewLabel: 'View {{name}}',
     notPdf: 'This file is not a PDF and cannot be viewed here.',
     kind: '{{type}} · {{size}}',
+    document: 'Document · {{kind}}',
     downloading: 'Downloading…',
     failed: 'We could not load this resource.',
     failedStatus: 'We could not load this resource. Error code: {{status}}.',

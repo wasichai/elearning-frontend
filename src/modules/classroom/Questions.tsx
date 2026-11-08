@@ -42,7 +42,7 @@ export function QuestionField({ question, answer, saved, disabled, onChange, onU
   const promptId = useId()
   return (
     <fieldset ref={fieldsetRef} tabIndex={-1} className="flex min-w-0 flex-col gap-4 focus:outline-none" aria-describedby={`${promptId}-points`}>
-      <legend id={promptId} className="float-left w-full font-read text-h5 font-medium text-ink @2xl:text-[19px]/[30px]">
+      <legend id={promptId} className="float-left w-full font-read text-h5 leading-7 font-medium text-ink @2xl:text-[19px]/[30px]">
         {t('question.prompt', { order: question.order, prompt: question.prompt })}
       </legend>
       <p id={`${promptId}-points`} className="-mt-2 text-sm text-ink-muted">

@@ -1,10 +1,11 @@
 import { ApiError } from '@wasichai/core'
 import { Button, PdfDialog } from '@wasichai/ui'
-import { CircleAlert, Download, Eye } from 'lucide-react'
+import { CircleAlert, Download, Eye, FileText } from 'lucide-react'
 import { Component, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, NotPdfError, useDownload, useFileBlob, useObjectUrl, usePdfLoader } from '../../shared/files'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatFileSize, useOpenLabel } from './parts'
 import { ReadingDocument } from './ReadingDocument'
 import { useReading } from './readingApi'
@@ -13,8 +14,8 @@ import { watchedEnough } from './video'
 import { MediaSkeleton, DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en la página, desde su lectura
-// en bloques (ADR-0045), y VIDEO en el reproductor del navegador: son el texto de la lección (Resources). el PDF y lo que la
-// interfaz no sabe mostrar son archivos: van en las notas al margen (FileResources), con «Ver» el PDF y «Descargar» todos.
+// en bloques (ADR-0045), y VIDEO en el reproductor del navegador. el PDF y lo que la interfaz no sabe mostrar son archivos: una
+// figura en el cuerpo con «Ver» (el PDF) y «Descargar», y un enlace breve en las notas al margen (FileResources).
 // onVideoWatched avisa cada vez que el reproductor dice que se vio lo bastante (umbral de RF-AUL-04 o fin): quien lo
 // recibe decide enviarlo una sola vez
 // reading: lo que la barra de la lección elige para la lectura HTML (tamaño e interlineado). el tema del modo lectura lo
@@ -35,25 +36,25 @@ interface ResourcesProps {
   reading?: ReadingSettings
 }
 
-// los recursos que se leen o se ven en la página, en su orden
+// los recursos de la lección, en su orden y todos en el cuerpo (Classroom.dc.html): la lectura y el vídeo se leen o se ven aquí; un PDF u otro
+// archivo es una figura con su nombre, «Ver» (solo el PDF) y «Descargar». así una lección de solo archivos no queda vacía, tampoco en modo foco
 export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
   const { t } = useTranslation('classroom')
-  const inline = resources.filter(isInline)
   // con un solo recurso, su título repetiría el de la lección: queda para quien navega por encabezados
-  const onlyOne = inline.length === 1
+  const onlyOne = resources.length === 1
   return (
     <div className="flex flex-col gap-8">
-      {inline.map((resource) => (
-        <section key={resource.id} id={resourceAnchor(resource.id)} aria-label={resource.title} className="flex flex-col gap-3">
+      {resources.map((resource) => (
+        <section key={resource.id} id={resourceAnchor(resource.id)} aria-label={resource.title} className="flex scroll-mt-24 flex-col gap-3">
           <h3 className={onlyOne ? 'sr-only' : 'font-read text-h4 text-ink'}>{resource.title}</h3>
-          {resource.file ? (
-            resource.type === 'HTML' ? (
-              <HtmlResource enrollmentId={enrollmentId} resourceId={resource.id} reading={reading} />
-            ) : (
-              <VideoResource file={resource.file} threshold={videoThreshold} onWatched={onVideoWatched} />
-            )
-          ) : (
+          {!resource.file ? (
             <p className="text-secondary text-ink-muted">{t('resource.noFile')}</p>
+          ) : resource.type === 'HTML' ? (
+            <HtmlResource enrollmentId={enrollmentId} resourceId={resource.id} reading={reading} />
+          ) : resource.type === 'VIDEO' ? (
+            <VideoResource file={resource.file} threshold={videoThreshold} onWatched={onVideoWatched} />
+          ) : (
+            <FileFigure type={resource.type} file={resource.file} />
           )}
         </section>
       ))}
@@ -63,35 +64,35 @@ export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideo
 
 const resourceAnchor = (id: string) => `recurso-${id}`
 
-// los archivos de la lección, para las notas al margen: nombre, tipo y tamaño, «Ver» si es un PDF y «Descargar». uno sin archivo lo dice
+// los archivos de la lección en las notas al margen: un enlace breve a su figura en el cuerpo, con tipo y tamaño (Classroom.dc.html, Recursos)
 export function FileResources({ resources }: { resources: Resource[] }) {
-  const { t } = useTranslation('classroom')
+  const { t, i18n } = useTranslation('classroom')
+  const resourceType = useOpenLabel('resourceType')
   const files = resources.filter((resource) => !isInline(resource))
   if (files.length === 0) return <p className="font-read text-body text-ink">{t('classroom.noFiles')}</p>
   return (
-    <ul className="flex flex-col gap-4">
-      {files.map((resource) => (
-        <li key={resource.id}>
-          <section aria-label={resource.title} className="flex flex-col gap-1">
-            {resource.file ? <FileEntry type={resource.type} file={resource.file} /> : <MissingFile title={resource.title} />}
-          </section>
-        </li>
-      ))}
+    <ul className="flex flex-col gap-3">
+      {files.map((resource) => {
+        const anchor = `#${resourceAnchor(resource.id)}`
+        return (
+          <li key={resource.id} className="flex flex-col gap-0.5">
+            <a href={anchor} className={`${TEXT_LINK} font-semibold [overflow-wrap:anywhere]`}>
+              {resource.file?.name ?? resource.title}
+            </a>
+            <span className="text-secondary text-ink-muted">
+              {resource.file
+                ? t('resource.kind', { type: resourceType(resource.type), size: formatFileSize(resource.file.size, i18n.language) })
+                : t('resource.noFile')}
+            </span>
+          </li>
+        )
+      })}
     </ul>
   )
 }
 
-function MissingFile({ title }: { title: string }) {
-  const { t } = useTranslation('classroom')
-  return (
-    <>
-      <span className="font-semibold break-words text-ink">{title}</span>
-      <span className="text-secondary text-ink-muted">{t('resource.noFile')}</span>
-    </>
-  )
-}
-
-function FileEntry({ type, file }: { type: string; file: ResourceFile }) {
+// un archivo en el cuerpo (Classroom.dc.html, la figura del PDF): su icono, «Documento · tipo · tamaño», el nombre y sus acciones
+function FileFigure({ type, file }: { type: string; file: ResourceFile }) {
   const { t, i18n } = useTranslation('classroom')
   const resourceType = useOpenLabel('resourceType')
   const { download, pending, error } = useDownload(file)
@@ -99,30 +100,35 @@ function FileEntry({ type, file }: { type: string; file: ResourceFile }) {
   const size = formatFileSize(file.size, i18n.language)
   const pdf = type === 'PDF'
   return (
-    <>
-      <span className="font-semibold [overflow-wrap:anywhere] text-ink">{file.name}</span>
-      <span className="text-secondary text-ink-muted">{t('resource.kind', { type: resourceType(type), size })}</span>
-      <span className="mt-1 flex flex-wrap gap-2">
-        {pdf ? (
-          <Button variant="secondary" onClick={() => setViewing(true)} aria-label={t('resource.viewLabel', { name: file.name })} className="gap-2">
-            <Eye aria-hidden="true" className="size-4" />
-            {t('resource.view')}
-          </Button>
-        ) : null}
-        <Button
-          variant={pdf ? 'ghost' : 'secondary'}
-          onClick={() => void download()}
-          disabled={pending}
-          aria-label={t('resource.downloadLabel', { name: file.name, size })}
-          className="gap-2"
-        >
-          <Download aria-hidden="true" className="size-4" />
-          {pending ? t('resource.downloading') : t('resource.download')}
-        </Button>
+    <figure className="m-0 grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-x-5 gap-y-3 border-t border-ink border-b border-b-border py-4 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+      <span aria-hidden="true" className="flex aspect-[3/4] items-center justify-center rounded-card border border-border bg-surface text-ink-muted">
+        <FileText className="size-6" />
       </span>
-      {error ? <FileProblem error={error} /> : null}
+      <figcaption className="flex min-w-0 flex-col gap-1.5">
+        <span className="meta">{t('resource.document', { kind: t('resource.kind', { type: resourceType(type), size }) })}</span>
+        <span className="text-h5 [overflow-wrap:anywhere] text-ink">{file.name}</span>
+        <span className="mt-1 flex flex-wrap gap-2.5">
+          {pdf ? (
+            <Button variant="secondary" onClick={() => setViewing(true)} aria-label={t('resource.viewLabel', { name: file.name })} className="gap-2">
+              <Eye aria-hidden="true" className="size-4" />
+              {t('resource.view')}
+            </Button>
+          ) : null}
+          <Button
+            variant="secondary"
+            onClick={() => void download()}
+            disabled={pending}
+            aria-label={t('resource.downloadLabel', { name: file.name, size })}
+            className="gap-2"
+          >
+            <Download aria-hidden="true" className="size-4" />
+            {pending ? t('resource.downloading') : t('resource.download')}
+          </Button>
+        </span>
+        {error ? <FileProblem error={error} /> : null}
+      </figcaption>
       {viewing ? <PdfViewer file={file} onClose={() => setViewing(false)} /> : null}
-    </>
+    </figure>
   )
 }
 

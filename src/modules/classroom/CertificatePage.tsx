@@ -1,11 +1,12 @@
 import { useAppTitle, useWasichaiLinks } from '@wasichai/core'
 import { Button, Input, Label } from '@wasichai/ui'
 import { ShieldCheck } from 'lucide-react'
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
 import { formatCivilRange, formatInstant, formatNumber } from '../../shared/format'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { ProblemState } from '../../shared/ProblemState'
 import { PublicHeading, PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody, Section, screenContainer } from '../../shared/Screen'
@@ -218,15 +219,4 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
       <dd>{children}</dd>
     </div>
   )
-}
-
-// el título del documento es el nombre del archivo al «guardar como PDF» desde el diálogo de impresión
-function useDocumentTitle(title: string) {
-  useEffect(() => {
-    const previous = document.title
-    document.title = title
-    return () => {
-      document.title = previous
-    }
-  }, [title])
 }

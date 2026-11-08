@@ -365,7 +365,7 @@ function QuestionReview({
           <div className="flex flex-col gap-1">
             <p className="text-ink-muted">{t('grading.answer')}</p>
             {given ? (
-              <p className="font-read text-h5 font-normal break-words whitespace-pre-wrap text-ink">{given}</p>
+              <p className="font-read text-h5 leading-7 font-normal break-words whitespace-pre-wrap text-ink">{given}</p>
             ) : (
               <p className="text-ink">{t('grading.noAnswer')}</p>
             )}

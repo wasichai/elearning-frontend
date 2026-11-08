@@ -1,10 +1,11 @@
-import { EmptyState } from '@wasichai/core'
+import { EmptyState, useAppTitle } from '@wasichai/core'
 import { Alert, Button, Dialog, DialogContent, DialogTitle, DialogTrigger } from '@wasichai/ui'
 import { AArrowDown, AArrowUp, BookOpen, ListTree, Scan } from 'lucide-react'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
 import { SegmentedProgress } from '../../shared/SegmentedProgress'
+import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import type { Classroom } from './contract'
 import { CourseHeader, CourseQuery, CourseTabs } from './CourseFrame'
 import { defaultLesson, lessonPath, neighbours, orderedUnits, type PlacedLesson } from './lessons'
@@ -34,6 +35,13 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
   const placed = found ?? defaultLesson(path, classroom.nextLesson?.id)
   const reading = useReadingPreferences()
   const [sheetOpen, setSheetOpen] = useState(false)
+  // la pestaña dice la lección abierta (o el curso, si aún no tiene lecciones) y la aplicación
+  const { appName } = useAppTitle()
+  useDocumentTitle(
+    placed
+      ? t('classroom.documentTitle', { lesson: placed.lesson.title, course: classroom.course.title, app: appName })
+      : t('classroom.documentTitleCourse', { course: classroom.course.title, app: appName })
+  )
   const notices = (
     <>
       {requested && !found ? <Alert tone="notice">{t('classroom.lessonMissing')}</Alert> : null}
@@ -63,7 +71,8 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
   )
   const hasReading = placed.lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
   return (
-    <div className="flex min-h-full flex-col">
+    // --classroom-bar: la altura de la barra del aula, que comparten el índice y la cabecera de un intento para quedar debajo de ella
+    <div className="flex min-h-full flex-col [--classroom-bar:3.5rem]">
       <ClassroomBar classroom={classroom} placed={placed}>
         <ReadingTools
           controls={reading}
@@ -85,7 +94,7 @@ function ClassroomView({ classroom }: { classroom: Classroom }) {
             hoja abierta no se pinta: está una sola vez en la página */}
         {indexShown && !sheetOpen ? (
           <div className="hidden w-index-col shrink-0 border-r border-border bg-surface-muted lg:block">
-            <div className="sticky top-14 max-h-[calc(100dvh-3.5rem)] overflow-y-auto px-3 pt-6 pb-10">{index()}</div>
+            <div className="sticky top-(--classroom-bar) max-h-[calc(100dvh-var(--classroom-bar))] overflow-y-auto px-3 pt-6 pb-10">{index()}</div>
           </div>
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col">
@@ -111,7 +120,7 @@ function ClassroomBar({ classroom, placed, children }: { classroom: Classroom; p
   const { t } = useTranslation('classroom')
   const unit = t('classroom.unit', { order: placed.unit.order, title: placed.unit.title })
   return (
-    <header className="sticky top-0 z-20 flex min-h-14 items-center gap-x-3 border-b border-border bg-surface-muted px-2 py-1.5 sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-20 flex h-(--classroom-bar) items-center gap-x-3 border-b border-border bg-surface-muted px-2 py-1.5 sm:px-4 lg:px-6">
       <div className="flex min-w-0 flex-1 flex-col px-2">
         <h1 title={classroom.course.title} className="meta truncate text-ink">
           {classroom.course.title}

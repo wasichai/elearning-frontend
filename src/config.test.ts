@@ -128,9 +128,11 @@ describe('shellChrome', () => {
   it('shellChrome is compact on a lesson url and full on /mis-cursos', () => {
     expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '?leccion=lec-html' })).toBe('compact')
     expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '?leccion=lec-eva&intento=int-1' })).toBe('compact')
+    // sin ?leccion el aula abre igual una lección (o el aula vacía): también estrecho
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '' })).toBe('compact')
     expect(shellChrome({ pathname: '/mis-cursos', search: '' })).toBe('full')
-    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '' })).toBe('full')
     expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1/sesiones', search: '?leccion=lec-html' })).toBe('full')
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1/finalizacion', search: '' })).toBe('full')
     expect(shellChrome({ pathname: '/cursos/srtm', search: '?leccion=x' })).toBe('full')
   })
 })

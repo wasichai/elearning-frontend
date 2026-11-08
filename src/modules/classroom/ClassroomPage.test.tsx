@@ -403,9 +403,10 @@ describe('ClassroomPage: el aula Colofón', () => {
 
     const margin = within(notes())
     expect(within(margin.getByRole('region', { name: 'Objetivo de la lección' })).getByText(labLesson.lab.objective)).toBeInTheDocument()
+    // en las notas, un enlace breve al archivo, que está en el cuerpo
     const resources = within(margin.getByRole('region', { name: 'Recursos' }))
-    expect(resources.getByRole('button', { name: 'Ver guia-liquidacion.pdf' })).toBeInTheDocument()
-    expect(resources.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+    expect(resources.getByRole('link', { name: 'guia-liquidacion.pdf' })).toHaveAttribute('href', '#recurso-rec-pdf')
+    expect(resources.queryByRole('button')).not.toBeInTheDocument()
     // solo las sesiones vinculadas a esta lección
     const linked = within(margin.getByRole('region', { name: 'Sesiones de la lección' }))
     expect(await linked.findByText('Recuperación de la consulta')).toBeInTheDocument()
@@ -431,8 +432,8 @@ describe('ClassroomPage: el aula Colofón', () => {
     await lessonHeading('Guía de liquidación')
     expect(files?.calls).toEqual([])
 
-    const resources = within(within(notes()).getByRole('region', { name: 'Recursos' }))
-    await userEvent.click(resources.getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
+    const body = within(screen.getByRole('region', { name: 'Guía en PDF' }))
+    await userEvent.click(body.getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
 
     const dialog = await screen.findByRole('dialog', { name: 'guia-liquidacion.pdf' })
     await waitFor(() => expect(dialog.querySelector('iframe')).toHaveAttribute('src', 'blob:prueba/1'))
@@ -442,7 +443,7 @@ describe('ClassroomPage: el aula Colofón', () => {
 
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-    expect(resources.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+    expect(body.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
   })
 
   it('un archivo que dice ser PDF y no lo es no se abre en el visor', async () => {
@@ -450,11 +451,40 @@ describe('ClassroomPage: el aula Colofón', () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf', served)
     await lessonHeading('Guía de liquidación')
 
-    await userEvent.click(within(notes()).getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
     const dialog = await screen.findByRole('dialog', { name: 'guia-liquidacion.pdf' })
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Este archivo no es un PDF y no se puede ver aquí.')
     expect(dialog.querySelector('iframe')).toBeNull()
     expect(files!.created).toEqual([])
+  })
+
+  it('una lección con solo un PDF lo muestra en el cuerpo: su figura con el nombre, Ver y Descargar', async () => {
+    const onlyPdf = structuredClone(classroom)
+    onlyPdf.units[1]!.lessons[0]!.resources = [classroom.units[1]!.lessons[0]!.resources[0]!]
+    renderClassroom([{ path: CLASSROOM, body: onlyPdf }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+
+    const article = screen.getByRole('article', { name: 'Guía de liquidación' })
+    const figure = within(article).getByRole('figure')
+    expect(notes()).not.toContainElement(figure)
+    expect(within(figure).getByText('guia-liquidacion.pdf')).toBeInTheDocument()
+    expect(within(figure).getByText('Documento · PDF · 471 kB')).toBeInTheDocument()
+    expect(within(figure).getByRole('button', { name: 'Ver guia-liquidacion.pdf' })).toBeInTheDocument()
+    expect(within(figure).getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+  })
+
+  it('un archivo que no es PDF solo se descarga', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+    const sheet = within(screen.getByRole('region', { name: 'Plantilla de cálculo' }))
+    expect(sheet.getByRole('button', { name: 'Descargar plantilla.xlsx (10 kB)' })).toBeInTheDocument()
+    expect(sheet.queryByRole('button', { name: /^Ver/ })).not.toBeInTheDocument()
+  })
+
+  it('el título del documento dice la lección abierta y el curso', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+    await waitFor(() => expect(document.title).toMatch(/^Guía de liquidación · Licencias de anuncios con SRTM/))
   })
 
   it('margin outline links to lesson headings', async () => {

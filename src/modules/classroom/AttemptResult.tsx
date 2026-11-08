@@ -148,7 +148,7 @@ function QuestionOutcome({ question, answer, outcome, enrollmentId }: { question
   const title = t('question.prompt', { order: question.order, prompt: question.prompt })
   return (
     <article aria-label={title} className="flex flex-col gap-3 text-sm">
-      <h5 className={`font-read text-h5 font-medium text-ink ${LONG_TEXT}`}>{title}</h5>
+      <h5 className={`font-read text-h5 leading-7 font-medium text-ink ${LONG_TEXT}`}>{title}</h5>
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {outcome?.points == null ? (
           <>

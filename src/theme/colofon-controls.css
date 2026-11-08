@@ -30,7 +30,7 @@
     text-decoration: none;
   }
 
-  [role='toolbar'] [data-slot='button'][data-variant='ghost']:hover {
+  [role='toolbar'] [data-slot='button'][data-variant='ghost']:hover:not(:disabled) {
     background-color: var(--table-head);
     color: var(--ink);
   }
