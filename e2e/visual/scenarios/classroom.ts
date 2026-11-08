@@ -333,7 +333,7 @@ export const classroomScenarios: Scenario[] = [
     path: '/mis-cursos/mat-srtm-1?leccion=lec-html',
     api: student,
     act: async (page) => {
-      const open = page.getByRole('button', { name: /^(Temario|Syllabus)$/ })
+      const open = page.getByRole('button', { name: /^(Índice|Index)$/, expanded: false })
       if (await open.isVisible()) await open.click()
       await page.waitForTimeout(200)
     }

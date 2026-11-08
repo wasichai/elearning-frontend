@@ -166,17 +166,17 @@ test('la lección: el foco va al título al cambiar y las herramientas de lectur
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('la hoja del temario: Esc la cierra y devuelve el foco; elegir una lección lo lleva a su título', async ({ page }) => {
+  test('la hoja del índice: Esc la cierra y devuelve el foco; elegir una lección lo lleva a su título', async ({ page }) => {
     await fakeApi(page, { signedIn: true })
     await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
-    const open = page.getByRole('button', { name: 'Temario' })
+    const open = page.getByRole('button', { name: 'Índice' })
     await tabTo(page, open)
     await focusIsVisible(open)
     await page.keyboard.press('Enter')
-    await escapeReturnsTo(page, page.getByRole('dialog', { name: 'Temario' }), open)
+    await escapeReturnsTo(page, page.getByRole('dialog', { name: 'Índice' }), open)
 
     await page.keyboard.press('Enter')
-    const lesson = page.getByRole('dialog', { name: 'Temario' }).getByRole('link', { name: /^Recorrido por la pantalla/ })
+    const lesson = page.getByRole('dialog', { name: 'Índice' }).getByRole('link', { name: /^Recorrido por la pantalla/ })
     await tabTo(page, lesson)
     await page.keyboard.press('Enter')
     await expect(page.getByRole('dialog')).toHaveCount(0)

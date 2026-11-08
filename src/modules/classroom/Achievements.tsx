@@ -6,7 +6,7 @@ import { Link } from 'react-router'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { ACHIEVEMENT_KINDS, type Achievement, type AchievementKind, type Classroom, type Unit } from './contract'
 import { ROW_FOCUS, UNIT_ROW } from './parts'
-import { Knot } from './Quipu'
+import { StateMark } from '../../shared/StateMark'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 // hasta aquí la lista se ve abierta; con más se pliega, para no empujar el temario fuera del panel
@@ -37,7 +37,7 @@ function resolve({ kind, at, ref }: Achievement, units: Unit[]): Resolved | unde
 }
 
 // los logros de la matrícula (RF-AUL-08), junto al avance en el panel del temario: filas como las de las unidades, sin competir con la
-// lección abierta ni con su siguiente paso. salen del aula ya leída, en el orden del servidor. musgo para lo hecho y maíz solo en el certificado
+// lección abierta ni con su siguiente paso. salen del aula ya leída, en el orden del servidor, cada uno con su marca de estado
 export function Achievements({ classroom, units, onNavigate }: { classroom: Classroom; units: Unit[]; onNavigate?: () => void }) {
   const { t, i18n } = useTranslation('classroom')
   const titleId = useId()
@@ -82,7 +82,7 @@ function AchievementRow({ enrollmentId, timeZone, row, onNavigate }: { enrollmen
   const content: ReactNode = (
     <>
       <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-        <AchievementKnot kind={row.kind} />
+        <AchievementMark kind={row.kind} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-ink">{row.subject ?? label}</span>
@@ -110,9 +110,8 @@ function AchievementRow({ enrollmentId, timeZone, row, onNavigate }: { enrollmen
   )
 }
 
-// el nudo de lo hecho, con la forma de su tipo; el certificado, del mismo tamaño, en maíz. decorativo: la fila dice el logro con palabras
-function AchievementKnot({ kind }: { kind: AchievementKind }) {
-  if (kind === 'CERTIFICATE_ISSUED')
-    return <span aria-hidden="true" data-knot="certificate" className="size-3.5 shrink-0 rounded-full border-2 border-maiz bg-maiz" />
-  return <Knot kind={kind === 'ASSESSMENT_PASSED' ? 'assessment' : 'lesson'} state="done" />
+// la marca de lo hecho (Colofón): una unidad completada, completada; una evaluación aprobada y el certificado, aprobados (success).
+// decorativa: la fila dice el logro con palabras
+function AchievementMark({ kind }: { kind: AchievementKind }) {
+  return <StateMark state={kind === 'UNIT_COMPLETED' ? 'done' : 'passed'} />
 }

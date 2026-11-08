@@ -56,7 +56,7 @@ test('recorrido: mis cursos → aula → lección HTML → marcar completada →
   const next = page.getByRole('link', { name: 'Siguiente lección: Recorrido por la pantalla' })
   await expect(next).toBeFocused()
   await expect(units.getByRole('link', { name: 'Tipos de anuncio Completada' })).toBeVisible()
-  await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '33')
+  await expect(page.getByRole('region', { name: 'Índice' }).getByRole('img', { name: '1 de 3 completadas' })).toBeVisible()
   await expect(units.getByRole('heading', { name: /^Unidad 1\./ })).toContainText('1 de 2')
 
   await page.reload()
@@ -80,17 +80,17 @@ test('una unidad se recorre entera solo con «Siguiente»: cada lección abierta
   const units = page.getByRole('navigation', { name: 'Unidades del curso' })
   const steps = page.getByRole('navigation', { name: 'Lección anterior y siguiente' })
   const walk = [
-    { id: 'lec-html', title: 'Tipos de anuncio', position: 'Unidad 1 · Lección 1' },
-    { id: 'lec-video', title: 'Recorrido por la pantalla', position: 'Unidad 1 · Lección 2' },
-    { id: 'lec-pdf', title: 'Guía de liquidación', position: 'Unidad 2 · Lección 1' },
-    { id: 'lec-quiz', title: 'Cuestionario de la unidad', position: 'Unidad 2 · Lección 2' }
+    { id: 'lec-html', title: 'Tipos de anuncio', position: '§1.1' },
+    { id: 'lec-video', title: 'Recorrido por la pantalla', position: '§1.2' },
+    { id: 'lec-pdf', title: 'Guía de liquidación', position: '§2.1' },
+    { id: 'lec-quiz', title: 'Cuestionario de la unidad', position: '§2.2' }
   ]
 
   for (const [index, lesson] of walk.entries()) {
     if (index > 0) await steps.getByRole('link', { name: `Siguiente ${lesson.title}` }).click()
     await expect(page).toHaveURL(`/mis-cursos/mat-srtm-1?leccion=${lesson.id}`)
     await expect(page.getByRole('heading', { level: 2, name: lesson.title })).toBeVisible()
-    await expect(page.getByText(lesson.position)).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Ruta' }).getByText(lesson.position)).toBeVisible()
     // la navegación lateral sigue ahí y marca la lección abierta
     await expect(units.locator('[aria-current="page"]')).toContainText(lesson.title)
   }
@@ -355,7 +355,7 @@ test('las unidades se recorren con el teclado y el foco va a la lección abierta
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
-  test('el temario se abre en una hoja inferior y el aula no desborda su área', async ({ page }) => {
+  test('el índice se abre en una hoja inferior y el aula no desborda su área', async ({ page }) => {
     await fakeApi(page, { signedIn: true })
     await page.goto('/mis-cursos/mat-srtm-1')
     await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
@@ -366,7 +366,7 @@ test.describe('en un teléfono', () => {
 
     const units = page.getByRole('navigation', { name: 'Unidades del curso' })
     await expect(units).toBeHidden()
-    await page.getByRole('button', { name: 'Temario' }).click()
+    await page.getByRole('button', { name: 'Índice' }).click()
     await expect(units).toBeVisible()
     await openUnit(page, /^Unidad 2\./)
     await units.getByRole('link', { name: /^Guía de liquidación/ }).click()
@@ -462,7 +462,7 @@ test('la evaluación aprobada y el certificado enlazan a su lección y a su cert
   )
   await page.reload()
 
-  await page.getByRole('button', { name: 'Temario' }).click()
+  await page.getByRole('button', { name: 'Índice' }).click()
   await achievements(page)
     .getByRole('link', { name: /^Evaluación final.*Evaluación aprobada/ })
     .click()
@@ -470,7 +470,7 @@ test('la evaluación aprobada y el certificado enlazan a su lección y a su cert
   // la hoja se cerró al elegir
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Temario' }).click()
+  await page.getByRole('button', { name: 'Índice' }).click()
   await achievements(page)
     .getByRole('link', { name: /^Certificado emitido.*5 nov 2026/ })
     .click()

@@ -1,7 +1,15 @@
-import { CORE_MODULE_ID, CORE_ROUTE_PATHS, type CallerPermissions, type HomeRoute, type ResolvedNavItem, type ShellNav } from '@wasichai/core'
+import {
+  CORE_MODULE_ID,
+  CORE_ROUTE_PATHS,
+  type CallerPermissions,
+  type HomeRoute,
+  type ResolvedNavItem,
+  type ShellNav,
+  type WasichaiConfig
+} from '@wasichai/core'
 import { matchPath } from 'react-router'
 import { PUBLISH_TERMS_PATH } from './modules/administration/routes'
-import { CLASSROOM_ROUTES } from './modules/classroom/routes'
+import { CLASSROOM_PATH, CLASSROOM_ROUTES, LESSON_PARAM } from './modules/classroom/routes'
 import { canReview } from './modules/review/permissions'
 import { REVIEW_ROUTES } from './modules/review/routes'
 import { canAuthor } from './modules/studio/permissions'
@@ -56,3 +64,10 @@ const HOME_SECTIONS: ReadonlyArray<readonly [(permissions: CallerPermissions | n
 
 export const homeRoute: HomeRoute = (permissions) =>
   canAdminister(permissions) ? null : (HOME_SECTIONS.find(([allowed]) => allowed(permissions))?.[1] ?? null)
+
+// una lección abierta se lee sin distracciones (Classroom.dc.html): el shell estrecho a cualquier ancho, con el menú en el cajón.
+// solo el aula con ?leccion: «Mis cursos», las sesiones y la finalización del curso conservan el menú lateral
+const CLASSROOM_TO = `/${CLASSROOM_PATH}`
+
+export const shellChrome: NonNullable<WasichaiConfig['shellChrome']> = ({ pathname, search }) =>
+  matchPath(CLASSROOM_TO, pathname) !== null && new URLSearchParams(search).has(LESSON_PARAM) ? 'compact' : 'full'

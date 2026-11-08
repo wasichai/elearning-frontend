@@ -40,7 +40,7 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
         <Achievement classroom={classroom} rules={completion.rules} />
       ) : (
         <section aria-labelledby="completion-rules" className="flex flex-col gap-3">
-          <h2 id="completion-rules" className="text-title-3 text-ink">
+          <h2 id="completion-rules" className="text-h4 text-ink">
             {t('completionPanel.rules')}
           </h2>
           <p role="status" className="text-sm font-medium text-ink">
@@ -57,15 +57,18 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
   )
 }
 
-// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. maíz solo aquí: el bloque en maiz-soft y el sello en maiz
+// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. es un estado cumplido: el bloque en success-soft y el sello en success
 function Achievement({ classroom, rules }: { classroom: Classroom; rules: CompletionRule[] }) {
   const { t } = useTranslation('classroom')
   return (
-    <section aria-labelledby="completion-achievement" className="flex flex-col gap-4 rounded-lg bg-maiz-soft p-5 text-ink sm:flex-row sm:items-start sm:gap-5">
+    <section
+      aria-labelledby="completion-achievement"
+      className="flex flex-col gap-4 rounded-lg bg-success-soft p-5 text-ink sm:flex-row sm:items-start sm:gap-5"
+    >
       <Seal />
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="completion-achievement" className="text-title-3 text-balance">
+          <h2 id="completion-achievement" className="text-h4 text-balance">
             {t('completionPanel.achieved', { course: classroom.course.title })}
           </h2>
           <p role="status" className="text-sm">
@@ -85,14 +88,14 @@ function Achievement({ classroom, rules }: { classroom: Classroom; rules: Comple
   )
 }
 
-// el sello de maíz (PantallaFinalizacion): se anuda una sola vez al cumplir todas las reglas; con movimiento reducido
+// el sello (PantallaFinalizacion): se anuda una sola vez al cumplir todas las reglas; con movimiento reducido
 // aparece quieto. decorativo: lo dice el texto de al lado. sin confeti ni sonido: las cifras son el premio.
 function Seal() {
   return (
     <span
       aria-hidden="true"
       data-seal=""
-      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full bg-maiz text-on-maiz motion-reduce:animate-none"
+      className="grid size-14 shrink-0 animate-seal place-items-center rounded-full bg-success text-surface motion-reduce:animate-none"
     >
       <svg viewBox="0 0 24 24" className="size-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         {/* un nudo sobre su cordón */}
@@ -157,7 +160,7 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
   if (code)
     return (
       <section aria-labelledby="certificate-issued" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
-        <h2 id="certificate-issued" className="text-title-3 text-ink">
+        <h2 id="certificate-issued" className="text-h4 text-ink">
           {t('certificate.issuedTitle')}
         </h2>
         {issued ? (
@@ -184,7 +187,7 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
   }
   return (
     <section aria-labelledby="certificate-request" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
-      <h2 id="certificate-request" className="text-title-3 text-ink">
+      <h2 id="certificate-request" className="text-h4 text-ink">
         {t('certificate.requestTitle')}
       </h2>
       {met ? (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Session } from '../../shared/sessions'
-import { assessmentFigure, attendanceFigure } from './lessons'
+import { assessmentFigure, attemptMarks, attendanceFigure } from './lessons'
 import { assessmentClassroom, sessions } from './test/fixtures'
 import type { Classroom } from './contract'
 
@@ -33,5 +33,13 @@ describe('las cifras de avance', () => {
       ])
     ).toEqual({ completed: 1, total: 2 })
     expect(attendanceFigure([{ ...list[1]! }])).toEqual({ completed: 0, total: 0 })
+  })
+})
+
+describe('attemptMarks', () => {
+  it('los intentos usados, el abierto y los libres, en orden', () => {
+    expect(attemptMarks(3, 1, false)).toEqual(['used', 'todo', 'todo'])
+    expect(attemptMarks(3, 1, true)).toEqual(['used', 'started', 'todo'])
+    expect(attemptMarks(2, 2, false)).toEqual(['used', 'used'])
   })
 })

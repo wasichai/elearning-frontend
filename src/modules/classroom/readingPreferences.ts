@@ -13,8 +13,10 @@ export type ReadingSize = (typeof READING_SIZES)[number]
 export interface ReadingPreferences {
   mode: boolean
   size?: ReadingSize
-  // en escritorio, el temario plegado para que la lectura ocupe la columna
+  // en escritorio, el índice plegado para que la lectura ocupe la columna
   syllabusHidden?: boolean
+  // el modo foco: solo el texto, sin el índice ni las notas al margen
+  focus?: boolean
 }
 
 export interface ReadingControls extends ReadingPreferences {
@@ -23,6 +25,7 @@ export interface ReadingControls extends ReadingPreferences {
   canGrow: boolean
   toggleMode: () => void
   toggleSyllabus: () => void
+  toggleFocus: () => void
   shrink: () => void
   grow: () => void
 }
@@ -32,9 +35,14 @@ export function parseReadingPreferences(stored: string | null): ReadingPreferenc
   try {
     const value: unknown = stored === null ? null : JSON.parse(stored)
     if (typeof value !== 'object' || value === null) return { mode: false }
-    const { mode, size, syllabusHidden } = value as Record<string, unknown>
+    const { mode, size, syllabusHidden, focus } = value as Record<string, unknown>
     const step = READING_SIZES.find((candidate) => candidate === size)
-    return { mode: mode === true, ...(step === undefined ? {} : { size: step }), ...(syllabusHidden === true ? { syllabusHidden: true } : {}) }
+    return {
+      mode: mode === true,
+      ...(step === undefined ? {} : { size: step }),
+      ...(syllabusHidden === true ? { syllabusHidden: true } : {}),
+      ...(focus === true ? { focus: true } : {})
+    }
   } catch {
     return { mode: false }
   }
@@ -76,7 +84,10 @@ export function useReadingPreferences(): ReadingControls {
     canShrink: index > 0,
     canGrow: index < READING_SIZES.length - 1,
     toggleMode: () => update({ ...preferences, mode: !preferences.mode }),
-    toggleSyllabus: () => update({ ...preferences, syllabusHidden: !preferences.syllabusHidden }),
+    // con el modo foco puesto, «Índice» lo quita y vuelve a mostrar el índice: lo que se pide es verlo
+    toggleSyllabus: () =>
+      update(preferences.focus ? { ...preferences, focus: false, syllabusHidden: false } : { ...preferences, syllabusHidden: !preferences.syllabusHidden }),
+    toggleFocus: () => update({ ...preferences, focus: !preferences.focus }),
     shrink: () => resize(-1),
     grow: () => resize(1)
   }

@@ -185,7 +185,7 @@ function VerificationBand({ certificate }: { certificate: Certificate }) {
         <div role="status" className="flex items-start gap-3">
           <ShieldCheck aria-hidden="true" className="size-6 shrink-0 text-success" />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="text-title-3 text-success">{t('verify.valid')}</p>
+            <p className="text-h4 text-success">{t('verify.valid')}</p>
             <p className="max-w-prose text-sm text-ink">{t('verify.meaning')}</p>
           </div>
         </div>

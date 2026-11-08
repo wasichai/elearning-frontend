@@ -42,11 +42,6 @@
   --border-control: #7d8794;
   --placeholder: var(--ink-muted);
 
-  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
-  --maiz: var(--warning);
-  --maiz-soft: var(--warning-soft);
-  --on-maiz: var(--surface);
-
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;
   --radius-sm: 2px;
@@ -91,11 +86,6 @@
   --surface-raised: #1d2631;
   --border-control: #6b7686;
   --placeholder: var(--ink-muted);
-
-  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
-  --maiz: var(--warning);
-  --maiz-soft: var(--warning-soft);
-  --on-maiz: var(--surface);
 
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;
@@ -142,11 +132,6 @@
   --surface-raised: var(--surface);
   --border-control: #7a6c55;
   --placeholder: var(--ink-muted);
-
-  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
-  --maiz: var(--warning);
-  --maiz-soft: var(--warning-soft);
-  --on-maiz: var(--surface);
 
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;

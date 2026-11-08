@@ -36,11 +36,13 @@ export function SegmentedProgress({ units, currentLessonId, size = 'md' }: { uni
   const label = startedText ? `${doneText}, ${startedText.replace(/^·\s*/, '')}` : doneText
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <div role="img" aria-label={label} className="flex min-w-0 flex-nowrap gap-1">
+      {/* overflow-hidden: con más de 70 lecciones el mínimo de cada segmento (2px más su hueco) puede superar el ancho; la fila recorta y no empuja la página */}
+      <div role="img" aria-label={label} className="flex min-w-0 flex-nowrap gap-1 overflow-hidden">
         {units
           .filter((unit) => unit.lessons.length > 0)
           .map((unit) => (
-            // cada unidad pesa por sus lecciones: todos los segmentos miden lo mismo
+            // cada unidad pesa por sus lecciones: todos los segmentos miden lo mismo. gap-[3px] entre lecciones de una unidad, más estrecho
+            // que el gap-1 entre unidades: el ojo agrupa por unidad sin otra marca (Components.dc.html §5); no hay token de 3px en la escala
             <div key={unit.id} data-slot="progress-unit" style={{ flex: `${unit.lessons.length} 1 0` }} className="flex min-w-0 flex-nowrap gap-[3px]">
               {unit.lessons.map((lesson) => (
                 <span

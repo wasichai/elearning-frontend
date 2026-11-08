@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { classroomModule } from './module'
 import { serveFiles, type ServedFile } from '../../test/files'
-import { assessmentClassroom, classroom, problem, readingDocument, sessions } from './test/fixtures'
+import { assessmentClassroom, classroom, labClassroom, labLesson, problem, readingDocument, sessions } from './test/fixtures'
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'
 const FILES = '/api/objects/version_recurso/records'
@@ -36,6 +36,8 @@ function renderClassroom(routes: MockRoute[], route = '/mis-cursos/mat-srtm-1', 
 }
 
 const units = () => screen.getByRole('navigation', { name: 'Unidades del curso' })
+// el botón que abre el índice en una hoja (por debajo de 1024 px); el de escritorio es un conmutador (aria-pressed)
+const sheetButton = () => screen.getByRole('button', { name: 'Índice', expanded: false })
 const lessonHeading = (name: string) => screen.findByRole('heading', { level: 2, name })
 const unitOf = (name: string) =>
   within(units())
@@ -54,7 +56,7 @@ describe('ClassroomPage: el aula', () => {
     expect(document.querySelector("[data-slot='classroom-skeleton']")).toBeNull()
   })
 
-  it('una lección sin empezar no lo dice a la vista (lo dice su nudo), pero sí a un lector de pantalla', async () => {
+  it('el estado de cada lección del índice lo dice su marca a la vista y su palabra al lector de pantalla', async () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
 
     await lessonHeading('Recorrido por la pantalla')
@@ -62,10 +64,12 @@ describe('ClassroomPage: el aula', () => {
     await openUnit('Unidad 2')
     const pending = nav.getByRole('link', { name: 'Guía de liquidación Sin empezar' })
     expect(within(pending).getByText('Sin empezar')).toHaveClass('sr-only')
-    // la actual sí lo dice: es donde está quien lee
-    const current = nav.getByRole('link', { name: 'Recorrido por la pantalla Sin empezar' })
-    expect(within(current).getByText('Sin empezar')).not.toHaveClass('sr-only')
-    expect(within(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).getByText('Completada')).not.toHaveClass('sr-only')
+    expect(pending.querySelector('[data-slot="state-mark"]')).toHaveAttribute('data-state', 'todo')
+    const done = nav.getByRole('link', { name: 'Tipos de anuncio Completada' })
+    expect(within(done).getByText('Completada')).toHaveClass('sr-only')
+    expect(done.querySelector('[data-slot="state-mark"]')).toHaveAttribute('data-state', 'done')
+    // el número «1.1» es para el ojo: el enlace se llama por su título
+    expect(within(done).getByText('1.1')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('sin ?leccion abre la siguiente por hacer, con las unidades, su avance y el estado de cada lección', async () => {
@@ -73,29 +77,21 @@ describe('ClassroomPage: el aula', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: classroom.course.title })).toBeInTheDocument()
     expect(await lessonHeading('Recorrido por la pantalla')).toBeInTheDocument()
-    expect(screen.getByText('Unidad 1 · Lección 2')).toBeInTheDocument()
-    const progress = screen.getByRole('progressbar', { name: 'Progreso del curso' })
-    expect(progress).toHaveAttribute('aria-valuenow', '33')
-    // el quipu del curso: las lecciones que cuentan, con su tipo y su estado
-    expect([...progress.querySelectorAll('[data-knot]')].map((knot) => `${knot.getAttribute('data-knot')}:${knot.getAttribute('data-state')}`)).toEqual([
-      'lesson:done',
-      'lesson:todo',
-      'lesson:todo'
-    ])
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByText('§1.2')).toBeInTheDocument()
 
     const nav = within(units())
-    expect(nav.getByRole('heading', { level: 2, name: /^Unidad 1\. El trámite de anuncios/ })).toHaveTextContent('1 de 2 lecciones completadas')
-    expect(nav.getByRole('heading', { level: 2, name: /^Unidad 2\. La liquidación/ })).toHaveTextContent('0 de 1 lecciones completadas')
+    expect(nav.getByRole('heading', { level: 3, name: /^Unidad 1\. El trámite de anuncios/ })).toHaveTextContent('1 de 2 lecciones completadas')
+    expect(nav.getByRole('heading', { level: 3, name: /^Unidad 2\. La liquidación/ })).toHaveTextContent('0 de 1 lecciones completadas')
     expect(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1?leccion=lec-html')
     expect(nav.getByRole('link', { name: 'Recorrido por la pantalla Sin empezar' })).toHaveAttribute('aria-current', 'page')
     // solo la unidad de la lección abierta está desplegada
     expect(nav.getByRole('link', { name: 'Tipos de anuncio Completada' })).toBeVisible()
     expect(unitOf('Unidad 1')).toHaveAttribute('open')
     expect(unitOf('Unidad 2')).not.toHaveAttribute('open')
-    // cada lección del temario lleva su nudo, decorativo: el estado viaja en el texto del enlace
-    const knot = nav.getByRole('link', { name: 'Tipos de anuncio Completada' }).querySelector('[data-knot]')
-    expect(knot).toHaveAttribute('data-state', 'done')
-    expect(knot).toHaveAttribute('aria-hidden', 'true')
+    // cada lección del índice lleva su marca, decorativa: el estado viaja en el texto del enlace
+    const mark = nav.getByRole('link', { name: 'Tipos de anuncio Completada' }).querySelector('[data-slot="state-mark"]')
+    expect(mark).toHaveAttribute('data-state', 'done')
+    expect(mark).toHaveAttribute('aria-hidden', 'true')
     expect(nav.getAllByRole('link').filter((link) => link.hasAttribute('aria-current'))).toHaveLength(1)
   })
 
@@ -119,14 +115,13 @@ describe('ClassroomPage: el aula', () => {
     expect(within(screen.getByRole('navigation', { name: 'Secciones del curso' })).getByRole('link', { name: 'Tu certificado' })).toBeInTheDocument()
   })
 
-  it('el temario da tipo y duración de cada lección y la fila dice su estado con palabra', async () => {
+  it('el índice da tipo y duración de cada lección', async () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
 
     const nav = within(units())
     const read = nav.getByRole('link', { name: 'Tipos de anuncio Completada' })
     expect(read).toHaveAccessibleDescription('Lectura · 30 min')
-    expect(within(read).getByText('Completada')).not.toHaveClass('sr-only')
     expect(read.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
     // sin duración, solo el tipo
     await openUnit('Unidad 2')
@@ -136,14 +131,14 @@ describe('ClassroomPage: el aula', () => {
     expect(unitOf('Unidad 1')).not.toHaveAttribute('open')
   })
 
-  it('el panel del temario resume el avance: lecciones, evaluaciones y fechas; la asistencia sale de las sesiones', async () => {
+  it('el índice resume el avance: lecciones, evaluaciones y fechas; la asistencia sale de las sesiones', async () => {
     renderClassroom([
       { path: CLASSROOM, body: { ...assessmentClassroom, id: 'mat-srtm-1' } },
       { path: `${CLASSROOM}/sessions`, body: sessions }
     ])
     await lessonHeading('Evaluación final')
 
-    expect(screen.getByText('1 de 3 lecciones · 33 %')).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: 'Índice' })).getByText('1 de 3 completadas')).toBeInTheDocument()
     const figures = within(screen.getByRole('list', { name: 'Tu avance' }))
     expect(figures.getByText('0 de 1')).toBeInTheDocument()
     expect(figures.getByText('evaluación aprobada')).toBeInTheDocument()
@@ -201,7 +196,7 @@ describe('ClassroomPage: el aula', () => {
 
     const heading = await lessonHeading('Guía de liquidación')
     expect(heading).toHaveFocus()
-    expect(screen.getByText('Unidad 2 · Lección 1')).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Ruta' })).getByText('§2.1')).toBeInTheDocument()
     expect(within(units()).getByRole('link', { name: /^Guía de liquidación/ })).toHaveAttribute('aria-current', 'page')
     // la unidad abierta sigue a la lección: la de antes se pliega
     expect(unitOf('Unidad 2')).toHaveAttribute('open')
@@ -219,14 +214,14 @@ describe('ClassroomPage: el aula', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Tipos de anuncio (lectura)' })).toHaveClass('sr-only')
   })
 
-  it('en el móvil el temario se abre en una hoja que se cierra con Esc y devuelve el foco', async () => {
+  it('en el móvil el índice se abre en una hoja que se cierra con Esc y devuelve el foco', async () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
 
-    const open = screen.getByRole('button', { name: 'Temario' })
+    const open = sheetButton()
     expect(open).toHaveAttribute('aria-expanded', 'false')
     await userEvent.click(open)
-    const sheet = await screen.findByRole('dialog', { name: 'Temario' })
+    const sheet = await screen.findByRole('dialog', { name: 'Índice' })
     expect(within(sheet).getByRole('navigation', { name: 'Unidades del curso' })).toBeInTheDocument()
 
     await userEvent.keyboard('{Escape}')
@@ -238,8 +233,8 @@ describe('ClassroomPage: el aula', () => {
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Temario' }))
-    const sheet = await screen.findByRole('dialog', { name: 'Temario' })
+    await userEvent.click(sheetButton())
+    const sheet = await screen.findByRole('dialog', { name: 'Índice' })
     await userEvent.click(within(sheet).getByRole('link', { name: /^Tipos de anuncio/ }))
 
     const heading = await lessonHeading('Tipos de anuncio')
@@ -247,21 +242,20 @@ describe('ClassroomPage: el aula', () => {
     await waitFor(() => expect(heading).toHaveFocus())
   })
 
-  it('en escritorio el temario se pliega para dar la columna a la lectura, y se recuerda', async () => {
+  it('en escritorio «Índice» pliega la columna para dar el ancho a la lectura, y se recuerda', async () => {
     const first = renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
     expect(units()).toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Ocultar el temario' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Índice', pressed: true }))
     expect(screen.queryByRole('navigation', { name: 'Unidades del curso' })).not.toBeInTheDocument()
-    const expand = screen.getByRole('button', { name: 'Mostrar el temario' })
-    expect(expand).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('button', { name: 'Índice', pressed: false })).toBeInTheDocument()
 
     first.unmount()
     renderClassroom([{ path: CLASSROOM, body: classroom }])
     await lessonHeading('Recorrido por la pantalla')
     expect(screen.queryByRole('navigation', { name: 'Unidades del curso' })).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Mostrar el temario' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Índice', pressed: false }))
     expect(units()).toBeInTheDocument()
   })
 
@@ -353,6 +347,127 @@ describe('ClassroomPage: el aula', () => {
   })
 })
 
+// el aula Colofón (docs/design-system/colofon/Classroom.dc.html): cabecera corrida, índice de libro y notas al margen
+describe('ClassroomPage: el aula Colofón', () => {
+  const notes = () => screen.getByRole('complementary', { name: 'Notas al margen' })
+
+  it('shows running head with unit, section and folio', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+
+    const head = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(head.getByRole('link', { name: 'Mis cursos' })).toHaveAttribute('href', '/mis-cursos')
+    expect(head.getByText('Unidad 2')).toBeInTheDocument()
+    // §unidad.lección; la actual es la última miga
+    expect(head.getByText('§2.1')).toHaveAttribute('aria-current', 'page')
+    expect(head.getByText('Unidad 2')).not.toHaveAttribute('aria-current')
+    // el folio: la posición en el recorrido del curso
+    expect(head.getByText('3 / 4')).toBeInTheDocument()
+  })
+
+  it('lesson index shows unit progress as "Unidad 1 — 1 de 2"', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+
+    const nav = within(units())
+    expect(nav.getByText('Unidad 1 — 1 de 2')).toBeInTheDocument()
+    expect(nav.getByText('Unidad 2 — 0 de 1')).toBeInTheDocument()
+    // arriba del índice, el progreso segmentado del curso con las lecciones que cuentan (una NOT_YET no)
+    const index = screen.getByRole('region', { name: 'Índice' })
+    const progress = within(index).getByRole('img', { name: '1 de 3 completadas' })
+    expect(progress.compareDocumentPosition(units()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect([...progress.querySelectorAll('[data-slot="progress-segment"]')].map((segment) => segment.getAttribute('data-state'))).toEqual([
+      'COMPLETADA',
+      'NO_INICIADA',
+      'NO_INICIADA'
+    ])
+  })
+
+  it('margin notes list lesson objective, resources and linked sessions', async () => {
+    const withPdf = structuredClone(labClassroom)
+    withPdf.units[0]!.lessons[2] = { ...labLesson, resources: [classroom.units[1]!.lessons[0]!.resources[0]!] } as never
+    renderClassroom(
+      [
+        { path: CLASSROOM, body: withPdf },
+        {
+          path: `${CLASSROOM}/sessions`,
+          body: [
+            { ...sessions[2], lessonId: 'lec-lab' },
+            { ...sessions[0], lessonId: 'otra' }
+          ]
+        }
+      ],
+      '/mis-cursos/mat-srtm-1?leccion=lec-lab'
+    )
+    await lessonHeading('Práctica: el padrón a una fecha pasada')
+
+    const margin = within(notes())
+    expect(within(margin.getByRole('region', { name: 'Objetivo de la lección' })).getByText(labLesson.lab.objective)).toBeInTheDocument()
+    const resources = within(margin.getByRole('region', { name: 'Recursos' }))
+    expect(resources.getByRole('button', { name: 'Ver guia-liquidacion.pdf' })).toBeInTheDocument()
+    expect(resources.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+    // solo las sesiones vinculadas a esta lección
+    const linked = within(margin.getByRole('region', { name: 'Sesiones de la lección' }))
+    expect(await linked.findByText('Recuperación de la consulta')).toBeInTheDocument()
+    expect(linked.queryByText('Presentación del curso')).not.toBeInTheDocument()
+    // el objetivo está una sola vez en la página: en las notas, no también en el laboratorio
+    expect(screen.getAllByText(labLesson.lab.objective)).toHaveLength(1)
+  })
+
+  it('sin sesiones vinculadas, las notas lo dicen y llevan a las sesiones del curso', async () => {
+    renderClassroom([
+      { path: CLASSROOM, body: classroom },
+      { path: `${CLASSROOM}/sessions`, body: [] }
+    ])
+    await lessonHeading('Recorrido por la pantalla')
+
+    const linked = within(within(notes()).getByRole('region', { name: 'Sesiones de la lección' }))
+    expect(await linked.findByText('Esta lección no tiene sesiones vinculadas.')).toBeInTheDocument()
+    expect(linked.getByRole('link', { name: 'Ver las sesiones del curso' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/sesiones')
+  })
+
+  it('PDF resource opens PdfDialog and keeps download', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+    expect(files?.calls).toEqual([])
+
+    const resources = within(within(notes()).getByRole('region', { name: 'Recursos' }))
+    await userEvent.click(resources.getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
+
+    const dialog = await screen.findByRole('dialog', { name: 'guia-liquidacion.pdf' })
+    await waitFor(() => expect(dialog.querySelector('iframe')).toHaveAttribute('src', 'blob:prueba/1'))
+    expect(files?.calls).toEqual([{ url: `${FILES}/vr-pdf/files/archivo`, authorization: 'Bearer test-token' }])
+    // solo un PDF de verdad llega al visor, y con su tipo: el iframe es del origen de la aplicación
+    expect(files!.created[0]!.type).toBe('application/pdf')
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(resources.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+  })
+
+  it('un archivo que dice ser PDF y no lo es no se abre en el visor', async () => {
+    const served = { ...DEFAULT_FILES, [`${FILES}/vr-pdf/files/archivo`]: { body: '<script>alert(1)</script>', contentType: 'application/pdf' } }
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf', served)
+    await lessonHeading('Guía de liquidación')
+
+    await userEvent.click(within(notes()).getByRole('button', { name: 'Ver guia-liquidacion.pdf' }))
+    const dialog = await screen.findByRole('dialog', { name: 'guia-liquidacion.pdf' })
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Este archivo no es un PDF y no se puede ver aquí.')
+    expect(dialog.querySelector('iframe')).toBeNull()
+    expect(files!.created).toEqual([])
+  })
+
+  it('margin outline links to lesson headings', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    await lessonHeading('Tipos de anuncio')
+
+    const outline = within(await within(notes()).findByRole('navigation', { name: 'En esta lección' }))
+    expect(outline.getByRole('link', { name: 'Entrar y salir del portal' })).toHaveAttribute('href', '#lectura-_entrar_y_salir_del_portal')
+    // el ancla existe en la lectura
+    expect(document.getElementById('lectura-_entrar_y_salir_del_portal')).not.toBeNull()
+  })
+})
+
 describe('ClassroomPage: errores', () => {
   it('una matrícula ajena o inexistente (404) es «No encontramos este curso en tus matrículas», sin reintentar', async () => {
     renderClassroom([{ path: CLASSROOM, status: 404, body: problem(404, 'No existe') }])
@@ -393,7 +508,7 @@ describe('ClassroomPage: errores', () => {
         'href',
         '/mis-cursos/mat-srtm-1?leccion=lec-html'
       )
-      const progress = screen.getByRole('progressbar', { name: 'Progreso del curso' })
+      const progress = within(screen.getByRole('region', { name: 'Índice' })).getByRole('img', { name: '1 de 3 completadas' })
       expect(progress.compareDocumentPosition(region) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
       expect(region.compareDocumentPosition(units()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })

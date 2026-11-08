@@ -103,11 +103,12 @@ function Blocks({ blocks }: { blocks: Block[] }) {
   return blocks.map((block, index) => <BlockView key={index} block={block} />)
 }
 
-// la jerarquía de la página: la lección es h2 y el recurso h3, así que los h2…h4 del documento caen en h4…h6
+// la jerarquía de la página: la lección es h2 y el recurso h3, así que los h2…h4 del documento caen en h4…h6. scroll-mt: el índice de las
+// notas al margen salta a ellos, y la barra del aula (sticky) no los tapa
 const HEADINGS = {
-  2: { tag: 'h4', className: 'mt-[0.6em] text-[1.45em]/[1.25] font-[460] text-balance' },
-  3: { tag: 'h5', className: 'mt-[0.4em] text-[1.2em]/[1.3] font-[520] text-balance' },
-  4: { tag: 'h6', className: 'text-[1em]/[1.4] font-semibold' }
+  2: { tag: 'h4', className: 'mt-[0.6em] scroll-mt-24 text-[1.45em]/[1.25] font-[460] text-balance' },
+  3: { tag: 'h5', className: 'mt-[0.4em] scroll-mt-24 text-[1.2em]/[1.3] font-[520] text-balance' },
+  4: { tag: 'h6', className: 'scroll-mt-24 text-[1em]/[1.4] font-semibold' }
 } as const
 
 function BlockView({ block }: { block: Block }) {

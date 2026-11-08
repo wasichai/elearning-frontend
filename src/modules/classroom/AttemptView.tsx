@@ -13,7 +13,8 @@ import type { Attempt } from './contract'
 import { Countdown, DeadlineNote, useNow } from './Countdown'
 import { useProblemText } from './parts'
 import { emptyAnswer, isAnswered, QuestionField, QuestionIndex } from './Questions'
-import { attemptKnots, Quipu } from './Quipu'
+import { StateMark } from '../../shared/StateMark'
+import { attemptMarks } from './lessons'
 import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 interface AttemptViewProps {
@@ -260,7 +261,11 @@ function AttemptForm({
                 <span>{t('attempt.ofMax', { max: maxAttempts })}</span>
               </span>
               <span className="hidden @2xl:inline-flex">
-                <Quipu knots={attemptKnots(maxAttempts, attempt.number - 1, true)} />
+                <span aria-hidden="true" className="flex items-center gap-1">
+                  {attemptMarks(maxAttempts, attempt.number - 1, true).map((mark, index) => (
+                    <StateMark key={index} state={mark} />
+                  ))}
+                </span>
               </span>
               {currentQuestion ? (
                 <span className="tabular-nums">{t('attempt.position', { number: currentQuestion.order, total: questions.length })}</span>
@@ -414,7 +419,7 @@ function SubmitDialog({
         }}
         className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto"
       >
-        <DialogTitle className="pr-10 text-title-3 text-ink">{t('attempt.confirmTitle')}</DialogTitle>
+        <DialogTitle className="pr-10 text-h4 text-ink">{t('attempt.confirmTitle')}</DialogTitle>
         <DialogDescription className="mt-2 text-sm text-ink-muted">
           {blank.length > 0 ? t('attempt.confirmUnanswered', { count: blank.length, answered, total }) : t('attempt.confirmAll')}
         </DialogDescription>

@@ -2,7 +2,7 @@ import { BookOpen } from 'lucide-react'
 import type { CallerPermissions, WasichaiModule } from '@wasichai/core'
 import { canLearn } from '../../shared/learning'
 import { classroomMessages } from './i18n'
-import { CLASSROOM_MODULE_ID } from './routes'
+import { CLASSROOM_MODULE_ID, CLASSROOM_PATH } from './routes'
 
 export { CLASSROOM_MODULE_ID, CLASSROOM_ROUTES } from './routes'
 
@@ -18,7 +18,7 @@ export function classroomModule(): WasichaiModule {
     id: CLASSROOM_MODULE_ID,
     routes: [
       { id: 'enrollments', path: 'mis-cursos', chrome: 'shell', lazy: () => import('./MyCoursesPage').then((m) => ({ default: m.MyCoursesPage })) },
-      { id: 'classroom', path: 'mis-cursos/:enrollmentId', chrome: 'shell', lazy: () => import('./ClassroomPage').then((m) => ({ default: m.ClassroomPage })) },
+      { id: 'classroom', path: CLASSROOM_PATH, chrome: 'shell', lazy: () => import('./ClassroomPage').then((m) => ({ default: m.ClassroomPage })) },
       {
         id: 'sessions',
         path: 'mis-cursos/:enrollmentId/sesiones',

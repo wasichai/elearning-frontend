@@ -138,3 +138,32 @@ export function useDownload(file: FileRef) {
   }, [fetcher, file.name, file.url, queryClient])
   return { download, ...state }
 }
+
+// un archivo que no empieza como un PDF: no se enseña en el visor
+export class NotPdfError extends Error {
+  constructor(name: string) {
+    super(`${name} no es un PDF`)
+    this.name = 'NotPdfError'
+  }
+}
+
+// el PDF para el visor (PdfDialog de @wasichai/ui), bajado con la sesión y desde la caché si ya se bajó. el visor lo pinta en un iframe del
+// origen de la aplicación: solo pasa lo que empieza por la firma %PDF-, y con el tipo application/pdf, diga lo que diga el servidor.
+// cualquier otra cosa (un HTML con extensión .pdf) se rechaza antes de llegar al iframe
+export async function asPdf(blob: Blob, name: string): Promise<Blob> {
+  const signature = await blob.slice(0, 5).text()
+  if (signature !== '%PDF-') throw new NotPdfError(name)
+  return blob.slice(0, blob.size, 'application/pdf')
+}
+
+export function usePdfLoader(name: string) {
+  const fetcher = useFileFetcher()
+  const queryClient = useQueryClient()
+  return useCallback(
+    async (url: string) => {
+      const blob = await queryClient.fetchQuery({ queryKey: fileKey(url), queryFn: ({ signal }) => fetcher(url, signal), ...FILE_QUERY })
+      return { blob: await asPdf(blob, name), filename: name }
+    },
+    [fetcher, name, queryClient]
+  )
+}

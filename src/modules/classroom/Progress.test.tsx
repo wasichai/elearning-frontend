@@ -109,8 +109,8 @@ describe('completar una lección', () => {
     expect(next).toHaveFocus()
 
     // el avance por unidad y total es el que cuenta el servidor
-    await waitFor(() => expect(screen.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '67'))
-    expect(screen.getByRole('heading', { level: 2, name: /^Unidad 2\./ })).toHaveTextContent('1 de 1 lecciones completadas')
+    await waitFor(() => expect(within(screen.getByRole('region', { name: 'Índice' })).getByRole('img', { name: '2 de 3 completadas' })).toBeInTheDocument())
+    expect(screen.getByRole('heading', { level: 3, name: /^Unidad 2\./ })).toHaveTextContent('1 de 1 lecciones completadas')
     expect(fetchMock.calls.some((call) => call.method === 'GET' && call.path === ENROLLMENTS)).toBe(false)
   })
 

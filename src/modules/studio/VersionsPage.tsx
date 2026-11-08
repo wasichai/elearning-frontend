@@ -147,7 +147,7 @@ function CourseVersions({ group, primary }: { group: CourseGroup; primary: strin
     <section aria-labelledby={headingId} className="overflow-hidden rounded-card border border-border bg-surface">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 pt-4 sm:px-5">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 id={headingId} className="text-title-3 text-ink [overflow-wrap:anywhere]">
+          <h2 id={headingId} className="text-h4 text-ink [overflow-wrap:anywhere]">
             {course.title}
           </h2>
           <p className="text-sm text-ink-muted">{course.code}</p>

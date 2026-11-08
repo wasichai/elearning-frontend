@@ -3,29 +3,24 @@ import { useTranslation } from 'react-i18next'
 import { formatCivilRange, formatNumber, timeZoneLabel } from '../../shared/format'
 import { problemKind } from '../../shared/ProblemState'
 import type { Enrollment, ProgressSummary } from './contract'
-import { MAX_KNOTS, Quipu, type KnotData } from './Quipu'
 
 // piezas que comparten «Mis cursos» y el aula
 
 export { WRAP } from '../../shared/buttons'
 
-// la columna de la lección: título, material y pie comparten borde, y caen sobre el texto de la lectura, en la medida de lectura (66ch)
-export const LESSON_COLUMN = 'mx-auto w-full max-w-[49.625rem] px-4 sm:px-6'
-
 // las filas del panel del temario: las unidades y lecciones, y los logros
 export const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus'
 export const UNIT_ROW = '-mx-2 flex min-h-13 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 hover:bg-surface-muted'
 
-// el avance como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina
-// con knots (y no más de MAX_KNOTS) la vista es el quipu en lugar de la línea: el progressbar y su texto no cambian
-export function ProgressBar({ progress, label, size = 'md', knots }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md'; knots?: KnotData[] }) {
+// el avance de una matrícula como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina.
+// la usa «Mis cursos», cuyo resumen no trae el estado de cada lección (para el progreso segmentado hace falta el aula). la tarea 6 la retira
+export function ProgressBar({ progress, label, size = 'md' }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md' }) {
   const { t, i18n } = useTranslation('classroom')
   const values = {
     completed: formatNumber(progress.completedLessons, i18n.language),
     total: formatNumber(progress.totalLessons, i18n.language),
     percent: formatNumber(progress.percent, i18n.language)
   }
-  const quipu = knots !== undefined && knots.length > 0 && knots.length <= MAX_KNOTS
   return (
     <div className="flex flex-col gap-1.5">
       <div
@@ -35,9 +30,9 @@ export function ProgressBar({ progress, label, size = 'md', knots }: { progress:
         aria-valuemax={100}
         aria-valuenow={progress.percent}
         aria-valuetext={t('progress.valueText', values)}
-        className={quipu ? 'w-full' : `w-full overflow-hidden rounded-full bg-surface-muted ${size === 'sm' ? 'h-1' : 'h-1.5'}`}
+        className={`w-full overflow-hidden rounded-full bg-surface-muted ${size === 'sm' ? 'h-1' : 'h-1.5'}`}
       >
-        {quipu ? <Quipu knots={knots!} /> : <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progress.percent}%` }} />}
+        <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progress.percent}%` }} />
       </div>
       {size === 'md' ? (
         <p aria-hidden="true" className="text-xs text-ink-muted tabular-nums">

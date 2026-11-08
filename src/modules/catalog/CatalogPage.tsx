@@ -42,7 +42,7 @@ export function CatalogPage() {
       <ScreenBody>
         <section aria-labelledby="catalog-results" className="flex flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="text-title-3 text-ink">
+            <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="text-h4 text-ink">
               {t('catalog.results')}
             </h2>
             <p role="status" className="text-sm text-ink-muted tabular-nums">

@@ -1,4 +1,5 @@
 import { attended, type Session } from '../../shared/sessions'
+import type { MarkState } from '../../shared/StateMark'
 import type { Classroom, Lesson, Unit } from './contract'
 
 // el recorrido del curso en orden (unidad, lección), como lo cuenta el servidor para nextLesson
@@ -45,4 +46,10 @@ export function assessmentFigure(units: Pick<Unit, 'lessons'>[]): Figure {
 export function attendanceFigure(sessions: Session[]): Figure {
   const held = sessions.filter((session) => session.status !== 'CANCELADA')
   return { completed: held.filter((session) => attended(session.attendance)).length, total: held.length }
+}
+
+// los intentos de una evaluación como marcas de estado: los ya usados (llenos, sin visto: aquí no se sabe si aprobaron), el abierto si lo
+// hay (medio) y los que quedan libres (contorno)
+export function attemptMarks(max: number, used: number, open: boolean): MarkState[] {
+  return Array.from({ length: max }, (_, index) => (index < used ? 'used' : open && index === used ? 'started' : 'todo'))
 }

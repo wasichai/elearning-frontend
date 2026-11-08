@@ -118,13 +118,11 @@ describe('Achievements: los logros del aula (RF-AUL-08)', () => {
     expect(details).toHaveAttribute('open')
   })
 
-  it('el certificado lleva el nudo de maíz; lo demás, el nudo de lo hecho según su tipo', () => {
+  it('la unidad lleva la marca de completada; la evaluación aprobada y el certificado, la de aprobada', () => {
     renderAchievements([UNIT, PASSED, CERTIFICATE])
+    const state = (row: HTMLElement | undefined) => row!.querySelector('[data-slot="state-mark"]')?.getAttribute('data-state')
     const [unit, assessment, issued] = rows()
-    expect(unit!.querySelector('[data-knot="lesson"][data-state="done"]')).not.toBeNull()
-    expect(assessment!.querySelector('[data-knot="assessment"][data-state="done"]')).not.toBeNull()
-    expect(issued!.querySelector('[data-knot="certificate"]')?.className).toContain('bg-maiz')
-    expect(unit!.innerHTML).not.toContain('maiz')
+    expect([state(unit), state(assessment), state(issued)]).toEqual(['done', 'passed', 'passed'])
   })
 
   it('al elegir un logro avisa a quien lo monta: en el móvil, la hoja del temario se cierra', async () => {

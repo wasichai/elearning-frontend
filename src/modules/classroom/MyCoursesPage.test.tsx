@@ -71,10 +71,6 @@ describe('MyCoursesPage', () => {
     expect(bar).toHaveAttribute('aria-valuemax', '100')
     expect(bar).toHaveAttribute('aria-valuetext', '1 de 3 lecciones completadas, 33 %')
     expect(card.getByText('1 de 3 lecciones · 33 %')).toBeInTheDocument()
-    // el avance se dibuja como quipu: un nudo de lección por lección, con el texto de siempre
-    const knots = [...bar.querySelectorAll('[data-knot]')]
-    expect(knots.map((knot) => knot.getAttribute('data-state'))).toEqual(['done', 'todo', 'todo'])
-    expect(knots.every((knot) => knot.getAttribute('data-knot') === 'lesson')).toBe(true)
 
     expect(card.getByText('Siguiente: Recorrido por la pantalla')).toBeInTheDocument()
     const next = card.getByRole('link', { name: 'Continuar «Licencias de anuncios con SRTM»' })

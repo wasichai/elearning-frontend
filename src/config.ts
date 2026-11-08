@@ -1,7 +1,7 @@
 import type { WasichaiConfig } from '@wasichai/core'
 import { createElement } from 'react'
 import { ColofonMark } from './shared/ColofonMark'
-import { homeRoute, shellNav } from './shellNav'
+import { homeRoute, shellChrome, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
 
 // nombre de trabajo: el producto se llama como diga VITE_APP_NAME en cada despliegue (ADR-0005 del backend)
@@ -50,6 +50,8 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     // qué menú se ve según el permiso y la ruta: la sección de administración es un estado del menú
     shellNav,
     // adónde lleva / y «Inicio» según quién entra
-    homeRoute
+    homeRoute,
+    // la lección abierta, en el shell estrecho
+    shellChrome
   }
 }

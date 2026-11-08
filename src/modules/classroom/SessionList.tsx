@@ -97,7 +97,7 @@ function AgendaGroup({ title, level, children }: { title: string; level: 3 | 4; 
   const Heading = `h${level}` as const
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2">
-      <Heading id={id} className="border-b border-border pb-2 text-title-3 text-ink">
+      <Heading id={id} className="border-b border-border pb-2 text-h4 text-ink">
         {title}
       </Heading>
       {children}
