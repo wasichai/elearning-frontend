@@ -12,7 +12,7 @@ import { StatusBadge, type StatusState } from '../../shared/StatusBadge'
 import { useRoster } from './api'
 import type { RosterAssessment, RosterEntry } from './contract'
 import { OfferingSection } from './OfferingSection'
-import { EmailText, useProblemText } from './parts'
+import { Submitter, submitterOf, useProblemText } from './parts'
 import {
   filterCounts,
   filterRoster,
@@ -153,7 +153,9 @@ function Lowest({ entries }: { entries: RosterEntry[] }) {
         <ul className="grid grid-cols-1 divide-y divide-border border-y border-border @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">
           {lowest.map((student) => (
             <li key={student.enrollmentId} className="flex min-w-0 flex-col gap-1.5 py-3 @2xl:px-5 @2xl:first:pl-0 @2xl:last:pr-0">
-              <span className="text-sm font-medium text-ink">{student.email ? <EmailText email={student.email} /> : t('roster.noEmail')}</span>
+              <span className="text-sm font-medium text-ink">
+                <Submitter attempt={student} />
+              </span>
               <ProgressCell student={student} />
               {student.email ? (
                 <a href={mailtoOf(student.email)} aria-label={t('roster.lowest.writeLabel', { email: student.email })} className={`${TEXT_LINK} self-start`}>
@@ -218,7 +220,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
                 {shown.map((student) => (
                   <tr key={student.enrollmentId}>
                     <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
-                      {student.email ? <EmailText email={student.email} /> : t('roster.noEmail')}
+                      <Submitter attempt={student} />
                     </Th>
                     <Td>
                       <EnrollmentBadge student={student} />
@@ -395,11 +397,13 @@ function AssessmentState({ assessment }: { assessment: RosterAssessment }) {
 
 function StudentCard({ student }: { student: RosterEntry }) {
   const { t } = useTranslation('teaching')
-  const name = student.email ?? t('roster.noEmail')
+  const name = submitterOf(student) ?? t('roster.noEmail')
   return (
     <li aria-label={name} className="flex min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-        <span className="min-w-0 text-sm font-medium text-ink">{student.email ? <EmailText email={student.email} /> : name}</span>
+        <span className="min-w-0 text-sm font-medium text-ink">
+          <Submitter attempt={student} />
+        </span>
         <EnrollmentBadge student={student} />
       </div>
       <ProgressCell student={student} />

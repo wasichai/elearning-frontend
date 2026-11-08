@@ -34,7 +34,7 @@ export function rosterSummary(entries: RosterEntry[]) {
 export function filterRoster(entries: RosterEntry[], { search, filter }: { search: string; filter: RosterFilter }): RosterEntry[] {
   const needle = search.trim().toLowerCase()
   return entries.filter((entry) => {
-    if (needle && !entry.email?.toLowerCase().includes(needle)) return false
+    if (needle && ![entry.name, entry.email].some((text) => text?.toLowerCase().includes(needle))) return false
     if (filter === 'ALL') return true
     return filter === 'PENDING' ? hasPending(entry) : entry.status === filter
   })
@@ -61,12 +61,21 @@ function compareEmail(a: RosterEntry, b: RosterEntry): number {
   return (a.email ?? '').localeCompare(b.email ?? '')
 }
 
+// lo que se ve de cada estudiante: el nombre si el servidor lo da, si no el correo (como submitterOf de parts)
+const shownName = (entry: RosterEntry): string | null => entry.name || entry.email
+
+// la columna «Estudiante» ordena por lo que se ve: el nombre si el servidor lo da, si no el correo
+function compareStudent(a: RosterEntry, b: RosterEntry): number {
+  return (shownName(a) ?? '').localeCompare(shownName(b) ?? '') || compareEmail(a, b)
+}
+
 export function sortRoster(entries: RosterEntry[], { key, direction }: RosterSort): RosterEntry[] {
   const sign = direction === 'asc' ? 1 : -1
   return [...entries].sort((a, b) => {
     if (key === 'email') {
-      if (a.email === null || b.email === null) return Number(a.email === null) - Number(b.email === null)
-      return sign * compareEmail(a, b)
+      const [first, second] = [shownName(a), shownName(b)]
+      if (first === null || second === null) return Number(first === null) - Number(second === null)
+      return sign * compareStudent(a, b)
     }
     const [first, second] = [sortValue(a, key), sortValue(b, key)]
     if (first === null || second === null) return Number(first === null) - Number(second === null) || compareEmail(a, b)

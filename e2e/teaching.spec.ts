@@ -47,7 +47,7 @@ test('las secciones y el selector de la edición llevan a su sitio, y la tabla s
   await expect(table.getByRole('columnheader', { name: 'Progreso' })).toHaveAttribute('aria-sort', 'ascending')
   await expect(emails).toHaveText(['estudiante@demo.local', 'ana.torres@demo.local'])
 
-  await page.getByRole('searchbox', { name: 'Buscar por correo' }).fill('ANA')
+  await page.getByRole('searchbox', { name: 'Buscar por nombre o correo' }).fill('ANA')
   await expect(emails).toHaveText(['ana.torres@demo.local'])
   await expect(page.getByText('1 de 2 matriculados')).toBeVisible()
 
