@@ -3,7 +3,7 @@ import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from '
 import type { ReactNode } from 'react'
 
 // un aviso con su icono y sobre su fondo: el color nunca va solo. Alert de @wasichai/ui es texto en su tono, y su rol (alert o status) se
-// conserva. los pares de tono y fondo los comprueba quipu.test.ts en AA
+// conserva. los pares de tono y fondo los comprueba colofon.test.ts en AA
 const LOOK: Record<AlertTone, { icon: LucideIcon; box: string }> = {
   danger: { icon: CircleAlert, box: 'border-danger bg-danger-soft' },
   warning: { icon: TriangleAlert, box: 'border-warning bg-warning-soft' },

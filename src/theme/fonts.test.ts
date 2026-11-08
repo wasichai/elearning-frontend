@@ -93,8 +93,8 @@ describe('la celebración', () => {
 
   it('el maíz es un token del tema, con respaldo para los temas de Wasichai', () => {
     const theme = /@theme inline\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
-    expect(/--color-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--maiz, #d99a1e)')
-    expect(/--color-on-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--on-maiz, #1e2327)')
+    expect(/--color-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--maiz, var(--warning))')
+    expect(/--color-on-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--on-maiz, var(--surface))')
   })
 })
 

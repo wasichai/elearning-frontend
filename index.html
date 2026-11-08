@@ -16,7 +16,9 @@
         let stored = localStorage.getItem('elearning.theme')
         if (stored && Object.hasOwn(renamed, stored)) {
           stored = renamed[stored]
-          localStorage.setItem('elearning.theme', stored)
+          try {
+            localStorage.setItem('elearning.theme', stored)
+          } catch {}
         }
         const dark = matchMedia('(prefers-color-scheme: dark)').matches
         const theme = stored && Object.hasOwn(schemes, stored) ? stored : system[dark ? 'dark' : 'light']

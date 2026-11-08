@@ -98,12 +98,12 @@
     U+FEFF, U+FFFD;
 }
 
-/* la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que ponen los temas Quipu (los de Wasichai
-   no lo tienen: valor de respaldo), y la única animación de celebración del producto, que no se repite. inline: el
+/* temporal: se retira en la tarea 4/5. la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que
+   ponen los temas Colofón (los de Wasichai no lo tienen: respaldo en warning), y la única animación de celebración del producto, que no se repite. inline: el
    valor se resuelve en el elemento, así un subárbol con otro tema cuenta */
 @theme inline {
-  --color-maiz: var(--maiz, #d99a1e);
-  --color-on-maiz: var(--on-maiz, #1e2327);
+  --color-maiz: var(--maiz, var(--warning));
+  --color-on-maiz: var(--on-maiz, var(--surface));
   --color-maiz-soft: var(--maiz-soft, var(--warning-soft));
   --animate-seal: seal 900ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
 

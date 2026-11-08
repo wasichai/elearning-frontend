@@ -42,6 +42,11 @@
   --border-control: #7d8794;
   --placeholder: var(--ink-muted);
 
+  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  --maiz: var(--warning);
+  --maiz-soft: var(--warning-soft);
+  --on-maiz: var(--surface);
+
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;
   --radius-sm: 2px;
@@ -86,6 +91,11 @@
   --surface-raised: #1d2631;
   --border-control: #6b7686;
   --placeholder: var(--ink-muted);
+
+  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  --maiz: var(--warning);
+  --maiz-soft: var(--warning-soft);
+  --on-maiz: var(--surface);
 
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;
@@ -133,6 +143,11 @@
   --border-control: #7a6c55;
   --placeholder: var(--ink-muted);
 
+  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  --maiz: var(--warning);
+  --maiz-soft: var(--warning-soft);
+  --on-maiz: var(--surface);
+
   --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   --radius: 3px;
   --radius-sm: 2px;
@@ -141,14 +156,6 @@
   --radius-xl: 4px;
   --radius-card: 4px;
   --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
-}
-
-/* temporal: se retira en la tarea 4/5. el maíz de Quipu aún lo pintan CompletionPage, MyCoursesPage y Quipu.tsx; hasta
-   que se rediseñen, valores neutros de Colofón */
-:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']) {
-  --maiz: var(--warning);
-  --maiz-soft: var(--warning-soft);
-  --on-maiz: var(--surface);
 }
 
 /* en la capa base, como los defectos de @wasichai/ui que reemplaza: las utilidades de un componente siguen ganando.

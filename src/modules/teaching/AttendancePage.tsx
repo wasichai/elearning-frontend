@@ -15,7 +15,7 @@ import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog
 import { TEACHING_ROUTES } from './routes'
 import { attendanceSummary, markAllPresent, type AttendanceOverrides } from './sessions'
 
-// icono y palabra en cada botón: el color nunca va solo (AttendanceList). los pares de tono y fondo los comprueba quipu.test.ts en AA
+// icono y palabra en cada botón: el color nunca va solo (AttendanceList). los pares de tono y fondo los comprueba colofon.test.ts en AA
 const LOOK: Record<AttendanceStatus, { icon: LucideIcon; pressed: string }> = {
   PRESENTE: { icon: Check, pressed: 'border-success bg-success-soft text-success' },
   TARDE: { icon: Clock, pressed: 'border-warning bg-warning-soft text-warning' },

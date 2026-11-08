@@ -135,7 +135,7 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
           <Button onClick={() => window.print()}>{t('certificate.print')}</Button>
           <p className="max-w-prose text-sm text-ink-muted">{t('certificate.printHint')}</p>
         </div>
-        {/* el documento: siempre en el tema claro de Quipu, se vea la página como se vea, para que en pantalla y en papel sea el
+        {/* el documento: siempre en el tema claro de Colofón, se vea la página como se vea, para que en pantalla y en papel sea el
           mismo; con la proporción de un A4 apaisado desde tableta (en el móvil, una columna) y la hoja entera al imprimir */}
         <article
           aria-labelledby="certificate-holder"

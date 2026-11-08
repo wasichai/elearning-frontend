@@ -84,11 +84,17 @@ describe('tema guardado antes del bundle', () => {
   const html = readFileSync(join(import.meta.dirname, '../index.html'), 'utf8')
   const script = /<script>([\s\S]*?)<\/script>/.exec(html)![1]!
 
-  function boot(stored: string | null, systemDark = false) {
+  function boot(stored: string | null, systemDark = false, failSave = false) {
     const storage = new Map<string, string>(stored === null ? [] : [['elearning.theme', stored]])
     const root = { dataset: {} as Record<string, string>, style: {} as Record<string, string> }
     new Function('localStorage', 'matchMedia', 'document', script)(
-      { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) },
+      {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          if (failSave) throw new Error('cuota')
+          storage.set(key, value)
+        }
+      },
       () => ({ matches: systemDark }),
       { documentElement: root }
     )
@@ -98,6 +104,10 @@ describe('tema guardado antes del bundle', () => {
   it('un tema guardado quipu pasa a colofon, y quipu-dark a colofon-dark, y queda guardado', () => {
     expect(boot('quipu')).toEqual({ theme: 'colofon', scheme: 'light', saved: 'colofon' })
     expect(boot('quipu-dark')).toEqual({ theme: 'colofon-dark', scheme: 'dark', saved: 'colofon-dark' })
+  })
+
+  it('si no puede guardar la migración, igual pone el tema', () => {
+    expect(boot('quipu', false, true)).toMatchObject({ theme: 'colofon', scheme: 'light' })
   })
 
   it('los temas de Colofón y los de core se respetan', () => {

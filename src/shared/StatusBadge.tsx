@@ -2,7 +2,7 @@ import { Badge } from '@wasichai/ui'
 import type { ReactNode } from 'react'
 
 // la insignia de estado (docs/design-system/historico-quipu/components/StatusBadge): icono y palabra, nunca solo color. sobre el Badge de
-// @wasichai/ui; sus colores son pares de tokens que quipu.test.ts comprueba en AA. la palabra la pone quien la usa, desde su i18n.
+// @wasichai/ui; sus colores son pares de tokens que colofon.test.ts comprueba en AA. la palabra la pone quien la usa, desde su i18n.
 // un estado tiene una sola forma en todo el producto: la usan el aula, el catálogo, docencia, el estudio y la revisión
 export const STATUS_STATES = ['todo', 'active', 'done', 'review', 'overdue', 'warning', 'achievement', 'neutral'] as const
 export type StatusState = (typeof STATUS_STATES)[number]
