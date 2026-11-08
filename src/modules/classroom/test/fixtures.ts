@@ -2,9 +2,42 @@
 // pone «…». los usan las pruebas unitarias y las extremo a extremo (e2e/api.ts). cada prueba copia y altera lo que
 // necesita: estos objetos no se mutan.
 
+import type { ReadingDocumentDto } from '../readingApi'
+
 const FILES = '/api/objects/version_recurso/records'
 
-export const lessonHtml = `<!doctype html><html lang="es"><body><h1>Tipos de anuncio</h1><p>Un anuncio puede ser adosado, luminoso o en panel.</p><script>document.body.setAttribute('data-script', 'ran')</script></body></html>`
+// la lectura de un recurso HTML como documento de bloques (GET …/resources/{id}/reading, ADR-0045): la lección «Lo que
+// necesita para entrar» del curso de demostración, con su h2, la nota de lectura ilustrativa y un párrafo
+export const readingDocument: ReadingDocumentDto = {
+  title: 'Lo que necesita para entrar',
+  blocks: [
+    { type: 'heading', level: 2, id: '_entrar_y_salir_del_portal', content: [{ type: 'text', text: 'Entrar y salir del portal' }] },
+    {
+      type: 'admonition',
+      kind: 'note',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'Lectura ilustrativa de la demostración, escrita para este curso. Resume con palabras propias el procedimiento del manual de acceso; no reproduce su texto ni contiene datos reales.'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: 'Necesita tres cosas: una cuenta que le asigna la administración del sistema, un navegador al día y conexión a la red de la institución. Sin salida a Internet, los mapas no cargan, pero el registro de anuncios sigue funcionando.'
+        }
+      ]
+    }
+  ]
+}
 
 export const enrollment = {
   id: 'mat-srtm-1',

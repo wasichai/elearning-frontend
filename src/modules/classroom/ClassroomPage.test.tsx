@@ -5,12 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ClassroomPage } from './ClassroomPage'
 import { classroomModule } from './module'
 import { serveFiles, type ServedFile } from '../../test/files'
-import { assessmentClassroom, classroom, lessonHtml, problem, sessions } from './test/fixtures'
+import { assessmentClassroom, classroom, problem, readingDocument, sessions } from './test/fixtures'
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'
 const FILES = '/api/objects/version_recurso/records'
+// la lectura en bloques del recurso HTML: detrás de las rutas de cada prueba, que pueden cambiarla
+const READING = `${CLASSROOM}/resources/rec-html/reading`
 const DEFAULT_FILES: Record<string, ServedFile> = {
-  [`${FILES}/vr-html/files/archivo`]: { body: lessonHtml, contentType: 'text/html' },
   [`${FILES}/vr-video/files/archivo`]: { body: 'mp4', contentType: 'video/mp4' },
   [`${FILES}/vr-pdf/files/archivo`]: { body: '%PDF-1.7', contentType: 'application/pdf' },
   [`${FILES}/vr-xlsx/files/archivo`]: { body: 'xlsx', contentType: 'application/octet-stream' }
@@ -27,7 +28,7 @@ afterEach(() => {
 })
 
 function renderClassroom(routes: MockRoute[], route = '/mis-cursos/mat-srtm-1', served = DEFAULT_FILES) {
-  fetchMock = mockFetch(routes)
+  fetchMock = mockFetch([...routes, { path: READING, body: readingDocument }])
   files = serveFiles(served)
   // la sesión de renderWithProviders (storagePrefix 'wasichai-test'): el token que deben llevar las descargas
   localStorage.setItem('wasichai-test.token', 'test-token')
@@ -174,25 +175,21 @@ describe('ClassroomPage: el aula', () => {
     expect(screen.queryByRole('list', { name: 'Tu avance' })).not.toBeInTheDocument()
   })
 
-  it('la lección HTML se baja con la sesión y se muestra en un iframe aislado: sandbox vacío, sin scripts ni mismo origen', async () => {
-    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
+  it('la lección HTML se pinta en la página desde su lectura en bloques, sin iframe ni archivo', async () => {
+    const { container } = renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
 
     expect(await lessonHeading('Tipos de anuncio')).toBeInTheDocument()
     // la cabecera dice el estado de la lección con una insignia de icono y palabra
-    const status = within(screen.getByRole('article', { name: 'Tipos de anuncio' }))
-      .getByText('Completada')
-      .closest('[data-slot="badge"]')
+    const lesson = within(screen.getByRole('article', { name: 'Tipos de anuncio' }))
+    const status = lesson.getByText('Completada').closest('[data-slot="badge"]')
     expect(status).toHaveAttribute('data-state', 'done')
-    const frame = await screen.findByTitle('Tipos de anuncio (lectura)')
-    expect(frame.tagName).toBe('IFRAME')
-    expect(frame.getAttribute('sandbox')).toBe('')
-    expect(frame.getAttribute('sandbox')).not.toMatch(/allow-scripts|allow-same-origin/)
-    const reading = new DOMParser().parseFromString(frame.getAttribute('srcdoc') ?? '', 'text/html')
-    // de otro documento: jest-dom no los acepta, se leen a mano
-    expect(reading.head.firstElementChild?.getAttribute('http-equiv')).toBe('Content-Security-Policy')
-    expect(reading.querySelector('h1')?.textContent).toBe('Tipos de anuncio')
-    expect(frame).not.toHaveAttribute('src')
-    expect(files?.calls).toEqual([{ url: `${FILES}/vr-html/files/archivo`, authorization: 'Bearer test-token' }])
+    const section = within(lesson.getByRole('region', { name: 'Tipos de anuncio (lectura)' }))
+    // bajo el título de la lección (h2) y el del recurso (h3)
+    expect(await section.findByRole('heading', { level: 4, name: 'Entrar y salir del portal' })).toHaveAttribute('id', 'lectura-_entrar_y_salir_del_portal')
+    expect(section.getByRole('note', { name: 'Nota' })).toHaveTextContent('Lectura ilustrativa de la demostración')
+    expect(container.querySelector('iframe')).not.toBeInTheDocument()
+    expect(fetchMock.calls.find((call) => call.path === READING)?.headers.authorization).toBe('Bearer test-token')
+    expect(files?.calls).toEqual([])
   })
 
   it('cambiar de lección en la navegación la abre, la marca y lleva el foco a su título', async () => {
@@ -313,19 +310,36 @@ describe('ClassroomPage: el aula', () => {
     expect(files!.created[0]!.type).toBe('application/octet-stream')
   })
 
-  it('un archivo que no se puede bajar se explica con su estado', async () => {
-    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-html', {
-      [`${FILES}/vr-html/files/archivo`]: { body: '{"status":403}', contentType: 'application/problem+json', status: 403 }
-    })
+  it('una lectura que no se puede leer se explica con su estado y se reintenta', async () => {
+    renderClassroom(
+      [
+        { path: CLASSROOM, body: classroom },
+        { path: READING, status: 404, body: problem(404, 'No existe') }
+      ],
+      '/mis-cursos/mat-srtm-1?leccion=lec-html'
+    )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar este recurso. Código del error: 403.')
-    expect(screen.queryByTitle('Tipos de anuncio (lectura)')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar este recurso. Código del error: 404.')
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Entrar y salir del portal' })).not.toBeInTheDocument()
+  })
+
+  it('una lectura que no cumple el contrato no se pinta', async () => {
+    renderClassroom(
+      [
+        { path: CLASSROOM, body: classroom },
+        { path: READING, body: { title: 'sin bloques' } }
+      ],
+      '/mis-cursos/mat-srtm-1?leccion=lec-html'
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar este recurso.')
   })
 
   it('un archivo fuera de la API no se pide: el token no sale de la aplicación', async () => {
     const foreign = structuredClone(classroom)
-    foreign.units[0]!.lessons[0]!.resources[0]!.file!.url = 'https://otro.example/leccion.html'
-    renderClassroom([{ path: CLASSROOM, body: foreign }], '/mis-cursos/mat-srtm-1?leccion=lec-html')
+    foreign.units[0]!.lessons[1]!.resources[0]!.file!.url = 'https://otro.example/video.mp4'
+    renderClassroom([{ path: CLASSROOM, body: foreign }], '/mis-cursos/mat-srtm-1?leccion=lec-video')
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Este recurso apunta fuera de la aplicación y no se abre.')
     expect(files?.calls).toEqual([])

@@ -87,15 +87,6 @@ export function useFileBlob(file: FileRef) {
   return useQuery({ queryKey: fileKey(file.url), queryFn: ({ signal }) => fetcher(file.url, signal), ...FILE_QUERY })
 }
 
-export function useFileText(file: FileRef) {
-  const fetcher = useFileFetcher()
-  return useQuery({
-    queryKey: [...fileKey(file.url), 'text'],
-    queryFn: async ({ signal }) => (await fetcher(file.url, signal)).text(),
-    ...FILE_QUERY
-  })
-}
-
 // una URL blob: es del origen de la aplicación, y un .html o .svg con su tipo, si llegara a navegarse (un navegador que ignora
 // download, «abrir vídeo en otra pestaña»), correría sus scripts donde vive el token. lo que no es del tipo esperado pasa
 // a application/octet-stream: se guarda o se reproduce, nunca se pinta como documento. slice cambia el tipo sin copiar

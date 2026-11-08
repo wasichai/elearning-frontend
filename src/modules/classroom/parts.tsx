@@ -9,7 +9,7 @@ import { MAX_KNOTS, Quipu, type KnotData } from './Quipu'
 
 export { WRAP } from '../../shared/buttons'
 
-// la columna de la lección: título, material y pie comparten borde, y caen sobre el texto de la lectura, centrada a 68ch en su iframe
+// la columna de la lección: título, material y pie comparten borde, y caen sobre el texto de la lectura, en la medida de lectura (66ch)
 export const LESSON_COLUMN = 'mx-auto w-full max-w-[49.625rem] px-4 sm:px-6'
 
 // las filas del panel del temario: las unidades y lecciones, y los logros

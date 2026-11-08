@@ -1,33 +1,37 @@
 import { ApiError } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CircleAlert, FileText } from 'lucide-react'
-import { useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
-import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useFileText, useObjectUrl } from '../../shared/files'
-import { isDarkTheme, useDocumentTheme } from './documentTheme'
-import { lockedReading, type ReadingOptions, type ReadingPalette } from './reading'
+import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useObjectUrl } from '../../shared/files'
 import { formatFileSize, LESSON_COLUMN } from './parts'
+import { ReadingDocument } from './ReadingDocument'
+import { useReading } from './readingApi'
+import { DEFAULT_READING_SIZE, type ReadingSize } from './readingPreferences'
 import { watchedEnough } from './video'
 import { MediaSkeleton, DocumentSkeleton } from '../../shared/PageSkeleton'
 
-// el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en un iframe aislado,
-// VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
+// el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en la página, desde su lectura
+// en bloques (ADR-0045), VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
 // onVideoWatched avisa cada vez que el reproductor dice que se vio lo bastante (umbral de RF-AUL-04 o fin): quien lo
 // recibe decide enviarlo una sola vez
-// reading: lo que la barra de la lección elige para la lectura HTML (tamaño, interlineado y el tema del modo lectura)
-export interface ReadingSettings extends ReadingOptions {
-  theme?: { id: string; colorScheme: 'light' | 'dark' }
+// reading: lo que la barra de la lección elige para la lectura HTML (tamaño e interlineado). el tema del modo lectura lo
+// pone la lección en su contenedor, y la lectura lo toma de los tokens
+export interface ReadingSettings {
+  size?: ReadingSize
+  roomy?: boolean
 }
 
 interface ResourcesProps {
+  enrollmentId: string
   resources: Resource[]
   videoThreshold?: number
   onVideoWatched?: () => void
   reading?: ReadingSettings
 }
 
-export function Resources({ resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
+export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
   const { t } = useTranslation('classroom')
   if (resources.length === 0) return <p className={`${LESSON_COLUMN} text-sm text-ink-muted`}>{t('resource.none')}</p>
   // con un solo recurso, su título repetiría el de la lección: queda para quien navega por encabezados
@@ -35,19 +39,13 @@ export function Resources({ resources, videoThreshold = 1, onVideoWatched, readi
   return (
     <div className="flex flex-col gap-6">
       {resources.map((resource) => (
-        // la lectura ocupa toda la columna y centra su propio texto; el resto va en la columna de la lección
-        <section
-          key={resource.id}
-          aria-label={resource.title}
-          className={`flex flex-col gap-3 ${resource.type === 'HTML' && resource.file ? '' : LESSON_COLUMN}`}
-        >
-          <h3 className={onlyOne ? 'sr-only' : resource.type === 'HTML' && resource.file ? `${LESSON_COLUMN} text-title-3 text-ink` : 'text-title-3 text-ink'}>
-            {resource.title}
-          </h3>
+        <section key={resource.id} aria-label={resource.title} className={`flex flex-col gap-3 ${LESSON_COLUMN}`}>
+          <h3 className={onlyOne ? 'sr-only' : 'text-title-3 text-ink'}>{resource.title}</h3>
           {resource.file ? (
             <ResourceBody
+              enrollmentId={enrollmentId}
+              resourceId={resource.id}
               type={resource.type}
-              title={resource.title}
               file={resource.file}
               videoThreshold={videoThreshold}
               onVideoWatched={onVideoWatched}
@@ -68,62 +66,34 @@ function NoFile() {
 }
 
 interface BodyProps {
+  enrollmentId: string
+  resourceId: string
   type: string
-  title: string
   file: ResourceFile
   videoThreshold: number
   onVideoWatched?: () => void
   reading?: ReadingSettings
 }
 
-function ResourceBody({ type, title, file, videoThreshold, onVideoWatched, reading }: BodyProps) {
-  if (type === 'HTML') return <HtmlResource title={title} file={file} reading={reading} />
+function ResourceBody({ enrollmentId, resourceId, type, file, videoThreshold, onVideoWatched, reading }: BodyProps) {
+  if (type === 'HTML') return <HtmlResource enrollmentId={enrollmentId} resourceId={resourceId} reading={reading} />
   if (type === 'VIDEO') return <VideoResource file={file} threshold={videoThreshold} onWatched={onVideoWatched} />
   return <DownloadResource file={file} />
 }
 
-// el HTML de la lectura, en un iframe con sandbox vacío: sin scripts, sin formularios, sin ventanas, y con un origen
-// opaco (sin allow-same-origin), así ni el contenido ejecuta código ni toca la aplicación ni su sesión. sin saneador:
-// lockedReading solo le pone una CSP que no deja pedir nada fuera y le quita los meta refresh
-export function HtmlResource({ title, file, reading = {} }: { title: string; file: ResourceFile; reading?: ReadingSettings }) {
+// la lectura HTML, pintada en la página desde su documento de bloques (ADR-0045): el servidor la sanea y la interfaz la
+// pinta con sus componentes, sin HTML del autor (ReadingDocument). su id es el de la versión de recurso
+export function HtmlResource({ enrollmentId, resourceId, reading = {} }: { enrollmentId: string; resourceId: string; reading?: ReadingSettings }) {
   const { t } = useTranslation('classroom')
-  const query = useFileText(file)
-  // la lectura se pinta con el tema de donde está (el de la página o el del modo lectura de la lección) y se rehace
-  // cuando cambia. los tokens se leen del DOM ya pintado: por eso en un efecto de layout y no durante el render
-  const theme = useDocumentTheme()
-  const host = useRef<HTMLDivElement>(null)
-  const [palette, setPalette] = useState<ReadingPalette>()
-  const colorScheme = reading.theme?.colorScheme ?? (isDarkTheme(theme) ? 'dark' : 'light')
-  useLayoutEffect(() => {
-    if (host.current) setPalette(paletteOf(host.current, colorScheme))
-  }, [theme, colorScheme, reading.theme?.id])
-  const { size, roomy } = reading
-  const html = useMemo(
-    () => (query.data === undefined || palette === undefined ? undefined : lockedReading(query.data, palette, { size, roomy })),
-    [query.data, palette, size, roomy]
-  )
-  return (
-    <div ref={host}>
-      {query.isError ? (
-        <div className={`${LESSON_COLUMN} py-8`}>
-          <FileProblem error={query.error} onRetry={() => void query.refetch()} />
-        </div>
-      ) : html === undefined ? (
-        <div className="min-h-96">
-          <DocumentSkeleton label={t('resource.loading')} />
-        </div>
-      ) : (
-        <iframe
-          sandbox=""
-          srcDoc={html}
-          title={title}
-          referrerPolicy="no-referrer"
-          // la lectura llena la ventana bajo la barra de la lección y sobre su pie: sin scripts no puede medir su propio alto
-          className="block h-[calc(100dvh-11rem)] min-h-96 w-full border-b border-border bg-surface lg:h-[calc(100dvh-7.5rem)]"
-        />
-      )}
-    </div>
-  )
+  const query = useReading(enrollmentId, resourceId)
+  if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
+  if (!query.data)
+    return (
+      <div className="min-h-96">
+        <DocumentSkeleton label={t('resource.loading')} />
+      </div>
+    )
+  return <ReadingDocument document={query.data} size={reading.size ?? DEFAULT_READING_SIZE} roomy={reading.roomy} />
 }
 
 // eventos reales del reproductor: timeupdate con lo reproducido (si el umbral no es el final) y ended
@@ -195,19 +165,4 @@ function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void 
       ) : null}
     </div>
   )
-}
-
-// los tokens del tema que usa la lectura, resueltos donde está la lectura (un subárbol con otro tema cuenta)
-function paletteOf(element: Element, colorScheme: 'light' | 'dark'): ReadingPalette {
-  const css = getComputedStyle(element)
-  const token = (name: string) => css.getPropertyValue(`--${name}`).trim() || undefined
-  return {
-    colorScheme,
-    background: token('surface'),
-    text: token('ink'),
-    muted: token('ink-muted'),
-    link: token('link'),
-    line: token('line'),
-    rule: token('border-control')
-  }
 }

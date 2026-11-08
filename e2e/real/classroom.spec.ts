@@ -30,12 +30,12 @@ test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conse
   await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
 
-  // 3. abrir la unidad y su lectura: el HTML del servidor, en el iframe aislado
+  // 3. abrir la unidad y su lectura: el documento de bloques del servidor, pintado en la página
   await (await expandedUnits(page)).getByRole('link', { name: /^Lo que necesita para entrar/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Lo que necesita para entrar' })).toBeVisible()
-  const reading = page.frameLocator('iframe[title="Entrar y salir del portal (lectura)"]')
-  await expect(reading.getByRole('heading', { level: 1, name: 'Entrar y salir del portal' })).toBeVisible()
-  await expect(page.locator('iframe[title="Entrar y salir del portal (lectura)"]')).toHaveAttribute('sandbox', '')
+  const reading = page.getByRole('region', { name: 'Entrar y salir del portal (lectura)' })
+  await expect(reading.locator('[data-reading]')).toContainText(/\S/)
+  await expect(page.locator('iframe')).toHaveCount(0)
 
   // 4. completar y verlo tras recargar: lo guardó el servidor
   await page.getByRole('button', { name: 'Marcar como completada' }).click()

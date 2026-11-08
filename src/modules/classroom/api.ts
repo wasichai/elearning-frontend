@@ -71,7 +71,9 @@ export const classroomKeys = {
   attempt: (attemptId: string) => ['classroom', 'attempt', attemptId] as const,
   sessions: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId, 'sessions'] as const,
   completion: (enrollmentId: string) => ['classroom', 'enrollment', enrollmentId, 'completion'] as const,
-  certificate: (code: string) => ['classroom', 'certificate', code] as const
+  certificate: (code: string) => ['classroom', 'certificate', code] as const,
+  // fuera del aula de la matrícula: lo que la invalida (el avance) no vuelve a pedir una lectura que no cambia
+  reading: (enrollmentId: string, resourceVersionId: string) => ['classroom', 'reading', enrollmentId, resourceVersionId] as const
 }
 
 export function useClassroomPanel() {

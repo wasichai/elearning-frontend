@@ -6,8 +6,8 @@ import {
   certificate,
   classroom,
   gradedAttempt,
-  lessonHtml,
   openAttempt,
+  readingDocument,
   sessions as sgspeSessions
 } from '../src/modules/classroom/test/fixtures'
 import { AUTHOR_ID } from '../src/modules/studio/test/fixtures'
@@ -383,7 +383,17 @@ function simulateClassroom(state: ClassroomState, method: string, url: URL, body
   if (method === 'POST' && lessonId) return lessonEvent(state, data, lessonId, (body ?? {}) as { type?: string; clientEventId?: string })
   const attemptsOf = rest?.match(/^lessons\/([^/]+)\/attempts$/)?.[1]
   if (method === 'POST' && attemptsOf) return startAttempt(state, data, attemptsOf)
+  const readingOf = rest?.match(/^resources\/([^/]+)\/reading$/)?.[1]
+  if (method === 'GET' && readingOf) return reading(data, readingOf)
   return undefined
+}
+
+// la lectura en bloques de un recurso HTML (ADR-0045) como el servidor: solo de un recurso HTML con archivo del temario de
+// una matrícula que no esté retirada; si no, 404. todas las lecturas de la simulación son «Lo que necesita para entrar»
+function reading(data: ClassroomData, resourceId: string): Reply {
+  const resource = data.units.flatMap((unit) => unit.lessons.flatMap((lesson) => lesson.resources)).find((candidate) => candidate.id === resourceId)
+  if (data.status === 'RETIRADA' || resource?.type !== 'HTML' || !resource.file) return { status: 404, body: problem(404, 'Lectura no encontrada') }
+  return { status: 200, body: readingDocument }
 }
 
 // los intentos (ADR-0016) como el servidor: intentos y plazo impuestos, soluciones guardadas aparte y nunca servidas
@@ -530,7 +540,6 @@ function simulateUpload(state: ClassroomState, method: string, url: URL, name: s
 // los archivos de los recursos del aula (wasichai-files), por la versión de recurso de su URL
 const FILES = /^\/api\/objects\/version_recurso\/records\/([^/]+)\/files\/archivo$/
 const FILE_CONTENTS: Record<string, { body: string; contentType: string }> = {
-  'vr-html': { body: lessonHtml, contentType: 'text/html' },
   'vr-video': { body: 'no es un vídeo de verdad', contentType: 'video/mp4' },
   'vr-pdf': { body: '%PDF-1.7 guía de liquidación', contentType: 'application/pdf' },
   'vr-xlsx': { body: 'plantilla', contentType: 'application/octet-stream' }
