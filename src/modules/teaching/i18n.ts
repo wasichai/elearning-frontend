@@ -102,7 +102,7 @@ const es = {
       write: 'Escribir',
       writeLabel: 'Escribir a {{email}}'
     },
-    search: 'Buscar por correo',
+    search: 'Buscar por nombre o correo',
     filters: 'Filtrar matriculados',
     filterOption: '{{label}} ({{value}})',
     filter: {
@@ -525,7 +525,7 @@ const en: typeof es = {
       write: 'Write',
       writeLabel: 'Write to {{email}}'
     },
-    search: 'Search by email',
+    search: 'Search by name or email',
     filters: 'Filter students',
     filterOption: '{{label}} ({{value}})',
     filter: {

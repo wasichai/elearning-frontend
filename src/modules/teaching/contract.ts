@@ -36,6 +36,8 @@ export const rosterEntrySchema = z.object({
   enrollmentId: z.string().min(1),
   // null en una matrícula anterior a que se guardara el correo del estudiante
   email: z.string().nullable(),
+  // el nombre para mostrar (elearning-backend#378): null si la cuenta está deshabilitada; falta en un servidor anterior
+  name: z.string().nullish(),
   status: z.enum(ENROLLMENT_STATUSES),
   progress: progressSummarySchema,
   attendance: z
@@ -75,6 +77,8 @@ export const attendanceRowListSchema = z.array(
   z.object({
     enrollmentId: z.string().min(1),
     email: z.string().nullable(),
+    // como en el roster (elearning-backend#378)
+    name: z.string().nullish(),
     status: z.enum(ATTENDANCE_STATUSES).nullable()
   })
 )

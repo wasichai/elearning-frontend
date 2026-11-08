@@ -11,7 +11,7 @@ import { Section, Skeleton, Stat, StatList } from '../../shared/Screen'
 import { ATTENDANCE_STATUSES, type AttendanceStatus } from '../../shared/sessions'
 import { useAttendance, useOfferingSessions, useSaveAttendance } from './api'
 import type { AttendanceRow } from './contract'
-import { EmailText, OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog } from './parts'
+import { OfferingFrame, QueryProblem, STICKY_BAR, useActionError, useLeaveDialog, Submitter, submitterOf } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { attendanceSummary, markAllPresent, type AttendanceOverrides } from './sessions'
 
@@ -113,7 +113,11 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
   // pulsar lo marcado sin guardar lo deshace; lo registrado solo cambia eligiendo otro estado
   const choose = (row: AttendanceRow, status: AttendanceStatus) =>
     setOverrides(({ [row.enrollmentId]: previous, ...rest }) => (previous === status || row.status === status ? rest : { ...rest, [row.enrollmentId]: status }))
-  const sorted = [...rows].sort((a, b) => (a.email === null ? 1 : b.email === null ? -1 : a.email.localeCompare(b.email)))
+  // por lo que se ve: el nombre si el servidor lo da, si no el correo; sin ninguno, al final
+  const sorted = [...rows].sort((a, b) => {
+    const [first, second] = [submitterOf(a), submitterOf(b)]
+    return first === null ? 1 : second === null ? -1 : first.localeCompare(second)
+  })
   return (
     <form noValidate onSubmit={submit} className="flex flex-col gap-5">
       <Section title={<span className="sr-only">{t('attendance.summary')}</span>}>
@@ -138,14 +142,16 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
       </div>
       <ul aria-label={t('attendance.title')} className="flex flex-col divide-y divide-border border-y border-border [&_button]:scroll-mb-32">
         {sorted.map((row) => {
-          const student = row.email ?? t('roster.noEmail')
+          const student = submitterOf(row) ?? t('roster.noEmail')
           const override = overrides[row.enrollmentId]
           const current = override ?? row.status
           return (
             <li key={row.enrollmentId} className="@container py-3">
               <div className="flex flex-col gap-2 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-6">
                 <div className="flex min-w-0 flex-col gap-0.5 text-sm">
-                  <span className="font-medium text-ink">{row.email ? <EmailText email={row.email} /> : student}</span>
+                  <span className="font-medium text-ink">
+                    <Submitter attempt={row} />
+                  </span>
                   {!current ? <span className="text-ink-muted">{t('attendance.unmarked')}</span> : null}
                   {override && override !== row.status ? <span className="text-ink-muted">{t('attendance.rowUnsaved')}</span> : null}
                 </div>
