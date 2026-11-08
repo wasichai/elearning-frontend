@@ -1,35 +1,101 @@
 @import 'tailwindcss';
 /* tokens y tema claro/oscuro de @wasichai/ui */
 @import '@wasichai/ui/theme.css';
-/* el tema Quipu de la app (src/theme/themes.ts lo ofrece en el selector) */
-@import './theme/quipu.css';
+/* el tema Colofón de la app (src/theme/themes.ts lo ofrece en el selector) */
+@import './theme/colofon.css';
 /* sus controles: objetivos de 44px y campos de 16px, sobre los data-slot de @wasichai/ui */
-@import './theme/quipu-controls.css';
+@import './theme/colofon-controls.css';
 
-/* la letra del tema Quipu, servida por la app (sin peticiones a terceros) */
+/* las letras del tema Colofón, servidas por la app (sin peticiones a terceros), variables y en woff2, con su licencia
+   SIL OFL en src/theme/fonts: Newsreader (títulos y lectura; ejes opsz y wght) y Source Sans 3 (interfaz; eje wght).
+   solo los subconjuntos latin y latin-ext, cada uno con su unicode-range. la lectura HTML del iframe no las carga: su CSP
+   no deja pedir fuentes (reading.ts) */
 @font-face {
-  font-family: 'Figtree';
-  src: url('./theme/fonts/Figtree-wght-normal.woff2') format('woff2');
-  font-weight: 300 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Figtree';
-  src: url('./theme/fonts/Figtree-wght-italic.woff2') format('woff2');
-  font-weight: 300 900;
+  font-family: 'Newsreader';
+  src: url('./theme/fonts/Newsreader-opsz-wght-italic-latin-ext.woff2') format('woff2');
+  font-weight: 300 700;
   font-style: italic;
   font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
-/* la letra de lectura (Literata, SIL OFL): enunciados, respuestas en la corrección y el certificado. corte latin con el
-   eje de peso y sin cursiva. la lectura HTML del iframe no la carga: su CSP no deja pedir fuentes (reading.ts) */
+
 @font-face {
-  font-family: 'Literata';
-  src: url('./theme/fonts/Literata-wght-normal.woff2') format('woff2');
-  font-weight: 200 900;
+  font-family: 'Newsreader';
+  src: url('./theme/fonts/Newsreader-opsz-wght-italic-latin.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('./theme/fonts/Newsreader-opsz-wght-normal-latin-ext.woff2') format('woff2');
+  font-weight: 300 700;
   font-style: normal;
   font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Newsreader';
+  src: url('./theme/fonts/Newsreader-opsz-wght-normal-latin.woff2') format('woff2');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./theme/fonts/SourceSans3-wght-italic-latin-ext.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: italic;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./theme/fonts/SourceSans3-wght-italic-latin.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: italic;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./theme/fonts/SourceSans3-wght-normal-latin-ext.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans 3';
+  src: url('./theme/fonts/SourceSans3-wght-normal-latin.woff2') format('woff2');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
 }
 
 /* la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que ponen los temas Quipu (los de Wasichai
@@ -49,46 +115,113 @@
   }
 }
 
-/* la utilidad font-read, para leer texto largo dentro de la interfaz, y las escalas de docs/design-system/historico-quipu/tokens.json que
-   @wasichai/ui no trae: text-title-1, text-read-body, shadow-1, max-w-measure… aditivas: no tocan colores ni temas.
+/* las escalas de docs/design-system/colofon/tokens.json que @wasichai/ui no trae: text-display, text-h1…text-h5, text-body,
+   text-secondary, text-label, text-meta y text-reading (tamaño / interlineado / peso); la familia no forma parte de una
+   utilidad de texto: los títulos y la lectura añaden font-read (font-optical-sizing: auto es el valor por defecto del navegador: Newsreader toma el corte de display en los titulares y el de texto en la lectura), la interfaz ya usa --font-sans del tema. espaciados,
+   medidas y sombra, aditivos: no tocan colores ni temas.
    ojo: cn() de @wasichai/ui no conoce estas utilidades de texto y puede quitarlas junto a un color: en un componente de
    la librería, ponlas en un elemento propio */
 @theme {
-  --font-read: 'Literata', Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --font-read: 'Newsreader', Georgia, 'Times New Roman', serif;
 
-  --text-display: 40px;
-  --text-display--line-height: 44px;
-  --text-display--font-weight: 650;
-  --text-display--letter-spacing: -0.02em;
-  --text-title-1: 30px;
-  --text-title-1--line-height: 36px;
-  --text-title-1--font-weight: 650;
-  --text-title-1--letter-spacing: -0.015em;
-  --text-title-2: 23px;
-  --text-title-2--line-height: 30px;
-  --text-title-2--font-weight: 600;
-  --text-title-2--letter-spacing: -0.01em;
-  --text-title-3: 18px;
-  --text-title-3--line-height: 26px;
+  --text-display: 56px;
+  --text-display--line-height: 60px;
+  --text-display--font-weight: 330;
+  --text-h1: 44px;
+  --text-h1--line-height: 50px;
+  --text-h1--font-weight: 380;
+  --text-h2: 32px;
+  --text-h2--line-height: 38px;
+  --text-h2--font-weight: 440;
+  --text-h3: 25px;
+  --text-h3--line-height: 31px;
+  --text-h3--font-weight: 520;
+  --text-h4: 20px;
+  --text-h4--line-height: 27px;
+  --text-h4--font-weight: 600;
+  --text-h5: 17px;
+  --text-h5--line-height: 24px;
+  --text-h5--font-weight: 650;
+  --text-meta: 15px;
+  --text-meta--line-height: 20px;
+  --text-meta--font-weight: 600;
+  --text-meta--letter-spacing: 0.07em;
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+  --text-body--font-weight: 400;
+  --text-secondary: 14px;
+  --text-secondary--line-height: 20px;
+  --text-secondary--font-weight: 400;
+  --text-label: 15px;
+  --text-label--line-height: 20px;
+  --text-label--font-weight: 600;
+  --text-reading: 20px;
+  --text-reading--line-height: 33px;
+  --text-reading--font-weight: 400;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 112px;
+
+  /* max-w-measure, w-index-col, w-margin-col, max-w-content-max */
+  --container-measure: 66ch;
+  --container-index-col: 280px;
+  --container-margin-col: 264px;
+  --container-content-max: 1200px;
+
+  --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
+
+  /* temporal: se retira en la tarea 4/5. la escala de Quipu que las pantallas aún usan, sobre la de Colofón */
+  --text-title-1: 32px;
+  --text-title-1--line-height: 38px;
+  --text-title-1--font-weight: 440;
+  --text-title-2: 25px;
+  --text-title-2--line-height: 31px;
+  --text-title-2--font-weight: 520;
+  --text-title-3: 20px;
+  --text-title-3--line-height: 27px;
   --text-title-3--font-weight: 600;
-  --text-numeral: 28px;
-  --text-numeral--line-height: 32px;
-  --text-numeral--font-weight: 650;
-  --text-read-title: 36px;
-  --text-read-title--line-height: 44px;
-  --text-read-title--font-weight: 500;
-  --text-read-h2: 26px;
-  --text-read-h2--line-height: 34px;
-  --text-read-h2--font-weight: 600;
-  --text-read-body: 19px;
-  --text-read-body--line-height: 32px;
+  --text-numeral: 25px;
+  --text-numeral--line-height: 31px;
+  --text-numeral--font-weight: 520;
+  --text-read-title: 44px;
+  --text-read-title--line-height: 50px;
+  --text-read-title--font-weight: 380;
+  --text-read-h2: 32px;
+  --text-read-h2--line-height: 38px;
+  --text-read-h2--font-weight: 440;
+  --text-read-body: 20px;
+  --text-read-body--line-height: 33px;
   --text-read-body-sm: 17px;
   --text-read-body-sm--line-height: 28px;
+  --shadow-1: 0 0 0 1px var(--border);
+  --shadow-2: var(--shadow-overlay);
+}
 
-  --shadow-1: 0 1px 2px rgb(60 44 20 / 8%), 0 0 0 1px rgb(60 44 20 / 4%);
-  --shadow-2: 0 4px 12px rgb(60 44 20 / 10%), 0 1px 3px rgb(60 44 20 / 8%);
+/* texto de metadatos (Unidad 1 · §1.1 · lectura · 20 min): versalitas reales, +0,07em, en ink-muted */
+@utility meta {
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+  font-weight: var(--text-meta--font-weight);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--text-meta--letter-spacing);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted);
+}
 
-  --container-measure: 68ch;
+/* los filetes en lugar de cajas: rule separa filas y bloques; rule-strong abre cada sección «§» */
+@utility rule {
+  border-top: 1px solid var(--border);
+}
+
+@utility rule-strong {
+  border-top: 1px solid var(--ink);
 }
 
 /* con movimiento reducido, nada se desplaza ni rebota (3-accesibilidad.md) */

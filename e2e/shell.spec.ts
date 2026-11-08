@@ -174,7 +174,7 @@ test('los ítems del menú miden 44 px y el actual se marca con algo más que el
   const home = menu(page).getByRole('link', { name: 'Inicio', exact: true })
   await expect(home).not.toHaveAttribute('aria-current', 'page')
   for (const item of [current, home]) expect((await item.boundingBox())!.height).toBeGreaterThanOrEqual(44)
-  await expect(current).toHaveCSS('font-weight', '600')
+  await expect(current).toHaveCSS('font-weight', '650')
   await expect(current).toHaveCSS('box-shadow', /inset/)
   await expect(home).toHaveCSS('box-shadow', 'none')
 })

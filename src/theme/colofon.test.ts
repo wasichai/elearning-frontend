@@ -3,12 +3,12 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { classroomMessages } from '../modules/classroom/i18n'
-import { QUIPU_DARK_THEME, QUIPU_READING_THEME, QUIPU_STYLED_THEMES, QUIPU_SYSTEM_THEMES, QUIPU_THEME, QUIPU_THEMES } from './themes'
+import { COLOFON_DARK_THEME, COLOFON_READING_THEME, COLOFON_STYLED_THEMES, COLOFON_SYSTEM_THEMES, COLOFON_THEME, COLOFON_THEMES } from './themes'
 
-// el tema Quipu cumple el contrato de @wasichai/ui (todos los tokens) y WCAG 2.2 AA en sus dos variantes y en el modo
-// lectura (quipu-lectura, un subárbol de la lección)
+// el tema Colofón cumple el contrato de @wasichai/ui (todos los tokens) y WCAG 2.2 AA en sus dos variantes y en el modo
+// lectura (colofon-lectura, un subárbol de la lección)
 
-const quipu = readFileSync(join(import.meta.dirname, 'quipu.css'), 'utf8')
+const colofon = readFileSync(join(import.meta.dirname, 'colofon.css'), 'utf8')
 const wasichai = readFileSync(createRequire(import.meta.url).resolve('@wasichai/ui/theme.css'), 'utf8')
 
 // las declaraciones --x: valor del bloque de un selector
@@ -80,8 +80,8 @@ function failing(block: Map<string, string>, pairs: [string, string[]][], min: n
   )
 }
 
-describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
-  const block = tokens(quipu, `[data-theme='${id}']`)
+describe.each(COLOFON_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
+  const block = tokens(colofon, `[data-theme='${id}']`)
 
   it('pone todos los tokens del tema claro de @wasichai/ui', () => {
     const required = [...tokens(wasichai, "[data-theme='light']").keys()]
@@ -102,70 +102,94 @@ describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
     expect(contrast(over(resolve(block, 'shell-muted'), shell, 0.7), shell)).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('el maíz del sello lleva su icono a 3:1 o más (marca gráfica, WCAG 1.4.11)', () => {
-    expect(contrast(resolve(block, 'on-maiz'), resolve(block, 'maiz'))).toBeGreaterThanOrEqual(3)
-    expect(contrast(resolve(block, 'maiz'), resolve(block, 'surface'))).toBeGreaterThanOrEqual(1.5)
-  })
-
-  it('el bloque de finalización (ink sobre maiz-soft) llega a AA y el sello se distingue de él', () => {
-    expect(contrast(resolve(block, 'ink'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(resolve(block, 'ink-muted'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(4.5)
-    expect(contrast(resolve(block, 'maiz'), resolve(block, 'maiz-soft'))).toBeGreaterThanOrEqual(1.5)
-  })
-
   it('el foco no es la marca', () => {
     expect(resolve(block, 'focus')).not.toBe(resolve(block, 'brand'))
   })
 })
 
-// los valores del tema «lectura» de docs/design-system/historico-quipu/tokens.json, con los nombres de @wasichai/ui
-const LECTURA: Record<string, string> = {
-  surface: '#f8f0df',
-  'surface-muted': '#f1e7d3',
-  border: '#dccdb0',
-  'border-control': '#857559',
-  'table-head': '#e8dcc4',
-  ink: '#2b241b',
-  'ink-muted': '#5a4f40',
-  brand: '#9c4224',
-  'brand-strong': '#83361c',
-  'brand-soft': '#ecd3bd',
-  danger: '#9a1f37',
-  'danger-soft': '#f0d2cc',
-  success: '#2b6340',
-  'success-soft': '#d6e2c9',
-  warning: '#7a4e00',
-  'warning-soft': '#f3dcae',
-  notice: '#2a5598',
-  'notice-soft': '#dcdfe0',
-  focus: '#1f50aa'
+// el sepia de tokens.json: papel y tinta
+const LECTURA: Record<string, string> = { surface: '#f2ebdd', ink: '#3a2f22' }
+
+// los valores del tema claro de tokens.json (Foundations §1)
+const CLARO: Record<string, string> = {
+  brand: '#1f3a64',
+  'brand-strong': '#152a4a',
+  'brand-soft': '#e3e9f2',
+  'on-brand': '#ffffff',
+  ink: '#17202b',
+  'ink-muted': '#4f5b69',
+  link: '#24508c',
+  focus: '#2a5db0',
+  surface: '#ffffff',
+  'surface-muted': '#f4f5f7',
+  shell: '#edeff3',
+  'table-head': '#eef1f5',
+  border: '#d3d8df',
+  'border-control': '#7d8794',
+  success: '#2d6a45',
+  'success-soft': '#e4f0e8',
+  warning: '#8a5300',
+  'warning-soft': '#f8eed9',
+  danger: '#b42318',
+  'danger-soft': '#fbe9e7',
+  notice: '#2b5e6e',
+  'notice-soft': '#e2eef1',
+  radius: '3px',
+  'radius-card': '4px'
 }
 
+// lo que Foundations fija del oscuro; el resto se deriva y lo comprueban los pares AA
+const OSCURO: Record<string, string> = {
+  'surface-muted': '#0f141b',
+  surface: '#161d26',
+  ink: '#e4e8ee',
+  'ink-muted': '#a6b0bd',
+  'border-control': '#6b7686',
+  brand: '#a9c1e8',
+  'on-brand': '#0f1a2c',
+  link: '#9cc0f2',
+  success: '#7cc79a',
+  warning: '#e3b25c',
+  danger: '#f28b82'
+}
+
+describe('valores de tokens.json', () => {
+  it('el tema claro lleva los valores de las restricciones', () => {
+    const block = tokens(colofon, "[data-theme='colofon']")
+    expect(Object.fromEntries(Object.keys(CLARO).map((name) => [name, block.get(name)]))).toEqual(CLARO)
+  })
+
+  it('el oscuro lleva los que Foundations fija', () => {
+    const block = tokens(colofon, "[data-theme='colofon-dark']")
+    expect(Object.fromEntries(Object.keys(OSCURO).map((name) => [name, block.get(name)]))).toEqual(OSCURO)
+  })
+})
+
 describe('modo lectura', () => {
-  it('es quipu-lectura, claro, y no se ofrece en el selector de tema', () => {
-    expect(QUIPU_READING_THEME).toEqual({ id: 'quipu-lectura', colorScheme: 'light' })
-    expect(QUIPU_THEMES.map((theme) => theme.id)).not.toContain(QUIPU_READING_THEME.id)
+  it('es colofon-lectura, claro, y no se ofrece en el selector de tema', () => {
+    expect(COLOFON_READING_THEME).toEqual({ id: 'colofon-lectura', colorScheme: 'light' })
+    expect(COLOFON_THEMES.map((theme) => theme.id)).not.toContain(COLOFON_READING_THEME.id)
   })
 
   it('lleva el papel sepia y la tinta cálida del sistema de diseño', () => {
-    const block = tokens(quipu, "[data-theme='quipu-lectura']")
+    const block = tokens(colofon, "[data-theme='colofon-lectura']")
     expect(Object.fromEntries(Object.keys(LECTURA).map((name) => [name, block.get(name)]))).toEqual(LECTURA)
   })
 
-  it('el anillo de foco de Quipu vale también en la lectura', () => {
-    const scope = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')}) *:focus-visible`
-    expect(quipu).toContain(scope)
+  it('el anillo de foco de Colofón vale también en la lectura', () => {
+    const scope = `:is(${COLOFON_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')}) *:focus-visible`
+    expect(colofon).toContain(scope)
   })
 })
 
 describe('definiciones de los temas', () => {
   it('un claro y un oscuro, que el sistema sigue', () => {
-    expect([QUIPU_THEME.colorScheme, QUIPU_DARK_THEME.colorScheme]).toEqual(['light', 'dark'])
-    expect(QUIPU_SYSTEM_THEMES).toEqual({ light: 'quipu', dark: 'quipu-dark' })
+    expect([COLOFON_THEME.colorScheme, COLOFON_DARK_THEME.colorScheme]).toEqual(['light', 'dark'])
+    expect(COLOFON_SYSTEM_THEMES).toEqual({ light: 'colofon', dark: 'colofon-dark' })
   })
 
   it('sus etiquetas existen en español e inglés', () => {
-    for (const theme of QUIPU_THEMES) {
+    for (const theme of COLOFON_THEMES) {
       const [namespace, path] = theme.label.split(':')
       expect(namespace).toBe('classroom')
       const key = path!.split('.')[1]!
@@ -174,10 +198,15 @@ describe('definiciones de los temas', () => {
     }
   })
 
-  it('cada tema tiene su bloque en quipu.css y en el script de arranque de index.html', () => {
+  it('las etiquetas son Colofón y Colofón oscuro (Colophon y Colophon dark en inglés)', () => {
+    expect(classroomMessages.es.theme).toEqual({ colofon: 'Colofón', colofonDark: 'Colofón oscuro' })
+    expect(classroomMessages.en.theme).toEqual({ colofon: 'Colophon', colofonDark: 'Colophon dark' })
+  })
+
+  it('cada tema tiene su bloque en colofon.css y en el script de arranque de index.html', () => {
     const html = readFileSync(join(import.meta.dirname, '../../index.html'), 'utf8')
-    for (const theme of QUIPU_THEMES) {
-      expect(quipu).toContain(`[data-theme='${theme.id}'] {`)
+    for (const theme of COLOFON_THEMES) {
+      expect(colofon).toContain(`[data-theme='${theme.id}'] {`)
       expect(html).toMatch(new RegExp(`['"]?${theme.id}['"]?: '${theme.colorScheme}'`))
     }
   })

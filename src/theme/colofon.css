@@ -1,0 +1,165 @@
+/* tema Colofón de wasichai-learning (sistema de diseño «Colofón», docs/design-system/colofon): papel frío, tinta de prensa,
+   azul de Oxford para avanzar. tres bloques según el contrato de @wasichai/ui (ADR-034 y ADR-035 de wasichai): cada uno
+   pone todos los tokens. se importa después de @wasichai/ui/theme.css; los ofrece config.themes (src/theme/themes.ts).
+   los valores del claro y los que fija el oscuro son los de tokens.json; el resto del oscuro y del sepia se derivan
+   cumpliendo AA. los pares de contraste los comprueba colofon.test.ts */
+
+/* Newsreader y Source Sans 3 (SIL OFL, src/theme/fonts) se declaran en src/index.css */
+
+[data-theme='colofon'] {
+  --surface: #ffffff;
+  --surface-muted: #f4f5f7;
+  --border: #d3d8df;
+  --ink: #17202b;
+  --ink-muted: #4f5b69;
+  --brand: #1f3a64;
+  --brand-strong: #152a4a;
+  --brand-soft: #e3e9f2;
+  --on-brand: #ffffff;
+  /* menú lateral y barra superior en papel gris; sus etiquetas de grupo van al 70 %: shell-muted aguanta AA así */
+  --shell: #edeff3;
+  --shell-muted: #1f2935;
+  --shell-ink: #17202b;
+  --danger: #b42318;
+  --danger-soft: #fbe9e7;
+  --on-danger: #ffffff;
+  --success: #2d6a45;
+  --success-soft: #e4f0e8;
+  --warning: #8a5300;
+  --warning-soft: #f8eed9;
+  --notice: #2b5e6e;
+  --notice-soft: #e2eef1;
+  --overlay: rgb(23 32 43 / 56%);
+
+  --link: #24508c;
+  /* azul más claro que la marca, para que el foco no se confunda con ella */
+  --focus: #2a5db0;
+  --table-head: #eef1f5;
+  --table-stripe: #f9fafb;
+  --line: var(--border);
+  --map-selected: #e8590c;
+  --surface-raised: var(--surface);
+  --border-control: #7d8794;
+  --placeholder: var(--ink-muted);
+
+  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --radius: 3px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-card: 4px;
+  --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
+}
+
+[data-theme='colofon-dark'] {
+  --surface: #161d26;
+  --surface-muted: #0f141b;
+  --border: #2c3644;
+  --ink: #e4e8ee;
+  --ink-muted: #a6b0bd;
+  --brand: #a9c1e8;
+  --brand-strong: #c6d7f1;
+  --brand-soft: #1f2d45;
+  --on-brand: #0f1a2c;
+  --shell: #0b1017;
+  --shell-muted: #a6b0bd;
+  --shell-ink: #e4e8ee;
+  --danger: #f28b82;
+  --danger-soft: #3a1d1f;
+  --on-danger: #0f141b;
+  --success: #7cc79a;
+  --success-soft: #16291f;
+  --warning: #e3b25c;
+  --warning-soft: #30260f;
+  --notice: #8fc3d4;
+  --notice-soft: #14262d;
+  --overlay: rgb(0 0 0 / 64%);
+
+  --link: #9cc0f2;
+  --focus: #7fa8e8;
+  --table-head: #1b2430;
+  --table-stripe: #131a22;
+  --line: var(--border);
+  --map-selected: #e8590c;
+  /* menús y diálogos se separan de la página */
+  --surface-raised: #1d2631;
+  --border-control: #6b7686;
+  --placeholder: var(--ink-muted);
+
+  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --radius: 3px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-card: 4px;
+  --shadow-overlay: 0 12px 32px rgb(0 0 0 / 40%);
+}
+
+/* el modo lectura de la lección (sepia de tokens.json: papel #f2ebdd y tinta #3a2f22) con los mismos pares AA que el
+   claro. no es un tema de página: la lección lo pone como subárbol (data-theme en su contenedor) */
+[data-theme='colofon-lectura'] {
+  --surface: #f2ebdd;
+  --surface-muted: #ebe3d2;
+  --border: #d6cab2;
+  --ink: #3a2f22;
+  --ink-muted: #5c4f3d;
+  --brand: #1f3a64;
+  --brand-strong: #152a4a;
+  --brand-soft: #dde0e0;
+  --on-brand: #ffffff;
+  --shell: #f2ebdd;
+  --shell-muted: #3a2f22;
+  --shell-ink: #3a2f22;
+  --danger: #a82015;
+  --danger-soft: #f2ddd3;
+  --on-danger: #ffffff;
+  --success: #2d6a45;
+  --success-soft: #dde6d3;
+  --warning: #7f4b00;
+  --warning-soft: #f1e1bc;
+  --notice: #2b5e6e;
+  --notice-soft: #dce5e3;
+  --overlay: rgb(23 32 43 / 56%);
+
+  --link: #24508c;
+  --focus: #2a5db0;
+  --table-head: #e6ddc9;
+  --table-stripe: #efe7d8;
+  --line: var(--border);
+  --map-selected: #e8590c;
+  --surface-raised: var(--surface);
+  --border-control: #7a6c55;
+  --placeholder: var(--ink-muted);
+
+  --font-sans: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  --radius: 3px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-card: 4px;
+  --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
+}
+
+/* temporal: se retira en la tarea 4/5. el maíz de Quipu aún lo pintan CompletionPage, MyCoursesPage y Quipu.tsx; hasta
+   que se rediseñen, valores neutros de Colofón */
+:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']) {
+  --maiz: var(--warning);
+  --maiz-soft: var(--warning-soft);
+  --on-maiz: var(--surface);
+}
+
+/* en la capa base, como los defectos de @wasichai/ui que reemplaza: las utilidades de un componente siguen ganando.
+   la interfaz va en Source Sans 3 con cifras de tabla y de caja alta; los títulos pedirán su serif con font-read */
+@layer base {
+  :is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']) {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  :is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']) *:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
