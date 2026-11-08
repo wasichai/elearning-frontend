@@ -2,6 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import type { ComponentType, ReactNode } from 'react'
 import { useId } from 'react'
 import { Link, NavLink } from 'react-router'
+import { SectionHead } from './SectionHead'
 
 // el armazón común de las pantallas del LMS (UX-UI-IMPLEMENTATION.md). PageHeader de @wasichai/core es una barra de márgenes
 // fijos (px-8 también en un móvil), sin ruta ni alineación con el contenido: cuando @wasichai/core los ofrezca, esto se retira.
@@ -12,7 +13,7 @@ export type ScreenWidth = 'reading' | 'content' | 'wide'
 // reading: una columna de lectura o formulario; content: paneles del estudiante; wide: trabajo docente y editorial
 const WIDTHS: Record<ScreenWidth, string> = {
   reading: 'max-w-3xl',
-  content: 'max-w-6xl',
+  content: 'max-w-content-max',
   wide: 'max-w-[96rem]'
 }
 
@@ -100,12 +101,12 @@ export function ScreenHeader({ title, subtitle, actions, breadcrumbs, meta, chil
         {breadcrumbs}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="text-title-2 text-balance text-ink lg:text-title-1">{title}</h1>
-            {subtitle ? <p className="max-w-prose text-base text-ink-muted">{subtitle}</p> : null}
+            <h1 className="text-h1 font-read text-balance text-ink max-sm:text-h2">{title}</h1>
+            {subtitle ? <p className="text-reading font-read max-w-measure text-ink-muted max-sm:text-body">{subtitle}</p> : null}
           </div>
           {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
         </div>
-        {meta ? <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink-muted">{meta}</div> : null}
+        {meta ? <div className="meta flex flex-wrap items-center gap-x-4 gap-y-1.5">{meta}</div> : null}
         {children}
       </div>
     </header>
@@ -136,18 +137,10 @@ export function Section({
   anchor?: string
 }) {
   const id = useId()
-  const Heading = `h${level}` as const
   return (
     <section id={anchor} aria-labelledby={id} className={`flex min-w-0 flex-col gap-3 ${anchor ? 'scroll-mt-6' : ''} ${className}`}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <Heading id={id} className="text-title-3 text-ink">
-            {title}
-          </Heading>
-          {description ? <p className="text-sm text-ink-muted">{description}</p> : null}
-        </div>
-        {action}
-      </div>
+      <SectionHead id={id} as={level === 3 ? 'h3' : 'h2'} title={title} meta={action} />
+      {description ? <p className="text-secondary text-ink-muted">{description}</p> : null}
       {children}
     </section>
   )

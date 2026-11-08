@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { PenLine } from 'lucide-react'
 import { TEXT_LINK } from '../../shared/buttons'
-import { CordBanner } from '../../shared/CordBanner'
 import { formatInstant, formatNumber } from '../../shared/format'
 import { ListSkeleton } from '../../shared/ListSkeleton'
 import { ProblemState } from '../../shared/ProblemState'
@@ -146,7 +145,6 @@ function CourseVersions({ group, primary }: { group: CourseGroup; primary: strin
   const headingId = `course-${course.id}`
   return (
     <section aria-labelledby={headingId} className="overflow-hidden rounded-card border border-border bg-surface">
-      <CordBanner seed={course.code} height={28} />
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 pt-4 sm:px-5">
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 id={headingId} className="text-title-3 text-ink [overflow-wrap:anywhere]">

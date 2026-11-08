@@ -5,7 +5,6 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { TEXT_LINK } from '../../shared/buttons'
-import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilDate, formatCivilRange, formatInstant, formatNumber, languageName, timeZoneLabel } from '../../shared/format'
 import { lessonIcon } from '../../shared/lessonIcon'
 import { Initials } from '../../shared/Initials'
@@ -20,7 +19,6 @@ import { AVAILABILITY, Fact, IconFact, IllustrativeMark, offeringState, useMatch
 import { ProblemState, useProblemText } from './ProblemState'
 import { CATALOG_ROUTES, CLASSROOM_ROUTE } from './routes'
 
-const BANNER_HEIGHT = 120
 // desde aquí, dos columnas con las ediciones fijas; por debajo, la acción al pie
 const TWO_COLUMNS = '(min-width: 64rem)'
 const ACTIVE_ENROLLMENT = 'ACTIVA'
@@ -71,13 +69,12 @@ function CourseProblem({ error, onRetry }: { error: unknown; onRetry: () => void
   )
 }
 
-// el hueco de la ficha, con su geometría: banda, cabecera, contenido y columna de ediciones
+// el hueco de la ficha, con su geometría: cabecera, contenido y columna de ediciones
 function CourseSkeleton() {
   const { t } = useTranslation('catalog')
   return (
     <div role="status" data-slot="course-skeleton">
       <span className="sr-only">{t('detail.loading')}</span>
-      <div style={{ height: BANNER_HEIGHT }} className="bg-surface-muted" />
       <div className="border-b border-border bg-surface">
         <div className={`${screenContainer()} flex flex-col gap-3 py-6`}>
           <Skeleton className="h-5 w-40" />
@@ -113,7 +110,6 @@ function CourseView({ course }: { course: CourseDetail }) {
 
   return (
     <article className={`flex flex-col ${footer ? CLEAR_OF_FOOTER : ''}`}>
-      <CordBanner seed={course.slug} height={BANNER_HEIGHT} />
       <ScreenHeader
         title={course.title}
         subtitle={course.summary ?? undefined}

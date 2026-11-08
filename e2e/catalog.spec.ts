@@ -119,9 +119,9 @@ test('la tarjeta entera lleva a la ficha, y su foco rodea la tarjeta sin que el 
   })
   expect(outline).toEqual({ style: 'solid', width: '2px', offset: '2px' })
 
-  // un clic en la banda, fuera del título, también abre la ficha
-  const banner = (await card.locator('[data-slot="cord-banner"]').boundingBox())!
-  await page.mouse.click(banner.x + banner.width / 2, banner.y + banner.height / 2)
+  // un clic en el margen de la tarjeta, fuera del título, también abre la ficha
+  const box = (await card.boundingBox())!
+  await page.mouse.click(box.x + box.width - 8, box.y + 8)
   await expect(page.getByRole('heading', { level: 1, name: 'Licencias de anuncios con SRTM' })).toBeVisible()
 })
 

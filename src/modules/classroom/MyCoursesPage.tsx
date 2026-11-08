@@ -4,7 +4,6 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { BookOpen } from 'lucide-react'
-import { CordBanner } from '../../shared/CordBanner'
 import { timeZoneLabel } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
@@ -188,7 +187,6 @@ function PrimaryCourse({ enrollment, showZone }: { enrollment: Enrollment; showZ
   const next = enrollment.nextLesson!
   return (
     <article className="overflow-hidden rounded-card border border-border bg-surface">
-      <CordBanner seed={enrollment.course.slug} height={56} />
       <div className="flex flex-col gap-4 px-5 pt-3 pb-5 sm:px-6 sm:pb-6">
         <div className="flex flex-col">
           <CourseTitle enrollment={enrollment} />

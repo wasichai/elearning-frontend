@@ -14,8 +14,8 @@ const TONE: Record<StatusState, string> = {
   review: 'bg-notice-soft text-notice',
   overdue: 'bg-danger-soft text-danger',
   warning: 'bg-warning-soft text-warning',
-  // el logro va en tinta sobre maíz: solo finalización y certificado
-  achievement: 'bg-maiz text-on-maiz',
+  // el logro (finalización y certificado) va en tinta con filete, sin color propio: se distingue por su sello y su palabra
+  achievement: 'border border-ink bg-surface text-ink',
   neutral: 'border border-border bg-surface text-ink-muted'
 }
 
@@ -60,11 +60,11 @@ const ICON: Record<StatusState, ReactNode> = {
 
 export function StatusBadge({ state, children }: { state: StatusState; children: ReactNode }) {
   return (
-    <Badge data-state={state} className={`gap-1.5 ${TONE[state]}`}>
+    <Badge data-state={state} className={`gap-1.5 rounded-md ${TONE[state]}`}>
       <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3.5 shrink-0">
         {ICON[state]}
       </svg>
-      {children}
+      <span className="text-secondary font-semibold">{children}</span>
     </Badge>
   )
 }

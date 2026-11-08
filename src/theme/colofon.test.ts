@@ -63,7 +63,7 @@ const TEXT: [string, string[]][] = [
   ['success', ['surface', 'success-soft']],
   ['warning', ['surface', 'warning-soft']],
   ['notice', ['surface', 'notice-soft']],
-  // temporal: mientras existan los tokens del maíz (tarea 4/5)
+  // temporal: mientras existan los tokens del maíz (tarea 5)
   ['on-maiz', ['maiz']],
   ['ink', ['maiz-soft']],
   ['shell-ink', ['shell']],

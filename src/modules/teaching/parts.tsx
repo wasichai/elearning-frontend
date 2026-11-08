@@ -119,7 +119,7 @@ export function OfferingFrame({
 // el total y la acción de una pantalla de trabajo, siempre a la vista: main desplaza, y esto se queda pegado a su borde inferior, a ras
 // de los márgenes de ScreenBody
 export const STICKY_BAR =
-  'sticky bottom-0 z-10 -mx-4 -mb-16 flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 shadow-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'
+  'sticky bottom-0 z-10 -mx-4 -mb-16 flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 shadow-overlay sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8'
 
 // avisar antes de salir de un trabajo sin guardar: los enlaces (también los del menú del shell), recargar o cerrar, y request para lo que
 // navega sin un enlace, como el selector de edición

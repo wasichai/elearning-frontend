@@ -98,7 +98,7 @@
     U+FEFF, U+FFFD;
 }
 
-/* temporal: se retira en la tarea 4/5. la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que
+/* temporal: se retira en la tarea 5. la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que
    ponen los temas Colofón (los de Wasichai no lo tienen: respaldo en warning), y la única animación de celebración del producto, que no se repite. inline: el
    valor se resuelve en el elemento, así un subárbol con otro tema cuenta */
 @theme inline {
@@ -159,28 +159,13 @@
   --text-reading--line-height: 33px;
   --text-reading--font-weight: 400;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 72px;
-  --space-9: 112px;
-
   /* max-w-measure, w-index-col, w-margin-col, max-w-content-max */
   --container-measure: 66ch;
   --container-index-col: 280px;
   --container-margin-col: 264px;
   --container-content-max: 1200px;
 
-  --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
-
-  /* temporal: se retira en la tarea 4/5. la escala de Quipu que las pantallas aún usan, sobre la de Colofón */
-  --text-title-1: 32px;
-  --text-title-1--line-height: 38px;
-  --text-title-1--font-weight: 440;
+  /* temporal: se retira en las tareas 5 a 9, con las pantallas que aún usan la escala de Quipu, sobre la de Colofón */
   --text-title-2: 25px;
   --text-title-2--line-height: 31px;
   --text-title-2--font-weight: 520;
@@ -193,15 +178,33 @@
   --text-read-title: 44px;
   --text-read-title--line-height: 50px;
   --text-read-title--font-weight: 380;
-  --text-read-h2: 32px;
-  --text-read-h2--line-height: 38px;
-  --text-read-h2--font-weight: 440;
   --text-read-body: 20px;
   --text-read-body--line-height: 33px;
   --text-read-body-sm: 17px;
   --text-read-body-sm--line-height: 28px;
-  --shadow-1: 0 0 0 1px var(--border);
-  --shadow-2: var(--shadow-overlay);
+}
+
+/* los espaciados se emiten siempre, se usen o no (static): son tokens de Foundations que las pantallas leen con var(--space-n) */
+@theme static {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 112px;
+}
+
+/* la sombra de lo que flota. no es un token de @theme: Tailwind copiaría el valor claro a la utilidad y ignoraría el tema oscuro.
+   el valor lo ponen los temas Colofón (--shadow-overlay); :where() no pesa nada, así el respaldo no gana a ningún tema */
+:where(:root) {
+  --shadow-overlay: 0 12px 32px rgb(23 32 43 / 16%);
+}
+
+@utility shadow-overlay {
+  box-shadow: var(--shadow-overlay);
 }
 
 /* texto de metadatos (Unidad 1 · §1.1 · lectura · 20 min): versalitas reales, +0,07em, en ink-muted */

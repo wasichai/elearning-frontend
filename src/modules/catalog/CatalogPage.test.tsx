@@ -97,9 +97,8 @@ describe('CatalogPage', () => {
     expect(second.queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
     expect(second.getByText('6 semanas · 72 h')).toBeInTheDocument()
 
-    // cada curso tiene su banda de cordones, generada del slug; el enlace es lo único interactivo de la tarjeta
-    const banners = items.map((item) => item.querySelector('[data-slot="cord-banner"]')!.innerHTML)
-    expect(banners[0]).not.toEqual(banners[1])
+    // sin banda decorativa; el enlace es lo único interactivo de la tarjeta
+    expect(items.every((item) => item.querySelector('[data-slot="cord-banner"]') === null)).toBe(true)
     expect(first.getAllByRole('link')).toHaveLength(1)
     expect(first.queryByRole('button')).not.toBeInTheDocument()
     // la categoría no va en mayúsculas sostenidas
