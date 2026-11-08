@@ -91,7 +91,7 @@ const es = {
     creating: 'Creando…',
     checkFailed: 'No pudimos comprobar si este curso tiene versiones.',
     failed: 'No pudimos crear el borrador. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos crear el borrador (error {{status}}). Inténtalo de nuevo.',
+    failedStatus: 'No pudimos crear el borrador. Inténtalo de nuevo. Código del error: {{status}}.',
     refused: 'No tienes permiso para crear versiones. Si crees que deberías, pide a la coordinación que revise tus permisos.',
     notFound: 'Este curso ya no existe o no puedes leerlo.',
     conflict: 'Este curso ya tiene una versión: otra persona pudo crearla hace un momento. Si es tuya, está en «Mis versiones».',
@@ -214,7 +214,7 @@ const es = {
     refused: 'No tienes permiso para hacerlo. Si crees que deberías, pide a la coordinación que revise tus permisos.',
     network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     failed: 'No pudimos guardarlo. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos guardarlo (error {{status}}). Inténtalo de nuevo.'
+    failedStatus: 'No pudimos guardarlo. Inténtalo de nuevo. Código del error: {{status}}.'
   },
   problem: {
     versions: {
@@ -343,7 +343,7 @@ const en: typeof es = {
     creating: 'Creating…',
     checkFailed: 'We could not check whether this course has versions.',
     failed: 'We could not create the draft. Please try again.',
-    failedStatus: 'We could not create the draft (error {{status}}). Please try again.',
+    failedStatus: 'We could not create the draft. Please try again. Error code: {{status}}.',
     refused: 'You do not have permission to create versions. If you think you should, ask the coordination team to review your permissions.',
     notFound: 'This course no longer exists or you cannot read it.',
     conflict: 'This course already has a version: someone else may have just created it. If it is yours, it is in “My versions”.',
@@ -462,7 +462,7 @@ const en: typeof es = {
     refused: 'You do not have permission to do this. If you think you should, ask the coordination team to review your permissions.',
     network: 'There is no connection to the server. Check your connection and try again.',
     failed: 'We could not save it. Please try again.',
-    failedStatus: 'We could not save it (error {{status}}). Please try again.'
+    failedStatus: 'We could not save it. Please try again. Error code: {{status}}.'
   },
   problem: {
     versions: {

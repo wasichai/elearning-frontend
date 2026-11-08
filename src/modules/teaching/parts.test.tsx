@@ -56,7 +56,7 @@ describe('useActionError: del ProblemDetail al mensaje', () => {
   })
 
   it('un 5xx deja a la vista el estado para reportarlo', async () => {
-    expect(await explain(new ApiError(503, 'Service Unavailable'))).toBe('No pudimos guardarlo (error 503). Inténtalo de nuevo.')
+    expect(await explain(new ApiError(503, 'Service Unavailable'))).toBe('No pudimos guardarlo. Inténtalo de nuevo. Código del error: 503.')
   })
 
   it('sin conexión lo dice; una respuesta fuera de contrato o lo inesperado, sin detalles técnicos', async () => {

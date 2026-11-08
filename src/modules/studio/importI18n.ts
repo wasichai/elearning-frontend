@@ -42,7 +42,7 @@ const es = {
     courseNotFound: 'El curso elegido ya no existe. Elige otro.',
     network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     tooMany: 'Tienes demasiados trabajos en marcha. Espera a que termine alguno e inténtalo de nuevo.',
-    failed: 'No pudimos encolar la importación (error {{status}}). Inténtalo de nuevo.',
+    failed: 'No pudimos encolar la importación. Inténtalo de nuevo. Código del error: {{status}}.',
     unexpected: 'No pudimos encolar la importación. Inténtalo de nuevo.'
   },
   status: {
@@ -199,7 +199,7 @@ const en: typeof es = {
     courseNotFound: 'The chosen course no longer exists. Choose another one.',
     network: 'There is no connection to the server. Check your connection and try again.',
     tooMany: 'You have too many jobs running. Wait for one to finish and try again.',
-    failed: 'We could not queue the import (error {{status}}). Please try again.',
+    failed: 'We could not queue the import. Please try again. Error code: {{status}}.',
     unexpected: 'We could not queue the import. Please try again.'
   },
   status: {
