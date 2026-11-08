@@ -43,13 +43,10 @@ export async function fetchAgenda(client: ApiClient, range: AgendaRange, signal?
 }
 
 // bajo 'classroom': lo que invalida todo el aula también la vuelve a leer
-export const agendaKeys = {
-  all: ['classroom', 'agenda'] as const,
-  range: ({ from, to }: AgendaRange) => ['classroom', 'agenda', from, to] as const
-}
+const agendaKey = ({ from, to }: AgendaRange) => ['classroom', 'agenda', from, to] as const
 
 // el intervalo es parte de la clave: quien lo calcule debe darlo estable (redondeado), o cada render pediría otra vez
 export function useAgenda(range: AgendaRange, { enabled = true }: { enabled?: boolean } = {}) {
   const client = useApiClient()
-  return useQuery({ queryKey: agendaKeys.range(range), queryFn: ({ signal }) => fetchAgenda(client, range, signal), retry: retryNetwork, enabled })
+  return useQuery({ queryKey: agendaKey(range), queryFn: ({ signal }) => fetchAgenda(client, range, signal), retry: retryNetwork, enabled })
 }

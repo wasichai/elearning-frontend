@@ -1,6 +1,6 @@
 import { EmptyState, useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { useId, useMemo, useState, type ReactNode } from 'react'
+import { useId, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { BookOpen } from 'lucide-react'
@@ -40,8 +40,11 @@ const NO_ENROLLMENTS: Enrollment[] = []
 export function MyCoursesPage() {
   const panel = useClassroomPanel()
   const list = useEnrollments({ enabled: panel.isError })
-  // el intervalo, una vez por visita: redondeado al día, no cambia la clave de la consulta en cada render
-  const [range] = useState(() => weekRange(Date.now()))
+  // el intervalo sigue al día local: mientras el día no cambia, la clave de la consulta tampoco; pasada la medianoche, el siguiente render
+  // (volver a la pestaña, una relectura) pide la semana nueva
+  const now = Date.now()
+  const today = new Date(now).toDateString()
+  const range = useMemo(() => weekRange(now), [today]) // depende del día, no del instante
   const agenda = useAgenda(range)
   const read = panel.isError ? undefined : panel.data
   const enrollments = read ?? list.data
@@ -53,7 +56,6 @@ export function MyCoursesPage() {
     if (panel.isError) void list.refetch()
   }
   useRefetchOnRevisit(reload)
-  const now = Date.now()
   const week = agenda.data ? weekSessions(agenda.data, active, now) : []
   const assessments = read ? railAssessments(active, read) : []
   const zone = sharedZone(enrollments ?? NO_ENROLLMENTS)

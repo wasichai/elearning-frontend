@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import type { WasichaiModule } from '@wasichai/core'
 import { Link } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { classroomModule } from './module'
 import { MyCoursesPage } from './MyCoursesPage'
 import { PANEL_PAGE_SIZE } from '../../shared/pages'
@@ -241,6 +241,34 @@ describe('MyCoursesPage', () => {
     expect(called(PANEL)).toBe(2)
     expect(called(AGENDA)).toBe(2)
     expect(called(ENROLLMENTS)).toBe(0)
+  })
+
+  // una pestaña que sigue abierta pasada la medianoche: la semana es la del día nuevo, no la del día en que se montó
+  it('el intervalo de la agenda sigue al día local: tras medianoche pide la semana nueva', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(new Date(2026, 10, 13, 23, 50))
+      const routes: MockRoute[] = [panelOf(otherEnrollment), agendaOf()]
+      fetchMock = mockFetch(routes)
+      renderWithProviders(
+        <>
+          <Link to="/mis-cursos">Menú</Link>
+          <MyCoursesPage />
+        </>,
+        { modules: [classroomModule(), catalogStub], permissions: { admin: false, objects: {} }, route: '/mis-cursos' }
+      )
+      await waitFor(() => expect(called(AGENDA)).toBe(1))
+      const froms = () => fetchMock.calls.filter((call) => call.path.startsWith(AGENDA)).map((call) => new URL(call.url, 'http://x').searchParams.get('from'))
+
+      vi.setSystemTime(new Date(2026, 10, 14, 0, 10))
+      await userEvent.click(screen.getByRole('link', { name: 'Menú' }))
+
+      await waitFor(() => expect(new Set(froms()).size).toBe(2))
+      const [before, after] = [...new Set(froms())].map((from) => Date.parse(from!))
+      expect(after! - before!).toBe(24 * 3600 * 1000)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('el saludo dice cuántas sesiones en vivo hay en los próximos 7 días, sin las canceladas, y cuántas evaluaciones por hacer', async () => {
