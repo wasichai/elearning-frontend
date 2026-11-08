@@ -347,7 +347,7 @@ const es = {
     refused: 'No tienes permiso para hacerlo. Si crees que deberías, pide a la coordinación que revise tu asignación.',
     network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     failed: 'No pudimos guardarlo. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos guardarlo (error {{status}}). Inténtalo de nuevo.'
+    failedStatus: 'No pudimos guardarlo. Inténtalo de nuevo. Código del error: {{status}}.'
   },
   problem: {
     offerings: {
@@ -768,7 +768,7 @@ const en: typeof es = {
     refused: 'You are not allowed to do this. If you think you should be, ask the coordinators to check your assignment.',
     network: 'There is no connection to the server. Check your connection and try again.',
     failed: 'We could not save it. Please try again.',
-    failedStatus: 'We could not save it (error {{status}}). Please try again.'
+    failedStatus: 'We could not save it. Please try again. Error code: {{status}}.'
   },
   problem: {
     offerings: {

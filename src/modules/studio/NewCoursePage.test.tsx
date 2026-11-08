@@ -71,7 +71,7 @@ describe('NewCoursePage: de «Nuevo curso» al primer borrador', () => {
     const user = await fillAndSave()
 
     expect(await screen.findByText(/El curso «Curso nuevo» se guardó/)).toBeInTheDocument()
-    expect(screen.getByText('No pudimos crear el borrador (error 500). Inténtalo de nuevo.')).toBeInTheDocument()
+    expect(screen.getByText('No pudimos crear el borrador. Inténtalo de nuevo. Código del error: 500.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Abrir el curso' })).toHaveAttribute('href', `/data/objects/curso/records/${newCourseRecord.id}`)
     routes[0] = { method: 'POST', path: DRAFT, status: 201, body: firstDraftDetail }
     fetchMock.restore()
