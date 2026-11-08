@@ -7,7 +7,7 @@ import { classroomModule } from './module'
 import { serveFiles } from '../../test/files'
 import { classroom, lessonHtml } from './test/fixtures'
 
-// el modo lectura de la lección (docs/design-system, PantallaLeccion): el tema quipu-lectura en el contenedor de la
+// el modo lectura de la lección (docs/design-system/historico-quipu, PantallaLeccion): el tema quipu-lectura en el contenedor de la
 // lección y el tamaño del texto de la lectura, recordados en el navegador con el storagePrefix
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'

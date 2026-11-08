@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Colofón · componentes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&amp;family=Source+Sans+3:ital,wght@0,300..800;1,300..800&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+.serif{font-family:'Newsreader',Georgia,'Times New Roman',serif;font-optical-sizing:auto}
+.sans{font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums lining-nums}
+.meta{font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-variant-caps:all-small-caps;letter-spacing:.07em;font-size:15px;color:#4F5B69;font-variant-numeric:tabular-nums}
+.rule{border:0;border-top:1px solid #D3D8DF;margin:0}
+.rule-ink{border:0;border-top:1px solid #17202B;margin:0}
+.sec-h{display:flex;align-items:baseline;gap:16px;padding-bottom:10px;border-bottom:1px solid #17202B}
+.sec-h .n{font-family:'Source Sans 3',system-ui,sans-serif;font-size:15px;color:#4F5B69;width:40px;font-variant-numeric:tabular-nums}
+.sec-h h2{margin:0;font-family:'Newsreader',Georgia,serif;font-size:30px;line-height:1.15;font-weight:420}
+.cap{font-size:13.5px;color:#4F5B69}
+.btn{font-family:'Source Sans 3',system-ui,sans-serif;font-size:15px;font-weight:600;min-height:44px;padding:0 18px;border-radius:3px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+.btn:focus-visible,a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #2A5DB0;outline-offset:2px}
+.b-pri{background:#1F3A64;color:#FFFFFF}.b-pri:hover,.b-pri.h{background:#152A4A}
+.b-sec{background:#FFFFFF;color:#1F3A64;border-color:#1F3A64}.b-sec:hover,.b-sec.h{background:#E3E9F2}
+.b-txt{background:transparent;color:#24508C;text-decoration:underline;text-underline-offset:3px;padding:0 6px}.b-txt:hover,.b-txt.h{color:#152A4A;text-decoration-thickness:2px}
+.b-dan{background:#B42318;color:#FFFFFF}.b-dan:hover,.b-dan.h{background:#8F1B12}
+.f{outline:2px solid #2A5DB0;outline-offset:2px}
+.btn[disabled]{background:#E3E7EC;color:#5E6977;border-color:#E3E7EC;cursor:not-allowed;text-decoration:none}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:15px;font-weight:600}
+.inp{font-family:'Source Sans 3',system-ui,sans-serif;font-size:16px;min-height:44px;padding:0 12px;border:1px solid #7D8794;border-radius:3px;background:#FFFFFF;color:#17202B;box-sizing:border-box;width:100%}
+.nav-i{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 12px;border-radius:3px;color:#17202B;text-decoration:none;font-size:15px}
+.nav-i:hover,.nav-i.h{background:#E3E7EC}
+.nav-i.on{background:#E3E9F2;color:#1F3A64;font-weight:650}
+.tab{font-family:'Source Sans 3',system-ui,sans-serif;font-size:15px;min-height:44px;padding:0 4px;background:none;border:0;border-bottom:2px solid transparent;color:#4F5B69;cursor:pointer;font-weight:500}
+.tab.on{border-bottom-color:#1F3A64;color:#17202B;font-weight:650}
+.bdg{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;line-height:1}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;padding:5px 9px;border-radius:3px}
+.tbl{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
+.tbl th{text-align:left;font-weight:600;color:#4F5B69;padding:10px 12px;background:#EEF1F5;border-bottom:1px solid #D3D8DF;font-size:14px}
+.tbl td{padding:12px;border-bottom:1px solid #E3E7EC;vertical-align:top}
+.seg{flex:1;height:8px;box-sizing:border-box;border:1px solid #7D8794}
+.seg.d{background:#1F3A64;border-color:#1F3A64}
+.seg.s{border-color:#1F3A64;background:repeating-linear-gradient(135deg,#1F3A64 0 1.5px,transparent 1.5px 4px)}
+.sk{background:#E3E7EC;border-radius:2px}
+a{color:#24508C;text-underline-offset:3px}a:hover{color:#152A4A}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+</helmet>
+<div class="sans" style="width:1440px;height:2500px;box-sizing:border-box;background:#F4F5F7;color:#17202B;padding:40px 72px 56px;display:flex;flex-direction:column;gap:44px;overflow:hidden">
+
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span class="meta">Colofón · componentes</span><span class="meta">folio iii</span></div>
+    <hr class="rule-ink">
+    <h1 class="serif" style="margin:6px 0 0;font-size:56px;line-height:1.05;font-weight:340">Biblioteca de componentes</h1>
+  </header>
+
+  <!-- §1 botones -->
+  <section style="display:flex;flex-direction:column;gap:18px">
+    <div class="sec-h"><span class="n">§1</span><h2>Botones</h2><span class="cap" style="margin-left:auto">44 px de alto · radio 3 px · una acción primaria por vista</span></div>
+    <div style="display:grid;grid-template-columns:120px repeat(5,minmax(0,1fr));gap:16px 20px;align-items:center">
+      <span></span><span class="meta">Reposo</span><span class="meta">Hover</span><span class="meta">Foco</span><span class="meta">Desactivado</span><span class="meta">Cargando</span>
+      <span class="cap">Primario</span>
+      <div><button class="btn b-pri">Matricularme</button></div>
+      <div><button class="btn b-pri h">Matricularme</button></div>
+      <div><button class="btn b-pri f">Matricularme</button></div>
+      <div><button class="btn b-pri" disabled="disabled">Matricularme</button></div>
+      <div><button class="btn b-pri" aria-busy="true"><svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Matriculando…</button></div>
+      <span class="cap">Secundario</span>
+      <div><button class="btn b-sec">Ver el temario</button></div>
+      <div><button class="btn b-sec h">Ver el temario</button></div>
+      <div><button class="btn b-sec f">Ver el temario</button></div>
+      <div><button class="btn b-sec" disabled="disabled">Ver el temario</button></div>
+      <div><button class="btn b-sec" aria-busy="true"><svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Cargando…</button></div>
+      <span class="cap">Texto</span>
+      <div><button class="btn b-txt">Descargar PDF</button></div>
+      <div><button class="btn b-txt h">Descargar PDF</button></div>
+      <div><button class="btn b-txt f">Descargar PDF</button></div>
+      <div><button class="btn b-txt" disabled="disabled" style="background:transparent">Descargar PDF</button></div>
+      <div><button class="btn b-txt" aria-busy="true"><svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Preparando…</button></div>
+      <span class="cap">Peligro</span>
+      <div><button class="btn b-dan">Anular matrícula</button></div>
+      <div><button class="btn b-dan h">Anular matrícula</button></div>
+      <div><button class="btn b-dan f">Anular matrícula</button></div>
+      <div><button class="btn b-dan" disabled="disabled">Anular matrícula</button></div>
+      <div><button class="btn b-dan" aria-busy="true"><svg class="spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Anulando…</button></div>
+    </div>
+  </section>
+
+  <!-- §2 campos + §3 nav -->
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px">
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§2</span><h2>Campos y menús</h2></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px 24px">
+        <div class="field">
+          <label for="c-q">Buscar en el catálogo</label>
+          <div style="position:relative">
+            <svg style="position:absolute;left:12px;top:13px;color:#4F5B69" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input id="c-q" class="inp" style="padding-left:38px" placeholder="Título o tema">
+          </div>
+          <span class="cap">Busca en títulos y resúmenes.</span>
+        </div>
+        <div class="field">
+          <label for="c-code">Código del certificado</label>
+          <input id="c-code" class="inp" value="4T56-FDDU" aria-invalid="true" aria-describedby="c-code-e" style="border-color:#B42318;border-width:2px">
+          <span id="c-code-e" style="font-size:14px;color:#B42318;display:flex;gap:6px;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>Faltan 4 caracteres: el código tiene 12.</span>
+        </div>
+        <div class="field">
+          <label for="c-sel">Modalidad</label>
+          <div style="position:relative">
+            <select id="c-sel" class="inp" style="appearance:none;padding-right:36px"><option>Todas</option><option>Asíncrona</option><option>Híbrida</option></select>
+            <svg style="position:absolute;right:12px;top:13px;pointer-events:none" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </div>
+        </div>
+        <div class="field" style="position:relative">
+          <span style="font-size:15px;font-weight:600">Menú desplegable</span>
+          <button class="btn b-sec" aria-expanded="true" style="justify-content:space-between;width:100%">Estela Estudiante<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg></button>
+          <div role="menu" style="background:#FFFFFF;border-radius:4px;box-shadow:0 12px 32px rgba(23,32,43,.16);border:1px solid #D3D8DF;padding:6px;display:flex;flex-direction:column">
+            <a role="menuitem" href="#" class="nav-i">Mi perfil</a>
+            <a role="menuitem" href="#" class="nav-i h">Mis certificados</a>
+            <hr class="rule" style="margin:4px 0">
+            <a role="menuitem" href="#" class="nav-i" style="justify-content:space-between">Tema<span class="cap">Claro</span></a>
+            <a role="menuitem" href="#" class="nav-i" style="justify-content:space-between">Idioma<span class="cap">Español</span></a>
+            <hr class="rule" style="margin:4px 0">
+            <a role="menuitem" href="#" class="nav-i">Cerrar sesión</a>
+          </div>
+          <span class="cap">Tema e idioma viven aquí, no en la barra (problema 8).</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§3</span><h2>Navegación</h2></div>
+      <div style="display:grid;grid-template-columns:232px minmax(0,1fr);gap:24px">
+        <nav aria-label="Principal" style="background:#EDEFF3;border:1px solid #D3D8DF;padding:16px 10px;display:flex;flex-direction:column;gap:2px">
+          <span class="serif" style="font-size:19px;font-weight:560;padding:0 12px 14px">wasichai-learning</span>
+          <a href="#" class="nav-i"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>Inicio</a>
+          <span class="meta" style="padding:14px 12px 4px">Aprendizaje</span>
+          <a href="#" class="nav-i on" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>Mis cursos</a>
+          <a href="#" class="nav-i h"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14M12 6v14M8 8v12M4 4v16"></path></svg>Catálogo</a>
+          <a href="#" class="nav-i"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Horario</a>
+          <span class="meta" style="padding:14px 12px 4px">Docencia</span>
+          <a href="#" class="nav-i"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="4"></circle><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"></path></svg>Mis ediciones</a>
+          <span class="cap" style="padding:12px 12px 0">Reposo · hover · activo (fondo, peso y <code>aria-current</code>). Un solo activo.</span>
+        </nav>
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="meta">Barra superior</span>
+            <div style="display:flex;align-items:center;gap:12px;height:56px;border-bottom:1px solid #D3D8DF;background:#F4F5F7;padding:0 4px">
+              <nav aria-label="Migas" style="font-size:14.5px;display:flex;gap:8px;align-items:center;color:#4F5B69;flex:1;min-width:0">
+                <a href="#">Mis cursos</a><span aria-hidden="true">/</span><span aria-current="page" style="color:#17202B;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rentas municipales (SRTM)</span>
+              </nav>
+              <button class="btn b-txt" aria-label="Notificaciones" style="color:#17202B;padding:0 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></button>
+              <button class="btn" style="background:transparent;color:#17202B;padding:0 8px;gap:10px"><span style="width:30px;height:30px;border-radius:50%;background:#1F3A64;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:13px">EE</span>Estela</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="meta">Pestañas · interactivas</span>
+            <div role="tablist" style="display:flex;gap:24px;border-bottom:1px solid #D3D8DF">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+                <button role="tab" class="{{t.cls}}" aria-selected="{{t.sel}}" onClick="{{t.pick}}">{{t.label}}</button>
+              </sc-for>
+            </div>
+            <p class="serif" style="margin:0;font-size:17px;line-height:1.55;color:#4F5B69">{{tabText}}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="meta">Cabecera corrida del aula</span>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #17202B;padding-bottom:8px">
+              <span class="meta" style="color:#17202B">Rentas municipales (SRTM) · Unidad 2 · §2.2</span><span class="sans" style="font-size:14px;color:#4F5B69">6 / 14</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- §4 insignias + §5 progreso -->
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px">
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§4</span><h2>Estados</h2><span class="cap" style="margin-left:auto">siempre icono + palabra</span></div>
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr);gap:16px 16px;align-items:center">
+        <span class="cap">Lección</span>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 22px">
+          <span class="bdg" style="color:#4F5B69"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#7D8794" stroke-width="1.5"></circle></svg>No iniciada</span>
+          <span class="bdg" style="color:#1F3A64"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="#1F3A64" stroke-width="1.5"></circle><path d="M8 2a6 6 0 0 0 0 12z" fill="#1F3A64"></path></svg>Iniciada</span>
+          <span class="bdg" style="color:#17202B"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#1F3A64"></circle><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>Completada</span>
+          <span class="bdg" style="color:#2D6A45"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#2D6A45"></circle><path d="M4.4 8.2l2 2 4-4.2M9.6 10.2l1.2 1.2" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>Aprobada</span>
+        </div>
+        <span class="cap">Inscripción</span>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <span class="pill" style="background:#E4F0E8;color:#2D6A45"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Inscripción abierta</span>
+          <span class="pill" style="background:#F8EED9;color:#8A5300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="7" r="4"></circle><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path><path d="m16 11 5 5M21 11l-5 5"></path></svg>Edición completa</span>
+          <span class="pill" style="background:#EEF1F5;color:#4F5B69"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Inscripción aún no abierta</span>
+        </div>
+        <span class="cap">Sesión</span>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 22px">
+          <span class="bdg" style="color:#1F3A64"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Programada</span>
+          <span class="bdg" style="color:#8A5300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"></path></svg>Reprogramada</span>
+          <span class="bdg" style="color:#B42318"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m4.9 4.9 14.2 14.2"></path></svg><s>Cancelada</s></span>
+        </div>
+        <span class="cap">Asistencia</span>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 22px">
+          <span class="bdg" style="color:#2D6A45"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Presente</span>
+          <span class="bdg" style="color:#8A5300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>Tarde</span>
+          <span class="bdg" style="color:#B42318"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg>Ausente</span>
+          <span class="bdg" style="color:#2B5E6E"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path></svg>Justificado</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§5</span><h2>Progreso</h2><span class="cap" style="margin-left:auto">resuelve el problema 2</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="meta">Curso · una fila, agrupada por unidades</span>
+        <div style="display:flex;gap:14px" role="img" aria-label="0 de 14 lecciones completadas, 1 iniciada">
+          <div style="display:flex;gap:3px;flex:4"><span class="seg s"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+          <div style="display:flex;gap:3px;flex:4"><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+          <div style="display:flex;gap:3px;flex:4"><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
+          <div style="display:flex;gap:3px;flex:2"><span class="seg"></span><span class="seg"></span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:15px"><span><strong style="font-weight:650">0 de 14</strong> lecciones completadas · 1 iniciada</span><span style="color:#4F5B69">0 %</span></div>
+        <p class="cap" style="margin:0;line-height:1.5">Relleno = completada. Rayado = iniciada (nunca cuenta como hecho). El porcentaje solo cuenta completadas y aprobadas; si es 0, nada se pinta de marca.</p>
+      </div>
+      <hr class="rule">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span class="meta">Índice de unidad</span>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid #17202B;padding-bottom:6px">
+          <span class="serif" style="font-size:19px;font-weight:600">Unidad 1. Acceso al portal</span>
+          <span style="font-size:14.5px">Unidad 1 — 0 de 4 · 1 iniciada</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:15px;min-height:36px;color:#1F3A64;font-weight:600"><svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Iniciada"><circle cx="8" cy="8" r="6" fill="none" stroke="#1F3A64" stroke-width="1.5"></circle><path d="M8 2a6 6 0 0 0 0 12z" fill="#1F3A64"></path></svg><span class="serif" style="font-size:17px">1.1 Lo que necesita para entrar</span><span class="meta" style="color:#1F3A64">en curso</span></div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:15px;min-height:36px"><svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="No iniciada"><circle cx="8" cy="8" r="6" fill="none" stroke="#7D8794" stroke-width="1.5"></circle></svg><span class="serif" style="font-size:17px">1.2 Ingresar y resolver un ingreso fallido</span></div>
+        <span class="cap">Lección: «Lectura · 20 min · leída hasta el final» al pie, sin barra.</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- §6 tabla + §7 alertas -->
+  <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:56px">
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§6</span><h2>Tabla</h2></div>
+      <div style="overflow-x:auto;border-top:1px solid #17202B">
+        <table class="tbl">
+          <thead><tr><th scope="col">Edición</th><th scope="col">Inscripción</th><th scope="col">Horario</th><th scope="col">Docentes</th><th scope="col"><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Acción</span></th></tr></thead>
+          <tbody>
+            <tr><td><strong style="font-weight:650">19 nov – 7 dic 2026</strong></td><td><span class="bdg" style="color:#2D6A45"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Abierta</span></td><td>Asíncrona, sin horario fijo</td><td>Ana Quispe</td><td style="text-align:right"><a href="#" class="btn b-pri" style="min-height:40px">Matricularme</a></td></tr>
+            <tr><td style="color:#4F5B69">[siguiente edición]</td><td><span class="bdg" style="color:#4F5B69"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Aún no abierta</span></td><td>Martes y jueves, 18:00–20:00</td><td>[docentes]</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <span class="cap">Filas con filete, cabecera en --table-head, cifras tabulares; en móvil la tabla se desplaza dentro de su caja.</span>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div class="sec-h"><span class="n">§7</span><h2>Avisos</h2></div>
+      <div role="status" style="display:flex;gap:12px;padding:12px 14px;background:#E2EEF1;color:#17202B;border-radius:3px"><svg style="color:#2B5E6E;flex:none;margin-top:2px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg><span style="font-size:15px;line-height:1.45"><strong>Contenido publicado.</strong> Rentas municipales (SRTM) tiene una versión nueva de la Unidad 2.</span></div>
+      <div role="status" style="display:flex;gap:12px;padding:12px 14px;background:#F8EED9;color:#17202B;border-radius:3px"><svg style="color:#8A5300;flex:none;margin-top:2px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"></path></svg><span style="font-size:15px;line-height:1.45"><strong>Sesión reprogramada.</strong> El aviso dice la fecha anterior y la nueva.</span></div>
+      <div role="alert" style="display:flex;gap:12px;padding:12px 14px;background:#FBE9E7;color:#17202B;border-radius:3px"><svg style="color:#B42318;flex:none;margin-top:2px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4M12 17h.01"></path></svg><span style="font-size:15px;line-height:1.45"><strong>No se guardó el progreso.</strong> Se perdió la conexión. Vuelva a marcar la lección cuando se recupere.</span></div>
+      <div role="status" style="display:flex;gap:12px;padding:12px 14px;background:#E4F0E8;color:#17202B;border-radius:3px"><svg style="color:#2D6A45;flex:none;margin-top:2px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg><span style="font-size:15px;line-height:1.45"><strong>Lección completada.</strong> Unidad 1 — 1 de 4.</span></div>
+    </section>
+  </div>
+
+  <!-- §8 superpuestos + §9 vacío/carga/error -->
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px">
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§8</span><h2>Modal y tooltip</h2></div>
+      <div style="background:rgba(23,32,43,.38);padding:28px;display:flex;justify-content:center;border-radius:3px">
+        <div role="dialog" aria-modal="true" aria-labelledby="m-t" style="background:#FFFFFF;border-radius:4px;box-shadow:0 12px 32px rgba(23,32,43,.16);width:440px;padding:24px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+            <h3 id="m-t" class="serif" style="margin:0;font-size:24px;line-height:1.25;font-weight:500">¿Matricularse en esta edición?</h3>
+            <button class="btn b-txt" aria-label="Cerrar" style="color:#17202B;padding:0 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+          </div>
+          <p class="serif" style="margin:0;font-size:17px;line-height:1.55">Rentas municipales (SRTM), 19 nov – 7 dic 2026. Es asíncrona: avanza a su ritmo dentro de esas fechas.</p>
+          <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button class="btn b-sec">Cancelar</button><button class="btn b-pri">Matricularme</button></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:16px">
+        <button class="btn b-sec" aria-describedby="tt1">A+</button>
+        <div id="tt1" role="tooltip" style="background:#17202B;color:#FFFFFF;font-size:14px;padding:7px 10px;border-radius:3px;box-shadow:0 12px 32px rgba(23,32,43,.16)">Aumentar el tamaño del texto</div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div class="sec-h"><span class="n">§9</span><h2>Vacío, carga y error</h2></div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+        <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #D3D8DF;padding-top:14px">
+          <span class="meta">Vacío</span>
+          <p class="serif" style="margin:0;font-size:19px;line-height:1.35">Todavía no tiene cursos.</p>
+          <p style="margin:0;font-size:14.5px;line-height:1.5;color:#4F5B69">Elija uno del catálogo; las ediciones con inscripción abierta aparecen primero.</p>
+          <a href="Catalog.dc.html" class="btn b-sec" style="align-self:flex-start">Ir al catálogo</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #D3D8DF;padding-top:14px" aria-busy="true" aria-label="Cargando">
+          <span class="meta">Carga</span>
+          <span class="sk" style="height:22px;width:85%"></span>
+          <span class="sk" style="height:12px;width:60%"></span>
+          <span class="sk" style="height:8px;width:100%;margin-top:6px"></span>
+          <span class="sk" style="height:22px;width:70%;margin-top:14px"></span>
+          <span class="sk" style="height:12px;width:50%"></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;border-top:2px solid #B42318;padding-top:13px">
+          <span class="meta" style="color:#B42318">Error</span>
+          <p class="serif" style="margin:0;font-size:19px;line-height:1.35">No se pudo cargar el temario.</p>
+          <p style="margin:0;font-size:14.5px;line-height:1.5;color:#4F5B69">El servidor no respondió. Su progreso está guardado.</p>
+          <button class="btn b-sec" style="align-self:flex-start">Reintentar</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;border-top:1px solid #D3D8DF;padding-top:14px">
+        <span class="meta">Tarjeta · solo para «Continuar»</span>
+        <a href="Classroom.dc.html" style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;background:#FFFFFF;border-top:1px solid #17202B;padding:16px 18px;text-decoration:none;color:#17202B">
+          <span style="display:flex;flex-direction:column;gap:4px"><span class="meta">Datos personales · Unidad 1 · §1.2</span><span class="serif" style="font-size:21px;font-weight:520">Pedir solo lo necesario</span></span>
+          <span class="btn b-pri">Continuar</span>
+        </a>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2500}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 'temario' }; }
+  renderVals() {
+    const defs = [
+      { id: 'temario', label: 'Temario', text: 'Cuatro unidades, catorce lecciones y unas 18 horas.' },
+      { id: 'ediciones', label: 'Ediciones', text: 'Una edición con inscripción abierta: 19 nov – 7 dic 2026.' },
+      { id: 'docentes', label: 'Docentes', text: 'Ana Quispe, titular. Diez años en rentas municipales.' }
+    ];
+    const cur = defs.find((d) => d.id === this.state.tab) || defs[0];
+    return {
+      tabs: defs.map((d) => ({ label: d.label, sel: d.id === this.state.tab ? 'true' : 'false', cls: d.id === this.state.tab ? 'tab on' : 'tab', pick: () => this.setState({ tab: d.id }) })),
+      tabText: cur.text
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { isDone, type Lesson, type ProgressSummary } from './contract'
 
-// el progreso en nudos, la firma del sistema de diseño Quipu (docs/design-system/components/Progress): la forma dice el
+// el progreso en nudos, la firma del sistema de diseño Quipu (docs/design-system/historico-quipu/components/Progress): la forma dice el
 // tipo (círculo lección, rombo evaluación, doble anillo sesión en vivo) y el relleno el estado (success completada,
 // anillo brand en curso, hueco sin empezar). es decorativo: siempre va con un texto que diga «n de m lecciones»
 export type KnotKind = 'lesson' | 'assessment' | 'session'

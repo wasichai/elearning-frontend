@@ -118,7 +118,7 @@ describe.each(QUIPU_STYLED_THEMES.map((id) => [id]))('tema %s', (id) => {
   })
 })
 
-// los valores del tema «lectura» de docs/design-system/tokens.json, con los nombres de @wasichai/ui
+// los valores del tema «lectura» de docs/design-system/historico-quipu/tokens.json, con los nombres de @wasichai/ui
 const LECTURA: Record<string, string> = {
   surface: '#f8f0df',
   'surface-muted': '#f1e7d3',

@@ -8,7 +8,7 @@ Implementa el sistema de diseño «Quipu» en elearning-frontend como tema de ap
 Lee primero, en este orden:
 1. CLAUDE.md de este repo (reglas no negociables: un WasichaiModule por pantalla, sin otra librería visual, textos por
    i18n en es y en, Wasichai primero, sin sobreingeniería, TDD, Definition of Done, un issue y un PR por paso).
-2. docs/design-system/README.md y sus secciones (1-voz-y-tono.md … 5-direcciones-exploradas.md), tokens.json y las
+2. docs/design-system/historico-quipu/README.md y sus secciones (1-voz-y-tono.md … 5-direcciones-exploradas.md), tokens.json y las
    guías components/*/README.md. Es la referencia de diseño; sus vistas previas (preview.html) se ven en el artifact.
    Ojo: su sección de Tailwind es de Tailwind 3; aquí manda Tailwind 4 y el contrato de temas de @wasichai/ui.
 3. ../wasichai-ui/packages/ui/README.md («Theme tokens», «Styling hooks (data-slot)», los temas opcionales) y
@@ -33,7 +33,7 @@ Pasos (cada uno: issue, rama, prueba que falla primero, PR que cierra el issue):
    texto 15px/600; campos (input, textarea, select-trigger) de 44px y texto de 16px, inválidos con borde danger de 2px
    sin saltar; deshabilitados con cursor not-allowed; pestañas de 44px con subrayado brand; alertas con radius-lg.
    Pruebas como themes/antDesign.test.ts: cada regla está en el scope y solo toca hooks.
-2. Modo lectura: tema `quipu-lectura` (papel sepia, mismos pares AA; valores en docs/design-system/tokens.json, tema
+2. Modo lectura: tema `quipu-lectura` (papel sepia, mismos pares AA; valores en docs/design-system/historico-quipu/tokens.json, tema
    «lectura») aplicado como subárbol con data-theme en el contenedor de la lección, con un botón de alternar y A−/A+
    (17–23px) en la barra de la lección; la preferencia se guarda con el storagePrefix; la paleta llega al iframe.
    Textos en es y en; pruebas de comportamiento.

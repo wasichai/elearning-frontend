@@ -49,7 +49,7 @@
   }
 }
 
-/* la utilidad font-read, para leer texto largo dentro de la interfaz, y las escalas de docs/design-system/tokens.json que
+/* la utilidad font-read, para leer texto largo dentro de la interfaz, y las escalas de docs/design-system/historico-quipu/tokens.json que
    @wasichai/ui no trae: text-title-1, text-read-body, shadow-1, max-w-measure… aditivas: no tocan colores ni temas.
    ojo: cn() de @wasichai/ui no conoce estas utilidades de texto y puede quitarlas junto a un color: en un componente de
    la librería, ponlas en un elemento propio */

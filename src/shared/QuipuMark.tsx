@@ -1,4 +1,4 @@
-// la marca (docs/design-system/assets/Logos): el cordón principal con tres cuerdas y sus nudos, en los tokens del tema
+// la marca (docs/design-system/historico-quipu/assets/Logos): el cordón principal con tres cuerdas y sus nudos, en los tokens del tema
 export function QuipuMark({ className = 'size-6' }: { className?: string }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 28 28" className={`shrink-0 ${className}`}>
