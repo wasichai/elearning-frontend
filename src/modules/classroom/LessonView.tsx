@@ -61,11 +61,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const dark = isDarkTheme(useDocumentTheme())
   const hasReading = lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
   const sepia = hasReading && readingControls.mode && !dark
-  const reading: ReadingSettings = {
-    size: readingControls.size,
-    roomy: readingControls.mode && dark,
-    theme: sepia ? COLOFON_READING_THEME : undefined
-  }
+  const reading: ReadingSettings = { size: readingControls.size, roomy: readingControls.mode && dark }
   return (
     <article
       aria-labelledby={`lesson-${lesson.id}`}
@@ -120,6 +116,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
         {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
           <Resources
+            enrollmentId={enrollmentId}
             resources={lesson.resources}
             videoThreshold={videoThreshold}
             onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
@@ -149,7 +146,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   )
 }
 
-// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (17–23px)
+// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (18–24px)
 function ReadingTools({ controls }: { controls: ReadingControls }) {
   const { t } = useTranslation('classroom')
   return (

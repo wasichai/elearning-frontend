@@ -93,46 +93,50 @@ test('el tema claro de Wasichai no cambia: sus controles siguen a 36px', async (
   expect(await style(search, 'font-size')).toBe('14px')
 })
 
-test('modo lectura: papel sepia en la lección y en el iframe, A+ y se recuerda al volver', async ({ page }) => {
+test('modo lectura: papel sepia en la lección y en su lectura, A+ y se recuerda al volver', async ({ page }) => {
   await withTheme(page, 'colofon')
   await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
-  const frame = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
-  const background = () => frame.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)
-  const fontSize = () => frame.locator('body').evaluate((element) => getComputedStyle(element).fontSize)
+  const reading = page.locator('[data-reading]')
+  const article = page.getByRole('article', { name: 'Tipos de anuncio' })
+  const background = () => article.evaluate((element) => getComputedStyle(element).backgroundColor)
+  const fontSize = () => reading.evaluate((element) => getComputedStyle(element).fontSize)
   await expect.poll(background).toBe('rgb(255, 255, 255)')
-  // en escritorio la lectura va a 19px aunque el iframe mida unos 640px
-  await expect.poll(fontSize).toBe('19px')
+  await expect.poll(fontSize).toBe('20px')
+  // la lectura en Newsreader, la de la app
+  expect(await style(reading, 'font-family')).toMatch(/^Newsreader,/)
 
   const tools = page.getByRole('toolbar', { name: 'Lectura' })
   const toggle = tools.getByRole('button', { name: 'Modo lectura' })
   await toggle.click()
-  await expect(page.getByRole('article', { name: 'Tipos de anuncio' })).toHaveAttribute('data-theme', 'colofon-lectura')
-  // surface de colofon-lectura
+  await expect(article).toHaveAttribute('data-theme', 'colofon-lectura')
+  // surface y tinta de colofon-lectura, también en la lectura
   await expect.poll(background).toBe('rgb(242, 235, 221)')
+  expect(await style(reading, 'color')).toBe('rgb(58, 47, 34)')
   // la hoja de controles sigue valiendo dentro del modo lectura
   expect((await box(toggle)).height).toBe(44)
 
   await tools.getByRole('button', { name: 'Texto más grande' }).click()
-  await expect.poll(fontSize).toBe('21px')
+  await expect.poll(fontSize).toBe('22px')
 
   await page.reload()
   await expect(page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(background).toBe('rgb(242, 235, 221)')
-  await expect.poll(fontSize).toBe('21px')
+  await expect.poll(fontSize).toBe('22px')
 })
 
 test('modo lectura en colofon-dark: sigue oscuro y abre el interlineado de la lectura', async ({ page }) => {
   await withTheme(page, 'colofon-dark')
   await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
-  const frame = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
+  const reading = page.locator('[data-reading]')
   await page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' }).click()
 
-  await expect(page.getByRole('article', { name: 'Tipos de anuncio' })).not.toHaveAttribute('data-theme')
-  await expect.poll(() => frame.locator('html').evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(22, 29, 38)')
-  // 1,79 × 19px
-  await expect.poll(() => frame.locator('body').evaluate((element) => getComputedStyle(element).lineHeight)).toBe('34.01px')
+  const article = page.getByRole('article', { name: 'Tipos de anuncio' })
+  await expect(article).not.toHaveAttribute('data-theme')
+  await expect.poll(() => article.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(22, 29, 38)')
+  // 1,79 × 20px
+  await expect.poll(() => reading.evaluate((element) => getComputedStyle(element).lineHeight)).toBe('35.8px')
 })
 
 test('el certificado pone al titular en Newsreader, servida por la app', async ({ page }) => {

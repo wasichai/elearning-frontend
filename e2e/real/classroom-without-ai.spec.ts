@@ -242,12 +242,9 @@ test(
           await expect(page.getByRole('heading', { level: 2, name: lesson.title, exact: true })).toBeVisible()
           if (lesson.summary)
             await expect(page.getByRole('article', { name: lesson.title, exact: true }).getByText(lesson.summary.trim()).first()).toBeVisible()
-          // cada lectura generada: su HTML del servidor, con texto, en el iframe aislado
-          for (const resource of lesson.resources.filter((candidate) => candidate.type === 'HTML' && candidate.file)) {
-            const frame = page.locator('iframe').and(page.getByTitle(resource.title, { exact: true }))
-            await expect(frame).toHaveAttribute('sandbox', '')
-            await expect(frame.contentFrame().locator('body')).toContainText(/\S/)
-          }
+          // cada lectura generada: su documento de bloques del servidor, con texto, pintado en la página
+          for (const resource of lesson.resources.filter((candidate) => candidate.type === 'HTML' && candidate.file))
+            await expect(page.getByRole('region', { name: resource.title, exact: true }).locator('[data-reading]')).toContainText(/\S/)
 
           if (lesson.completion === 'EXPLICIT') {
             await page.getByRole('button', { name: 'Marcar como completada' }).click()

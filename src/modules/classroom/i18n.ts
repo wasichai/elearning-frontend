@@ -15,7 +15,13 @@ const es = {
     mode: 'Modo lectura',
     smaller: 'Texto más pequeño',
     larger: 'Texto más grande',
-    size: '{{value}} px'
+    size: '{{value}} px',
+    // la lectura en bloques: el aviso para lector de pantalla de un enlace externo y el nombre de cada admonición
+    external: '(abre en otra pestaña)',
+    table: 'Tabla',
+    code: 'Código',
+    codeIn: 'Código ({{language}})',
+    admonition: { note: 'Nota', tip: 'Consejo', important: 'Importante', warning: 'Advertencia', caution: 'Precaución' }
   },
   enrollments: {
     title: 'Mis cursos',
@@ -551,7 +557,12 @@ const en: typeof es = {
     mode: 'Reading mode',
     smaller: 'Smaller text',
     larger: 'Larger text',
-    size: '{{value}} px'
+    size: '{{value}} px',
+    external: '(opens in a new tab)',
+    table: 'Table',
+    code: 'Code',
+    codeIn: 'Code ({{language}})',
+    admonition: { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' }
   },
   enrollments: {
     title: 'My courses',

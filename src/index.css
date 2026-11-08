@@ -8,8 +8,8 @@
 
 /* las letras del tema Colofón, servidas por la app (sin peticiones a terceros), variables y en woff2, con su licencia
    SIL OFL en src/theme/fonts: Newsreader (títulos y lectura; ejes opsz y wght) y Source Sans 3 (interfaz; eje wght).
-   solo los subconjuntos latin y latin-ext, cada uno con su unicode-range. la lectura HTML del iframe no las carga: su CSP
-   no deja pedir fuentes (reading.ts) */
+   solo los subconjuntos latin y latin-ext, cada uno con su unicode-range. también la lectura HTML, que se pinta en la página
+   (ReadingDocument) */
 @font-face {
   font-family: 'Newsreader';
   src: url('./theme/fonts/Newsreader-opsz-wght-italic-latin-ext.woff2') format('woff2');

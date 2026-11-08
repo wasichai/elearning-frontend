@@ -47,7 +47,7 @@ test('recorrido: mis cursos → aula → lección HTML → marcar completada →
   const units = page.getByRole('navigation', { name: 'Unidades del curso' })
   await units.getByRole('link', { name: /^Tipos de anuncio/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
-  await expect(page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]').getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 4, name: 'Entrar y salir del portal' })).toBeVisible()
   // abrirla la inició en el servidor
   await expect(units.getByRole('link', { name: 'Tipos de anuncio Empezada' })).toBeVisible()
 
@@ -254,46 +254,64 @@ test('una matrícula ajena es «No encontramos este curso en tus matrículas»',
   await expect(page).toHaveURL('/mis-cursos')
 })
 
-test('la lección HTML se lee en un iframe aislado: su script no corre', async ({ page }) => {
+test('la lección HTML se lee en la página, desde su lectura en bloques: sin iframe ni archivo', async ({ page }) => {
   const api = await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
 
   await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
-  const frame = page.locator('iframe[title="Tipos de anuncio (lectura)"]')
-  await expect(frame).toHaveAttribute('sandbox', '')
-  const content = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
-  await expect(content.getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
-  await expect(content.locator('body')).not.toHaveAttribute('data-script')
-  expect(api.fileRequests).toEqual([{ path: '/api/objects/version_recurso/records/vr-html/files/archivo', authorization: 'Bearer token-e2e' }])
+  const reading = page.getByRole('region', { name: 'Tipos de anuncio (lectura)' })
+  await expect(reading.getByRole('heading', { level: 4, name: 'Entrar y salir del portal' })).toHaveAttribute('id', 'lectura-_entrar_y_salir_del_portal')
+  await expect(reading.getByRole('note', { name: 'Nota' })).toContainText('Lectura ilustrativa de la demostración')
+  await expect(reading.getByText(/^Necesita tres cosas/)).toBeVisible()
+  await expect(page.locator('iframe')).toHaveCount(0)
+  expect(api.classroomRequests).toContain('GET /api/lms/classroom/enrollments/mat-srtm-1/resources/rec-html/reading')
+  expect(api.fileRequests).toEqual([])
 })
 
-test('la lectura HTML no pide nada fuera: ni imágenes, ni estilos, ni fuentes remotas, y un meta refresh no la lleva a otra página', async ({ page }) => {
+test('la lectura no pide nada fuera ni ejecuta nada: un bloque desconocido, un enlace javascript: y una imagen remota no llegan', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   const outside: string[] = []
   await page.route('https://rastreo.example/**', (route) => {
     outside.push(route.request().url())
     return route.fulfill({ status: 200, contentType: 'image/png', body: '' })
   })
+  const dialogs: string[] = []
+  page.on('dialog', (dialog) => {
+    dialogs.push(dialog.message())
+    void dialog.dismiss()
+  })
   // gana a la simulación: Playwright prueba primero la última ruta registrada
-  await page.route('**/api/objects/version_recurso/records/vr-html/files/archivo', (route) =>
+  await page.route('**/api/lms/classroom/enrollments/mat-srtm-1/resources/rec-html/reading', (route) =>
     route.fulfill({
-      contentType: 'text/html',
-      body:
-        '<!doctype html><html><head><meta http-equiv="refresh" content="0; url=https://rastreo.example/fuera">' +
-        '<link rel="stylesheet" href="https://rastreo.example/estilo.css"><style>@font-face { font-family: f; src: url(https://rastreo.example/f.woff2) }' +
-        ' body { font-family: f }</style></head><body><h1>Tipos de anuncio</h1><img alt="píxel" src="https://rastreo.example/pixel.png">' +
-        '<img alt="en línea" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="></body></html>'
+      contentType: 'application/json',
+      body: JSON.stringify({
+        title: null,
+        blocks: [
+          { type: 'heading', level: 2, id: 'app', content: [{ type: 'text', text: 'Tipos de anuncio' }] },
+          { type: 'html', html: '<img src="https://rastreo.example/pixel.png" onerror="alert(1)">' },
+          { type: 'figure', src: 'https://rastreo.example/figura.png', alt: 'remota', caption: null },
+          { type: 'figure', src: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=', alt: 'en línea', caption: null },
+          { type: 'paragraph', content: [{ type: 'link', href: 'javascript:alert(2)', content: [{ type: 'text', text: 'pulsa aquí' }] }] },
+          { type: 'paragraph', content: [{ type: 'link', href: 'https://example.org/', content: [{ type: 'text', text: 'un sitio' }] }] }
+        ]
+      })
     })
   )
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
 
-  const content = page.frameLocator('iframe[title="Tipos de anuncio (lectura)"]')
-  await expect(content.getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
-  await expect(content.getByRole('img', { name: 'en línea' })).toBeVisible()
-  // tiempo de sobra para que el refresh, la imagen, el estilo o la fuente se hubieran pedido
-  await page.waitForTimeout(1500)
-  await expect(content.getByRole('heading', { name: 'Tipos de anuncio' })).toBeVisible()
+  const reading = page.getByRole('region', { name: 'Tipos de anuncio (lectura)' })
+  await expect(reading.getByRole('heading', { level: 4, name: 'Tipos de anuncio' })).toHaveAttribute('id', 'lectura-app')
+  await expect(reading.getByRole('img', { name: 'en línea' })).toBeVisible()
+  await expect(reading.getByRole('img')).toHaveCount(1)
+  await expect(reading.getByText('pulsa aquí')).toBeVisible()
+  await expect(reading.getByRole('link', { name: 'pulsa aquí' })).toHaveCount(0)
+  const external = reading.getByRole('link', { name: 'un sitio (abre en otra pestaña)' })
+  await expect(external).toHaveAttribute('target', '_blank')
+  await expect(external).toHaveAttribute('rel', 'noopener noreferrer')
+  // tiempo de sobra para que la imagen se hubiera pedido o el script hubiera corrido
+  await page.waitForTimeout(1000)
   expect(outside).toEqual([])
+  expect(dialogs).toEqual([])
 })
 
 test('el PDF se descarga con su nombre y el vídeo se reproduce desde memoria', async ({ page }) => {
@@ -343,7 +361,7 @@ test.describe('en un teléfono', () => {
     await expect(page.getByRole('heading', { level: 2, name: 'Tipos de anuncio' })).toBeVisible()
 
     // la lectura empieza en la primera mitad de la pantalla, no tras una columna de metadatos
-    const reading = await page.locator('iframe').boundingBox()
+    const reading = await page.locator('[data-reading]').boundingBox()
     expect(reading?.y).toBeLessThan(844 / 2)
 
     const units = page.getByRole('navigation', { name: 'Unidades del curso' })

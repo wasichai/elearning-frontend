@@ -1,19 +1,24 @@
 import { useWasichaiConfig } from '@wasichai/core'
 import { useState } from 'react'
-import { DEFAULT_READING_SIZE, READING_SIZES } from './reading'
+
+// el tamaño del texto de la lectura que elige el estudiante: de 18 a 24px, de 2 en 2. la escala parte del token
+// --text-reading (20/33 en src/index.css), el tamaño por defecto; el interlineado guarda su proporción (ReadingDocument)
+export const READING_SIZES = [18, 20, 22, 24] as const
+export const DEFAULT_READING_SIZE = 20
+export type ReadingSize = (typeof READING_SIZES)[number]
 
 // lo que el estudiante elige en la barra de la lección: el modo lectura y el tamaño del texto de la lectura. se guarda en
 // este navegador con el storagePrefix (<prefix>.reading), como el tema y el idioma de Wasichai; es una comodidad: si el
 // navegador no deja guardar, la elección vale mientras dure la página
 export interface ReadingPreferences {
   mode: boolean
-  size?: number
+  size?: ReadingSize
   // en escritorio, el temario plegado para que la lectura ocupe la columna
   syllabusHidden?: boolean
 }
 
 export interface ReadingControls extends ReadingPreferences {
-  shownSize: number
+  shownSize: ReadingSize
   canShrink: boolean
   canGrow: boolean
   toggleMode: () => void
@@ -59,7 +64,7 @@ export function useReadingPreferences(): ReadingControls {
     setPreferences(next)
     save(key, next)
   }
-  const shownSize = preferences.size ?? DEFAULT_READING_SIZE
+  const shownSize: ReadingSize = preferences.size ?? DEFAULT_READING_SIZE
   const index = READING_SIZES.findIndex((step) => step === shownSize)
   const resize = (offset: number) => {
     const size = READING_SIZES[index + offset]
