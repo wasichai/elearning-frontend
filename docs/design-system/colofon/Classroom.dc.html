@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aula · Lo que necesita para entrar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&amp;family=Source+Sans+3:ital,wght@0,300..800;1,300..800&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF}
+.serif{font-family:'Newsreader',Georgia,'Times New Roman',serif;font-optical-sizing:auto}
+.sans{font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-variant-numeric:tabular-nums lining-nums}
+.meta{font-family:'Source Sans 3','Segoe UI',system-ui,sans-serif;font-variant-caps:all-small-caps;letter-spacing:.07em;font-size:15px;color:#4F5B69;font-variant-numeric:tabular-nums}
+.cap{font-size:14px;color:#4F5B69}
+.ph{color:#4F5B69;background:#EEF1F5;padding:0 4px;border-radius:2px;font-family:'Source Sans 3',system-ui,sans-serif;font-size:.85em}
+.btn{font-family:'Source Sans 3',system-ui,sans-serif;font-size:15px;font-weight:600;min-height:44px;padding:0 18px;border-radius:3px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;box-sizing:border-box;white-space:nowrap}
+a:focus-visible,button:focus-visible{outline:2px solid #2A5DB0;outline-offset:2px}
+.b-pri{background:#1F3A64;color:#FFFFFF}.b-pri:hover{background:#152A4A;color:#FFFFFF}
+.b-sec{background:#FFFFFF;color:#1F3A64;border-color:#1F3A64}.b-sec:hover{background:#E3E9F2}
+.tool{font-family:'Source Sans 3',system-ui,sans-serif;font-size:14.5px;font-weight:600;min-height:44px;min-width:44px;padding:0 10px;border-radius:3px;border:1px solid transparent;background:transparent;color:#17202B;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.tool:hover{background:#EEF1F5}
+.tool.on{background:#E3E9F2;color:#1F3A64;border-color:#C9D3E2}
+.seg{flex:1;height:6px;box-sizing:border-box;border:1px solid #7D8794}
+.seg.d{background:#1F3A64;border-color:#1F3A64}
+.seg.s{border-color:#1F3A64;background:repeating-linear-gradient(135deg,#1F3A64 0 1.5px,transparent 1.5px 4px)}
+.ix{display:grid;grid-template-columns:18px 30px minmax(0,1fr);gap:0 8px;align-items:start;width:100%;text-align:left;background:none;border:0;padding:8px 8px;border-radius:3px;cursor:pointer;color:#17202B;font:inherit;min-height:44px;box-sizing:border-box}
+.ix:hover{background:#E9ECF0}
+.ix.cur{background:#FFFFFF;box-shadow:inset 0 0 0 1px #C9D3E2}
+.mn{display:flex;flex-direction:column;gap:10px;padding:16px 0;border-top:1px solid #D3D8DF}
+.body p{margin:0}
+.nav-i{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:3px;color:#17202B;text-decoration:none;font-size:15px}
+.nav-i:hover{background:#E3E7EC;color:#17202B}
+a{color:#24508C;text-underline-offset:3px}a:hover{color:#152A4A}
+</style>
+</helmet>
+<div class="sans" style="min-height:100vh;background:#FFFFFF;color:#17202B;display:flex;flex-direction:column">
+
+  <!-- barra superior del shell en modo aula -->
+  <header style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:60px;padding:6px clamp(12px,2vw,24px);border-bottom:1px solid #D3D8DF;background:#F4F5F7">
+    <button class="tool" aria-label="Abrir el menú" aria-expanded="{{drawerX}}" onClick="{{openDrawer}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+    <div style="display:flex;flex-direction:column;flex:1 1 320px;min-width:0;padding:0 6px">
+      <span class="meta" style="color:#17202B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rentas municipales (SRTM) · Unidad {{cur.u}} · §{{cur.no}}</span>
+      <span class="cap" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{unitName}}</span>
+    </div>
+    <div role="toolbar" aria-label="Herramientas de lectura" style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">
+      <button class="{{ixCls}}" aria-pressed="{{ixP}}" onClick="{{toggleIndex}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13"></path></svg>Índice</button>
+      <span aria-hidden="true" style="width:1px;height:24px;background:#D3D8DF;margin:0 6px"></span>
+      <button class="tool" aria-label="Reducir el texto" onClick="{{smaller}}" disabled="{{minFs}}"><span class="serif" style="font-size:15px">A</span><span aria-hidden="true">−</span></button>
+      <button class="tool" aria-label="Aumentar el texto" onClick="{{bigger}}" disabled="{{maxFs}}"><span class="serif" style="font-size:20px">A</span><span aria-hidden="true">+</span></button>
+      <button class="{{sepCls}}" aria-pressed="{{sepP}}" onClick="{{toggleSepia}}">Sepia</button>
+      <button class="{{focCls}}" aria-pressed="{{focP}}" onClick="{{toggleFocus}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>Modo foco</button>
+      <span aria-hidden="true" style="width:1px;height:24px;background:#D3D8DF;margin:0 6px"></span>
+      <span class="sans" style="font-size:15px;font-weight:600;padding:0 8px" aria-label="Lección {{cur.pos}} de 14">{{cur.pos}} / 14</span>
+    </div>
+  </header>
+
+  <!-- progreso del curso: una fila, por unidades -->
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding:10px clamp(12px,2vw,24px);border-bottom:1px solid #D3D8DF;background:#F4F5F7">
+    <div style="display:flex;gap:10px;flex:1 1 360px;max-width:560px" role="img" aria-label="{{progLabel}}">
+      <sc-for list="{{units}}" as="un" hint-placeholder-count="4">
+        <div style="display:flex;gap:2px;flex:{{un.n}}">
+          <sc-for list="{{un.segs}}" as="sg" hint-placeholder-count="4"><span class="{{sg}}"></span></sc-for>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font-size:14.5px"><strong style="font-weight:650">{{doneN}} de 14</strong> completadas · {{startedN}} iniciadas · {{pct}} %</span>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;flex:1;align-items:stretch;background:{{sheetBg}};color:{{sheetInk}}">
+
+    <sc-if value="{{showIndex}}" hint-placeholder-val="{{ true }}">
+      <nav aria-label="Índice del curso" style="flex:1 1 264px;max-width:100%;box-sizing:border-box;background:#F4F5F7;color:#17202B;border-right:1px solid #D3D8DF;padding:22px 14px 40px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 8px 8px;border-bottom:1px solid #17202B"><span class="meta" style="color:#17202B">Índice</span><span class="cap">18 h</span></div>
+        <sc-for list="{{index}}" as="u" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;padding-top:12px">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:0 8px 6px">
+              <span class="serif" style="font-size:17px;line-height:1.3;font-weight:600">Unidad {{u.n}}. {{u.name}}</span>
+              <span class="cap">Unidad {{u.n}} — {{u.done}} de {{u.total}}</span>
+            </div>
+            <sc-for list="{{u.items}}" as="it" hint-placeholder-count="4">
+              <button class="{{it.cls}}" aria-current="{{it.ac}}" onClick="{{it.pick}}">
+                <span style="padding-top:3px">
+                  <sc-if value="{{it.isNot}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="No iniciada"><circle cx="8" cy="8" r="6" fill="none" stroke="#7D8794" stroke-width="1.5"></circle></svg></sc-if>
+                  <sc-if value="{{it.isStarted}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Iniciada"><circle cx="8" cy="8" r="6" fill="none" stroke="#1F3A64" stroke-width="1.5"></circle><path d="M8 2a6 6 0 0 0 0 12z" fill="#1F3A64"></path></svg></sc-if>
+                  <sc-if value="{{it.isDone}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label="Completada"><circle cx="8" cy="8" r="7" fill="#1F3A64"></circle><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+                </span>
+                <span class="sans" style="font-size:14px;color:#4F5B69;padding-top:2px">{{it.no}}</span>
+                <span style="display:flex;flex-direction:column;gap:1px">
+                  <span class="serif" style="font-size:16px;line-height:1.3;font-weight:{{it.fw}}">{{it.t}}</span>
+                  <span class="cap" style="font-size:13.5px">{{it.k}} · {{it.m}} min</span>
+                </span>
+              </button>
+            </sc-for>
+            <sc-if value="{{u.collapsed}}" hint-placeholder-val="{{ false }}">
+              <span class="cap" style="padding:2px 8px 4px 64px">{{u.total}} lecciones</span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </nav>
+    </sc-if>
+
+    <main style="flex:999 1 520px;min-width:0;box-sizing:border-box;padding:44px clamp(16px,4vw,64px) 72px;display:flex;justify-content:{{mainJustify}}">
+      <article style="width:100%;max-width:{{measure}};display:flex;flex-direction:column;gap:0">
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:8px;border-bottom:1px solid {{ruleInk}}">
+          <span class="meta" style="color:{{sheetMuted}}">Unidad {{cur.u}} · §{{cur.no}} · {{cur.k}} · {{cur.m}} min</span>
+          <span class="meta" style="color:{{sheetMuted}}">{{curState}}</span>
+        </div>
+        <h1 class="serif" style="margin:28px 0 0;font-size:clamp(34px,3.6vw,46px);line-height:1.1;font-weight:360;letter-spacing:-.005em;text-wrap:balance">{{cur.t}}</h1>
+
+        <!-- 1.1 lectura HTML -->
+        <sc-if value="{{isL11}}" hint-placeholder-val="{{ true }}">
+          <div class="serif body" style="display:flex;flex-direction:column;gap:{{gap}};font-size:{{fs}};line-height:1.65;margin-top:18px">
+            <p style="font-size:1.12em;line-height:1.5;color:{{sheetMuted}};font-style:italic">Cuenta asignada por el administrador, navegador actualizado y acceso a la red: por qué cada requisito importa y qué ocurre con los mapas si no hay salida a Internet.</p>
+            <h2 style="margin:.6em 0 0;font-size:1.45em;line-height:1.25;font-weight:460">Entrar y salir del portal</h2>
+            <aside aria-label="Nota" style="border-top:1px solid {{ruleSoft}};border-bottom:1px solid {{ruleSoft}};padding:.75em 0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 14px">
+              <span class="meta" style="color:{{sheetMuted}};padding-top:.2em">Nota</span>
+              <p style="font-size:.86em;line-height:1.55;font-style:italic">Lectura ilustrativa de la demostración, escrita para este curso. Resume con palabras propias el procedimiento del manual de acceso; no reproduce su texto ni contiene datos reales.</p>
+            </aside>
+            <h2 style="margin:.6em 0 0;font-size:1.45em;line-height:1.25;font-weight:460">Antes de entrar</h2>
+            <p>Necesita tres cosas: una cuenta que le asigna la administración del sistema, un navegador al día y conexión a la red de la institución. Sin salida a Internet, los mapas no cargan, pero el registro de anuncios sigue funcionando.</p>
+          </div>
+        </sc-if>
+
+        <!-- 1.4 vídeo -->
+        <sc-if value="{{isL14}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:24px">
+            <div style="position:relative;aspect-ratio:16 / 9;background:#17202B;border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center">
+              <span class="cap" style="position:absolute;top:14px;left:16px;color:#C9D3E2">[vídeo · 5 min]</span>
+              <button class="btn" aria-label="Reproducir el vídeo" style="width:72px;height:72px;border-radius:50%;background:#FFFFFF;color:#17202B;padding:0"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
+              <span class="sans" style="position:absolute;bottom:62px;left:50%;transform:translateX(-50%);background:rgba(23,32,43,.86);color:#FFFFFF;font-size:17px;padding:4px 10px;border-radius:2px;white-space:nowrap">[subtítulo de ejemplo]</span>
+              <div style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(15,20,27,.92);color:#FFFFFF">
+                <button class="tool" aria-label="Reproducir" style="color:#FFFFFF"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"></path></svg></button>
+                <span class="sans" style="font-size:14px">0:00 / 5:00</span>
+                <span aria-hidden="true" style="flex:1;height:4px;background:#4F5B69;border-radius:2px"></span>
+                <button class="tool on" aria-pressed="true" style="color:#0F1A2C;background:#E3E9F2">Subtítulos</button>
+                <button class="tool" aria-label="Pantalla completa" style="color:#FFFFFF"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"></path></svg></button>
+              </div>
+            </div>
+            <p class="cap" style="margin:0;color:{{sheetMuted}}">Se marca como completada cuando el vídeo llega al final. Subtítulos en español.</p>
+          </div>
+        </sc-if>
+
+        <!-- 2.2 lectura con PDF -->
+        <sc-if value="{{isL22}}" hint-placeholder-val="{{ false }}">
+          <div class="serif body" style="display:flex;flex-direction:column;gap:{{gap}};font-size:{{fs}};line-height:1.65;margin-top:18px">
+            <p><span class="ph">[texto de la lección 2.2]</span></p>
+            <figure style="margin:.4em 0;border-top:1px solid {{ruleInk}};border-bottom:1px solid {{ruleSoft}};padding:14px 0;display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-items:center">
+              <div aria-hidden="true" style="width:96px;height:124px;background:#FFFFFF;border:1px solid #D3D8DF;box-sizing:border-box;padding:12px 10px;display:flex;flex-direction:column;gap:6px">
+                <span style="height:6px;background:#1F3A64;width:70%"></span><span style="height:4px;background:#D3D8DF"></span><span style="height:4px;background:#D3D8DF"></span><span style="height:4px;background:#D3D8DF;width:80%"></span><span style="height:4px;background:#D3D8DF"></span><span style="height:4px;background:#D3D8DF;width:60%"></span>
+              </div>
+              <figcaption class="sans" style="display:flex;flex-direction:column;gap:6px;font-size:15px">
+                <span class="meta" style="color:{{sheetMuted}}">Documento · PDF · 2 kB</span>
+                <span style="font-weight:650;font-size:16px;word-break:break-all">guia-estados-del-anuncio.pdf</span>
+                <span style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+                  <button class="btn b-pri" onClick="{{openPdf}}">Abrir en el visor</button>
+                  <a class="btn b-sec" href="#"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5M12 15V3"></path></svg>Descargar</a>
+                </span>
+              </figcaption>
+            </figure>
+          </div>
+        </sc-if>
+
+        <!-- cierre de lección -->
+        <div style="margin-top:48px;display:flex;flex-direction:column;gap:18px">
+          <div aria-hidden="true" class="serif" style="text-align:center;color:{{sheetMuted}};font-size:18px;letter-spacing:.6em">· · ·</div>
+          <sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;border-top:1px solid {{ruleInk}};padding-top:18px">
+              <button class="btn b-pri" onClick="{{markDone}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>Marcar como completada</button>
+              <span class="cap" style="color:{{sheetMuted}}">Iniciada. Se guarda cuando la marca.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;border-top:1px solid {{ruleInk}};padding-top:18px">
+              <span style="display:inline-flex;align-items:center;gap:8px;font-weight:650;font-size:15px"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="#1F3A64"></circle><path d="M5 8.2l2 2 4-4.2" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>Completada</span>
+              <span class="cap" style="color:{{sheetMuted}}">Unidad {{cur.u}} — {{curUnitDone}} de 4</span>
+            </div>
+          </sc-if>
+          <nav aria-label="Lección anterior y siguiente" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:16px;margin-top:8px">
+            <sc-if value="{{hasPrev}}" hint-placeholder-val="{{ false }}">
+              <a href="#" onClick="{{goPrev}}" style="display:flex;flex-direction:column;gap:4px;padding:14px 0;border-top:1px solid {{ruleSoft}};text-decoration:none;color:inherit;min-height:44px">
+                <span class="meta" style="color:{{sheetMuted}}">Anterior · §{{prev.no}}</span>
+                <span class="serif" style="font-size:18px;line-height:1.3">{{prev.t}}</span>
+              </a>
+            </sc-if>
+            <sc-if value="{{noPrev}}" hint-placeholder-val="{{ true }}">
+              <a href="CourseDetail.dc.html" style="display:flex;flex-direction:column;gap:4px;padding:14px 0;border-top:1px solid {{ruleSoft}};text-decoration:none;color:inherit;min-height:44px">
+                <span class="meta" style="color:{{sheetMuted}}">Principio del curso</span>
+                <span class="serif" style="font-size:18px;line-height:1.3">Presentación y temario</span>
+              </a>
+            </sc-if>
+            <a href="#" onClick="{{goNext}}" style="display:flex;flex-direction:column;gap:4px;padding:14px 0;border-top:1px solid {{ruleSoft}};text-decoration:none;color:inherit;text-align:right;min-height:44px">
+              <span class="meta" style="color:#1F3A64">Siguiente · §{{next.no}}</span>
+              <span class="serif" style="font-size:18px;line-height:1.3;color:#1F3A64;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px">{{next.t}}</span>
+            </a>
+          </nav>
+        </div>
+      </article>
+    </main>
+
+    <sc-if value="{{showMargin}}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Notas al margen" style="flex:1 1 248px;max-width:100%;box-sizing:border-box;padding:44px clamp(16px,2vw,32px) 40px 24px;border-left:1px solid {{ruleSoft}};display:flex;flex-direction:column">
+        <section class="mn" style="border-top:1px solid {{ruleInk}}">
+          <h2 class="meta" style="margin:0;color:{{sheetMuted}}">Objetivos de la lección</h2>
+          <sc-if value="{{isL11}}" hint-placeholder-val="{{ true }}">
+            <ul class="serif" style="margin:0;padding-left:18px;font-size:16px;line-height:1.5;display:flex;flex-direction:column;gap:6px">
+              <li>Reunir los tres requisitos antes de entrar.</li>
+              <li>Saber qué funciona sin salida a Internet.</li>
+            </ul>
+          </sc-if>
+          <sc-if value="{{notL11}}" hint-placeholder-val="{{ false }}">
+            <p class="serif" style="margin:0;font-size:16px"><span class="ph">[objetivos de §{{cur.no}}]</span></p>
+          </sc-if>
+        </section>
+        <section class="mn">
+          <h2 class="meta" style="margin:0;color:{{sheetMuted}}">Recursos</h2>
+          <sc-if value="{{isL22}}" hint-placeholder-val="{{ false }}">
+            <button class="btn" onClick="{{openPdf}}" style="justify-content:flex-start;padding:0;background:none;color:#24508C;text-decoration:underline;text-underline-offset:3px;font-weight:600;white-space:normal;text-align:left">guia-estados-del-anuncio.pdf</button>
+            <span class="cap" style="color:{{sheetMuted}}">PDF · 2 kB · se abre en el visor</span>
+          </sc-if>
+          <sc-if value="{{isL14}}" hint-placeholder-val="{{ false }}">
+            <span class="serif" style="font-size:16px;line-height:1.5">Subtítulos en español incluidos en el vídeo.</span>
+          </sc-if>
+          <sc-if value="{{isL11}}" hint-placeholder-val="{{ true }}">
+            <span class="serif" style="font-size:16px;line-height:1.5">Esta lección no tiene archivos.</span>
+            <span class="serif" style="font-size:16px;line-height:1.5;font-style:italic">Véase §2.2 para la guía de estados del anuncio, en PDF.</span>
+            <button class="btn b-sec" onClick="{{goL22}}" style="align-self:flex-start">Ir a §2.2</button>
+          </sc-if>
+        </section>
+        <section class="mn">
+          <h2 class="meta" style="margin:0;color:{{sheetMuted}}">Sesiones relacionadas</h2>
+          <span class="serif" style="font-size:16px;line-height:1.5">Ninguna: el curso es asíncrono y no tiene sesiones.</span>
+          <a href="Schedule.dc.html" style="font-size:15px;font-weight:600;min-height:44px;display:inline-flex;align-items:center">Ver sus sesiones en el horario</a>
+        </section>
+      </aside>
+    </sc-if>
+  </div>
+
+  <!-- cajón del shell -->
+  <sc-if value="{{drawer}}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(23,32,43,.38);display:flex;z-index:20">
+      <nav aria-label="Principal" style="width:min(300px,86vw);background:#EDEFF3;padding:14px 10px;display:flex;flex-direction:column;gap:2px;box-shadow:0 12px 32px rgba(23,32,43,.16)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0 0 12px 12px">
+          <span class="serif" style="font-size:19px;font-weight:560">wasichai-learning</span>
+          <button class="tool" aria-label="Cerrar el menú" onClick="{{closeDrawer}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <a href="Dashboard.dc.html" class="nav-i">Inicio</a>
+        <span class="meta" style="padding:14px 12px 4px">Aprendizaje</span>
+        <a href="CourseDetail.dc.html" class="nav-i" style="background:#E3E9F2;color:#1F3A64;font-weight:650" aria-current="page">Mis cursos</a>
+        <a href="Catalog.dc.html" class="nav-i">Catálogo</a>
+        <a href="Schedule.dc.html" class="nav-i">Horario</a>
+      </nav>
+      <button aria-label="Cerrar el menú" onClick="{{closeDrawer}}" style="flex:1;background:transparent;border:0;cursor:pointer"></button>
+    </div>
+  </sc-if>
+
+  <!-- visor de PDF en diálogo -->
+  <sc-if value="{{pdf}}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(23,32,43,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:30">
+      <div role="dialog" aria-modal="true" aria-label="Visor de PDF: guia-estados-del-anuncio.pdf" style="width:min(920px,100%);height:min(86vh,820px);background:#FFFFFF;border-radius:4px;box-shadow:0 12px 32px rgba(23,32,43,.16);display:flex;flex-direction:column;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px 8px 18px;border-bottom:1px solid #D3D8DF">
+          <div style="display:flex;flex-direction:column;flex:1;min-width:180px">
+            <span style="font-weight:650;font-size:15px">guia-estados-del-anuncio.pdf</span>
+            <span class="cap">§2.2 Cómo se deduce el estado · 2 kB</span>
+          </div>
+          <span class="sans" style="font-size:14.5px;padding:0 8px">Página 1 de <span class="ph">[n]</span></span>
+          <button class="tool" aria-label="Alejar">−</button>
+          <span class="sans" style="font-size:14px;width:44px;text-align:center">100 %</span>
+          <button class="tool" aria-label="Acercar">+</button>
+          <a href="#" class="btn b-sec" style="min-height:40px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5M12 15V3"></path></svg>Descargar</a>
+          <button class="tool" aria-label="Cerrar el visor" onClick="{{closePdf}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+        </div>
+        <div style="flex:1;background:#E3E7EC;overflow:auto;display:flex;justify-content:center;padding:28px 16px">
+          <div style="width:min(560px,100%);aspect-ratio:1 / 1.414;background:#FFFFFF;box-shadow:0 1px 2px rgba(23,32,43,.12);padding:48px 52px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+            <span class="cap">[página 1 del PDF]</span>
+            <span style="height:14px;width:60%;background:#C9D3E2"></span>
+            <span style="height:8px;background:#E3E7EC"></span><span style="height:8px;background:#E3E7EC"></span><span style="height:8px;width:85%;background:#E3E7EC"></span>
+            <span style="height:8px;background:#E3E7EC;margin-top:12px"></span><span style="height:8px;width:70%;background:#E3E7EC"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { cur: 'l11', done: {}, visited: { l11: true }, index: true, focus: false, sepia: false, fs: 20, pdf: false, drawer: false };
+  }
+  renderVals() {
+    const s = this.state;
+    const L = [
+      { id: 'l11', u: 1, no: '1.1', t: 'Lo que necesita para entrar', k: 'Lectura', m: 20, sw: true },
+      { id: 'l12', u: 1, no: '1.2', t: 'Ingresar y resolver un ingreso fallido', k: 'Lectura', m: 30 },
+      { id: 'l13', u: 1, no: '1.3', t: 'Duración y cierre de la sesión', k: 'Lectura', m: 20 },
+      { id: 'l14', u: 1, no: '1.4', t: 'Recorrido en vídeo: entrar y salir', k: 'Vídeo', m: 5, sw: true },
+      { id: 'l21', u: 2, no: '2.1', t: 'Titular, clase, vigencia y movimientos', k: 'Lectura', m: 30 },
+      { id: 'l22', u: 2, no: '2.2', t: 'Cómo se deduce el estado', k: 'Lectura', m: 30, sw: true },
+      { id: 'l23', u: 2, no: '2.3', t: 'Consultar el padrón con filtros', k: 'Presentación', m: 25 },
+      { id: 'l24', u: 2, no: '2.4', t: 'Práctica: el padrón a una fecha pasada', k: 'Laboratorio', m: 45 }
+    ];
+    const UN = { 1: 'Acceso al portal', 2: 'El anuncio y su padrón', 3: 'Registrar y mantener anuncios', 4: 'Tasas y lo devengado' };
+    const go = (id) => () => { const v = Object.assign({}, this.state.visited); v[id] = true; this.setState({ cur: id, visited: v, pdf: false }); };
+    const idx = L.findIndex((l) => l.id === s.cur);
+    const cur = Object.assign({ pos: idx + 1 }, L[idx]);
+    const state = (id) => (s.done[id] ? 'd' : s.visited[id] ? 's' : 'n');
+    const counts = { 1: 4, 2: 4, 3: 4, 4: 2 };
+    const ids = { 1: ['l11', 'l12', 'l13', 'l14'], 2: ['l21', 'l22', 'l23', 'l24'], 3: ['a', 'b', 'c', 'd'], 4: ['e', 'f'] };
+    const units = [1, 2, 3, 4].map((u) => ({ n: counts[u], segs: ids[u].map((id) => ({ d: 'seg d', s: 'seg s', n: 'seg' })[state(id)]) }));
+    const doneN = Object.keys(s.done).length;
+    const startedN = Object.keys(s.visited).filter((id) => !s.done[id]).length;
+    const unitDone = (u) => ids[u].filter((id) => s.done[id]).length;
+    const index = [1, 2, 3, 4].map((u) => ({
+      n: u, name: UN[u], total: counts[u], done: unitDone(u), collapsed: u > 2,
+      items: L.filter((l) => l.u === u).map((l) => {
+        const st = state(l.id);
+        return { no: l.no, t: l.t, k: l.k, m: l.m, isNot: st === 'n', isStarted: st === 's', isDone: st === 'd',
+          cls: l.id === s.cur ? 'ix cur' : 'ix', ac: l.id === s.cur ? 'page' : 'false', fw: l.id === s.cur ? 600 : 420,
+          pick: l.sw ? go(l.id) : () => {} };
+      })
+    }));
+    const prevL = idx > 0 ? L[idx - 1] : null;
+    const nextL = L[idx + 1] || { no: '3.1', t: 'Unidad 3. Registrar y mantener anuncios' };
+    const sep = s.sepia;
+    const fsMap = { 18: '18px', 20: '20px', 22: '22px', 24: '24px' };
+    const showSide = !s.focus;
+    return {
+      cur, unitName: 'Unidad ' + cur.u + '. ' + UN[cur.u],
+      units, doneN, startedN, pct: Math.round((doneN / 14) * 100),
+      progLabel: doneN + ' de 14 lecciones completadas, ' + startedN + ' iniciadas',
+      index, showIndex: s.index && showSide, showMargin: showSide,
+      isL11: s.cur === 'l11', notL11: s.cur !== 'l11', isL14: s.cur === 'l14', isL22: s.cur === 'l22',
+      isDone: !!s.done[s.cur], notDone: !s.done[s.cur],
+      curState: s.done[s.cur] ? 'completada' : 'iniciada',
+      curUnitDone: unitDone(cur.u),
+      prev: prevL || {}, hasPrev: !!prevL, noPrev: !prevL, next: nextL,
+      goPrev: (e) => { if (e) e.preventDefault(); if (prevL && prevL.sw) go(prevL.id)(); },
+      goNext: (e) => { if (e) e.preventDefault(); if (nextL.sw) go(nextL.id)(); },
+      goL22: go('l22'),
+      markDone: () => { const d = Object.assign({}, this.state.done); d[this.state.cur] = true; this.setState({ done: d }); },
+      fs: fsMap[s.fs], gap: (s.fs * 0.9) + 'px', measure: '66ch',
+      minFs: s.fs <= 18, maxFs: s.fs >= 24,
+      smaller: () => this.setState({ fs: Math.max(18, this.state.fs - 2) }),
+      bigger: () => this.setState({ fs: Math.min(24, this.state.fs + 2) }),
+      sheetBg: sep ? '#F2EBDD' : '#FFFFFF', sheetInk: sep ? '#3A2F22' : '#17202B', sheetMuted: sep ? '#6B5B45' : '#4F5B69',
+      ruleInk: sep ? '#3A2F22' : '#17202B', ruleSoft: sep ? '#D8CDB8' : '#D3D8DF',
+      mainJustify: s.focus || !s.index ? 'center' : 'flex-start',
+      ixCls: s.index && !s.focus ? 'tool on' : 'tool', ixP: s.index && !s.focus ? 'true' : 'false',
+      sepCls: sep ? 'tool on' : 'tool', sepP: sep ? 'true' : 'false',
+      focCls: s.focus ? 'tool on' : 'tool', focP: s.focus ? 'true' : 'false',
+      toggleIndex: () => this.setState({ index: !this.state.index, focus: false }),
+      toggleSepia: () => this.setState({ sepia: !this.state.sepia }),
+      toggleFocus: () => this.setState({ focus: !this.state.focus }),
+      pdf: s.pdf, openPdf: () => this.setState({ pdf: true }), closePdf: () => this.setState({ pdf: false }),
+      drawer: s.drawer, drawerX: s.drawer ? 'true' : 'false',
+      openDrawer: () => this.setState({ drawer: true }), closeDrawer: () => this.setState({ drawer: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

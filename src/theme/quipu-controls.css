@@ -1,4 +1,4 @@
-/* hoja de controles del tema Quipu (docs/design-system: 3-accesibilidad.md y las guías Button, Field y Feedback):
+/* hoja de controles del tema Quipu (docs/design-system/historico-quipu: 3-accesibilidad.md y las guías Button, Field y Feedback):
    objetivos de 44px y campos de 16px sobre los componentes de @wasichai/ui, enganchada solo a sus data-slot públicos
    (README de @wasichai/ui, «Styling hooks»). en el scope de los temas Quipu (también el modo lectura de la lección) y nunca dentro de un subárbol con otro
    tema. sin capa, gana a las utilidades de Tailwind y por eso también a las clases de quien usa el componente: pone

@@ -13,7 +13,7 @@ import { CATALOG_ROUTES } from './routes'
 const BANNER_HEIGHT = 72
 const CARD = 'flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface'
 
-// un curso del catálogo (docs/design-system/components/CourseCard). toda la tarjeta enlaza a la ficha con el ::after del título:
+// un curso del catálogo (docs/design-system/historico-quipu/components/CourseCard). toda la tarjeta enlaza a la ficha con el ::after del título:
 // así hay un solo interactivo y un solo nombre para el lector de pantalla. el anillo de foco lo dibuja la tarjeta, no el enlace
 export function CourseCard({ course }: { course: CourseSummary }) {
   const { t, i18n } = useTranslation('catalog')

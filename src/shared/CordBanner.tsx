@@ -1,4 +1,4 @@
-// la banda de cordones de un curso (docs/design-system/components/CourseCard): un quipu generado con una semilla (el slug o
+// la banda de cordones de un curso (docs/design-system/historico-quipu/components/CourseCard): un quipu generado con una semilla (el slug o
 // el código), así cada curso tiene un patrón propio y estable sin necesidad de imagen. es decorativa: no representa avance
 // ni dato alguno, y por eso no usa los colores de estado sino tinta y marca sobre un fondo apagado
 // sin escalar: el dibujo se recorta por la derecha según el ancho, así los nudos miden lo mismo y nunca se cortan por abajo

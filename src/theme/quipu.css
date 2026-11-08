@@ -106,7 +106,7 @@
   --radius-card: 10px;
 }
 
-/* el modo lectura de la lección (tema «lectura» de docs/design-system/tokens.json): papel sepia y tinta cálida con los
+/* el modo lectura de la lección (tema «lectura» de docs/design-system/historico-quipu/tokens.json): papel sepia y tinta cálida con los
    mismos pares AA que el claro. no es un tema de página: la lección lo pone como subárbol (data-theme en su contenedor) */
 [data-theme='quipu-lectura'] {
   --surface: #f8f0df;
