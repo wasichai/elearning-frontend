@@ -59,6 +59,19 @@ describe('RosterPage: matriculados de una edición', () => {
     expect(within(rows[1]!).getByText('Sin evaluaciones')).toBeInTheDocument()
   })
 
+  it('con el nombre de cada matriculado: el nombre delante y el correo debajo, también en «Menor avance» y en las tarjetas', async () => {
+    renderRoster([
+      { path: OFFERINGS, body: [offering] },
+      { path: STUDENTS, body: [{ ...roster[0], name: 'Rosa Estudiante' }, roster[1]] }
+    ])
+
+    const table = await screen.findByRole('table', { name: '2 matriculados' })
+    const header = within(table).getByRole('rowheader', { name: /Rosa Estudiante/ })
+    expect(within(header).getByText('Rosa Estudiante')).toBeInTheDocument()
+    expect(within(header).getByText(String(roster[0]!.email))).toBeInTheDocument()
+    expect(screen.getByRole('listitem', { name: 'Rosa Estudiante' })).toBeInTheDocument()
+  })
+
   it('una edición ajena (404) se explica: solo se ven las asignadas', async () => {
     renderRoster(
       [
@@ -253,7 +266,7 @@ describe('RosterPage: matriculados de una edición', () => {
     it('busca por correo y dice cuántos quedan', async () => {
       const user = await renderMany()
 
-      await user.type(screen.getByRole('searchbox', { name: 'Buscar por correo' }), 'OTRA')
+      await user.type(screen.getByRole('searchbox', { name: 'Buscar por nombre o correo' }), 'OTRA')
 
       expect(shownEmails()).toEqual(['carla@otra.local'])
       expect(screen.getByText('1 de 4 matriculados')).toBeInTheDocument()
@@ -275,13 +288,13 @@ describe('RosterPage: matriculados de una edición', () => {
     it('sin resultados lo dice y deja quitar los filtros', async () => {
       const user = await renderMany()
 
-      await user.type(screen.getByRole('searchbox', { name: 'Buscar por correo' }), 'nadie')
+      await user.type(screen.getByRole('searchbox', { name: 'Buscar por nombre o correo' }), 'nadie')
 
       expect(screen.getByText('Nadie coincide con la búsqueda')).toBeInTheDocument()
       expect(screen.queryByRole('table')).not.toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Quitar los filtros' }))
       expect(shownEmails()).toHaveLength(4)
-      expect(screen.getByRole('searchbox', { name: 'Buscar por correo' })).toHaveValue('')
+      expect(screen.getByRole('searchbox', { name: 'Buscar por nombre o correo' })).toHaveValue('')
     })
 
     it('las tarjetas traen lo mismo y su orden se elige con una lista', async () => {

@@ -372,6 +372,16 @@ describe('pasar asistencia', () => {
     expect(await screen.findByText('Asistencia guardada')).toBeInTheDocument()
   })
 
+  it('con el nombre de cada matriculado: el nombre delante, el correo debajo y el grupo lo nombra', async () => {
+    renderPages([LIST, { path: ATTENDANCE, body: [{ ...attendanceRows[0], name: 'Rosa Estudiante' }, attendanceRows[1]] }], route)
+
+    await screen.findByRole('list', { name: 'Asistencia' })
+    expect(screen.getByText('Rosa Estudiante')).toBeInTheDocument()
+    expect(screen.getByText('estudiante@demo.local')).toBeInTheDocument()
+    expect(mark('Rosa Estudiante', 'Presente')).toHaveAttribute('aria-pressed', 'false')
+    expect(mark('ana.torres@demo.local', 'Presente')).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('cambiar una ya registrada exige motivo: sin él no se envía', async () => {
     renderPages([LIST, { path: ATTENDANCE, body: attendanceRows }, { method: 'PUT', path: ATTENDANCE, body: attendanceRows }], route)
 

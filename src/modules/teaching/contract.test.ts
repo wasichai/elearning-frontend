@@ -58,6 +58,11 @@ describe('contrato de corrección, sesiones y asistencia', () => {
     expect(parseContract(attemptSchema, 'attempt', attemptGraded).result?.passed).toBe(true)
     expect(parseContract(sessionListSchema, 'sessions', teachingSessions)[0]?.attendance).toBeUndefined()
     expect(parseContract(attendanceRowListSchema, 'attendance', attendanceRows)[0]?.status).toBeNull()
+    // name llega con elearning-backend#378 en el roster y la asistencia: sin él (un servidor anterior) o null (deshabilitado), el correo
+    expect(parseContract(attendanceRowListSchema, 'attendance', [{ ...attendanceRows[0], name: 'Rosa Estudiante' }])[0]?.name).toBe('Rosa Estudiante')
+    expect(parseContract(attendanceRowListSchema, 'attendance', [{ ...attendanceRows[0], name: null }])[0]?.name).toBeNull()
+    expect(parseContract(rosterSchema, 'roster', [{ ...roster[0], name: 'Rosa Estudiante' }])[0]?.name).toBe('Rosa Estudiante')
+    expect(parseContract(rosterSchema, 'roster', [{ ...roster[0], name: null }])[0]?.name).toBeNull()
   })
 
   it.each([

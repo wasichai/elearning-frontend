@@ -52,6 +52,12 @@ describe('la búsqueda y los filtros', () => {
     expect(emails(filterRoster(students, { search: 'demo', filter: 'ALL' }))).toEqual(['Ana@demo.local', 'beto@demo.local'])
   })
 
+  it('busca también por el nombre, si el servidor lo da', () => {
+    const named = [entry('rosa@demo.local', 10, { name: 'Rosa Quispe' }), entry('beto@demo.local', 20)]
+    expect(emails(filterRoster(named, { search: 'quispe', filter: 'ALL' }))).toEqual(['rosa@demo.local'])
+    expect(emails(filterRoster(named, { search: 'beto', filter: 'ALL' }))).toEqual(['beto@demo.local'])
+  })
+
   it('sin búsqueda entra también quien no tiene correo; con búsqueda, no', () => {
     expect(filterRoster(students, { search: '', filter: 'ALL' })).toHaveLength(4)
     expect(emails(filterRoster(students, { search: 'local', filter: 'ALL' }))).not.toContain(null)
@@ -82,6 +88,11 @@ describe('el orden', () => {
     const students = [entry('b', 1), entry(null, 2), entry('a', 3)]
     expect(emails(sortRoster(students, { key: 'email', direction: 'asc' }))).toEqual(['a', 'b', null])
     expect(emails(sortRoster(students, { key: 'email', direction: 'desc' }))).toEqual(['b', 'a', null])
+  })
+
+  it('por lo que se ve: el nombre si lo hay, si no el correo', () => {
+    const students = [entry('zoe@demo.local', 1, { name: 'Ana Zapata' }), entry('beto@demo.local', 2), entry('ana@demo.local', 3, { name: 'Carla Ruiz' })]
+    expect(emails(sortRoster(students, { key: 'email', direction: 'asc' }))).toEqual(['zoe@demo.local', 'beto@demo.local', 'ana@demo.local'])
   })
 
   it('por avance, y a igualdad por correo', () => {
