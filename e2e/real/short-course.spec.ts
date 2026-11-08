@@ -185,8 +185,9 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
         .getByRole('navigation', { name: 'Secciones de la edición' })
         .getByRole('link', { name: /^Corrección/ })
         .click()
-      await desk.getByRole('link', { name: `Corregir «${ASSESSMENT}» de ${student.email}` }).click()
-      await expect(desk.getByText(`Estudiante: ${student.email}`)).toBeVisible()
+      // la cola nombra a quien entregó (elearning-backend#376), con el correo debajo
+      await desk.getByRole('link', { name: `Corregir «${ASSESSMENT}» de ${student.name}` }).click()
+      await expect(desk.getByText(`Estudiante: ${student.name}`)).toBeVisible()
       const question = desk.getByRole('article', { name: OPEN_QUESTION })
       await expect(question).toContainText('No pudimos guardar: falta la fecha.')
       await expect(question).toContainText('Dice qué pasó (3 pts)')

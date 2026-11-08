@@ -10,6 +10,8 @@ export const ADMIN = { email: process.env.WASICHAI_EMAIL ?? 'admin@wasichai.loca
 export interface Account {
   email: string
   password: string
+  // el nombre para mostrar: la cola de corrección y el panel docente lo dan junto al correo (elearning-backend#376)
+  name?: string
 }
 
 export async function token(request: APIRequestContext, email: string, password: string): Promise<string> {
@@ -32,8 +34,10 @@ export async function newUser(request: APIRequestContext, role: string, displayN
 
 // matricularse exige la aceptación vigente de los términos de uso (ADR-0037 del backend). aceptarlos por la pantalla lo prueba terms.spec.ts:
 // aquí un estudiante nuevo los acepta por la API, para que estos recorridos sigan probando lo suyo
-export async function newStudent(request: APIRequestContext): Promise<Account> {
-  const student = await newUser(request, 'ESTUDIANTE', 'Estudiante e2e')
+// con un nombre propio de esta ejecución: la cola de corrección lo muestra, y otro estudiante de otra prueba no se confunde con él
+export async function newStudent(request: APIRequestContext): Promise<Account & { name: string }> {
+  const name = `Estudiante e2e ${randomUUID().slice(0, 8)}`
+  const student = { ...(await newUser(request, 'ESTUDIANTE', name)), name }
   const headers = { Authorization: `Bearer ${await token(request, student.email, student.password)}` }
   const terms = (await (await request.get(`${API_URL}/api/lms/terms`, { headers })).json()) as { current: { version: number } | null }
   expect(terms.current, 'la demo no tiene términos de uso publicados').not.toBeNull()
