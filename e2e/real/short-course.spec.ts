@@ -202,12 +202,13 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
 
       await desk.goto(`/docencia/${OFFERING}/sesiones`)
       await desk.getByRole('link', { name: `Pasar asistencia de «${SESSION_LESSON}»` }).click()
-      const attendance = desk.getByRole('group', { name: `Asistencia de ${student.email}` })
+      // la asistencia nombra a cada matriculado (#202): el grupo lleva el nombre, no el correo
+      const attendance = desk.getByRole('group', { name: `Asistencia de ${student.name}` })
       await attendance.getByRole('button', { name: 'Presente' }).click()
       await desk.getByRole('button', { name: 'Guardar la asistencia' }).click()
       await expect(desk.getByText('Asistencia guardada')).toBeVisible()
       await desk.reload()
-      await expect(desk.getByRole('group', { name: `Asistencia de ${student.email}` }).getByRole('button', { name: 'Presente' })).toHaveAttribute(
+      await expect(desk.getByRole('group', { name: `Asistencia de ${student.name}` }).getByRole('button', { name: 'Presente' })).toHaveAttribute(
         'aria-pressed',
         'true'
       )
