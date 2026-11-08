@@ -8,7 +8,7 @@ import { Initials } from '../../shared/Initials'
 import { Section, Skeleton } from '../../shared/Screen'
 import type { PendingAttempt, TeachingPanelItem } from './contract'
 import { groupsByOldest, hiddenAttempts, MAX_TRAY_ROWS, oldestFirst, submittedAge } from './panel'
-import { BlockProblem, EmailText, useProblemText } from './parts'
+import { BlockProblem, Submitter, submitterOf, useProblemText } from './parts'
 import { TEACHING_ROUTES } from './routes'
 
 interface TrayGroup {
@@ -98,13 +98,16 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
   const { t, i18n } = useTranslation('teaching')
   const links = useWasichaiLinks()
   const locale = i18n.language
-  const student = attempt.email ?? t('roster.noEmail')
+  const who = submitterOf(attempt)
+  const student = who ?? t('roster.noEmail')
   return (
     <div className="flex items-center gap-3 py-2.5 sm:gap-6">
-      {attempt.email ? <Initials of={attempt.email} className="hidden size-8 text-xs @md:flex" /> : null}
+      {who ? <Initials of={who} className="hidden size-8 text-xs @md:flex" /> : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 @xl:flex-row @xl:items-center @xl:gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
-          <span className="font-medium text-ink">{attempt.email ? <EmailText email={attempt.email} /> : student}</span>
+          <span className="font-medium text-ink">
+            <Submitter attempt={attempt} />
+          </span>
           <span className="break-words text-ink">{attempt.lessonTitle}</span>
         </div>
         <time

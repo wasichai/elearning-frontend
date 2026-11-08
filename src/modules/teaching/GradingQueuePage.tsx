@@ -9,7 +9,7 @@ import { useOfferings, useQueue } from './api'
 import type { PendingAttempt } from './contract'
 import { OfferingSection } from './OfferingSection'
 import { oldestFirst, submittedAge } from './panel'
-import { EmailText, QueryProblem } from './parts'
+import { QueryProblem, Submitter, submitterOf } from './parts'
 import { TEACHING_ROUTES } from './routes'
 import { ListSkeleton } from '../../shared/ListSkeleton'
 
@@ -57,7 +57,7 @@ function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] })
             {sorted.map((attempt, index) => (
               <tr key={attempt.attemptId}>
                 <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
-                  {attempt.email ? <EmailText email={attempt.email} /> : t('roster.noEmail')}
+                  <Submitter attempt={attempt} />
                 </Th>
                 <Td>{attempt.lessonTitle}</Td>
                 <Td className="tabular-nums">{formatNumber(attempt.pendingQuestions, locale)}</Td>
@@ -76,7 +76,9 @@ function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] })
         {sorted.map((attempt, index) => (
           <li key={attempt.attemptId} className="flex items-center gap-3 py-2.5">
             <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
-              <span className="font-medium text-ink">{attempt.email ? <EmailText email={attempt.email} /> : t('roster.noEmail')}</span>
+              <span className="font-medium text-ink">
+                <Submitter attempt={attempt} />
+              </span>
               <span className="break-words text-ink">{attempt.lessonTitle}</span>
               <span className="text-ink-muted">
                 {t('queue.pendingCount', { count: attempt.pendingQuestions, value: formatNumber(attempt.pendingQuestions, locale) })}
@@ -112,7 +114,7 @@ function GradeLink({ code, attempt, primary }: { code: string; attempt: PendingA
     <Button className={`${WRAP} shrink-0`} asChild variant={primary ? 'primary' : 'secondary'} size="sm">
       <Link
         to={links.to(TEACHING_ROUTES.attempt, { code, attemptId: attempt.attemptId })}
-        aria-label={t('queue.gradeLabel', { student: attempt.email ?? t('roster.noEmail'), lesson: attempt.lessonTitle })}
+        aria-label={t('queue.gradeLabel', { student: submitterOf(attempt) ?? t('roster.noEmail'), lesson: attempt.lessonTitle })}
       >
         {t('queue.grade')}
       </Link>

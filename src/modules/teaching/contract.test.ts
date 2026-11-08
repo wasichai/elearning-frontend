@@ -50,6 +50,9 @@ describe('contrato del espacio docente', () => {
 describe('contrato de corrección, sesiones y asistencia', () => {
   it('acepta los ejemplos del documento', () => {
     expect(parseContract(pendingAttemptListSchema, 'queue', pendingAttempts)[0]?.pendingQuestions).toBe(2)
+    // name llega con elearning-backend#376: sin él (un servidor anterior) o null (deshabilitado) se sigue con el correo
+    expect(parseContract(pendingAttemptListSchema, 'queue', [{ ...pendingAttempts[0], name: 'Rosa Estudiante' }])[0]?.name).toBe('Rosa Estudiante')
+    expect(parseContract(pendingAttemptListSchema, 'queue', [{ ...pendingAttempts[0], name: null }])[0]?.name).toBeNull()
     expect(parseContract(pendingAttemptListSchema, 'queue', [{ ...pendingAttempts[0], email: null }])[0]?.email).toBeNull()
     expect(parseContract(attemptSchema, 'attempt', attemptToGrade).answers[2]?.submission?.file?.name).toBe('liquidacion.pdf')
     expect(parseContract(attemptSchema, 'attempt', attemptGraded).result?.passed).toBe(true)

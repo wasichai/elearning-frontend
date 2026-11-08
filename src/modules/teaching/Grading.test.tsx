@@ -62,6 +62,16 @@ describe('la cola de corrección', () => {
     )
   })
 
+  // el nombre de quien entregó, con el correo debajo (elearning-backend#376); sin nombre, el correo como hasta ahora
+  it('con el nombre de quien entregó, lo pone delante del correo y lo usa en el enlace', async () => {
+    renderGrading([{ path: QUEUE, body: [{ ...pendingAttempts[0]!, name: 'Rosa Estudiante' }] }], `/docencia/${CODE}/correccion`)
+
+    const row = within(await screen.findByRole('table', { name: 'Cola de corrección' })).getAllByRole('row')[1]!
+    expect(within(row).getByRole('rowheader')).toHaveTextContent('Rosa Estudiante')
+    expect(within(row).getByRole('rowheader')).toHaveTextContent('estudiante@demo.local')
+    expect(within(row).getByRole('link', { name: 'Corregir «Evaluación final» de Rosa Estudiante' })).toBeInTheDocument()
+  })
+
   it('pone lo más antiguo arriba, y solo su «Corregir» es la primaria', async () => {
     const queue = [
       { ...pendingAttempts[0]!, attemptId: 'int-2', email: 'nueva@demo.local', submittedAt: '2026-10-30T10:00:00Z' },
@@ -298,6 +308,15 @@ describe('corregir en lote', () => {
     expect(await screen.findByText('2 de 3')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Anterior' })).toHaveAttribute('href', `/docencia/${CODE}/correccion/int-0`)
     expect(screen.getByRole('link', { name: 'Siguiente' })).toHaveAttribute('href', `/docencia/${CODE}/correccion/int-2`)
+  })
+
+  it('nombra a quien entregó, si la cola trae su nombre', async () => {
+    renderGrading([
+      { path: QUEUE, body: [{ ...pendingAttempts[0]!, name: 'Rosa Estudiante' }] },
+      { path: ATTEMPT, body: attemptToGrade }
+    ])
+
+    expect(await screen.findByText(/Rosa Estudiante/)).toBeInTheDocument()
   })
 
   it('«Guardar y pasar al siguiente» guarda lo escrito y abre la siguiente de la cola', async () => {

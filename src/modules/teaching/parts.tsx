@@ -43,6 +43,27 @@ export function OfferingStatusBadge({ status }: { status: TeachingOffering['stat
   return <StatusBadge state={OFFERING_STATE[status]}>{t(`offering.status.${status}`)}</StatusBadge>
 }
 
+// quien entregó: su nombre, si el servidor lo da, y si no su correo. para las etiquetas y las iniciales
+export function submitterOf(attempt: { name?: string | null; email: string | null }): string | null {
+  return attempt.name || attempt.email
+}
+
+// el nombre delante y el correo debajo; sin nombre, el correo solo, como antes
+export function Submitter({ attempt }: { attempt: { name?: string | null; email: string | null } }) {
+  const { t } = useTranslation('teaching')
+  if (!attempt.name) return attempt.email ? <EmailText email={attempt.email} /> : <>{t('roster.noEmail')}</>
+  return (
+    <span className="flex min-w-0 flex-col">
+      <span>{attempt.name}</span>
+      {attempt.email ? (
+        <span className="text-xs font-normal text-ink-muted">
+          <EmailText email={attempt.email} />
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
 // un correo largo no se parte por cualquier letra: tras la arroba y antes de cada punto. <wbr> no cambia su texto, ni lo que se
 // lee ni lo que se copia. overflow-wrap: anywhere, por si un trozo aún no cabe
 export function EmailText({ email }: { email: string }) {

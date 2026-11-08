@@ -52,6 +52,8 @@ export const pendingAttemptListSchema = z.array(
     attemptId: z.string().min(1),
     enrollmentId: z.string().min(1),
     email: z.string().nullable(),
+    // el nombre para mostrar de quien entregó (elearning-backend#376): null si la cuenta está deshabilitada; falta en un servidor anterior
+    name: z.string().nullish(),
     lessonId: z.string().min(1),
     lessonTitle: z.string(),
     submittedAt: z.iso.datetime({ offset: true }),

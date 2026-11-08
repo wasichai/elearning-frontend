@@ -222,6 +222,16 @@ describe('OfferingsPage: el panel docente', () => {
       expect(called(queuePath(SRTM))).toBe(0)
     })
 
+    it('con el nombre de quien entregó: sus iniciales, el nombre y el correo debajo', async () => {
+      renderOfferings([panelOf(panelItem(offering, { oldestPending: [{ ...pendingAttempts[0]!, name: 'Rosa Estudiante' }] }))])
+
+      const section = await tray()
+      expect(await section.findByText('Rosa Estudiante')).toBeInTheDocument()
+      expect(section.getByText('estudiante@demo.local')).toBeInTheDocument()
+      expect(section.getAllByText('RE').find((element) => element.getAttribute('data-slot') === 'avatar')).toBeDefined()
+      expect(section.getByRole('link', { name: 'Corregir «Evaluación final» de Rosa Estudiante' })).toBeInTheDocument()
+    })
+
     it('agrupa por edición si hay más de una, con la entrega más antigua arriba, y solo esa es primaria', async () => {
       const older = { ...pendingAttempts[0]!, attemptId: 'int-9', email: 'ana.torres@demo.local', lessonTitle: 'Práctica', submittedAt: '2026-10-01T10:00:00Z' }
       renderOfferings([
