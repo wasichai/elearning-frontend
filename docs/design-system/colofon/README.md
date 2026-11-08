@@ -5,8 +5,9 @@ Quipu. La decisión y las alternativas están en el
 [ADR-0044](https://github.com/wasichai/elearning-backend/blob/main/docs/adr/0044-sistema-de-diseno-colofon.md) del
 backend; el plan, en [`../../superpowers/plans/2026-11-08-colofon.md`](../../superpowers/plans/2026-11-08-colofon.md).
 
-Los artboards `.dc.html` de esta carpeta son la fuente de verdad visual (HTML legible; se abren sueltos en el
-navegador). `canvas.json` es la disposición del lienzo. `tokens.json` recoge los valores exactos. Canvas publicado:
+Los artboards `.dc.html` de esta carpeta son la fuente de verdad visual (son las fuentes de las láminas del
+canvas, que se ven en el [canvas](https://claude.ai/artifact/3FfeqzTPiBKQzEcKR7MqKc); como HTML sirven de referencia legible
+de estructura, tokens y textos, y no se abren sueltos: cargan el runtime del canvas, que no está en el repositorio). `canvas.json` es la disposición del lienzo. `tokens.json` recoge los valores exactos. Canvas publicado:
 <https://claude.ai/artifact/3FfeqzTPiBKQzEcKR7MqKc>. Auditoría y decisión: <https://claude.ai/artifact/2vSwNNERREDaTSCPQMbU1C>.
 
 ## Principios
