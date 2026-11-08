@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { ApiError, LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { ApiError, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@wasichai/ui'
 import { Circle, CircleAlert, CircleCheck, CircleDot, CircleX, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
@@ -38,6 +38,7 @@ import {
 } from './importApi'
 import { ImportJobs } from './ImportJobs'
 import { STUDIO_ROUTES } from './routes'
+import { FormSkeleton } from '../../shared/PageSkeleton'
 
 // lo escrito en el formulario: vive en la página para que un fallo deje volver a intentarlo sin perderlo
 interface ImportDraft {
@@ -133,7 +134,7 @@ export function ImportPage({ pollInterval = IMPORT_POLL_MS }: { pollInterval?: n
                   )}
                 </>
               ) : (
-                <LoadingState label={t('import.loading')} />
+                <FormSkeleton label={t('import.loading')} />
               )}
             </>
           )}

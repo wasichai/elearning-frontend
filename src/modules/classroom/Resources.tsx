@@ -1,4 +1,4 @@
-import { ApiError, LoadingState } from '@wasichai/core'
+import { ApiError } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CircleAlert, FileText } from 'lucide-react'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -9,6 +9,7 @@ import { isDarkTheme, useDocumentTheme } from './documentTheme'
 import { lockedReading, type ReadingOptions, type ReadingPalette } from './reading'
 import { formatFileSize, LESSON_COLUMN } from './parts'
 import { watchedEnough } from './video'
+import { MediaSkeleton, DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en un iframe aislado,
 // VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
@@ -108,8 +109,8 @@ export function HtmlResource({ title, file, reading = {} }: { title: string; fil
           <FileProblem error={query.error} onRetry={() => void query.refetch()} />
         </div>
       ) : html === undefined ? (
-        <div className="flex min-h-96 items-center justify-center">
-          <LoadingState label={t('resource.loading')} />
+        <div className="min-h-96">
+          <DocumentSkeleton label={t('resource.loading')} />
         </div>
       ) : (
         <iframe
@@ -132,7 +133,7 @@ function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; thr
   const media = useMemo(() => query.data && inertBlob(query.data, isVideo), [query.data])
   const source = useObjectUrl(media)
   if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
-  if (!source) return <LoadingState label={t('resource.loading')} />
+  if (!source) return <MediaSkeleton label={t('resource.loading')} />
   return (
     <div className="flex flex-col gap-2">
       <video

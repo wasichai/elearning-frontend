@@ -1,4 +1,4 @@
-import { LoadingState, useAppTitle, useWasichaiLinks } from '@wasichai/core'
+import { useAppTitle, useWasichaiLinks } from '@wasichai/core'
 import { Button, Input, Label } from '@wasichai/ui'
 import { ShieldCheck } from 'lucide-react'
 import { useEffect, useId, useState, type ReactNode } from 'react'
@@ -14,6 +14,7 @@ import type { Certificate } from './contract'
 import { useProblemText } from './parts'
 import { CLASSROOM_ROUTES } from './routes'
 import { QUIPU_THEME } from '../../theme/themes'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // la verificación pública de un certificado (ADR-0016): sin sesión, por su código. la misma página es la que se imprime:
 // al imprimir solo queda el certificado (sin cabecera, enlaces ni botones)
@@ -112,7 +113,7 @@ export function CertificatePage() {
   else if (!query.data)
     body = (
       <div className={screenContainer()}>
-        <LoadingState label={t('verify.loading')} />
+        <DocumentSkeleton label={t('verify.loading')} />
       </div>
     )
   else body = <CertificateView certificate={query.data} />

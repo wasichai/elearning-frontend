@@ -1,7 +1,8 @@
-import { DynamicForm, ErrorState, formError, LoadingState, useObjectDefinition, useSaveRecord, useWritePolicy, WritePolicyNotice } from '@wasichai/core'
+import { DynamicForm, ErrorState, formError, useObjectDefinition, useSaveRecord, useWritePolicy, WritePolicyNotice } from '@wasichai/core'
 import type { FieldViolation, Form, RecordItem, RecordPayload } from '@wasichai/core'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FormSkeleton } from '../../shared/PageSkeleton'
 
 interface StudioRecordFormProps {
   objectName: string
@@ -24,7 +25,7 @@ export function StudioRecordForm({ objectName, form, initial, fixed, onSaved, on
   const [error, setError] = useState<string | null>(null)
   const [violations, setViolations] = useState<FieldViolation[]>([])
   if (definition.isError && !definition.data) return <ErrorState error={definition.error} onRetry={() => void definition.refetch()} />
-  if (!definition.data) return <LoadingState label={t('newCourse.loading')} />
+  if (!definition.data) return <FormSkeleton label={t('newCourse.loading')} />
   if (!policy.canCreate) return <WritePolicyNotice policy={policy} />
   // la etiqueta de la metadata solo tiene un idioma (ADR-070 de Wasichai): la del módulo, si la hay, y si no la del servidor. solo cambia lo que se lee
   const localized = {
