@@ -7,7 +7,7 @@ import { classroomModule } from './module'
 import { serveFiles } from '../../test/files'
 import { classroom, lessonHtml } from './test/fixtures'
 
-// el modo lectura de la lección (docs/design-system/historico-quipu, PantallaLeccion): el tema quipu-lectura en el contenedor de la
+// el modo lectura de la lección (docs/design-system/colofon, Classroom): el tema colofon-lectura en el contenedor de la
 // lección y el tamaño del texto de la lectura, recordados en el navegador con el storagePrefix
 
 const CLASSROOM = '/lms/classroom/enrollments/mat-srtm-1'
@@ -55,7 +55,7 @@ describe('modo lectura de la lección', () => {
     await userEvent.click(toggle)
 
     expect(toggle).toHaveAttribute('aria-pressed', 'true')
-    expect(article()).toHaveAttribute('data-theme', 'quipu-lectura')
+    expect(article()).toHaveAttribute('data-theme', 'colofon-lectura')
     expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: true })
 
     await userEvent.click(toggle)
@@ -88,7 +88,7 @@ describe('modo lectura de la lección', () => {
     renderLesson()
 
     expect(within(await tools()).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'true')
-    expect(article()).toHaveAttribute('data-theme', 'quipu-lectura')
+    expect(article()).toHaveAttribute('data-theme', 'colofon-lectura')
     await waitFor(async () => expect(await readingCss()).toContain('font-size: 21px'))
   })
 
@@ -107,7 +107,7 @@ describe('modo lectura de la lección', () => {
       throw new Error('QuotaExceededError')
     })
     await userEvent.click(within(bar).getByRole('button', { name: 'Modo lectura' }))
-    expect(article()).toHaveAttribute('data-theme', 'quipu-lectura')
+    expect(article()).toHaveAttribute('data-theme', 'colofon-lectura')
   })
 
   it('sobre un tema oscuro, el modo lectura sigue oscuro y abre el interlineado', async () => {

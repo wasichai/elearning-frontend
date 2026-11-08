@@ -95,16 +95,16 @@ test('la verificación es pública: sin sesión, por código; uno desconocido se
 })
 
 test('el certificado es un A4 apaisado en tema claro, aunque la página esté en oscuro, y se imprime en una sola hoja', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('elearning.theme', 'quipu-dark'))
+  await page.addInitScript(() => localStorage.setItem('elearning.theme', 'colofon-dark'))
   await fakeApi(page, { certificateIssued: true })
   await page.goto('/certificados/K7Q2-M9XW-4RTB')
   const sheet = page.getByRole('article', { name: 'Rosa Quispe Mamani' })
   await expect(sheet).toBeVisible()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'quipu-dark')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'colofon-dark')
 
-  // papel y tinta del tema claro de Quipu
-  expect(await sheet.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 253, 248)')
-  expect(await sheet.evaluate((element) => getComputedStyle(element).color)).toBe('rgb(30, 35, 39)')
+  // papel y tinta del tema claro de Colofón
+  expect(await sheet.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 255, 255)')
+  expect(await sheet.evaluate((element) => getComputedStyle(element).color)).toBe('rgb(23, 32, 43)')
   const box = (await sheet.boundingBox())!
   expect(box.width / box.height).toBeCloseTo(297 / 210, 1)
 

@@ -13,7 +13,7 @@ import { usePublicCertificate } from './api'
 import type { Certificate } from './contract'
 import { useProblemText } from './parts'
 import { CLASSROOM_ROUTES } from './routes'
-import { QUIPU_THEME } from '../../theme/themes'
+import { COLOFON_THEME } from '../../theme/themes'
 import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // la verificación pública de un certificado (ADR-0016): sin sesión, por su código. la misma página es la que se imprime:
@@ -135,12 +135,12 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
           <Button onClick={() => window.print()}>{t('certificate.print')}</Button>
           <p className="max-w-prose text-sm text-ink-muted">{t('certificate.printHint')}</p>
         </div>
-        {/* el documento: siempre en el tema claro de Quipu, se vea la página como se vea, para que en pantalla y en papel sea el
+        {/* el documento: siempre en el tema claro de Colofón, se vea la página como se vea, para que en pantalla y en papel sea el
           mismo; con la proporción de un A4 apaisado desde tableta (en el móvil, una columna) y la hoja entera al imprimir */}
         <article
           aria-labelledby="certificate-holder"
-          data-theme={QUIPU_THEME.id}
-          style={{ colorScheme: QUIPU_THEME.colorScheme }}
+          data-theme={COLOFON_THEME.id}
+          style={{ colorScheme: COLOFON_THEME.colorScheme }}
           className="flex flex-col items-center justify-center gap-5 rounded-card border-2 border-border bg-surface px-6 py-10 text-center text-ink sm:aspect-[297/210] sm:px-12 print:fixed print:inset-0 print:aspect-auto print:rounded-none print:border-0 print:px-[18mm] print:py-[14mm] print:[print-color-adjust:exact]"
         >
           {appName ? <p className="text-sm font-semibold tracking-widest text-ink-muted uppercase">{appName}</p> : null}

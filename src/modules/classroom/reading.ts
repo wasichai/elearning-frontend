@@ -49,15 +49,15 @@ function declaration(property: string, value: string | undefined): string {
   return color && COLOR.test(color) ? `${property}: ${color};` : ''
 }
 
-// tipografía de lectura larga del sistema Quipu: medida de 68 caracteres, 19/32, títulos con aire. todo dentro de
-// :where(), especificidad cero: cualquier estilo del autor gana. sin fuentes: la CSP no deja cargar ninguna, Literata
+// tipografía de lectura larga del sistema Colofón: medida de 68 caracteres, 19/32, títulos con aire. todo dentro de
+// :where(), especificidad cero: cualquier estilo del autor gana. sin fuentes: la CSP no deja cargar ninguna, Newsreader
 // solo si está instalada
 export function readingStyle(palette?: ReadingPalette, options: ReadingOptions = {}): string {
   const p = palette ?? { colorScheme: 'light' }
   const size = READING_SIZES.find((step) => step === options.size)
   return [
     `:where(html) { color-scheme: ${p.colorScheme === 'dark' ? 'dark' : 'light'}; ${declaration('background', p.background)} ${declaration('color', p.text)} }`,
-    ":where(body) { box-sizing: border-box; max-width: 68ch; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; font: 400 19px/1.68 Literata, Georgia, 'Iowan Old Style', 'Times New Roman', serif; hyphens: auto; overflow-wrap: break-word; }",
+    ":where(body) { box-sizing: border-box; max-width: 68ch; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; font: 400 19px/1.68 Newsreader, Georgia, 'Iowan Old Style', 'Times New Roman', serif; hyphens: auto; overflow-wrap: break-word; }",
     ':where(h1, h2, h3, h4) { line-height: 1.3; font-weight: 600; text-wrap: balance; }',
     ':where(h1) { font-size: 1.9em; font-weight: 500; margin: 0 0 1em; }',
     ':where(h2) { font-size: 1.37em; margin: 2.5em 0 0.6em; }',

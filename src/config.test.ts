@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { resolveConfig } from '@wasichai/core'
 import { isValidElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { QuipuMark } from './shared/QuipuMark'
 import { homeRoute, shellNav } from './shellNav'
-import { QUIPU_SYSTEM_THEMES, QUIPU_THEMES } from './theme/themes'
+import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
 import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
 
 describe('appName', () => {
@@ -28,8 +30,8 @@ describe('createConfig', () => {
       storagePrefix: 'elearning',
       languages: ['es', 'en'],
       timeZone: 'America/Lima',
-      themes: QUIPU_THEMES,
-      systemThemes: QUIPU_SYSTEM_THEMES,
+      themes: COLOFON_THEMES,
+      systemThemes: COLOFON_SYSTEM_THEMES,
       defaultLoginEmail: '',
       shellNav,
       homeRoute
@@ -46,10 +48,10 @@ describe('createConfig', () => {
     expect(createConfig({ DEV: false }).defaultLoginEmail).toBe('')
   })
 
-  it('un usuario nuevo entra en el tema Quipu, claro u oscuro según su sistema', () => {
+  it('un usuario nuevo entra en el tema Colofón, claro u oscuro según su sistema', () => {
     const config = createConfig({ DEV: false })
-    expect(config.themes?.map((theme) => theme.id)).toEqual(['quipu', 'quipu-dark'])
-    expect(config.systemThemes).toEqual({ light: 'quipu', dark: 'quipu-dark' })
+    expect(config.themes?.map((theme) => theme.id)).toEqual(['colofon', 'colofon-dark'])
+    expect(config.systemThemes).toEqual({ light: 'colofon', dark: 'colofon-dark' })
   })
 
   it('sin VITE_APP_NAME se llama con el nombre de trabajo', () => {
@@ -74,5 +76,49 @@ describe('videoCompletion', () => {
     for (const value of ['0', '-0.5', '1.5', '90', 'noventa', 'NaN', 'Infinity']) {
       expect(videoCompletion({ VITE_VIDEO_COMPLETION: value })).toBe(1)
     }
+  })
+})
+
+// el script de arranque de index.html, que aplica el tema guardado antes del bundle
+describe('tema guardado antes del bundle', () => {
+  const html = readFileSync(join(import.meta.dirname, '../index.html'), 'utf8')
+  const script = /<script>([\s\S]*?)<\/script>/.exec(html)![1]!
+
+  function boot(stored: string | null, systemDark = false, failSave = false) {
+    const storage = new Map<string, string>(stored === null ? [] : [['elearning.theme', stored]])
+    const root = { dataset: {} as Record<string, string>, style: {} as Record<string, string> }
+    new Function('localStorage', 'matchMedia', 'document', script)(
+      {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => {
+          if (failSave) throw new Error('cuota')
+          storage.set(key, value)
+        }
+      },
+      () => ({ matches: systemDark }),
+      { documentElement: root }
+    )
+    return { theme: root.dataset.theme, scheme: root.style.colorScheme, saved: storage.get('elearning.theme') }
+  }
+
+  it('un tema guardado quipu pasa a colofon, y quipu-dark a colofon-dark, y queda guardado', () => {
+    expect(boot('quipu')).toEqual({ theme: 'colofon', scheme: 'light', saved: 'colofon' })
+    expect(boot('quipu-dark')).toEqual({ theme: 'colofon-dark', scheme: 'dark', saved: 'colofon-dark' })
+  })
+
+  it('si no puede guardar la migración, igual pone el tema', () => {
+    expect(boot('quipu', false, true)).toMatchObject({ theme: 'colofon', scheme: 'light' })
+  })
+
+  it('los temas de Colofón y los de core se respetan', () => {
+    expect(boot('colofon-dark')).toEqual({ theme: 'colofon-dark', scheme: 'dark', saved: 'colofon-dark' })
+    expect(boot('light')).toEqual({ theme: 'light', scheme: 'light', saved: 'light' })
+  })
+
+  it('sin tema guardado o con uno desconocido, Colofón claro u oscuro según el sistema', () => {
+    expect(boot(null).theme).toBe('colofon')
+    expect(boot(null, true).theme).toBe('colofon-dark')
+    expect(boot('system', true).theme).toBe('colofon-dark')
+    expect(boot('otro').theme).toBe('colofon')
   })
 })

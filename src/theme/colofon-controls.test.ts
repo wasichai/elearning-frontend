@@ -1,18 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { QUIPU_STYLED_THEMES } from './themes'
+import { COLOFON_STYLED_THEMES } from './themes'
 
-// la hoja de controles del tema Quipu (quipu-controls.css): objetivos de 44px y campos de 16px sobre los componentes de
+// la hoja de controles del tema Colofón (colofon-controls.css): objetivos de 44px y campos de 16px sobre los componentes de
 // @wasichai/ui. como las hojas de tema de wasichai-ui (themes/antDesign.test.ts): cada regla vive en el scope de los dos
-// temas Quipu, sin entrar en un subárbol con otro tema, y solo toca los data-slot públicos del README de @wasichai/ui
+// temas Colofón, sin entrar en un subárbol con otro tema, y solo toca los data-slot públicos del README de @wasichai/ui
 
 const read = (file: string) => readFileSync(join(import.meta.dirname, file), 'utf8')
-const css = read('quipu-controls.css')
-const quipu = read('quipu.css')
+const css = read('colofon-controls.css')
+const colofon = read('colofon.css')
 
 // los dos temas del selector y el modo lectura de la lección
-const ANY = `:is(${QUIPU_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')})`
+const ANY = `:is(${COLOFON_STYLED_THEMES.map((id) => `[data-theme='${id}']`).join(', ')})`
 const SCOPE = `@scope (${ANY}) to ([data-theme]:not(${ANY}))`
 
 // los hooks públicos que esta hoja puede tocar (README de @wasichai/ui, «Styling hooks»)
@@ -95,13 +95,13 @@ function declared(selector: string, layer: string = unlayered): Map<string, stri
 
 const FIELDS = ":is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger'])"
 
-describe('quipu-controls.css', () => {
+describe('colofon-controls.css', () => {
   it('se importa después de los tokens del tema', () => {
     const index = readFileSync(join(import.meta.dirname, '../index.css'), 'utf8')
-    expect(index.indexOf("@import './theme/quipu-controls.css';")).toBeGreaterThan(index.indexOf("@import './theme/quipu.css';"))
+    expect(index.indexOf("@import './theme/colofon-controls.css';")).toBeGreaterThan(index.indexOf("@import './theme/colofon.css';"))
   })
 
-  it('cada regla está en el scope de los temas Quipu, sin capa o en la capa base, y nunca entra en otro tema', () => {
+  it('cada regla está en el scope de los temas Colofón, sin capa o en la capa base, y nunca entra en otro tema', () => {
     const found = blocks(css)
     expect(found.length).toBeGreaterThan(0)
     for (const { prelude, body } of found) {
@@ -124,14 +124,14 @@ describe('quipu-controls.css', () => {
     for (const state of values('data-state')) expect(['empty'], state).toContain(state)
   })
 
-  it('no tiene colores propios: solo tokens que ponen los dos temas Quipu', () => {
+  it('no tiene colores propios: solo tokens que ponen los dos temas Colofón', () => {
     const code = uncommented(css)
     expect(code.match(/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi)).toBeNull()
     const used = [...new Set([...code.matchAll(/var\((--[a-z-]+)\)/g)].map(([, name]) => name!))]
     expect(used.length).toBeGreaterThan(0)
-    for (const id of QUIPU_STYLED_THEMES) {
-      const start = quipu.indexOf(`[data-theme='${id}'] {`)
-      const block = quipu.slice(start, quipu.indexOf('}', start))
+    for (const id of COLOFON_STYLED_THEMES) {
+      const start = colofon.indexOf(`[data-theme='${id}'] {`)
+      const block = colofon.slice(start, colofon.indexOf('}', start))
       expect(
         used.filter((name) => !block.includes(`${name}:`)),
         id
@@ -139,12 +139,18 @@ describe('quipu-controls.css', () => {
     }
   })
 
-  it('los botones md e icon miden 44px, con texto de 15px/600', () => {
+  it('los botones md e icon miden 44px, con texto de 15px/600 y radio --radius', () => {
     expect(declared("[data-slot='button']").get('font-size')).toBe('15px')
     expect(declared("[data-slot='button']").get('font-weight')).toBe('600')
+    expect(declared("[data-slot='button']").get('border-radius')).toBe('var(--radius)')
     expect(declared("[data-slot='button'][data-size='md']").get('height')).toBe('44px')
     const icon = declared("[data-slot='button'][data-size='icon']")
     expect([icon.get('height'), icon.get('width')]).toEqual(['44px', '44px'])
+  })
+
+  it('el botón de texto (ghost) es un enlace: link y subrayado', () => {
+    const ghost = declared("[data-slot='button'][data-variant='ghost']")
+    expect([ghost.get('color'), ghost.get('text-decoration')]).toEqual(['var(--link)', 'underline'])
   })
 
   it('el botón sm mide 36px y su área táctil llega a 44px', () => {
@@ -166,10 +172,14 @@ describe('quipu-controls.css', () => {
     expect(disabled.get('cursor')).toBe('not-allowed')
     // la librería apaga los eventos del puntero al deshabilitar, y eso esconde el cursor
     expect(disabled.get('pointer-events')).toBe('auto')
+    // y se distingue sin color: relleno de filete y texto apagado
+    const muted = declared("[data-slot='button']:disabled:not([data-variant='ghost'])")
+    expect([muted.get('background-color'), muted.get('color')]).toEqual(['var(--border)', 'var(--ink-muted)'])
   })
 
   it('los campos miden 44px y escriben a 16px', () => {
     expect(declared(FIELDS).get('font-size')).toBe('16px')
+    expect(declared(FIELDS).get('border-radius')).toBe('var(--radius)')
     expect(declared(":is([data-slot='input'], [data-slot='select-trigger'])").get('height')).toBe('44px')
     expect(declared("[data-slot='textarea']").get('min-height')).toBe('44px')
     expect(declared(`${FIELDS}:disabled`).get('cursor')).toBe('not-allowed')
@@ -182,28 +192,35 @@ describe('quipu-controls.css', () => {
     expect([...invalid.keys()].filter((name) => /^(border-width|border|padding.*|height)$/.test(name))).toEqual([])
   })
 
-  it('las pestañas miden 44px y la elegida se subraya en brand', () => {
-    expect(declared("[data-slot='tabs-trigger']").get('min-height')).toBe('44px')
-    expect(declared("[data-slot='tabs-trigger'][aria-selected='true']").get('border-bottom-color')).toBe('var(--brand)')
+  it('las pestañas miden 44px, subrayan 2px y la elegida se subraya en brand con tinta y más peso', () => {
+    const tab = declared("[data-slot='tabs-trigger']")
+    expect([tab.get('min-height'), tab.get('border-bottom-width')]).toEqual(['44px', '2px'])
+    const selected = declared("[data-slot='tabs-trigger'][aria-selected='true']")
+    expect([selected.get('border-bottom-color'), selected.get('color'), selected.get('font-weight')]).toEqual(['var(--brand)', 'var(--ink)', '650'])
   })
 
-  it('los encabezados de tabla van sin mayúsculas sostenidas; los de columna, a 14px/500', () => {
+  it('los encabezados de tabla van en versalitas, como los metadatos', () => {
     const head = declared("[data-slot='table-head']")
-    expect([head.get('text-transform'), head.get('letter-spacing')]).toEqual(['none', 'normal'])
-    // solo los de columna: el peso de un encabezado de fila lo decide quien lo usa
+    expect([head.get('text-transform'), head.get('font-variant-caps'), head.get('letter-spacing'), head.get('font-size')]).toEqual([
+      'none',
+      'all-small-caps',
+      '0.06em',
+      '15px'
+    ])
+    // solo los de columna fijan el peso: el de un encabezado de fila lo decide quien lo usa
     expect(head.has('font-weight')).toBe(false)
-    const column = declared("[data-slot='table-head'][scope='col']")
-    expect([column.get('font-size'), column.get('font-weight')]).toEqual(['14px', '500'])
+    expect(declared("[data-slot='table-head'][scope='col']").get('font-weight')).toBe('600')
   })
 
   it('los ítems del menú miden 44px como mínimo', () => {
     expect(declared("[data-slot='nav-item']").get('min-height')).toBe('44px')
   })
 
-  it('el ítem actual no depende solo del color: una barra de 3px y un peso mayor, sin cambiar de tamaño', () => {
+  it('el ítem actual no depende solo del color: brand-soft, un filete de tinta de 2px y un peso mayor, sin cambiar de tamaño', () => {
     const current = declared("[data-slot='nav-item'][aria-current='page']")
-    expect(current.get('font-weight')).toBe('600')
-    expect(current.get('box-shadow')).toBe('inset 3px 0 0 var(--shell-ink)')
+    expect(current.get('background-color')).toBe('var(--brand-soft)')
+    expect(current.get('font-weight')).toBe('650')
+    expect(current.get('box-shadow')).toBe('inset 2px 0 0 var(--ink)')
     expect([...current.keys()].filter((name) => /^(border.*|padding.*|height|min-height)$/.test(name))).toEqual([])
   })
 

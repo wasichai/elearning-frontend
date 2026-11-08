@@ -1,13 +1,26 @@
-/* hoja de controles del tema Quipu (docs/design-system/historico-quipu: 3-accesibilidad.md y las guías Button, Field y Feedback):
+/* hoja de controles del tema Colofón (docs/design-system/colofon: Components.dc.html):
    objetivos de 44px y campos de 16px sobre los componentes de @wasichai/ui, enganchada solo a sus data-slot públicos
-   (README de @wasichai/ui, «Styling hooks»). en el scope de los temas Quipu (también el modo lectura de la lección) y nunca dentro de un subárbol con otro
+   (README de @wasichai/ui, «Styling hooks»). en el scope de los temas Colofón (también el modo lectura de la lección) y nunca dentro de un subárbol con otro
    tema. sin capa, gana a las utilidades de Tailwind y por eso también a las clases de quien usa el componente: pone
    solo lo que los tokens no alcanzan. lo que una clase debe poder pisar va en @layer base. sin colores propios: solo
-   tokens de quipu.css. lo comprueba quipu-controls.test.ts; un e2e mide los controles en el navegador */
-@scope (:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura']))) {
+   tokens de colofon.css. lo comprueba colofon-controls.test.ts; un e2e mide los controles en el navegador */
+@scope (:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura'])) to ([data-theme]:not(:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']))) {
   [data-slot='button'] {
     font-size: 15px;
     font-weight: 600;
+    border-radius: var(--radius);
+  }
+
+  /* el botón de texto (ghost) es un enlace: subrayado siempre, el color nunca va solo */
+  [data-slot='button'][data-variant='ghost'] {
+    color: var(--link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  [data-slot='button'][data-variant='ghost']:hover {
+    color: var(--brand-strong);
+    text-decoration-thickness: 2px;
   }
 
   [data-slot='button'][data-size='md'] {
@@ -42,9 +55,25 @@
     pointer-events: auto;
   }
 
+  /* desactivado: relleno de filete y texto apagado, sin sombra ni subrayado */
+  [data-slot='button']:disabled:not([data-variant='ghost']) {
+    background-color: var(--border);
+    border-color: var(--border);
+    color: var(--ink-muted);
+  }
+
+  [data-slot='button'][data-variant='ghost']:disabled {
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+
   /* 16px como mínimo: iOS no hace zoom al enfocar */
   :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']) {
     font-size: 16px;
+  }
+
+  :is([data-slot='input'], [data-slot='textarea'], [data-slot='select-trigger']) {
+    border-radius: var(--radius);
   }
 
   :is([data-slot='input'], [data-slot='select-trigger']) {
@@ -66,12 +95,16 @@
     cursor: not-allowed;
   }
 
+  /* pestañas subrayadas: 2px en brand la elegida, con tinta y peso mayor (no solo color) */
   [data-slot='tabs-trigger'] {
     min-height: 44px;
+    border-bottom-width: 2px;
   }
 
   [data-slot='tabs-trigger'][aria-selected='true'] {
     border-bottom-color: var(--brand);
+    color: var(--ink);
+    font-weight: 650;
   }
 
   /* el menú del shell: 44px de objetivo; lo centra su propio flex */
@@ -79,11 +112,13 @@
     min-height: 44px;
   }
 
-  /* el ítem actual lo marca NavLink con aria-current. el fondo de core es solo color: se añaden una barra y un peso mayor,
-     que no cambian el tamaño */
+  /* el ítem actual lo marca NavLink con aria-current: brand-soft con un filete de tinta de 2px a la izquierda y un peso
+     mayor, así no depende del color; ninguna de las tres cosas cambia el tamaño */
   [data-slot='nav-item'][aria-current='page'] {
-    font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--shell-ink);
+    background-color: var(--brand-soft);
+    color: var(--brand-strong);
+    font-weight: 650;
+    box-shadow: inset 2px 0 0 var(--ink);
   }
 
   [data-slot='alert'] {
@@ -98,23 +133,24 @@
     color: var(--ink-muted);
   }
 
-  /* la librería pone sus encabezados de tabla en mayúsculas sostenidas, que Quipu no usa */
+  /* cabeceras de tabla en versalitas, como los metadatos (.meta de index.css) */
   [data-slot='table-head'] {
     text-transform: none;
-    letter-spacing: normal;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.06em;
+    font-size: 15px;
   }
 
   /* el peso de un encabezado de fila lo decide quien lo usa */
   [data-slot='table-head'][scope='col'] {
-    font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
   }
 }
 
 /* el ::after del botón sm se coloca respecto del botón. en la capa base: una clase de quien lo usa (absolute) gana, y
    el botón sigue siendo el bloque contenedor */
 @layer base {
-  @scope (:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura'])) to ([data-theme]:not(:is([data-theme='quipu'], [data-theme='quipu-dark'], [data-theme='quipu-lectura']))) {
+  @scope (:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura'])) to ([data-theme]:not(:is([data-theme='colofon'], [data-theme='colofon-dark'], [data-theme='colofon-lectura']))) {
     [data-slot='button'][data-size='sm'] {
       position: relative;
     }

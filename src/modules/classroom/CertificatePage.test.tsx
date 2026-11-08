@@ -46,9 +46,9 @@ describe('CertificatePage', () => {
     expect(facts.getByText('K7Q2-M9XW-4RTB')).toHaveClass('font-mono')
     expect(band.parentElement!.parentElement).toHaveClass('print:hidden')
     expect(screen.getByText('aprobó el curso «Introducción al SGSPE».')).toHaveClass('font-read')
-    // el documento se fija al tema claro de Quipu, se vea la página como se vea, y tiene la proporción de un A4 apaisado
+    // el documento se fija al tema claro de Colofón, se vea la página como se vea, y tiene la proporción de un A4 apaisado
     const sheet = screen.getByRole('article', { name: 'Rosa Quispe Mamani' })
-    expect(sheet).toHaveAttribute('data-theme', 'quipu')
+    expect(sheet).toHaveAttribute('data-theme', 'colofon')
     expect(sheet).toHaveStyle({ colorScheme: 'light' })
     expect(sheet).toHaveClass('bg-surface', 'sm:aspect-[297/210]')
     expect(screen.getByText('SGSPE-101 · versión 1')).toBeInTheDocument()

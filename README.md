@@ -71,22 +71,26 @@ Un módulo no importa a otro: se enlazan por clave de ruta (`'catalog:courses'`)
 
 ## Tema
 
-La app trae su propio tema, **Quipu** (`src/theme/`), según el contrato de temas de `@wasichai/ui`: `quipu.css` pone los
-tokens de Wasichai en dos bloques, `quipu` (claro) y `quipu-dark` (oscuro), y `themes.ts` los ofrece en `config.themes`.
-Un usuario nuevo entra en Quipu, claro u oscuro según su sistema; el claro y el oscuro de Wasichai siguen en el selector.
-El script de arranque de `index.html` aplica el tema guardado antes del bundle; un tema nuevo se añade allí también.
-La letra de interfaz es Figtree y la de lectura, Literata (las dos SIL OFL, servidas por la app desde `src/theme/fonts/`):
-`font-read` (`--font-read` en `@theme`) la pone en los enunciados, en las respuestas de la corrección y en el certificado.
-La lectura HTML del iframe no la carga, porque su CSP no deja pedir fuentes. `quipu.test.ts` comprueba que cada bloque pone
-todos los tokens y que los pares de texto llegan a WCAG 2.2 AA.
+La app trae su propio tema, **Colofón** (`src/theme/`, sistema de diseño en `docs/design-system/colofon/`), según el contrato de
+temas de `@wasichai/ui`: `colofon.css` pone los tokens de Wasichai en dos bloques, `colofon` (claro) y `colofon-dark`
+(oscuro), y `themes.ts` los ofrece en `config.themes`. Un usuario nuevo entra en Colofón, claro u oscuro según su sistema;
+el claro y el oscuro de Wasichai siguen en el selector. El script de arranque de `index.html` aplica el tema guardado antes
+del bundle (y pasa un `quipu` o `quipu-dark` guardado a `colofon` o `colofon-dark`); un tema nuevo se añade allí también.
+La letra de interfaz es Source Sans 3 y la de títulos y lectura, Newsreader (las dos variables, SIL OFL, servidas por la app
+desde `src/theme/fonts/`): `font-read` (`--font-read` en `@theme`) pone la segunda. La escala (`text-display`, `text-h1`…
+`text-h5`, `text-body`, `text-secondary`, `text-label`, `text-meta`, `text-reading`), los espaciados `--space-1`…`--space-9`
+y los anchos (`max-w-measure`, `w-index-col`, `w-margin-col`) también salen de `index.css`. La lectura HTML del iframe no
+carga las letras, porque su CSP no deja pedir fuentes. `colofon.test.ts` comprueba que cada bloque pone todos los tokens,
+que el claro coincide con `tokens.json` y que los pares de texto llegan a WCAG 2.2 AA.
 
-`quipu-controls.css` da a los componentes de `@wasichai/ui` los objetivos de 44px del sistema de diseño, solo bajo los
-temas Quipu y solo por sus `data-slot` públicos: botones `md` e `icon` de 44px (`sm`, de 36px, con área táctil de 44px),
-campos de 44px que escriben a 16px, un campo inválido con 2px de `danger` que no salta, pestañas de 44px y alertas con
-`radius-lg`, y encabezados de tabla sin mayúsculas sostenidas. `quipu-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts`
-mide los controles en el navegador.
+`colofon-controls.css` da a los componentes de `@wasichai/ui` el aspecto de Colofón y los objetivos de 44px, solo bajo los
+temas Colofón y solo por sus `data-slot` públicos: botones `md` e `icon` de 44px (`sm`, de 36px, con área táctil de 44px),
+campos de 44px que escriben a 16px, un campo inválido con 2px de `danger` que no salta, pestañas subrayadas en `brand`,
+menú con el ítem actual en `brand-soft` y un filete de tinta de 2px, y encabezados de tabla en versalitas.
+`colofon-controls.test.ts` comprueba que cada regla queda en el scope y solo toca hooks; `e2e/theme.spec.ts` mide los
+controles en el navegador.
 
-El **modo lectura** de la lección es un tercer bloque, `quipu-lectura` (papel sepia, mismos pares AA), que no está en el
+El **modo lectura** de la lección es un tercer bloque, `colofon-lectura` (papel sepia, mismos pares AA), que no está en el
 selector: la lección lo pone como subárbol (`data-theme` en su contenedor) cuando el estudiante pulsa «Modo lectura» en
 la barra de la lección, donde también elige el tamaño de la lectura (de 17 a 23px). Sobre un tema oscuro la
 lección sigue oscura y la lectura abre el interlineado. La elección se guarda en este navegador (`<storagePrefix>.reading`)

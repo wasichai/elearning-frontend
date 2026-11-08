@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { videoCompletion } from '../../config'
 import { formatNumber } from '../../shared/format'
-import { QUIPU_READING_THEME } from '../../theme/themes'
+import { COLOFON_READING_THEME } from '../../theme/themes'
 import { lessonEvent, useLessonEvent } from './api'
 import { AssessmentLesson } from './Assessment'
 import { Completion } from './Completion'
@@ -56,7 +56,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const videoThreshold = videoCompletion()
   const videoWatched = useVideoWatched(lesson, done, completion.mutate)
   const upcoming = next ?? (pending && pending.lesson.id !== lesson.id ? pending : undefined)
-  // el modo lectura: sobre un tema claro, el papel sepia (quipu-lectura) en toda la lección; sobre uno oscuro se queda
+  // el modo lectura: sobre un tema claro, el papel sepia (colofon-lectura) en toda la lección; sobre uno oscuro se queda
   // oscuro y abre el interlineado de la lectura (PantallaLeccion del sistema de diseño)
   const dark = isDarkTheme(useDocumentTheme())
   const hasReading = lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
@@ -64,13 +64,13 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const reading: ReadingSettings = {
     size: readingControls.size,
     roomy: readingControls.mode && dark,
-    theme: sepia ? QUIPU_READING_THEME : undefined
+    theme: sepia ? COLOFON_READING_THEME : undefined
   }
   return (
     <article
       aria-labelledby={`lesson-${lesson.id}`}
-      data-theme={sepia ? QUIPU_READING_THEME.id : undefined}
-      style={sepia ? { colorScheme: QUIPU_READING_THEME.colorScheme } : undefined}
+      data-theme={sepia ? COLOFON_READING_THEME.id : undefined}
+      style={sepia ? { colorScheme: COLOFON_READING_THEME.colorScheme } : undefined}
       className={`flex min-h-full min-w-0 flex-col text-ink ${hasReading ? 'bg-surface' : 'bg-surface-muted'}`}
     >
       <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-2 border-b border-border bg-surface px-3 py-1.5 sm:px-4">

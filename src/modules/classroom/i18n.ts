@@ -4,10 +4,10 @@ const es = {
     group: 'Aprendizaje',
     myCourses: 'Mis cursos'
   },
-  // nombres de los temas Quipu en el selector de tema del shell (src/theme/themes.ts)
+  // nombres de los temas Colofón en el selector de tema del shell (src/theme/themes.ts)
   theme: {
-    quipu: 'Quipu',
-    quipuDark: 'Quipu oscuro'
+    colofon: 'Colofón',
+    colofonDark: 'Colofón oscuro'
   },
   // la barra de la lección: modo lectura y tamaño del texto de la lectura
   reading: {
@@ -540,8 +540,8 @@ const en: typeof es = {
     myCourses: 'My courses'
   },
   theme: {
-    quipu: 'Quipu',
-    quipuDark: 'Quipu dark'
+    colofon: 'Colophon',
+    colofonDark: 'Colophon dark'
   },
   reading: {
     tools: 'Reading',
