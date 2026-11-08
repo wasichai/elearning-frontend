@@ -46,7 +46,12 @@ const es = {
     greeting: 'Hola, {{name}}.',
     week_one: 'Tienes {{count}} sesión en vivo en los próximos 7 días.',
     week_other: 'Tienes {{count}} sesiones en vivo en los próximos 7 días.',
-    continue: 'Continuar aprendiendo',
+    pending_one: 'Tienes {{count}} evaluación por hacer.',
+    pending_other: 'Tienes {{count}} evaluaciones por hacer.',
+    // un curso completado: su certificado, con el código, y el enlace para verlo
+    certificate: 'Certificado',
+    viewCertificate: 'Ver el certificado',
+    continue: 'Continuar',
     otherInProgress: 'Otros cursos en curso',
     inProgress: 'En curso',
     completed: 'Completados',
@@ -55,21 +60,17 @@ const es = {
     closed: 'Matrícula finalizada: puedes repasar el curso, pero ya no se registra avance.',
     noLessons: 'Este curso todavía no tiene lecciones disponibles.',
     rail: 'Tu resumen',
-    figures: {
-      inProgress: 'En curso',
-      completed: 'Completados'
-    },
     loading: 'Cargando tu resumen…',
     sessions: {
-      title: 'Próximas sesiones',
-      none: 'Nada programado',
+      title: 'Esta semana',
+      none: 'Nada programado en los próximos 7 días',
       failed: 'No pudimos cargar tus próximas sesiones.',
       retry: 'Reintentar las sesiones',
       more_one: 'Y {{count}} sesión más en tus cursos.',
       more_other: 'Y {{count}} sesiones más en tus cursos.'
     },
     assessments: {
-      title: 'Evaluaciones pendientes',
+      title: 'Por hacer',
       none: 'Nada pendiente',
       failed: 'No pudimos cargar tus evaluaciones.',
       retry: 'Reintentar las evaluaciones',
@@ -94,7 +95,7 @@ const es = {
   },
   progress: {
     course: 'Progreso del curso',
-    value: '{{completed}} de {{total}} lecciones · {{percent}} %',
+    count: '{{completed}} de {{total}}',
     valueText: '{{completed}} de {{total}} lecciones completadas, {{percent}} %',
     segmentedDone: '{{done}} de {{total}} completadas',
     segmentedStarted_one: '· {{count}} iniciada',
@@ -622,7 +623,11 @@ const en: typeof es = {
     greeting: 'Hello, {{name}}.',
     week_one: 'You have {{count}} live session in the next 7 days.',
     week_other: 'You have {{count}} live sessions in the next 7 days.',
-    continue: 'Continue learning',
+    pending_one: 'You have {{count}} assessment to do.',
+    pending_other: 'You have {{count}} assessments to do.',
+    certificate: 'Certificate',
+    viewCertificate: 'View the certificate',
+    continue: 'Continue',
     otherInProgress: 'Other courses in progress',
     inProgress: 'In progress',
     completed: 'Completed',
@@ -631,21 +636,17 @@ const en: typeof es = {
     closed: 'Enrollment finished: you can review the course, but progress is no longer recorded.',
     noLessons: 'This course has no lessons available yet.',
     rail: 'Your summary',
-    figures: {
-      inProgress: 'In progress',
-      completed: 'Completed'
-    },
     loading: 'Loading your summary…',
     sessions: {
-      title: 'Upcoming sessions',
-      none: 'Nothing scheduled',
+      title: 'This week',
+      none: 'Nothing scheduled in the next 7 days',
       failed: 'We could not load your upcoming sessions.',
       retry: 'Retry the sessions',
       more_one: 'And {{count}} more session in your courses.',
       more_other: 'And {{count}} more sessions in your courses.'
     },
     assessments: {
-      title: 'Pending assessments',
+      title: 'To do',
       none: 'Nothing pending',
       failed: 'We could not load your assessments.',
       retry: 'Retry the assessments',
@@ -670,7 +671,7 @@ const en: typeof es = {
   },
   progress: {
     course: 'Course progress',
-    value: '{{completed}} of {{total}} lessons · {{percent}}%',
+    count: '{{completed}} of {{total}}',
     valueText: '{{completed}} of {{total}} lessons completed, {{percent}}%',
     segmentedDone: '{{done}} of {{total}} completed',
     segmentedStarted_one: '· {{count}} started',

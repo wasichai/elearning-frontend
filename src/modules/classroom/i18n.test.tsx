@@ -80,7 +80,8 @@ describe('textos del aula', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'My courses' })).toBeInTheDocument()
     expect(await screen.findByText('Nov 9 – Dec 4, 2026')).toBeInTheDocument()
-    expect(screen.getByText('1 of 3 lessons · 33%')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Continue' })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'Course progress' })).toHaveAttribute('aria-valuetext', '1 of 3 lessons completed, 33%')
     expect(screen.getByRole('link', { name: 'Continue “Licencias de anuncios con SRTM”' })).toBeInTheDocument()
   })
 })

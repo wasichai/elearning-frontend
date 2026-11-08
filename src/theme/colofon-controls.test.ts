@@ -153,6 +153,18 @@ describe('colofon-controls.css', () => {
     expect([ghost.get('color'), ghost.get('text-decoration')]).toEqual(['var(--link)', 'underline'])
   })
 
+  // regresión de la tarea 2: «EN» y «Cerrar sesión» del pie del menú salían subrayados. el marco del shell de core (su barra superior y su
+  // barra lateral) son hermanos de <main>; un header o aside de página va dentro de main y un diálogo, en un portal: no los toca
+  it('los ghost del marco del shell (header/aside hermanos de main) son controles: tinta, sin subrayado, también al pasar', () => {
+    const SHELL = ":is(header, aside):has(~ main) [data-slot='button'][data-variant='ghost']"
+    const chrome = declared(SHELL)
+    expect([chrome.get('color'), chrome.get('text-decoration')]).toEqual(['var(--ink)', 'none'])
+    const hover = declared(`${SHELL}:hover:not(:disabled)`)
+    expect([hover.get('color'), hover.get('text-decoration')]).toEqual(['var(--ink)', 'none'])
+    // dentro de las pantallas, el ghost sigue siendo un enlace
+    expect(declared("[data-slot='button'][data-variant='ghost']").get('text-decoration')).toBe('underline')
+  })
+
   it('una herramienta de barra (ghost en role=toolbar) es un control, no un enlace: tinta, sin subrayado; pulsada, en brand-soft', () => {
     const tool = declared("[role='toolbar'] [data-slot='button'][data-variant='ghost']")
     expect([tool.get('color'), tool.get('text-decoration')]).toEqual(['var(--ink)', 'none'])

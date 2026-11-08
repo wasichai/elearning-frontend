@@ -1,8 +1,8 @@
 import { ApiError } from '@wasichai/core'
 import { useTranslation } from 'react-i18next'
-import { formatCivilRange, formatNumber, timeZoneLabel } from '../../shared/format'
+import { formatCivilRange, timeZoneLabel } from '../../shared/format'
 import { problemKind } from '../../shared/ProblemState'
-import type { Enrollment, ProgressSummary } from './contract'
+import type { Enrollment } from './contract'
 
 // piezas que comparten «Mis cursos» y el aula
 
@@ -11,37 +11,6 @@ export { WRAP } from '../../shared/buttons'
 // las filas del panel del temario: las unidades y lecciones, y los logros
 export const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-focus'
 export const UNIT_ROW = '-mx-2 flex min-h-13 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 hover:bg-surface-muted'
-
-// el avance de una matrícula como barra accesible: el lector de pantalla anuncia el porcentaje y las lecciones; la vista, una línea fina.
-// la usa «Mis cursos», cuyo resumen no trae el estado de cada lección (para el progreso segmentado hace falta el aula). la tarea 6 la retira
-export function ProgressBar({ progress, label, size = 'md' }: { progress: ProgressSummary; label: string; size?: 'sm' | 'md' }) {
-  const { t, i18n } = useTranslation('classroom')
-  const values = {
-    completed: formatNumber(progress.completedLessons, i18n.language),
-    total: formatNumber(progress.totalLessons, i18n.language),
-    percent: formatNumber(progress.percent, i18n.language)
-  }
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={progress.percent}
-        aria-valuetext={t('progress.valueText', values)}
-        className={`w-full overflow-hidden rounded-full bg-surface-muted ${size === 'sm' ? 'h-1' : 'h-1.5'}`}
-      >
-        <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${progress.percent}%` }} />
-      </div>
-      {size === 'md' ? (
-        <p aria-hidden="true" className="text-xs text-ink-muted tabular-nums">
-          {t('progress.value', values)}
-        </p>
-      ) : null}
-    </div>
-  )
-}
 
 // las fechas de la edición son fechas civiles de su zona: se escriben en esa zona y se dice cuál es, salvo que la página ya lo diga
 export function OfferingDates({ offering, showZone = true }: { offering: Enrollment['offering']; showZone?: boolean }) {

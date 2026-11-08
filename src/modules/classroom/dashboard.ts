@@ -1,9 +1,12 @@
-import { upcomingSessions, type Session } from '../../shared/sessions'
+import { zonedDateTime } from '../../shared/format'
+import type { Session } from '../../shared/sessions'
+import { isoInstant, type AgendaRange, type AgendaSession } from './agenda'
 import type { ClassroomPanelItem, Enrollment, PendingAssessment } from './contract'
 
 // lo que decide el panel del estudiante, sin pintar nada. todo se deriva de forma exacta de lo que da el contrato
 
 const DAY_MS = 24 * 3600 * 1000
+export const WEEK_DAYS = 7
 
 // sin certificado: al emitirlo la matrícula se cierra, aunque el dato de estado tarde en llegar
 function isActive(enrollment: Enrollment): boolean {
@@ -67,31 +70,69 @@ export function railEnrollments({ primary, inProgress, completed }: EnrollmentGr
   return [...(primary ? [primary] : []), ...inProgress, ...completed].filter(isActive)
 }
 
-export type UpcomingSession = Session & { enrollment: Enrollment }
 export type RailAssessment = PendingAssessment & { enrollment: Enrollment }
 
-// lo que trae el panel de esas matrículas. el servidor ordena las sesiones por matrícula: aquí se funden, y el reloj de la pantalla
-// deja fuera la que terminó con la página abierta. las evaluaciones van en el orden de las matrículas y, dentro, en el del curso
-export function railItems(active: Enrollment[], panel: ClassroomPanelItem[], now: number) {
+// las evaluaciones pendientes que trae el panel de esas matrículas, en el orden de las matrículas y, dentro, en el del curso
+export function railAssessments(active: Enrollment[], panel: ClassroomPanelItem[]): RailAssessment[] {
   const byId = new Map(panel.map((item) => [item.id, item]))
-  const read = active.flatMap((enrollment) => {
-    const item = byId.get(enrollment.id)
-    return item ? [{ enrollment, item }] : []
-  })
-  return {
-    sessions: upcomingSessions(
-      read.flatMap(({ enrollment, item }) => item.upcomingSessions.map((session) => ({ ...session, enrollment }))),
-      now
-    ),
-    assessments: read.flatMap(({ enrollment, item }) => item.pendingAssessments.map((pending) => ({ ...pending, enrollment })))
+  return active.flatMap((enrollment) => (byId.get(enrollment.id)?.pendingAssessments ?? []).map((pending) => ({ ...pending, enrollment })))
+}
+
+// «Esta semana» pide la agenda desde el comienzo de ayer (hora del navegador), para no perder una sesión en curso que empezó antes de
+// medianoche, hasta 8 días después de hoy: cubre los próximos 7 días desde cualquier hora. redondeada al día, la clave de la consulta
+// no cambia mientras el día no cambie; lo que sobra a cada lado lo quita weekSessions con el reloj de la pantalla
+export function weekRange(now: number): AgendaRange {
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  const day = (offset: number) => {
+    const date = new Date(today)
+    date.setDate(date.getDate() + offset)
+    return isoInstant(date)
   }
+  return { from: day(-1), to: day(WEEK_DAYS + 1) }
+}
+
+// las sesiones de los próximos 7 días de las matrículas activas (la agenda trae también las finalizadas), sin las que ya terminaron.
+// las canceladas y reprogramadas siguen: su estado se dice en la fila. el servidor las da por inicio
+export function weekSessions(agenda: AgendaSession[], active: Enrollment[], now: number): AgendaSession[] {
+  const ids = new Set(active.map((enrollment) => enrollment.id))
+  return sessionsWithin(
+    agenda.filter((session) => ids.has(session.enrollmentId) && Date.parse(session.end) > now),
+    now,
+    WEEK_DAYS
+  )
+}
+
+// las que de verdad se celebran: las que cuenta el saludo
+export function liveSessions<T extends Pick<Session, 'status'>>(sessions: T[]): T[] {
+  return sessions.filter((session) => session.status !== 'CANCELADA')
+}
+
+export interface AgendaDay {
+  key: string
+  // el instante de la primera sesión del día, para escribir el día en su zona
+  start: string
+  timeZone: string
+  sessions: AgendaSession[]
+}
+
+// por día civil en la zona de cada sesión (la de su edición), en el orden en que llegan
+export function sessionsByDay(sessions: AgendaSession[]): AgendaDay[] {
+  const days: AgendaDay[] = []
+  for (const session of sessions) {
+    const key = `${zonedDateTime(session.start, session.timeZone).date} ${session.timeZone}`
+    const last = days.at(-1)
+    if (last?.key === key) last.sessions.push(session)
+    else days.push({ key, start: session.start, timeZone: session.timeZone, sessions: [session] })
+  }
+  return days
 }
 
 export function sessionsWithin<T extends Pick<Session, 'start'>>(sessions: T[], now: number, days: number): T[] {
   return sessions.filter((session) => Date.parse(session.start) < now + days * DAY_MS)
 }
 
-// un bloque del riel. los dos salen de la misma lectura: si falla, fallan a la vez y sin datos a medias
+// un bloque del riel: la semana sale de la agenda y «Por hacer», del panel; cada uno falla y se reintenta por su cuenta, sin datos a medias
 export interface Block<T> {
   items: T[]
   loading: boolean
