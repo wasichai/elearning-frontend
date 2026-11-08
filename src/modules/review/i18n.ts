@@ -160,7 +160,7 @@ const es = {
     refused: 'No tienes permiso para hacerlo. Nadie revisa su propia versión, y con un revisor asignado solo decide esa persona.',
     network: 'No hay conexión con el servidor. Revisa tu conexión e inténtalo de nuevo.',
     failed: 'No pudimos guardarlo. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos guardarlo (error {{status}}). Inténtalo de nuevo.'
+    failedStatus: 'No pudimos guardarlo. Inténtalo de nuevo. Código del error: {{status}}.'
   },
   problem: {
     inbox: {
@@ -357,7 +357,7 @@ const en: typeof es = {
     refused: 'You are not allowed to do this. Nobody reviews their own version, and with an assigned reviewer only that person decides.',
     network: 'There is no connection to the server. Check your connection and try again.',
     failed: 'We could not save it. Try again.',
-    failedStatus: 'We could not save it (error {{status}}). Try again.'
+    failedStatus: 'We could not save it. Try again. Error code: {{status}}.'
   },
   problem: {
     inbox: {

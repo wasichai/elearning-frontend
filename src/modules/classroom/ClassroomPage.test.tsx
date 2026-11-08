@@ -318,7 +318,7 @@ describe('ClassroomPage: el aula', () => {
       [`${FILES}/vr-html/files/archivo`]: { body: '{"status":403}', contentType: 'application/problem+json', status: 403 }
     })
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar este recurso (error 403).')
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar este recurso. Código del error: 403.')
     expect(screen.queryByTitle('Tipos de anuncio (lectura)')).not.toBeInTheDocument()
   })
 

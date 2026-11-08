@@ -246,7 +246,7 @@ const es = {
     serverSays: 'El servidor dice: «{{detail}}». Te mostramos el estado actual.',
     invalid: 'Alguna respuesta no corresponde a su pregunta. Revísalas e inténtalo de nuevo.',
     failed: 'No pudimos guardar el intento. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos guardar el intento (error {{status}}). Inténtalo de nuevo.',
+    failedStatus: 'No pudimos guardar el intento. Inténtalo de nuevo. Código del error: {{status}}.',
     refused: 'Tu cuenta no puede hacerlo en esta matrícula. Si crees que es un error, escribe a la coordinación.',
     network: 'No hay conexión con el servidor. Tus respuestas siguen aquí: inténtalo de nuevo en un momento.',
     networkUnsaved:
@@ -276,7 +276,7 @@ const es = {
     fileTooBig: 'El archivo supera el máximo de {{size}}.',
     uploading: 'Subiendo el archivo…',
     uploadFailed: 'No pudimos subir el archivo. Inténtalo de nuevo.',
-    uploadFailedStatus: 'No pudimos subir el archivo (error {{status}}). Inténtalo de nuevo.'
+    uploadFailedStatus: 'No pudimos subir el archivo. Inténtalo de nuevo. Código del error: {{status}}.'
   },
   result: {
     title: 'Resultado del intento {{number}}',
@@ -387,7 +387,7 @@ const es = {
     notYet: 'Cuando cumplas todas las reglas podrás pedir aquí tu certificado.',
     pendingRules: 'El servidor indica que aún falta alguna regla; arriba está la lista actualizada.',
     failed: 'No pudimos emitir el certificado. Inténtalo de nuevo.',
-    failedStatus: 'No pudimos emitir el certificado (error {{status}}). Inténtalo de nuevo.',
+    failedStatus: 'No pudimos emitir el certificado. Inténtalo de nuevo. Código del error: {{status}}.',
     documentTitle: 'Certificado de {{name}} · {{course}}',
     heading: 'Certificado de aprobación',
     certifies: 'Se certifica que',
@@ -458,7 +458,7 @@ const es = {
     downloadLabel: 'Descargar {{name}} ({{size}})',
     downloading: 'Descargando…',
     failed: 'No pudimos cargar este recurso.',
-    failedStatus: 'No pudimos cargar este recurso (error {{status}}).',
+    failedStatus: 'No pudimos cargar este recurso. Código del error: {{status}}.',
     foreign: 'Este recurso apunta fuera de la aplicación y no se abre.',
     retry: 'Reintentar'
   },
@@ -777,7 +777,7 @@ const en: typeof es = {
     serverSays: 'The server says: “{{detail}}”. Here is the current state.',
     invalid: 'Some answer does not match its question. Check them and try again.',
     failed: 'We could not save the attempt. Please try again.',
-    failedStatus: 'We could not save the attempt (error {{status}}). Please try again.',
+    failedStatus: 'We could not save the attempt. Please try again. Error code: {{status}}.',
     refused: 'Your account cannot do this in this enrollment. If you think it is a mistake, write to the coordinators.',
     network: 'There is no connection to the server. Your answers are still here: try again in a moment.',
     networkUnsaved:
@@ -807,7 +807,7 @@ const en: typeof es = {
     fileTooBig: 'The file is larger than the {{size}} limit.',
     uploading: 'Uploading the file…',
     uploadFailed: 'We could not upload the file. Please try again.',
-    uploadFailedStatus: 'We could not upload the file (error {{status}}). Please try again.'
+    uploadFailedStatus: 'We could not upload the file. Please try again. Error code: {{status}}.'
   },
   result: {
     title: 'Result of attempt {{number}}',
@@ -918,7 +918,7 @@ const en: typeof es = {
     notYet: 'Once you meet every rule you can request your certificate here.',
     pendingRules: 'The server says some rule is still pending; the list above is up to date.',
     failed: 'We could not issue the certificate. Please try again.',
-    failedStatus: 'We could not issue the certificate (error {{status}}). Please try again.',
+    failedStatus: 'We could not issue the certificate. Please try again. Error code: {{status}}.',
     documentTitle: 'Certificate of {{name}} · {{course}}',
     heading: 'Certificate of achievement',
     certifies: 'This certifies that',
@@ -989,7 +989,7 @@ const en: typeof es = {
     downloadLabel: 'Download {{name}} ({{size}})',
     downloading: 'Downloading…',
     failed: 'We could not load this resource.',
-    failedStatus: 'We could not load this resource (error {{status}}).',
+    failedStatus: 'We could not load this resource. Error code: {{status}}.',
     foreign: 'This resource points outside the application and will not be opened.',
     retry: 'Retry'
   },

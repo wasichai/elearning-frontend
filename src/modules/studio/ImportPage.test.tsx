@@ -224,7 +224,7 @@ describe('ImportPage: el formulario', () => {
     ],
     [403, 'Origen no permitido', /El servidor no lo permitió: el repositorio o el commit no están entre los orígenes permitidos.*Elige uno de la lista/],
     [404, 'Curso no encontrado', 'El curso elegido ya no existe. Elige otro.'],
-    [500, 'fallo', 'No pudimos encolar la importación (error 500). Inténtalo de nuevo.']
+    [500, 'fallo', 'No pudimos encolar la importación. Inténtalo de nuevo. Código del error: 500.']
   ])('un %i al encolar se explica y deja el formulario', async (status, detail, text) => {
     const user = userEvent.setup()
     renderImport(baseRoutes({ method: 'POST', path: IMPORT, status, body: problem(status, detail) }))

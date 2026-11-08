@@ -546,7 +546,7 @@ describe('el intento abierto', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Guardar respuestas' }))
 
-      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos guardar el intento (error 500).')
+      expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos guardar el intento. Inténtalo de nuevo. Código del error: 500.')
       await change()
       expect(screen.getByRole('alert')).toBeInTheDocument()
     })
@@ -564,7 +564,7 @@ describe('el intento abierto', () => {
 
       await userEvent.click(await screen.findByRole('button', { name: 'Entregar' }))
       await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Entregar' }))
-      expect(await screen.findByRole('alert')).toHaveTextContent('error 500')
+      expect(await screen.findByRole('alert')).toHaveTextContent('Código del error: 500.')
 
       await userEvent.click(screen.getByRole('button', { name: 'Guardar respuestas' }))
 
@@ -1044,7 +1044,7 @@ describe('AttemptActionProblem: del ProblemDetail al mensaje', () => {
 
   it('un 5xx deja el estado a la vista; sin conexión se dice así; lo inesperado, sin detalles técnicos', async () => {
     const first = explain(new ApiError(500, 'fallo'))
-    expect(await screen.findByText('No pudimos guardar el intento (error 500). Inténtalo de nuevo.')).toBeInTheDocument()
+    expect(await screen.findByText('No pudimos guardar el intento. Inténtalo de nuevo. Código del error: 500.')).toBeInTheDocument()
     first.unmount()
 
     const second = explain(new TypeError('Failed to fetch'))
