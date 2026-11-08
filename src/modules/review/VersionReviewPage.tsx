@@ -1,4 +1,4 @@
-import { LoadingState, useAuth, useWasichaiLinks } from '@wasichai/core'
+import { useAuth, useWasichaiLinks } from '@wasichai/core'
 import { Button, ConfirmDialog, Dialog, DialogContent, DialogDescription, DialogTitle, Label, Textarea } from '@wasichai/ui'
 import { ChevronDown, ChevronRight, CircleAlert } from 'lucide-react'
 import { useCallback, useEffect, useId, useState, type FormEvent } from 'react'
@@ -19,6 +19,7 @@ import type { Decision, ReviewComment, ReviewDecision, StudioLesson, StudioVersi
 import { QueryProblem, useActionError } from './parts'
 import { canPublish } from './permissions'
 import { REVIEW_MODULE_ID, REVIEW_ROUTES } from './routes'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // el máximo de text de un comentario y de reason de una decisión (docs/api/lms.md del backend)
 const MAX_TEXT = 4000
@@ -66,7 +67,7 @@ export function VersionReviewPage() {
         {query.isError ? (
           <QueryProblem error={query.error} resource="version" onRetry={() => void query.refetch()} />
         ) : !version ? (
-          <LoadingState label={t('version.loading')} />
+          <DocumentSkeleton label={t('version.loading')} />
         ) : (
           <VersionReview version={version} />
         )}

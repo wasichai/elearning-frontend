@@ -1,4 +1,4 @@
-import { LoadingState, useWasichaiLinks } from '@wasichai/core'
+import { useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { ChevronRight } from 'lucide-react'
 import { useRef } from 'react'
@@ -18,6 +18,7 @@ import { hasLessons, type ReviewComment, type ReviewDecision, type StudioLesson,
 import { useProblemText } from './parts'
 import { STUDIO_MODULE_ID, STUDIO_ROUTES } from './routes'
 import { NewVersionButton, SubmitVersionButton, useFirstContentStep } from './VersionActions'
+import { DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // el contenido de la versión se edita en las pantallas de registros de Wasichai (core), que la guarda editorial del
 // servidor deja solo al autor y en borrador: aquí no se reimplementan formularios (CLAUDE.md, regla 7)
@@ -70,7 +71,7 @@ export function VersionPage() {
         ) : version ? (
           <Version version={version} />
         ) : (
-          <LoadingState label={t('version.loading')} />
+          <DocumentSkeleton label={t('version.loading')} />
         )}
       </ScreenBody>
     </>
