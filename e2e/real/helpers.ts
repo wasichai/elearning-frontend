@@ -71,3 +71,16 @@ export async function expandedUnits(page: Page) {
   while ((await closed.count()) > 0) await closed.first().click()
   return units
 }
+
+// el progreso del curso en el aula (SegmentedProgress): su nombre accesible dice la cifra, «x de y completadas» y, si hay, «, n iniciadas».
+// solo el visible: en escritorio el del índice, por debajo de 1024 el de la franja de arriba
+export const courseProgress = (page: Page) => page.getByRole('img', { name: / de \d+ completadas/ })
+
+// la cifra de lecciones completadas, «x de y», sin las iniciadas: abrir una lección la inicia y cambiaría el resto del nombre
+export async function completedLessons(page: Page): Promise<string> {
+  const name = (await courseProgress(page).getAttribute('aria-label')) ?? ''
+  return /^(\d+ de \d+) completadas/.exec(name)?.[1] ?? ''
+}
+
+// todas las lecciones que cuentan, completadas: «n de n completadas», con n > 0 y sin ninguna a medias
+export const ALL_COMPLETED = /^([1-9]\d*) de \1 completadas$/

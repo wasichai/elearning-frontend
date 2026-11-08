@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { ADMIN, API_URL, browserFor, expandedUnits, newStudent, signIn, token, type Account } from './helpers'
+import { ADMIN, ALL_COMPLETED, API_URL, browserFor, courseProgress, expandedUnits, newStudent, signIn, token, type Account } from './helpers'
 
 // RF-MED-04 (front#171, elearning-backend#294): lo publicado funciona sin el proveedor de IA. El backend corre sin ninguna clave
 // (ni ANTHROPIC_API_KEY ni OPENAI_API_KEY), así que cada paso de la canalización lo hace el doble determinista (docs/ai §7 del
@@ -269,7 +269,7 @@ test(
         }
 
         await page.goto(`/mis-cursos/${enrollment}`)
-        await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '100')
+        await expect(courseProgress(page)).toHaveAccessibleName(ALL_COMPLETED)
         for (const lesson of lessons)
           await expect(
             (await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${escape(lesson.title)}.*(Completada|Aprobada)`) }).first()
