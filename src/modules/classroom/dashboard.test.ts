@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { classroomPanelSchema, enrollmentListSchema, type Enrollment } from './contract'
 import { sessionListSchema, upcomingSessions, type Session } from '../../shared/sessions'
-import { groupEnrollments, pickPrimary, railEnrollments, railItems, sessionsWithin } from './dashboard'
-import { assessmentSummary, enrollment, finishedEnrollment, otherEnrollment, panelItem, sessions } from './test/fixtures'
+import { agendaSchema } from './agenda'
+import {
+  groupEnrollments,
+  liveSessions,
+  pickPrimary,
+  railAssessments,
+  railEnrollments,
+  sessionsByDay,
+  sessionsWithin,
+  weekRange,
+  weekSessions
+} from './dashboard'
+import { agendaItem, assessmentSummary, enrollment, finishedEnrollment, otherEnrollment, panelItem, sessions } from './test/fixtures'
 
 const parse = (list: unknown[]): Enrollment[] => enrollmentListSchema.parse(list)
 const withProgress = (completedLessons: number, totalLessons: number) => ({
@@ -85,30 +96,62 @@ describe('las matrículas del riel', () => {
   })
 })
 
-describe('lo que trae el riel', () => {
-  const NOW = Date.parse('2026-09-01T00:00:00Z')
+describe('lo que trae el panel al riel', () => {
   const pending = { lessonId: 'lec-eva', assessment: assessmentSummary }
   const panel = classroomPanelSchema.parse([
-    panelItem(enrollment, { upcomingSessions: [sessions[2]], pendingAssessments: [pending] }),
-    panelItem(otherEnrollment, { upcomingSessions: [sessions[0]], pendingAssessments: [pending] }),
-    panelItem({ ...enrollment, id: 'cerrada', status: 'FINALIZADA' }, { upcomingSessions: [sessions[0]], pendingAssessments: [pending] })
+    panelItem(enrollment, { pendingAssessments: [pending] }),
+    panelItem(otherEnrollment, { pendingAssessments: [pending] }),
+    panelItem({ ...enrollment, id: 'cerrada', status: 'FINALIZADA' }, { pendingAssessments: [pending] })
   ])
   const active = panel.slice(0, 2)
 
-  it('funde las sesiones de las activas, la más próxima primero, cada una con su matrícula', () => {
-    const { sessions: rows } = railItems(active, panel, NOW)
-    expect(rows.map((row) => [row.id, row.enrollment.id])).toEqual([
-      [sessions[0]!.id, otherEnrollment.id],
-      [sessions[2]!.id, enrollment.id]
-    ])
-  })
-
   it('las evaluaciones van en el orden de las matrículas del riel, sin las de una que no está en él', () => {
-    expect(railItems([...active].reverse(), panel, NOW).assessments.map((row) => row.enrollment.id)).toEqual([otherEnrollment.id, enrollment.id])
+    expect(railAssessments([...active].reverse(), panel).map((row) => row.enrollment.id)).toEqual([otherEnrollment.id, enrollment.id])
   })
 
   it('una matrícula que el panel no trae no aporta nada', () => {
-    expect(railItems(active, panel.slice(1), NOW).assessments.map((row) => row.enrollment.id)).toEqual([otherEnrollment.id])
+    expect(railAssessments(active, panel.slice(1)).map((row) => row.enrollment.id)).toEqual([otherEnrollment.id])
+  })
+})
+
+describe('la semana, de la agenda', () => {
+  const DAY = 24 * 3600 * 1000
+  const NOW = Date.parse('2026-11-13T12:00:00Z')
+  const active = parse([enrollment, otherEnrollment])
+  const at = (id: string, base: Parameters<typeof agendaItem>[0], start: string, patch: object = {}) =>
+    agendaSchema.parse([agendaItem(base, { ...sessions[2], id, start, end: new Date(Date.parse(start) + 3600 * 1000).toISOString(), ...patch })])[0]!
+
+  it('pide un intervalo redondeado al día que cubre los próximos 7 días, dentro del máximo de 62', () => {
+    const range = weekRange(NOW)
+    expect(weekRange(NOW + 3600 * 1000)).toEqual(range)
+    expect(Date.parse(range.from)).toBeLessThanOrEqual(NOW - 12 * 3600 * 1000)
+    expect(Date.parse(range.to)).toBeGreaterThanOrEqual(NOW + 7 * DAY)
+    expect(Date.parse(range.to) - Date.parse(range.from)).toBeLessThanOrEqual(62 * DAY)
+    expect(range.from).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+  })
+
+  it('solo de las matrículas activas, sin las terminadas y hasta 7 días; la que está en curso y las canceladas siguen', () => {
+    const closed = { ...finishedEnrollment, status: 'FINALIZADA' }
+    const agenda = [
+      at('en-curso', enrollment, '2026-11-13T11:30:00Z'),
+      at('terminada', enrollment, '2026-11-13T09:00:00Z'),
+      at('cancelada', otherEnrollment, '2026-11-15T13:00:00Z', { status: 'CANCELADA' }),
+      at('cerrada', closed, '2026-11-15T13:00:00Z'),
+      at('lejos', enrollment, '2026-11-21T13:00:00Z')
+    ]
+    const week = weekSessions(agenda, active, NOW)
+    expect(week.map((session) => session.id)).toEqual(['en-curso', 'cancelada'])
+    expect(liveSessions(week).map((session) => session.id)).toEqual(['en-curso'])
+  })
+
+  it('agrupa por día civil en la zona de cada sesión', () => {
+    // 2026-11-14T03:00Z es aún el 13 en Lima (UTC−5)
+    const days = sessionsByDay([
+      at('a', enrollment, '2026-11-13T20:00:00Z'),
+      at('b', enrollment, '2026-11-14T03:00:00Z'),
+      at('c', enrollment, '2026-11-14T13:00:00Z')
+    ])
+    expect(days.map((day) => day.sessions.map((session) => session.id))).toEqual([['a', 'b'], ['c']])
   })
 })
 

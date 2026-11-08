@@ -29,6 +29,7 @@ const ENROLLMENTS = '/api/lms/classroom/enrollments'
 const ATTEMPTS = '/api/lms/classroom/attempts'
 const LESSON_EVENTS_PATH = /^\/api\/lms\/classroom\/enrollments\/[^/]+\/lessons\/[^/]+\/events$/
 const PANEL = '/api/lms/classroom/panel'
+const AGENDA = '/api/lms/classroom/sessions'
 // la sesión de Wasichai tal como la guarda @wasichai/core (storagePrefix 'elearning' de src/config.ts)
 const STORAGE_PREFIX = 'elearning'
 export const STUDENT = { id: 'u-estudiante', email: 'estudiante@demo.local', displayName: 'Rosa Estudiante', organizationId: 'org-demo', roles: ['ESTUDIANTE'] }
@@ -355,8 +356,33 @@ function panelItem(state: ClassroomState, data: ClassroomData) {
   }
 }
 
+// GET classroom/sessions (la agenda) como el servidor: from y to obligatorios, con zona, un intervalo no vacío de 62 días como mucho (400 si
+// no); las sesiones de cualquier estado de las matrículas no retiradas cuyo inicio cae en [from, to), por inicio y luego id, cada una con su
+// matrícula, el título del curso y el código de la edición
+const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/
+function agendaOf(state: ClassroomState, url: URL): Reply {
+  const [from, to] = ['from', 'to'].map((name) => url.searchParams.get(name) ?? '')
+  if (!ISO_WITH_ZONE.test(from!) || !ISO_WITH_ZONE.test(to!)) return { status: 400, body: problem(400, 'from y to: instantes ISO-8601 con zona') }
+  const [start, end] = [Date.parse(from!), Date.parse(to!)]
+  if (!(end > start) || end - start > 62 * 24 * 3600 * 1000) return { status: 400, body: problem(400, 'Intervalo vacío, invertido o de más de 62 días') }
+  const rows = Object.values(state.classrooms)
+    .filter((data) => data.status !== 'RETIRADA')
+    .flatMap((data) =>
+      (state.sessions[data.id] ?? []).map((session) => ({
+        ...session,
+        enrollmentId: data.id,
+        courseTitle: data.course.title,
+        offeringCode: data.offering.code
+      }))
+    )
+    .filter((session) => Date.parse(session.start) >= start && Date.parse(session.start) < end)
+    .sort((a, b) => Date.parse(a.start) - Date.parse(b.start) || a.id.localeCompare(b.id))
+  return { status: 200, body: rows }
+}
+
 function simulateClassroom(state: ClassroomState, method: string, url: URL, body: unknown): Reply | undefined {
   if (!url.pathname.startsWith(CLASSROOM)) return undefined
+  if (method === 'GET' && url.pathname === AGENDA) return agendaOf(state, url)
   if (method === 'GET' && url.pathname === PANEL)
     return {
       status: 200,

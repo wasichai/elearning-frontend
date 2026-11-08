@@ -16,6 +16,7 @@ import { student, type Scenario } from '../scenario'
 
 const ENROLLMENTS = '**/api/lms/classroom/enrollments'
 const PANEL = '**/api/lms/classroom/panel*'
+const AGENDA = '**/api/lms/classroom/sessions?*'
 // los elementos del panel: la matrícula con lo que tiene por delante. por defecto, nada
 const panelRows = (...rows: object[]) => rows.map((row) => ({ upcomingSessions: [], pendingAssessments: [], ...row }))
 const serving = (page: Page, rows: unknown[]) => page.route(PANEL, (route) => route.fulfill({ json: rows }))
@@ -157,7 +158,7 @@ const startAttempt = async (page: Page) => {
 
 export const classroomScenarios: Scenario[] = [
   { name: 'student-courses', path: '/mis-cursos', api: student },
-  // sin SRTM queda SGSPE (la simulación siempre la tiene): un solo curso, sin cifras en el riel
+  // sin SRTM queda SGSPE (la simulación siempre la tiene): un solo curso, en «Continuar»
   { name: 'student-courses-single', path: '/mis-cursos', api: { ...student, enrolled: false } },
   {
     name: 'student-courses-empty',
@@ -176,7 +177,8 @@ export const classroomScenarios: Scenario[] = [
           page,
           panelRows(
             { ...enrollment, id: 'mat-srtm-1' },
-            { ...longTitle, upcomingSessions: [sessions.at(-1)], pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }] },
+            // su sesión de noviembre llega por la agenda de la simulación
+            { ...longTitle, pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }] },
             finished,
             certified
           )
@@ -190,7 +192,7 @@ export const classroomScenarios: Scenario[] = [
     act: (page) => panelAt(page, () => serving(page, panelRows(certified)))
   },
   {
-    // el panel falla y la lista de matrículas llega: los cursos siguen y el riel lo dice
+    // el panel falla y la lista de matrículas llega: los cursos y la semana siguen, y «Por hacer» lo dice
     name: 'student-courses-rail-error',
     path: '/mis-cursos',
     api: student,
@@ -229,10 +231,14 @@ export const classroomScenarios: Scenario[] = [
       const sgspe = {
         ...assessmentClassroom,
         units: undefined,
-        upcomingSessions: next,
         pendingAssessments: [{ lessonId: 'lec-eva', assessment: assessmentSummary }]
       }
-      return panelAt(page, () => serving(page, panelRows(enrollmentAtStart, sgspe)))
+      // la semana sale de la agenda: las siete sesiones, de SGSPE
+      const agenda = next.map((session) => ({ ...session, enrollmentId: sgspe.id, courseTitle: sgspe.course.title, offeringCode: sgspe.offering.code }))
+      return panelAt(page, async () => {
+        await serving(page, panelRows(enrollmentAtStart, sgspe))
+        await page.route(AGENDA, (route) => route.fulfill({ json: agenda }))
+      })
     }
   },
   {
@@ -257,14 +263,14 @@ export const classroomScenarios: Scenario[] = [
     }
   },
   {
-    // al reintentar tras un fallo: la lista ya está a la vista y los dos bloques cargan
+    // al reintentar tras un fallo del panel: la lista ya está a la vista y «Por hacer» carga
     name: 'student-courses-rail-loading',
     path: '/mis-cursos',
     api: student,
     act: async (page) => {
       await page.route(PANEL, (route) => route.fulfill(down))
       await page.reload()
-      const retry = page.getByRole('button', { name: /^(Reintentar las sesiones|Retry the sessions)$/ })
+      const retry = page.getByRole('button', { name: /^(Reintentar las evaluaciones|Retry the assessments)$/ })
       await retry.waitFor()
       await page.unroute(PANEL)
       await page.route(PANEL, () => undefined)

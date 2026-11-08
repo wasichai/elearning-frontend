@@ -1,69 +1,36 @@
 import { useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, Clock } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { formatSessionStart, timeZoneLabel } from '../../shared/format'
-import { Section, Skeleton, Stat, StatList } from '../../shared/Screen'
-import type { AssessmentSummary, ClassroomPanelItem, Enrollment } from './contract'
-import { railItems, sessionsWithin, type Block, type RailAssessment, type UpcomingSession } from './dashboard'
+import { formatAgendaDay, formatTimeRange, timeZoneLabel, zonedDateTime } from '../../shared/format'
+import { Section, Skeleton } from '../../shared/Screen'
+import type { AgendaSession } from './agenda'
+import type { AssessmentSummary } from './contract'
+import { sessionsByDay, type Block, type RailAssessment } from './dashboard'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 import { StatusBadge } from './StatusBadge'
 
-// lo que cabe en el riel de cada bloque: el resto se cuenta, no se pinta
+// lo que cabe en cada bloque: el resto se cuenta, no se pinta
 const MAX_ROWS = 5
-const WEEK_DAYS = 7
-
-export interface RailData {
-  sessions: Block<UpcomingSession>
-  assessments: Block<RailAssessment>
-  // las sesiones de los próximos 7 días (el servidor las da todas, sin ese límite). solo con el panel leído: si no, la cifra no sería exacta
-  sessionsThisWeek?: number
-}
-
-// los bloques del riel, de una sola lectura: panel es undefined mientras no se ha podido leer entero
-export function railData(
-  active: Enrollment[],
-  panel: ClassroomPanelItem[] | undefined,
-  read: { loading: boolean; failed: boolean; retry: () => void }
-): RailData {
-  const now = Date.now()
-  const items = panel ? railItems(active, panel, now) : { sessions: [], assessments: [] }
-  return {
-    sessions: { items: items.sessions, ...read },
-    assessments: { items: items.assessments, ...read },
-    sessionsThisWeek: panel ? sessionsWithin(items.sessions, now, WEEK_DAYS).length : undefined
-  }
-}
 
 export interface DashboardRailProps {
-  data: RailData
-  // sin cursos activos no hay nada que leer y los dos bloques sobran
-  showBlocks: boolean
-  // las cifras, si hay más de un curso que contar
-  figures?: { inProgress: number; completed: number }
+  // las sesiones de los próximos 7 días (agenda) y las evaluaciones por hacer (panel): cada bloque con su lectura
+  week: Block<AgendaSession>
+  assessments: Block<RailAssessment>
   // la zona que la página ya dice para todo: si las sesiones van en ella, el bloque no la repite
   pageZone?: string
+  now: number
 }
 
-// el riel del panel: en escritorio al lado, en un móvil debajo de todo. sin tarjetas: secciones con filas
-export function DashboardRail({ data, showBlocks, figures, pageZone }: DashboardRailProps) {
-  const { t, i18n } = useTranslation('classroom')
+// la columna lateral del panel (Dashboard.dc.html): en escritorio al lado, en un móvil debajo de todo. sin tarjetas: secciones con filetes
+export function DashboardRail({ week, assessments, pageZone, now }: DashboardRailProps) {
+  const { t } = useTranslation('classroom')
   return (
-    <aside aria-label={t('dashboard.rail')} className="flex min-w-0 flex-col gap-8 lg:border-l lg:border-border lg:pl-8">
-      {figures ? (
-        <StatList>
-          <Stat label={t('dashboard.figures.inProgress')} value={new Intl.NumberFormat(i18n.language).format(figures.inProgress)} />
-          <Stat label={t('dashboard.figures.completed')} value={new Intl.NumberFormat(i18n.language).format(figures.completed)} />
-        </StatList>
-      ) : null}
-      {showBlocks ? (
-        <>
-          <SessionsBlock block={data.sessions} pageZone={pageZone} />
-          <AssessmentsBlock block={data.assessments} />
-        </>
-      ) : null}
+    <aside aria-label={t('dashboard.rail')} className="flex min-w-0 flex-col gap-10">
+      <WeekBlock block={week} pageZone={pageZone} now={now} />
+      <AssessmentsBlock block={assessments} />
     </aside>
   )
 }
@@ -74,21 +41,21 @@ function BlockBody<T>({
   failedText,
   retryLabel,
   more,
-  row
+  children
 }: {
   block: Block<T>
   empty: string
   failedText: string
   retryLabel: string
   more: (count: number) => string
-  row: (item: T) => ReactNode
+  children: (items: T[]) => ReactNode
 }) {
   const { t } = useTranslation('classroom')
   const hidden = block.items.length - MAX_ROWS
   return (
     <>
       {block.failed ? (
-        <div role="alert" className="flex gap-2 text-sm">
+        <div role="alert" className="text-secondary flex gap-2">
           <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-danger" />
           <div className="flex min-w-0 flex-col items-start gap-2">
             <p className="text-ink">{failedText}</p>
@@ -105,26 +72,27 @@ function BlockBody<T>({
           <Skeleton className="h-4 w-3/5" />
         </div>
       ) : null}
-      {block.items.length > 0 ? (
-        <ul className="flex flex-col divide-y divide-border border-y border-border">{block.items.slice(0, MAX_ROWS).map(row)}</ul>
-      ) : null}
-      {hidden > 0 ? <p className="text-sm text-ink-muted">{more(hidden)}</p> : null}
-      {!block.loading && !block.failed && block.items.length === 0 ? <p className="text-sm text-ink-muted">{empty}</p> : null}
+      {block.items.length > 0 ? children(block.items.slice(0, MAX_ROWS)) : null}
+      {hidden > 0 ? <p className="text-secondary text-ink-muted">{more(hidden)}</p> : null}
+      {!block.loading && !block.failed && block.items.length === 0 ? <p className="text-secondary text-ink-muted">{empty}</p> : null}
     </>
   )
 }
 
 const ROW_LINK =
-  'flex min-h-11 flex-col gap-0.5 py-2.5 text-sm break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
+  'flex min-h-11 min-w-0 flex-col gap-0.5 py-1 break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
 
-function SessionsBlock({ block, pageZone }: { block: Block<UpcomingSession>; pageZone?: string }) {
+// «Esta semana»: un día por fila (su nombre y su número a la izquierda) con sus sesiones, cada una con su hora, su título y de qué curso es.
+// el estado se dice con palabras: una reprogramada o cancelada lo pone en su línea
+function WeekBlock({ block, pageZone, now }: { block: Block<AgendaSession>; pageZone?: string; now: number }) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
+  const locale = i18n.language
   const zones = [...new Set(block.items.slice(0, MAX_ROWS).map((session) => session.timeZone))]
   return (
     <Section
       title={t('dashboard.sessions.title')}
-      description={zones.length === 1 && zones[0] !== pageZone ? t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, i18n.language) }) : undefined}
+      description={zones.length === 1 && zones[0] !== pageZone ? t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, locale) }) : undefined}
     >
       <BlockBody
         block={block}
@@ -132,22 +100,50 @@ function SessionsBlock({ block, pageZone }: { block: Block<UpcomingSession>; pag
         failedText={t('dashboard.sessions.failed')}
         retryLabel={t('dashboard.sessions.retry')}
         more={(count) => t('dashboard.sessions.more', { count })}
-        row={(session) => (
-          <li key={`${session.enrollment.id}-${session.id}`}>
-            <Link to={links.to(CLASSROOM_ROUTES.sessions, { enrollmentId: session.enrollment.id })} className={ROW_LINK}>
-              <span className="font-medium text-ink">{session.title}</span>
-              <time dateTime={session.start} className="text-ink">
-                {formatSessionStart(session.start, i18n.language, session.timeZone)}
-              </time>
-              {zones.length > 1 ? <span className="text-ink-muted">{timeZoneLabel(session.timeZone, i18n.language)}</span> : null}
-              <span className="text-ink-muted">
-                {session.enrollment.course.title}
-                {session.status === 'REPROGRAMADA' ? ` · ${t('sessions.status.REPROGRAMADA')}` : null}
-              </span>
-            </Link>
-          </li>
+      >
+        {(items) => (
+          <ol className="-mt-3 flex flex-col">
+            {sessionsByDay(items).map((day) => {
+              const { weekday, day: number } = formatAgendaDay(day.start, locale, day.timeZone)
+              // hoy, en la zona de sus sesiones: el día va en marca; el nombre y el número ya dicen cuál es
+              const today = zonedDateTime(new Date(now).toISOString(), day.timeZone).date === zonedDateTime(day.start, day.timeZone).date
+              return (
+                <li key={day.key} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-x-3 border-b border-border py-3">
+                  <p className={`flex flex-col ${today ? 'text-brand' : 'text-ink'}`}>
+                    <span className={`meta ${today ? 'text-brand' : ''}`}>{weekday}</span>
+                    <span className="text-h4 tabular-nums">{number}</span>
+                  </p>
+                  <ul className="flex min-w-0 flex-col gap-2">
+                    {day.sessions.map((session) => (
+                      <li key={`${session.enrollmentId}-${session.id}`}>
+                        <Link to={links.to(CLASSROOM_ROUTES.sessions, { enrollmentId: session.enrollmentId })} className={ROW_LINK}>
+                          <time dateTime={session.start} className="text-label text-ink">
+                            {formatTimeRange(session.start, session.end, locale, session.timeZone)}
+                          </time>
+                          <span data-slot="session-title" className="font-read text-h5 font-normal text-ink">
+                            {session.title}
+                          </span>
+                          <span className="text-secondary text-ink-muted">
+                            {[
+                              t(`sessions.type.${session.type}`),
+                              t(`sessions.modality.${session.modality}`),
+                              session.status === 'PROGRAMADA' ? null : t(`sessions.status.${session.status}`)
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                          <span className="text-secondary text-ink-muted">{session.courseTitle}</span>
+                          {zones.length > 1 ? <span className="text-secondary text-ink-muted">{timeZoneLabel(session.timeZone, locale)}</span> : null}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              )
+            })}
+          </ol>
         )}
-      />
+      </BlockBody>
     </Section>
   )
 }
@@ -156,9 +152,15 @@ function AssessmentState({ assessment }: { assessment: AssessmentSummary }) {
   const { t } = useTranslation('classroom')
   if (assessment.openAttemptId) return <StatusBadge state="active">{t('dashboard.assessments.open')}</StatusBadge>
   if (assessment.best?.pending) return <StatusBadge state="review">{t('dashboard.assessments.grading')}</StatusBadge>
-  return <span className="text-ink-muted">{t('dashboard.assessments.attemptsLeft', { count: assessment.maxAttempts - assessment.attemptsUsed })}</span>
+  return (
+    <span className="text-secondary inline-flex items-center gap-1.5 font-semibold text-warning">
+      <Clock aria-hidden="true" className="size-4 shrink-0" />
+      {t('dashboard.assessments.attemptsLeft', { count: assessment.maxAttempts - assessment.attemptsUsed })}
+    </span>
+  )
 }
 
+// «Por hacer»: las evaluaciones que quedan, sin plazos (el modelo no los tiene)
 function AssessmentsBlock({ block }: { block: Block<RailAssessment> }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
@@ -170,18 +172,23 @@ function AssessmentsBlock({ block }: { block: Block<RailAssessment> }) {
         failedText={t('dashboard.assessments.failed')}
         retryLabel={t('dashboard.assessments.retry')}
         more={(count) => t('dashboard.assessments.more', { count })}
-        row={({ lessonId, assessment, enrollment }) => (
-          <li key={`${enrollment.id}-${lessonId}`}>
-            <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: enrollment.id }, { [LESSON_PARAM]: lessonId })} className={ROW_LINK}>
-              <span className="font-medium text-ink">{assessment.title}</span>
-              <span className="text-ink-muted">{enrollment.course.title}</span>
-              <span className="mt-0.5 flex">
-                <AssessmentState assessment={assessment} />
-              </span>
-            </Link>
-          </li>
+      >
+        {(items) => (
+          <ul className="-mt-3 flex flex-col divide-y divide-border border-b border-border">
+            {items.map(({ lessonId, assessment, enrollment }) => (
+              <li key={`${enrollment.id}-${lessonId}`} className="py-2">
+                <Link to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: enrollment.id }, { [LESSON_PARAM]: lessonId })} className={ROW_LINK}>
+                  <span className="font-read text-h5 font-normal text-ink">{assessment.title}</span>
+                  <span className="text-secondary text-ink-muted">{enrollment.course.title}</span>
+                  <span className="mt-1 flex">
+                    <AssessmentState assessment={assessment} />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
-      />
+      </BlockBody>
     </Section>
   )
 }

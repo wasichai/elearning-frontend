@@ -131,7 +131,7 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
 })
 
-test('«Mis cursos» lee el panel del servidor, sin la lista aparte ni una petición por matrícula', async ({ page }) => {
+test('«Mis cursos» lee el panel, la agenda de la semana y solo el aula de «Continuar»: ni la lista aparte ni las sesiones por matrícula', async ({ page }) => {
   test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
   const read: string[] = []
   page.on('request', (sent) => {
@@ -151,7 +151,12 @@ test('«Mis cursos» lee el panel del servidor, sin la lista aparte ni una petic
 
   await expect(page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
-  expect(new Set(read)).toEqual(new Set(['/api/lms/classroom/panel']))
+  expect(read).toContain('/api/lms/classroom/panel')
+  expect(read).toContain('/api/lms/classroom/sessions')
+  // por matrícula, como mucho el aula de la de «Continuar» (sus lecciones dan el progreso por segmentos)
+  const perEnrollment = new Set(read.filter((path) => path.startsWith('/api/lms/classroom/enrollments')))
+  expect(perEnrollment.size).toBeLessThanOrEqual(1)
+  for (const path of perEnrollment) expect(path).toMatch(/^\/api\/lms\/classroom\/enrollments\/[^/]+$/)
 })
 
 test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page }) => {
@@ -159,7 +164,8 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
   await signIn(page, { email: 'estudiante@demo.wasichai-learning.test', password: DEMO_PASSWORD! })
   await page.getByRole('link', { name: 'Mis cursos' }).click()
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
-  await expect(card.getByRole('progressbar', { name: 'Progreso del curso' })).toBeVisible()
+  // en «Continuar», el progreso por lección (segmentos); en la lista, la barra del resumen
+  await expect(card.getByRole('progressbar', { name: 'Progreso del curso' }).or(card.getByRole('img', { name: /^\d+ de \d+ completadas/ }))).toBeVisible()
   await card.getByRole('link', { name: /^(Continuar|Repasar) «/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
 })

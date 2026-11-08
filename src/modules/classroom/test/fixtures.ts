@@ -531,3 +531,11 @@ export const panelItem = (base: object, rest: { upcomingSessions?: unknown[]; pe
   pendingAssessments: [],
   ...rest
 })
+
+// un elemento de GET classroom/sessions (la agenda): la sesión con la matrícula, el curso y la edición de la que es
+export const agendaItem = (base: { id: string; course: { title: string }; offering: { code: string } }, session: object) => ({
+  ...session,
+  enrollmentId: base.id,
+  courseTitle: base.course.title,
+  offeringCode: base.offering.code
+})

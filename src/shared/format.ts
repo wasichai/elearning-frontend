@@ -90,3 +90,17 @@ export function formatSessionStart(start: string, locale: string, timeZone: stri
     new Date(start)
   )
 }
+
+// solo el tramo de horas de una sesión en su zona: «18:00–18:30», para una agenda que ya dice el día
+export function formatTimeRange(start: string, end: string, locale: string, timeZone: string): string {
+  return new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone }).formatRange(new Date(start), new Date(end))
+}
+
+// el día de una agenda en una zona: el nombre corto del día y su número («mié», «18»)
+export function formatAgendaDay(instant: string, locale: string, timeZone: string): { weekday: string; day: string } {
+  const date = new Date(instant)
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone }).format(date).replace('.', ''),
+    day: new Intl.DateTimeFormat(locale, { day: 'numeric', timeZone }).format(date)
+  }
+}
