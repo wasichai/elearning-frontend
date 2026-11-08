@@ -1,12 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { fakeApi } from './api'
 
-// la marca Quipu (appLogo de core, issue #181): en el login, en la barra lateral y, en pantalla estrecha, junto al botón
+// la marca Colofón (appLogo de core, issue #181): en el login, en la barra lateral y, en pantalla estrecha, junto al botón
 // del menú. es decorativa: el nombre de la app sigue siendo el texto accesible
 
 const logos = (page: Page) => page.locator("[data-slot='app-logo']")
 
-test('el login lleva la marca Quipu junto al nombre', async ({ page }) => {
+test('el login lleva la marca Colofón junto al nombre', async ({ page }) => {
   await fakeApi(page)
   await page.goto('/login')
   await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
@@ -14,7 +14,7 @@ test('el login lleva la marca Quipu junto al nombre', async ({ page }) => {
   await expect(logos(page).first()).toHaveAttribute('aria-hidden', 'true')
 })
 
-test('la barra lateral lleva la marca Quipu', async ({ page }) => {
+test('la barra lateral lleva la marca Colofón', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos')
   await expect(page.getByRole('heading', { level: 1, name: 'Mis cursos' })).toBeVisible()

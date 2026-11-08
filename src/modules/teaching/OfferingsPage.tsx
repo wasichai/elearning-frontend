@@ -4,7 +4,6 @@ import { CalendarDays, ClipboardCheck, GraduationCap, Users, type LucideIcon } f
 import { useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilRange, formatNumber, timeZoneLabel } from '../../shared/format'
 import { ProblemState } from '../../shared/ProblemState'
 import { useRefetchOnRevisit } from '../../shared/revisit'
@@ -169,7 +168,6 @@ function OfferingCard({ offering, upcoming, showZone }: { offering: TeachingOffe
   const { code, course, enrolled, pendingAttempts } = offering
   return (
     <article className="@container flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface">
-      <CordBanner seed={course.slug} height={48} />
       <div className="flex flex-1 flex-col gap-2 px-5 pt-3 pb-4 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
           <h3 className="min-w-0 text-base leading-snug font-semibold tracking-tight break-words">

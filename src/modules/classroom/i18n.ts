@@ -88,7 +88,10 @@ const es = {
   progress: {
     course: 'Progreso del curso',
     value: '{{completed}} de {{total}} lecciones · {{percent}} %',
-    valueText: '{{completed}} de {{total}} lecciones completadas, {{percent}} %'
+    valueText: '{{completed}} de {{total}} lecciones completadas, {{percent}} %',
+    segmentedDone: '{{done}} de {{total}} completadas',
+    segmentedStarted_one: '· {{count}} iniciada',
+    segmentedStarted_other: '· {{count}} iniciadas'
   },
   classroom: {
     back: '← Mis cursos',
@@ -620,7 +623,10 @@ const en: typeof es = {
   progress: {
     course: 'Course progress',
     value: '{{completed}} of {{total}} lessons · {{percent}}%',
-    valueText: '{{completed}} of {{total}} lessons completed, {{percent}}%'
+    valueText: '{{completed}} of {{total}} lessons completed, {{percent}}%',
+    segmentedDone: '{{done}} of {{total}} completed',
+    segmentedStarted_one: '· {{count}} started',
+    segmentedStarted_other: '· {{count}} started'
   },
   classroom: {
     back: '← My courses',

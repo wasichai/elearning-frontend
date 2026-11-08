@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { resolveConfig } from '@wasichai/core'
 import { isValidElement } from 'react'
 import { describe, expect, it } from 'vitest'
-import { QuipuMark } from './shared/QuipuMark'
+import { ColofonMark } from './shared/ColofonMark'
 import { homeRoute, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
 import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
@@ -38,9 +38,9 @@ describe('createConfig', () => {
     })
   })
 
-  it('la marca Quipu acompaña al nombre en el shell y el login', () => {
+  it('la marca Colofón acompaña al nombre en el shell y el login', () => {
     const logo = createConfig({ DEV: false }).appLogo
-    expect(isValidElement(logo) && logo.type).toBe(QuipuMark)
+    expect(isValidElement(logo) && logo.type).toBe(ColofonMark)
   })
 
   it('propone el administrador de la semilla solo en desarrollo', () => {

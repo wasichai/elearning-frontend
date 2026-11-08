@@ -58,11 +58,11 @@ describe('CourseDetailPage', () => {
     expect(document.querySelector('[data-slot="course-skeleton"]')).toBeNull()
   })
 
-  it('la cabecera lleva la banda del curso y los hechos del contrato', async () => {
+  it('la cabecera lleva los hechos del contrato, sin banda decorativa', async () => {
     renderCourse([{ path: COURSE, body: courseDetail }])
 
     expect(await screen.findAllByRole('heading', { level: 1 })).toHaveLength(1)
-    expect(document.querySelector('[data-slot="cord-banner"]')).not.toBeNull()
+    expect(document.querySelector('[data-slot="cord-banner"]')).toBeNull()
     for (const [label, value] of [
       ['Duración', '6 semanas · 216 h'],
       ['Créditos', '8 ECTS, propuesta'],

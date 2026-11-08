@@ -74,13 +74,17 @@ describe('letras de la app', () => {
 
   it('espaciados y anchos de Foundations', () => {
     const theme = /@theme\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
+    const staticTheme = /@theme static\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
     const space = [4, 8, 12, 16, 24, 32, 48, 72, 112].map((px, at) => new RegExp(`--space-${at + 1}:\\s*${px}px;`))
-    for (const pattern of space) expect(theme).toMatch(pattern)
+    for (const pattern of space) expect(staticTheme).toMatch(pattern)
     expect(theme).toMatch(/--container-measure:\s*66ch;/)
     expect(theme).toMatch(/--container-index-col:\s*280px;/)
     expect(theme).toMatch(/--container-margin-col:\s*264px;/)
     expect(theme).toMatch(/--container-content-max:\s*1200px;/)
-    expect(theme).toMatch(/--shadow-overlay:\s*0 12px 32px rgb\(23 32 43 \/ 16%\);/)
+    // la sombra sigue al tema: la utilidad lee la variable, no copia su valor claro
+    expect(index).toMatch(/:where\(:root\)\s*\{\s*--shadow-overlay:\s*0 12px 32px rgb\(23 32 43 \/ 16%\);/)
+    expect(index).toMatch(/@utility shadow-overlay\s*\{\s*box-shadow: var\(--shadow-overlay\);/)
+    expect(theme).not.toMatch(/--shadow-overlay/)
   })
 })
 

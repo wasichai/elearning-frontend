@@ -1,6 +1,6 @@
 import type { WasichaiConfig } from '@wasichai/core'
 import { createElement } from 'react'
-import { QuipuMark } from './shared/QuipuMark'
+import { ColofonMark } from './shared/ColofonMark'
 import { homeRoute, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
 
@@ -39,7 +39,7 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     // sin el lema por defecto de Wasichai, que habla de otro producto; el nombre basta
     appTagline: '',
     // la marca junto al nombre: barra lateral, cajón, barra estrecha y login. core la deja aria-hidden
-    appLogo: createElement(QuipuMark, { className: 'size-7' }),
+    appLogo: createElement(ColofonMark, { className: 'size-7' }),
     storagePrefix: 'elearning',
     languages: ['es', 'en'],
     timeZone: 'America/Lima',

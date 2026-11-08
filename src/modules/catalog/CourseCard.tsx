@@ -2,7 +2,6 @@ import { useWasichaiLinks } from '@wasichai/core'
 import { ChartNoAxesColumnIncreasing, Clock, MonitorPlay } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { CordBanner } from '../../shared/CordBanner'
 import { formatCivilRange, formatNumber } from '../../shared/format'
 import { Skeleton } from '../../shared/Screen'
 import { StatusBadge } from '../../shared/StatusBadge'
@@ -10,7 +9,6 @@ import type { CourseSummary, NextOffering } from './contract'
 import { AVAILABILITY, IconFact, IllustrativeMark, offeringState } from './parts'
 import { CATALOG_ROUTES } from './routes'
 
-const BANNER_HEIGHT = 72
 const CARD = 'flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface'
 
 // un curso del catálogo (docs/design-system/historico-quipu/components/CourseCard). toda la tarjeta enlaza a la ficha con el ::after del título:
@@ -20,9 +18,8 @@ export function CourseCard({ course }: { course: CourseSummary }) {
   const links = useWasichaiLinks()
   return (
     <article
-      className={`${CARD} relative transition-shadow duration-[160ms] hover:shadow-2 motion-reduce:transition-none has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus has-[a:focus-visible]:outline-solid`}
+      className={`${CARD} relative transition-shadow duration-[160ms] hover:shadow-overlay motion-reduce:transition-none has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus has-[a:focus-visible]:outline-solid`}
     >
-      <CordBanner seed={course.slug} height={BANNER_HEIGHT} />
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
           {course.category ? <span>{course.category.name}</span> : null}
@@ -79,7 +76,6 @@ function Availability({ offering }: { offering: NextOffering | null }) {
 export function CourseCardSkeleton() {
   return (
     <div data-slot="course-card-skeleton" className={CARD}>
-      <div style={{ height: BANNER_HEIGHT }} className="bg-surface-muted" />
       <div className="flex flex-1 flex-col gap-3 p-5">
         <Skeleton className="h-5 w-2/5" />
         <Skeleton className="h-6 w-4/5" />

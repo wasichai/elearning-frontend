@@ -42,7 +42,7 @@
   --border-control: #7d8794;
   --placeholder: var(--ink-muted);
 
-  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
   --maiz: var(--warning);
   --maiz-soft: var(--warning-soft);
   --on-maiz: var(--surface);
@@ -92,7 +92,7 @@
   --border-control: #6b7686;
   --placeholder: var(--ink-muted);
 
-  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
   --maiz: var(--warning);
   --maiz-soft: var(--warning-soft);
   --on-maiz: var(--surface);
@@ -143,7 +143,7 @@
   --border-control: #7a6c55;
   --placeholder: var(--ink-muted);
 
-  /* temporal: se retira en la tarea 4/5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
+  /* temporal: se retira en la tarea 5. el maíz de Quipu lo pintan aún CompletionPage, MyCoursesPage y Quipu.tsx */
   --maiz: var(--warning);
   --maiz-soft: var(--warning-soft);
   --on-maiz: var(--surface);

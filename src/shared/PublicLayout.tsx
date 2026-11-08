@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { canLearn } from './learning'
-import { QuipuMark } from './QuipuMark'
+import { ColofonMark } from './ColofonMark'
 import { screenContainer, type ScreenWidth } from './Screen'
 
 // el catálogo y el aula (otros módulos), por su clave de ruta como texto: src/shared no importa ningún módulo
@@ -21,7 +21,7 @@ export function PublicLayout({ children, width = 'content', fullBleed = false }:
   const home = links.has(CATALOG_COURSES_ROUTE) ? links.to(CATALOG_COURSES_ROUTE) : undefined
   const brand = (
     <>
-      <QuipuMark />
+      <ColofonMark />
       <span>{appName}</span>
     </>
   )
@@ -77,7 +77,7 @@ export function PublicHeading({ title, subtitle, eyebrow }: { title: string; sub
   return (
     <div className="flex flex-col gap-2 pt-10 pb-6">
       {eyebrow}
-      <h1 className="text-title-2 text-balance text-ink sm:text-display">{title}</h1>
+      <h1 className="font-read text-h2 text-balance text-ink sm:text-h1">{title}</h1>
       {subtitle ? <p className="max-w-prose text-base text-ink-muted">{subtitle}</p> : null}
     </div>
   )
