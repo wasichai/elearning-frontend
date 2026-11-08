@@ -10,6 +10,9 @@ export const CLASSROOM_ROUTES = {
   certificate: `${CLASSROOM_MODULE_ID}:certificate`
 } as const
 
+// la ruta del aula de una matrícula: la registra el módulo y la lee el shell para saber si hay una lección abierta (shellChrome)
+export const CLASSROOM_PATH = 'mis-cursos/:enrollmentId'
+
 // la lección abierta del aula vive en la URL (?leccion=<id>): se vuelve a ella y se comparte con el enlace
 export const LESSON_PARAM = 'leccion'
 // el intento abierto de la evaluación de esa lección (?leccion=<id>&intento=<id>)

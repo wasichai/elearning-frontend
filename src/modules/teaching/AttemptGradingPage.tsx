@@ -198,7 +198,7 @@ function AttemptGrading({ code, attempt, place, onDirty }: { code: string; attem
   const askingError = asking ? Object.values(errors)[0] : undefined
   return (
     <div className="flex flex-col gap-5">
-      <h2 className="text-title-3 text-ink">{t('grading.attempt', { number: attempt.number })}</h2>
+      <h2 className="text-h4 text-ink">{t('grading.attempt', { number: attempt.number })}</h2>
       {!result ? <Alert tone="notice">{t('grading.open')}</Alert> : null}
       {/* lo enfocado no queda tapado por el total fijo */}
       <ol className="flex flex-col gap-4 [&_button]:scroll-mb-48 [&_input]:scroll-mb-48 [&_textarea]:scroll-mb-48">
@@ -365,7 +365,7 @@ function QuestionReview({
           <div className="flex flex-col gap-1">
             <p className="text-ink-muted">{t('grading.answer')}</p>
             {given ? (
-              <p className="font-read text-read-body-sm break-words whitespace-pre-wrap text-ink">{given}</p>
+              <p className="font-read text-h5 leading-7 font-normal break-words whitespace-pre-wrap text-ink">{given}</p>
             ) : (
               <p className="text-ink">{t('grading.noAnswer')}</p>
             )}

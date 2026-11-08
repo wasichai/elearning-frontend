@@ -13,7 +13,6 @@ import type { Enrollment } from './contract'
 import { allLessonsDone, canContinue, groupEnrollments, railEnrollments, type EnrollmentGroups } from './dashboard'
 import { DashboardRail, railData, type RailData } from './DashboardRail'
 import { OfferingDates, ProgressBar, useProblemText, WRAP } from './parts'
-import { summaryKnots } from './Quipu'
 import { CATALOG_COURSES_ROUTE, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 import { StatusBadge } from './StatusBadge'
 
@@ -194,9 +193,9 @@ function PrimaryCourse({ enrollment, showZone }: { enrollment: Enrollment; showZ
         </div>
         <div className="flex flex-col gap-1">
           <p className="text-sm text-ink-muted">{t('classroom.position', { unit: next.unitOrder, lesson: next.lessonOrder })}</p>
-          <p className="font-read text-title-2 text-balance break-words text-ink">{t('enrollments.next', { lesson: next.title })}</p>
+          <p className="font-read text-h3 text-balance break-words text-ink">{t('enrollments.next', { lesson: next.title })}</p>
         </div>
-        <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
+        <ProgressBar progress={enrollment.progress} label={t('progress.course')} />
         <Button asChild className={`${WRAP} min-h-11 w-full px-6 sm:w-auto sm:self-start`}>
           <Link
             to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: enrollment.id }, { [LESSON_PARAM]: next.id })}
@@ -269,7 +268,7 @@ function CourseRow({ enrollment, showZone }: { enrollment: Enrollment; showZone:
         ) : null}
       </div>
       <div className="flex min-w-0 flex-col gap-1">
-        <ProgressBar progress={enrollment.progress} label={t('progress.course')} knots={summaryKnots(enrollment.progress)} />
+        <ProgressBar progress={enrollment.progress} label={t('progress.course')} />
         {line === 'next' ? (
           <Link
             to={links.to(CLASSROOM_ROUTES.classroom, params, { [LESSON_PARAM]: enrollment.nextLesson!.id })}

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { ADMIN, API_URL, browserFor, expandedUnits, newStudent, newUser, token } from './helpers'
+import { ADMIN, API_URL, browserFor, completedLessons, courseProgress, expandedUnits, newStudent, newUser, token } from './helpers'
 
 // el estudio editorial de la Fase 4 contra el backend de verdad, en el navegador: los recorridos 8–12 de §20 (crear y
 // editar un borrador, enviarlo a revisión, revisar y pedir cambios, aprobar, publicar y que lo publicado llegue al
@@ -126,8 +126,6 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
   let number = 0
   let progress = ''
   try {
-    const bar = learner.page.getByRole('progressbar', { name: 'Progreso del curso' })
-
     await test.step('quien cursa la versión 1 completa su primera lección', async () => {
       await learner.page.goto(`/mis-cursos/${enrollment.id}`)
       await expect(learner.page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
@@ -135,8 +133,8 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       await expect(learner.page.getByRole('heading', { level: 2, name: LESSON })).toBeVisible()
       await learner.page.getByRole('button', { name: 'Marcar como completada' }).click()
       await expect(learner.page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
-      await expect(bar).not.toHaveAttribute('aria-valuenow', '0')
-      progress = (await bar.getAttribute('aria-valuenow'))!
+      await expect(courseProgress(learner.page)).toHaveAccessibleName(/^[1-9]\d* de \d+ completadas/)
+      progress = await completedLessons(learner.page)
     })
 
     await test.step('recorrido 8: la creadora crea una versión nueva por copia de la publicada', async () => {
@@ -324,7 +322,8 @@ test('una versión nueva por copia: se edita, se revisa con cambios pedidos, se 
       await expect(learner.page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()
       await expect((await expandedUnits(learner.page)).getByRole('link', { name: new RegExp(`^${LESSON}.*Completada`) })).toBeVisible()
       await expect((await expandedUnits(learner.page)).getByRole('link', { name: FINAL })).toHaveCount(0)
-      await expect(bar).toHaveAttribute('aria-valuenow', progress)
+      // la cifra de completadas no cambia al publicarse la versión 2: la matrícula sigue en la suya
+      await expect(courseProgress(learner.page)).toHaveAccessibleName(new RegExp(`^${progress} completadas`))
     })
 
     await test.step('con revisor asignado, otra revisora no la ve ni la decide (404)', async () => {

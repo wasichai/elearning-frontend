@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createApiClient } from '@wasichai/core'
-import { fileRequestUrl, ForeignFileError, inertBlob, isVideo, uploadFile } from './files'
+import { asPdf, fileRequestUrl, ForeignFileError, inertBlob, isVideo, NotPdfError, uploadFile } from './files'
 
 describe('fileRequestUrl', () => {
   const client = { baseUrl: '/api' }
@@ -81,5 +81,17 @@ describe('inertBlob', () => {
     ['application/video', false]
   ])('isVideo(%s) es %s', (type, expected) => {
     expect(isVideo(type)).toBe(expected)
+  })
+})
+
+describe('asPdf', () => {
+  it('un PDF de verdad pasa con su tipo, aunque llegue sin él', async () => {
+    const pdf = await asPdf(new Blob(['%PDF-1.7 …'], { type: 'application/octet-stream' }), 'guia.pdf')
+    expect(pdf.type).toBe('application/pdf')
+    expect(await pdf.text()).toBe('%PDF-1.7 …')
+  })
+
+  it('lo que no empieza por %PDF- no llega al visor, aunque diga ser un PDF', async () => {
+    await expect(asPdf(new Blob(['<script>alert(1)</script>'], { type: 'application/pdf' }), 'guia.pdf')).rejects.toBeInstanceOf(NotPdfError)
   })
 })

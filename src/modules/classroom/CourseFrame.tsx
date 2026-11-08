@@ -1,6 +1,6 @@
 import { PageHeader, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
-import { BookOpen, CalendarCheck, ChevronRight, ClipboardCheck, type LucideIcon } from 'lucide-react'
+import { BookOpen, CalendarCheck, ClipboardCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
@@ -11,7 +11,7 @@ import { Breadcrumbs, ScreenHeader, SectionTabs, Skeleton } from '../../shared/S
 import { useClassroom, useSessions } from './api'
 import type { Classroom } from './contract'
 import { assessmentFigure, attendanceFigure, type Figure } from './lessons'
-import { LESSON_COLUMN, useProblemText } from './parts'
+import { useProblemText } from './parts'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 // el marco de una matrícula, común al aula, las sesiones y la finalización: lee el aula (ya en caché si se viene de otra pestaña),
@@ -40,8 +40,8 @@ function CourseSkeleton({ label }: { label: string }) {
           <Skeleton className="h-6 w-24" />
         </div>
       </div>
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[20rem_minmax(0,1fr)]">
-        <div className="hidden flex-col gap-4 border-r border-border bg-surface p-5 lg:flex lg:pl-8">
+      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[var(--container-index-col)_minmax(0,1fr)]">
+        <div className="hidden flex-col gap-4 border-r border-border bg-surface-muted p-5 lg:flex">
           <Skeleton className="h-2 w-full" />
           <Skeleton className="h-4 w-2/3" />
           {[0, 1, 2, 3].map((row) => (
@@ -51,7 +51,7 @@ function CourseSkeleton({ label }: { label: string }) {
             </div>
           ))}
         </div>
-        <div className={`${LESSON_COLUMN} flex flex-col gap-4 py-8`}>
+        <div className="mx-auto flex w-full max-w-measure flex-col gap-4 px-4 py-8 sm:px-8">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-8 w-4/5" />
           <Skeleton className="h-4 w-full" />
@@ -100,7 +100,7 @@ function CourseBreadcrumbs() {
 }
 
 // las secciones del curso. lessonId conserva la lección abierta: pulsar la pestaña en la que ya se está no salta a otra lección
-function CourseTabs({ classroom, lessonId }: { classroom: Classroom; lessonId?: string }) {
+export function CourseTabs({ classroom, lessonId }: { classroom: Classroom; lessonId?: string }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const params = { enrollmentId: classroom.id }
@@ -116,23 +116,9 @@ function CourseTabs({ classroom, lessonId }: { classroom: Classroom; lessonId?: 
   )
 }
 
-// con una lección abierta la cabecera es mínima: la lectura empieza en la primera mitad de la pantalla a 390 px, y las cifras
-// esperan en el panel del temario. sin lección (las otras secciones, un curso vacío) la cabecera las dice
-export function CourseHeader({ classroom, lessonId }: { classroom: Classroom; lessonId?: string }) {
-  if (lessonId)
-    return (
-      <header className="border-b border-border bg-surface">
-        {/* a ras del panel del temario, que empieza en el borde de la página: a cualquier ancho comparten margen */}
-        <div className="flex flex-col px-4 sm:px-6 sm:pt-1 lg:px-8">
-          <div className="flex min-h-11 min-w-0 items-center gap-1 text-sm [&>nav]:shrink-0">
-            <CourseBreadcrumbs />
-            <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 text-ink-muted" />
-            <h1 className="min-w-0 truncate text-sm font-semibold text-ink">{classroom.course.title}</h1>
-          </div>
-          <CourseTabs classroom={classroom} lessonId={lessonId} />
-        </div>
-      </header>
-    )
+// la cabecera del curso en sus secciones (sesiones, finalización) y en un curso aún vacío. con una lección abierta la pone el aula
+// (ClassroomPage): su barra, el progreso y estas mismas pestañas
+export function CourseHeader({ classroom }: { classroom: Classroom }) {
   return (
     <ScreenHeader width="wide" breadcrumbs={<CourseBreadcrumbs />} title={classroom.course.title} meta={<CourseFigures classroom={classroom} />}>
       <CourseTabs classroom={classroom} />

@@ -168,7 +168,7 @@ export function Stat({
         {Icon ? <Icon aria-hidden className="size-4 shrink-0" /> : null}
         {label}
       </dt>
-      <dd className={`text-numeral tabular-nums ${color}`}>{value}</dd>
+      <dd className={`text-h3 tabular-nums ${color}`}>{value}</dd>
       {hint ? <dd className="text-sm text-ink-muted">{hint}</dd> : null}
     </div>
   )

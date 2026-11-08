@@ -152,7 +152,7 @@ function CurrentTerms({ view, current, refresh }: CurrentTermsProps) {
         </StatList>
         <Section title={t('text.title')}>
           {/* dato: React lo escapa y nunca se interpreta como HTML. conserva los párrafos de quien lo escribió */}
-          <div className="font-read text-read-body whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">{current.text}</div>
+          <div className="font-read text-reading whitespace-pre-wrap text-ink [overflow-wrap:anywhere]">{current.text}</div>
         </Section>
         {view.acceptance?.valid ? (
           <Withdraw

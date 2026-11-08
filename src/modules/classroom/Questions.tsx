@@ -7,7 +7,7 @@ import type { AnswerInput } from './api'
 import type { Answer, Question } from './contract'
 import { MAX_UPLOAD_BYTES } from '../../shared/files'
 import { formatFileSize } from './parts'
-import { Knot } from './Quipu'
+import { StateMark } from '../../shared/StateMark'
 
 // las preguntas de un intento abierto, una por tipo (ADR-0016): opción única y verdadero/falso con radio, múltiple con
 // casillas, respuesta corta en una línea, abierta en un área de texto y archivo con su entrega
@@ -42,7 +42,7 @@ export function QuestionField({ question, answer, saved, disabled, onChange, onU
   const promptId = useId()
   return (
     <fieldset ref={fieldsetRef} tabIndex={-1} className="flex min-w-0 flex-col gap-4 focus:outline-none" aria-describedby={`${promptId}-points`}>
-      <legend id={promptId} className="float-left w-full font-read text-read-body-sm font-medium text-ink @2xl:text-[19px]/[30px]">
+      <legend id={promptId} className="float-left w-full font-read text-h5 leading-7 font-medium text-ink @2xl:text-[19px]/[30px]">
         {t('question.prompt', { order: question.order, prompt: question.prompt })}
       </legend>
       <p id={`${promptId}-points`} className="-mt-2 text-sm text-ink-muted">
@@ -183,7 +183,7 @@ function FileQuestion({
   )
 }
 
-// el índice del intento: un cordón con un nudo por pregunta. relleno y musgo, respondida; hueco, en blanco; la actual lleva además un recuadro.
+// el índice del intento: una marca de estado por pregunta (StateMark). llena con su visto, respondida; contorno, en blanco; la actual lleva además un recuadro.
 // el número y el nombre accesible dicen lo mismo que la forma: el color nunca va solo. los mismos botones en móvil y escritorio
 export function QuestionIndex({
   questions,
@@ -216,7 +216,7 @@ export function QuestionIndex({
                   active ? 'font-semibold text-ink inset-ring-2 inset-ring-brand' : 'text-ink-muted'
                 }`}
               >
-                <Knot kind="lesson" state={answered ? 'done' : active ? 'active' : 'todo'} />
+                <StateMark state={answered ? 'done' : active ? 'started' : 'todo'} />
                 <span aria-hidden="true">{number}</span>
               </button>
             </li>
@@ -225,11 +225,11 @@ export function QuestionIndex({
       </ol>
       <p aria-hidden="true" className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
-          <Knot kind="lesson" state="done" />
+          <StateMark state="done" />
           {t('attempt.legendAnswered')}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Knot kind="lesson" state="todo" />
+          <StateMark state="todo" />
           {t('attempt.legendBlank')}
         </span>
       </p>

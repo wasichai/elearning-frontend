@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { expect, test, type APIRequestContext } from '@playwright/test'
-import { ADMIN, API_URL, expandedUnits, newStudent, signIn, token } from './helpers'
+import { ADMIN, API_URL, courseProgress, expandedUnits, newStudent, signIn, token } from './helpers'
 
 // recorridos 1–4 del aula contra el backend de verdad (perfil dev con los datos de demostración aplicados; README,
 // «Humo contra el backend real»): iniciar sesión, matricularse desde la ficha, abrir la unidad y sus recursos, completar
@@ -44,7 +44,8 @@ test('un estudiante inicia sesión, se matricula desde la ficha, estudia y conse
   await expect(page.getByRole('heading', { level: 2, name: 'Lo que necesita para entrar' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Marcar como completada' })).toHaveCount(0)
   await expect((await expandedUnits(page)).getByRole('link', { name: /^Lo que necesita para entrar.*Completada/ })).toBeVisible()
-  await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).not.toHaveAttribute('aria-valuenow', '0')
+  // el progreso del curso cuenta ya alguna completada
+  await expect(courseProgress(page)).toHaveAccessibleName(/^[1-9]\d* de [1-9]\d* completadas/)
 })
 
 // RF-AUL-05: el progreso vive en el servidor. otro contexto de navegador no comparte almacenamiento ni sesión con el primero
@@ -111,8 +112,8 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
 
   await (await expandedUnits(page)).getByRole('link', { name: /^Consultar el padrón con filtros/ }).click()
   await expect(page.getByRole('heading', { level: 2, name: 'Consultar el padrón con filtros' })).toBeVisible()
-  // la misma línea sale en la fila del temario: se mira la de la lección
-  await expect(page.getByRole('article', { name: 'Consultar el padrón con filtros' }).getByText(/^Presentación · /)).toBeVisible()
+  // la línea de la lección (tipo y minutos); la del índice y la de las notas («Presentación · tamaño») son otras
+  await expect(page.getByRole('article', { name: 'Consultar el padrón con filtros' }).getByText(/^Presentación · \d+ min$/)).toBeVisible()
   await expect(page.getByRole('region', { name: 'Consultar el padrón con filtros (presentación)' })).toBeVisible()
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: /^Descargar presentacion-padron-con-filtros\.pdf/ }).click()

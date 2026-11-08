@@ -33,7 +33,8 @@ test('un estudiante nuevo acepta los términos por la pantalla, vuelve a la fich
   await page.getByRole('button', { name: /^Matricularme en la edición/ }).click()
   await expect(page).toHaveURL(/\/mis-cursos\/[0-9a-f-]{36}/)
 
-  // sus términos, desde el menú, para retirarlos
+  // sus términos, desde el menú, para retirarlos. el aula usa el shell estrecho (shellChrome): el menú está en el cajón
+  await page.getByRole('button', { name: 'Abrir el menú' }).click()
   await page.getByRole('link', { name: 'Términos de uso' }).click()
   await expect(page.getByText('Aceptaste estos términos', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Retirar mi aceptación' }).click()

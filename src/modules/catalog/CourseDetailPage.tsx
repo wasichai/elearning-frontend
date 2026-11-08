@@ -487,7 +487,7 @@ function Offerings({ offerings, enrollments, current, firstOpen, actionInFooter 
   const id = useId()
   return (
     <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="text-title-3 text-ink">
+      <h2 id={id} className="text-h4 text-ink">
         {t('detail.offerings')}
       </h2>
       {offerings.length === 0 ? (

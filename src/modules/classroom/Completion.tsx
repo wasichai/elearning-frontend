@@ -1,6 +1,6 @@
 import { ApiError, useWasichaiLinks } from '@wasichai/core'
 import { Alert, Button } from '@wasichai/ui'
-import { CircleCheck } from 'lucide-react'
+import { Check, CircleCheck } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router'
@@ -9,7 +9,7 @@ import { Notice } from '../../shared/Notice'
 import { RETURN_TO_PARAM, TERMS_ROUTE, useTermsRefusal } from '../../shared/terms'
 import { isDone, type Lesson } from './contract'
 import type { PlacedLesson } from './lessons'
-import { LESSON_COLUMN, WRAP } from './parts'
+import { WRAP } from './parts'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 interface CompletionProps {
@@ -25,11 +25,10 @@ interface CompletionProps {
   error: unknown
   // la persona acaba de completarla aquí (no venía completada): el foco pasa al paso siguiente
   justCompleted: boolean
-  // con una lectura que llena la ventana, el pie se queda a la vista: la acción no espera al final del documento
-  sticky?: boolean
 }
 
-// cómo se completa la lección (ADR-0012) y, una vez completada, el paso siguiente bien a la vista
+// cómo se completa la lección (ADR-0012) y, una vez completada, el paso siguiente bien a la vista. abre el cierre de la lección con el
+// filete de tinta (Classroom.dc.html): «Marcar como completada» es su única acción primaria
 export function Completion({
   enrollmentId,
   lesson,
@@ -39,25 +38,25 @@ export function Completion({
   onMarkComplete,
   marking,
   error,
-  justCompleted,
-  sticky = false
+  justCompleted
 }: CompletionProps) {
   const { t, i18n } = useTranslation('classroom')
   const done = isDone(lesson.progress.status)
   return (
-    <section aria-label={t('completion.section')} className={`border-t border-border bg-surface ${sticky ? 'sticky bottom-0 z-10' : ''}`}>
-      <div className={`${LESSON_COLUMN} flex flex-col gap-2 py-2.5`}>
+    <section aria-label={t('completion.section')} className="border-t border-ink pt-4">
+      <div className="flex flex-col gap-2">
         {error ? <CompletionProblem error={error} /> : null}
         {done ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <p role="status" className="flex items-center gap-2 text-sm font-semibold text-success">
+            <p role="status" className="flex items-center gap-2 text-label text-success">
               <CircleCheck aria-hidden="true" className="size-5 shrink-0" />
               {t('completion.done')}
             </p>
             <UpcomingStep enrollmentId={enrollmentId} upcoming={upcoming} pending={upcomingIsPending} focus={justCompleted} />
           </div>
         ) : lesson.completion === 'EXPLICIT' ? (
-          <Button onClick={onMarkComplete} disabled={marking} className={`${WRAP} w-full sm:ml-auto sm:w-auto`}>
+          <Button onClick={onMarkComplete} disabled={marking} className={`${WRAP} w-full gap-2 sm:w-auto sm:self-start`}>
+            <Check aria-hidden="true" className="size-4" />
             {marking ? t('completion.marking') : t('completion.mark')}
           </Button>
         ) : (

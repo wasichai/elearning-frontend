@@ -1,30 +1,47 @@
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { screen, within } from '@testing-library/react'
+import type { WasichaiModule } from '@wasichai/core'
+import { renderWithProviders } from '@wasichai/testing'
+import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
+import { classroomMessages } from '../modules/classroom/i18n'
 import { RunningHead } from './RunningHead'
 
+// el nombre de la ruta vive en el i18n del aula (src/shared no tiene espacio de nombres propio)
+const classroomStub: WasichaiModule = { id: 'classroom', routes: [], i18n: classroomMessages }
+const renderHead = (node: ReactElement, language?: string) => renderWithProviders(node, { modules: [classroomStub], language })
+
 describe('RunningHead', () => {
-  it('lleva las migas a la izquierda, con enlace salvo la actual, y el folio a la derecha', () => {
-    render(
-      <MemoryRouter>
-        <RunningHead trail={[{ label: 'Mis cursos', to: '/mis-cursos' }, { label: 'Rentas municipales' }, { label: 'Unidad 2' }]} folio="6 / 14" />
-      </MemoryRouter>
-    )
-    expect(screen.getByRole('link', { name: 'Mis cursos' })).toHaveAttribute('href', '/mis-cursos')
-    expect(screen.getByText('Unidad 2')).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByText('6 / 14')).toBeVisible()
+  it('es la ruta de la página: las migas a la izquierda, con enlace salvo la actual, y el folio a la derecha', () => {
+    renderHead(<RunningHead trail={[{ label: 'Mis cursos', to: '/mis-cursos' }, { label: 'Rentas municipales' }, { label: 'Unidad 2' }]} folio="6 / 14" />)
+    const nav = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(nav.getByRole('link', { name: 'Mis cursos' })).toHaveAttribute('href', '/mis-cursos')
+    // solo la última es la página actual
+    expect(nav.getByText('Unidad 2')).toHaveAttribute('aria-current', 'page')
+    expect(nav.getByText('Rentas municipales')).not.toHaveAttribute('aria-current')
+    expect(nav.getByText('6 / 14')).toBeVisible()
+  })
+
+  it('en inglés la ruta es «Breadcrumb»', () => {
+    renderHead(<RunningHead trail={[{ label: 'My courses', to: '/mis-cursos' }]} />, 'en')
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()
   })
 
   it('corta con elipsis un título de 120 caracteres y deja el texto completo en title', () => {
     const long = 'T'.repeat(120)
-    render(
-      <MemoryRouter>
-        <RunningHead trail={[{ label: 'Mis cursos', to: '/mis-cursos' }, { label: long }]} />
-      </MemoryRouter>
-    )
+    renderHead(<RunningHead trail={[{ label: 'Mis cursos', to: '/mis-cursos' }, { label: long }]} />)
     const title = screen.getByText(long)
     expect(title).toHaveAttribute('title', long)
     expect(title).toHaveClass('truncate')
     expect(title.closest('li')).toHaveClass('min-w-0')
+  })
+
+  it('una miga con enlace tampoco desborda: se corta y lleva su título completo', () => {
+    const long = Array.from({ length: 4 }, () => 'Licencias de anuncios con SRTM').join(': ')
+    renderHead(<RunningHead trail={[{ label: long, to: '/mis-cursos/mat-srtm-1' }, { label: 'Unidad 1' }]} />)
+    const link = screen.getByRole('link', { name: long })
+    expect(link).toHaveAttribute('title', long)
+    expect(link).toHaveClass('truncate', 'min-w-0')
+    expect(link.closest('li')).toHaveClass('min-w-0')
+    expect(link.closest('li')).not.toHaveClass('shrink-0')
   })
 })

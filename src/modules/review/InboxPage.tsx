@@ -65,7 +65,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
   return (
     <article aria-labelledby={headingId} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4">
       <div className="flex min-w-0 flex-1 basis-72 flex-col gap-1.5">
-        <h2 id={headingId} className="text-title-3 text-ink [overflow-wrap:anywhere]">
+        <h2 id={headingId} className="text-h4 text-ink [overflow-wrap:anywhere]">
           <Link to={to} className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:text-brand-strong hover:underline sm:min-h-6">
             {version.course.title}
           </Link>

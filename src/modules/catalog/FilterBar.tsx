@@ -275,7 +275,7 @@ function MoreFilters({ filters, page, busy, count, onChange }: MoreFiltersProps)
         aria-describedby={undefined}
         className="top-auto bottom-0 left-0 max-h-[85dvh] w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-t-2xl rounded-b-none pb-0"
       >
-        <DialogTitle className="pr-10 text-title-3 text-ink">{t('filters.more')}</DialogTitle>
+        <DialogTitle className="pr-10 text-h4 text-ink">{t('filters.more')}</DialogTitle>
         <div className="mt-4">{fields}</div>
         <div className="sticky bottom-0 -mx-6 mt-6 border-t border-border bg-surface-raised px-6 py-3">
           <Button className="w-full" onClick={() => setSheetOpen(false)}>

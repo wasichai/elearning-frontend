@@ -68,10 +68,10 @@ describe('la evaluación como lección', () => {
     expect(rules.getByText('70 %')).toBeInTheDocument()
     expect(rules.getByText('Aún sin intentos enviados')).toBeInTheDocument()
     expect(screen.getByText('Se completa al aprobar la evaluación.')).toBeInTheDocument()
-    // en el temario, la evaluación es un rombo y la sesión un doble anillo
+    // en el índice, el tipo de cada lección va con palabra en su descripción
     const nav = screen.getByRole('navigation', { name: 'Unidades del curso' })
-    const knot = (name: RegExp) => within(nav).getByRole('link', { name }).querySelector('[data-knot]')?.getAttribute('data-knot')
-    expect([knot(/^Evaluación final/), knot(/^Sesión de consulta/)]).toEqual(['assessment', 'session'])
+    expect(within(nav).getByRole('link', { name: /^Evaluación final/ })).toHaveAccessibleDescription(/^Evaluación/)
+    expect(within(nav).getByRole('link', { name: /^Sesión de consulta/ })).toHaveAccessibleDescription(/^Sesión en vivo/)
     // la evaluación sin material no dice «sin material»
     expect(screen.queryByText('Esta lección no tiene material.')).not.toBeInTheDocument()
 
@@ -145,14 +145,14 @@ describe('la evaluación como lección', () => {
 })
 
 describe('la ficha previa', () => {
-  const knots = (list: HTMLElement) => [...list.querySelectorAll('[data-knot="assessment"]')].map((knot) => knot.getAttribute('data-state'))
+  const marks = (list: HTMLElement) => [...list.querySelectorAll('[data-slot="state-mark"]')].map((mark) => mark.getAttribute('data-state'))
 
-  it('dice cada intento con su rombo y su palabra, y una sola acción con el intento que se usará', async () => {
+  it('dice cada intento con su marca y su palabra, y una sola acción con el intento que se usará', async () => {
     renderAssessment([{ path: CLASSROOM, body: withAssessment({ attemptsUsed: 1, maxAttempts: 3 }) }])
 
     const rules = within(await panel())
     const list = rules.getByRole('list', { name: 'Intentos' })
-    expect(knots(list)).toEqual(['used', 'todo', 'todo'])
+    expect(marks(list)).toEqual(['used', 'todo', 'todo'])
     expect(
       within(list)
         .getAllByRole('listitem')
@@ -181,11 +181,11 @@ describe('la ficha previa', () => {
     expect(rules.queryByText(/Al acabarse el tiempo/)).not.toBeInTheDocument()
   })
 
-  it('con un intento abierto, ese es el rombo actual', async () => {
+  it('con un intento abierto, esa es la marca actual', async () => {
     renderAssessment([{ path: CLASSROOM, body: withAssessment({ attemptsUsed: 2, maxAttempts: 3, openAttemptId: 'int-2' }) }])
 
     const list = within(await panel()).getByRole('list', { name: 'Intentos' })
-    expect(knots(list)).toEqual(['used', 'active', 'todo'])
+    expect(marks(list)).toEqual(['used', 'started', 'todo'])
     expect(
       within(list)
         .getAllByRole('listitem')
@@ -429,7 +429,7 @@ describe('el intento abierto', () => {
       await userEvent.click(within(screen.getByRole('group', { name: '3. El SGSPE registra los expedientes.' })).getByRole('radio', { name: 'Falso' }))
 
       const answered = nav.getByRole('button', { name: 'Pregunta 3, respondida' })
-      expect(answered.querySelector('[data-knot]')).toHaveAttribute('data-state', 'done')
+      expect(answered.querySelector('[data-slot="state-mark"]')).toHaveAttribute('data-state', 'done')
       expect(screen.getByText('1 de 6 preguntas respondidas')).toBeInTheDocument()
       // quien responde una pregunta está en ella: la cabecera y el índice lo siguen
       expect(answered).toHaveAttribute('aria-current', 'step')

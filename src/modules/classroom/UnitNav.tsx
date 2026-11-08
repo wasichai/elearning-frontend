@@ -4,38 +4,49 @@ import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatNumber } from '../../shared/format'
-import { lessonIcon } from '../../shared/lessonIcon'
+import { SegmentedProgress, type ProgressUnit } from '../../shared/SegmentedProgress'
+import { lessonMark, StateMark } from '../../shared/StateMark'
 import { Achievements } from './Achievements'
-import { isDone, type Classroom, type Lesson, type Unit } from './contract'
+import type { Classroom, Lesson, Unit } from './contract'
 import { CourseFigures } from './CourseFrame'
-import { OfferingDates, ProgressBar, ROW_FOCUS, UNIT_ROW, useOpenLabel } from './parts'
-import { courseKnots, Knot, knotOf } from './Quipu'
+import { OfferingDates, ROW_FOCUS, useOpenLabel } from './parts'
 import { CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
-// el temario: el resumen del curso (su avance, sus fechas y sus logros) y las unidades con sus lecciones, de las que solo la actual se abre por sí sola.
-// en escritorio va en el panel lateral; en el móvil, en una hoja inferior. quien lo monta dice qué hacer al elegir una lección
+// el índice del curso como el de un libro (docs/design-system/colofon/Classroom.dc.html): arriba el progreso segmentado, las cifras, las
+// fechas y los logros; después cada unidad con «Unidad n — x de y» y sus lecciones numeradas «n.m». solo la unidad de la lección abierta
+// se despliega por sí sola. en escritorio es la columna izquierda del aula; en el móvil, la hoja inferior, que ya lleva el título
+// (titled=false). quien lo monta dice qué hacer al elegir una lección
 export function UnitNav({
   classroom,
   units,
   currentLessonId,
-  onNavigate
+  onNavigate,
+  titled = true
 }: {
   classroom: Classroom
   units: Unit[]
   currentLessonId?: string
   onNavigate?: () => void
+  titled?: boolean
 }) {
   const { t } = useTranslation('classroom')
+  const titleId = useId()
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3">
-        <ProgressBar progress={classroom.progress} label={t('progress.course')} knots={knotsMatching(classroom.progress.totalLessons, courseKnots(units))} />
+    // en la hoja, la nombra ya su DialogTitle: la sección no repite el nombre
+    <section aria-labelledby={titled ? titleId : undefined} className="flex flex-col gap-5">
+      {titled ? (
+        <h2 id={titleId} className="meta border-b border-ink px-2 pb-2 text-ink">
+          {t('classroom.index')}
+        </h2>
+      ) : null}
+      <div className="flex flex-col gap-3 px-2">
+        <SegmentedProgress units={progressUnits(units)} currentLessonId={currentLessonId} />
         <CourseFigures classroom={classroom} lessons={false} stacked />
         <OfferingDates offering={classroom.offering} />
       </div>
       <Achievements classroom={classroom} units={units} onNavigate={onNavigate} />
-      <nav aria-label={t('classroom.units')} className="border-t border-border">
-        <ol className="flex flex-col divide-y divide-border">
+      <nav aria-label={t('classroom.units')}>
+        <ol className="flex flex-col gap-1">
           {units.map((unit) => (
             <li key={unit.id}>
               <UnitEntry enrollmentId={classroom.id} unit={unit} currentLessonId={currentLessonId} onNavigate={onNavigate} />
@@ -43,8 +54,19 @@ export function UnitNav({
           ))}
         </ol>
       </nav>
-    </div>
+    </section>
   )
+}
+
+// las lecciones que cuentan para el progreso del curso, como las cuenta el servidor: una NOT_YET todavía no se puede completar
+export function progressUnits(units: Unit[]): ProgressUnit[] {
+  return units.map((unit) => ({
+    id: unit.id,
+    title: unit.title,
+    lessons: unit.lessons
+      .filter((lesson) => lesson.completion !== 'NOT_YET')
+      .map((lesson) => ({ id: lesson.id, title: lesson.title, state: lesson.progress.status }))
+  }))
 }
 
 function UnitEntry({
@@ -64,28 +86,30 @@ function UnitEntry({
   return (
     // React solo toca open cuando holdsCurrent cambia: la unidad abierta sigue a la lección actual y, entre tanto, quien mira abre y pliega lo que quiera
     <details open={holdsCurrent} className="group/unit">
-      <summary className={`${UNIT_ROW} ${ROW_FOCUS} [&::-webkit-details-marker]:hidden`}>
+      <summary
+        className={`flex min-h-12 cursor-pointer list-none items-start gap-2 rounded px-2 py-2 hover:bg-surface [&::-webkit-details-marker]:hidden ${ROW_FOCUS}`}
+      >
         <ChevronRight
           aria-hidden="true"
-          className="size-4 shrink-0 text-ink-muted transition-transform duration-[160ms] group-open/unit:rotate-90 motion-reduce:transition-none"
+          className="mt-1 size-4 shrink-0 text-ink-muted transition-transform duration-[160ms] group-open/unit:rotate-90 motion-reduce:transition-none"
         />
-        <h2 className="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm font-semibold text-ink">
-          <span className="min-w-0">{t('classroom.unit', { order: unit.order, title: unit.title })}</span>
+        <h3 className="flex min-w-0 flex-1 flex-col gap-0.5 text-ink">
+          <span className="font-read text-h5 break-words">{t('classroom.unit', { order: unit.order, title: unit.title })}</span>
           {unit.progress.totalLessons > 0 ? (
-            <span className="shrink-0 text-xs font-normal text-ink-muted tabular-nums">
-              <span aria-hidden="true">{t('classroom.unitProgress', values)}</span>
+            <span className="text-secondary text-ink-muted tabular-nums">
+              <span aria-hidden="true">{t('classroom.unitTally', { order: unit.order, ...values })}</span>
               <span className="sr-only">{t('classroom.unitProgressLabel', values)}</span>
             </span>
           ) : null}
-        </h2>
+        </h3>
       </summary>
       {unit.lessons.length === 0 ? (
-        <p className="pb-3 pl-6 text-sm text-ink-muted">{t('classroom.unitEmpty')}</p>
+        <p className="text-secondary pb-3 pl-8 text-ink-muted">{t('classroom.unitEmpty')}</p>
       ) : (
         <ol className="flex flex-col pb-2">
           {unit.lessons.map((lesson) => (
-            <li key={lesson.id} className="group/lesson">
-              <LessonLink enrollmentId={enrollmentId} lesson={lesson} current={lesson.id === currentLessonId} onNavigate={onNavigate} />
+            <li key={lesson.id}>
+              <LessonLink enrollmentId={enrollmentId} unit={unit} lesson={lesson} current={lesson.id === currentLessonId} onNavigate={onNavigate} />
             </li>
           ))}
         </ol>
@@ -94,54 +118,47 @@ function UnitEntry({
   )
 }
 
-function LessonLink({ enrollmentId, lesson, current, onNavigate }: { enrollmentId: string; lesson: Lesson; current: boolean; onNavigate?: () => void }) {
+function LessonLink({
+  enrollmentId,
+  unit,
+  lesson,
+  current,
+  onNavigate
+}: {
+  enrollmentId: string
+  unit: Unit
+  lesson: Lesson
+  current: boolean
+  onNavigate?: () => void
+}) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const lessonType = useOpenLabel('lessonType')
   const metaId = useId()
-  const status = lesson.progress.status
-  const Icon = lessonIcon(lesson.type)
   const minutes = lesson.durationMinutes === null ? null : t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })
-  const statusTone = current ? 'text-ink' : isDone(status) ? 'text-success' : status === 'INICIADA' ? 'text-brand-strong' : 'text-ink-muted'
   return (
     <Link
       to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id })}
       aria-current={current ? 'page' : undefined}
-      // el enlace se llama por el título y el estado; el tipo y la duración son su descripción
+      // el enlace se llama por el título y el estado; el tipo y la duración son su descripción, y el número «1.2» es para el ojo
       aria-describedby={metaId}
       onClick={onNavigate}
-      className={`relative -mx-2 flex min-h-12 items-center gap-2.5 rounded-md px-2 py-1.5 text-sm ${ROW_FOCUS} ${
-        current ? 'bg-brand-soft text-ink' : 'text-ink hover:bg-surface-muted'
+      className={`grid min-h-12 grid-cols-[1rem_2.25rem_minmax(0,1fr)] items-start gap-x-2 rounded px-2 py-2 text-ink ${ROW_FOCUS} ${
+        current ? 'bg-surface inset-ring inset-ring-border' : 'hover:bg-surface'
       }`}
     >
-      {/* el hilo del quipu baja por la unidad y cada lección es un nudo */}
-      <span
-        aria-hidden="true"
-        className="absolute inset-y-0 left-[1.0625rem] w-0.5 bg-border-control group-first/lesson:top-1/2 group-last/lesson:bottom-1/2"
-      />
-      <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-        <Knot {...knotOf(lesson)} />
+      {/* la forma de la marca dice el estado; la palabra, para el lector de pantalla */}
+      <StateMark state={lessonMark(lesson.progress.status)} className="mt-1" />
+      <span aria-hidden="true" className="text-secondary pt-0.5 text-ink-muted tabular-nums">
+        {t('classroom.number', { unit: unit.order, lesson: lesson.order })}
       </span>
-      <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5">
-        <span className={`col-span-2 ${current ? 'font-medium' : ''}`}>{lesson.title}</span>{' '}
-        {/* «Sin empezar» lo dice el nudo vacío: a la vista solo lo que avanzó, y la actual; el nombre del enlace lo lleva siempre */}
-        <span className={status === 'NO_INICIADA' && !current ? 'sr-only' : `col-start-2 row-start-2 self-center text-xs ${statusTone}`}>
-          {t(`lessonStatus.${status}`)}
-        </span>
-        <span
-          id={metaId}
-          aria-hidden="true"
-          className={`col-start-1 row-start-2 flex min-w-0 items-center gap-1 text-xs ${current ? 'text-ink' : 'text-ink-muted'}`}
-        >
-          <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-          <span className="min-w-0 truncate">{minutes ? `${lessonType(lesson.type)} · ${minutes}` : lessonType(lesson.type)}</span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className={`font-read text-body break-words ${current ? 'font-semibold' : ''}`}>{lesson.title}</span>{' '}
+        <span className="sr-only">{t(`lessonStatus.${lesson.progress.status}`)}</span>
+        <span id={metaId} aria-hidden="true" className="text-secondary text-ink-muted">
+          {minutes ? `${lessonType(lesson.type)} · ${minutes}` : lessonType(lesson.type)}
         </span>
       </span>
     </Link>
   )
-}
-
-// los nudos del curso solo si son tantos como las lecciones que cuenta el servidor: si no, la barra (el progreso es honesto)
-function knotsMatching(total: number, knots: ReturnType<typeof courseKnots>) {
-  return knots.length === total ? knots : undefined
 }

@@ -25,7 +25,7 @@ export function CourseCard({ course }: { course: CourseSummary }) {
           {course.category ? <span>{course.category.name}</span> : null}
           {course.illustrative ? <IllustrativeMark /> : null}
         </div>
-        <h3 className="text-title-3 text-balance text-ink">
+        <h3 className="text-h4 text-balance text-ink">
           <Link
             to={links.to(CATALOG_ROUTES.course, { slug: course.slug })}
             className="underline-offset-4 after:absolute after:inset-0 hover:text-brand-strong hover:underline focus-visible:outline-none"

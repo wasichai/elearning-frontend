@@ -1,11 +1,10 @@
 import { useWasichaiLinks } from '@wasichai/core'
-import { Button } from '@wasichai/ui'
-import { AArrowDown, AArrowUp, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { videoCompletion } from '../../config'
 import { formatNumber } from '../../shared/format'
+import { RunningHead } from '../../shared/RunningHead'
 import { COLOFON_READING_THEME } from '../../theme/themes'
 import { lessonEvent, useLessonEvent } from './api'
 import { AssessmentLesson } from './Assessment'
@@ -13,7 +12,8 @@ import { Completion } from './Completion'
 import { isDone, type Lesson } from './contract'
 import { Lab } from './Lab'
 import type { PlacedLesson } from './lessons'
-import { LESSON_COLUMN, useOpenLabel } from './parts'
+import { MarginNotes } from './MarginNotes'
+import { useOpenLabel } from './parts'
 import { isDarkTheme, useDocumentTheme } from './documentTheme'
 import type { ReadingControls } from './readingPreferences'
 import { Resources, type ReadingSettings } from './Resources'
@@ -30,15 +30,24 @@ interface LessonViewProps {
   next?: PlacedLesson
   // la siguiente por hacer según el servidor (nextLesson), por si al final del curso quedó una atrás
   pending?: PlacedLesson
-  // las herramientas de lectura las guarda el aula, que también pliega el temario con ellas
+  // su lugar en el recorrido del curso, para el folio de la cabecera corrida
+  position: number
+  total: number
+  // las herramientas de lectura las guarda el aula: el tamaño, el modo lectura y el modo foco, que pliega las notas al margen
   readingControls: ReadingControls
-  // los botones del temario, al principio de la barra de la lección
-  syllabusControls?: ReactNode
 }
 
-// la lección abierta: lectura amplia, su material y el paso siguiente
-export function LessonView({ enrollmentId, timeZone, placed, previous, next, pending, readingControls, syllabusControls }: LessonViewProps) {
+// la medida de lectura (66ch de la lectura, Newsreader a 20px) y, dentro, la interfaz en su letra: título, material y cierre comparten borde
+const MEASURE = 'mx-auto w-full max-w-measure font-read text-reading'
+const INTERFACE = 'font-sans text-body'
+// los márgenes de la página del aula, del móvil al escritorio (rejilla de Foundations: 16 / 32 / 48)
+const PAGE = 'px-4 sm:px-8 lg:px-12'
+
+// la lección abierta (docs/design-system/colofon/Classroom.dc.html): la cabecera corrida, el título, su texto en la medida de lectura, las
+// notas al margen y el cierre (completarla, anterior y siguiente). a 1280 px o más las notas van a la derecha; por debajo, tras el texto
+export function LessonView({ enrollmentId, timeZone, placed, previous, next, pending, position, total, readingControls }: LessonViewProps) {
   const { t, i18n } = useTranslation('classroom')
+  const links = useWasichaiLinks()
   const lessonType = useOpenLabel('lessonType')
   const { lesson, unit } = placed
   // dentro de un intento no se ofrece ir a otra lección de un toque: lo que no se ha guardado se perdería
@@ -62,148 +71,140 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const hasReading = lesson.resources.some((resource) => resource.type === 'HTML' && resource.file)
   const sepia = hasReading && readingControls.mode && !dark
   const reading: ReadingSettings = { size: readingControls.size, roomy: readingControls.mode && dark }
+  // sin notas en el modo foco ni dentro de un intento: el intento es una tarea con su propia cabecera y necesita el ancho
+  const notes = !readingControls.focus && !inAttempt
+  const minutes = lesson.durationMinutes === null ? null : t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })
+  // una evaluación, una sesión o un laboratorio son su contenido: sin recursos no dicen «sin material»
+  const bare = lesson.resources.length === 0 && !lesson.assessment && !lesson.lab && lesson.completion !== 'ATTENDANCE'
   return (
     <article
       aria-labelledby={`lesson-${lesson.id}`}
       data-theme={sepia ? COLOFON_READING_THEME.id : undefined}
       style={sepia ? { colorScheme: COLOFON_READING_THEME.colorScheme } : undefined}
-      className={`flex min-h-full min-w-0 flex-col text-ink ${hasReading ? 'bg-surface' : 'bg-surface-muted'}`}
+      className={`grid min-h-full min-w-0 grid-cols-1 bg-surface text-ink ${notes ? 'xl:grid-cols-[minmax(0,1fr)_var(--container-margin-col)] xl:grid-rows-[auto_1fr]' : ''}`}
     >
-      <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between gap-2 border-b border-border bg-surface px-3 py-1.5 sm:px-4">
-        {syllabusControls}
-        {hasReading ? <ReadingTools controls={readingControls} /> : null}
-      </div>
-      <header className={`${LESSON_COLUMN} flex flex-col gap-2 pt-6 pb-5 lg:pt-10`}>
-        <p className="text-sm text-ink-muted">{t('classroom.position', { unit: unit.order, lesson: lesson.order })}</p>
-        <h2
-          id={`lesson-${lesson.id}`}
-          ref={heading}
-          tabIndex={-1}
-          className="font-read text-[28px]/[36px] font-medium tracking-tight text-balance text-ink focus:outline-none lg:text-read-title"
-        >
-          {lesson.title}
-        </h2>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <p className="text-sm text-ink-muted">
-            {lessonType(lesson.type)}
-            {lesson.durationMinutes === null ? null : ` · ${t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })}`}
-          </p>
-          <StatusBadge state={statusOf(lesson.progress.status)}>{t(`lessonStatus.${lesson.progress.status}`)}</StatusBadge>
+      <div className={`${PAGE} min-w-0 pt-6 sm:pt-8 lg:pt-11 xl:col-start-1 xl:row-start-1`}>
+        <div className={MEASURE}>
+          <div className={INTERFACE}>
+            <RunningHead
+              trail={[
+                { label: t('nav.myCourses'), to: links.to(CLASSROOM_ROUTES.enrollments) },
+                { label: t('classroom.unitShort', { order: unit.order }) },
+                { label: t('classroom.section', { unit: unit.order, lesson: lesson.order }) }
+              ]}
+              folio={t('classroom.folio', { position: formatNumber(position, i18n.language), total: formatNumber(total, i18n.language) })}
+            />
+            <h2
+              id={`lesson-${lesson.id}`}
+              ref={heading}
+              tabIndex={-1}
+              className="mt-5 font-read text-h2 text-balance break-words text-ink focus:outline-none sm:mt-7 lg:text-h1"
+            >
+              {lesson.title}
+            </h2>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <p className="meta">{minutes ? `${lessonType(lesson.type)} · ${minutes}` : lessonType(lesson.type)}</p>
+              <StatusBadge state={statusOf(lesson.progress.status)}>{t(`lessonStatus.${lesson.progress.status}`)}</StatusBadge>
+            </div>
+            {lesson.summary ? <p className="mt-4 font-read text-reading text-pretty text-ink-muted italic">{lesson.summary}</p> : null}
+
+            <div className="mt-6 flex flex-col gap-8 sm:mt-8">
+              {/* el objetivo del laboratorio va en las notas al margen; aquí, lo que hay que hacer */}
+              {lesson.lab ? <Lab lab={notes ? { ...lesson.lab, objective: null } : lesson.lab} /> : null}
+
+              {lesson.assessment ? (
+                <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} />
+              ) : null}
+
+              {lesson.completion === 'ATTENDANCE' ? (
+                <section aria-label={t('sessions.ofLesson')} className="flex flex-col gap-3">
+                  <h3 className="font-read text-h4 text-ink">{t('sessions.ofLesson')}</h3>
+                  <Sessions enrollmentId={enrollmentId} lessonId={lesson.id} />
+                </section>
+              ) : null}
+
+              {bare ? <p className="text-secondary text-ink-muted">{t('resource.none')}</p> : null}
+              <Resources
+                enrollmentId={enrollmentId}
+                resources={lesson.resources}
+                videoThreshold={videoThreshold}
+                onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
+                reading={reading}
+              />
+            </div>
+          </div>
         </div>
-        {lesson.summary ? <p className="mt-1 max-w-prose text-base text-ink-muted">{lesson.summary}</p> : null}
-      </header>
-
-      <div className="flex flex-1 flex-col gap-6">
-        {lesson.lab ? (
-          <div className={LESSON_COLUMN}>
-            <Lab lab={lesson.lab} />
-          </div>
-        ) : null}
-
-        {lesson.assessment ? (
-          <div className={LESSON_COLUMN}>
-            <AssessmentLesson enrollmentId={enrollmentId} lesson={{ ...lesson, assessment: lesson.assessment }} timeZone={timeZone} />
-          </div>
-        ) : null}
-
-        {lesson.completion === 'ATTENDANCE' ? (
-          <section aria-label={t('sessions.ofLesson')} className={`${LESSON_COLUMN} flex flex-col gap-3`}>
-            <h3 className="text-title-3 text-ink">{t('sessions.ofLesson')}</h3>
-            <Sessions enrollmentId={enrollmentId} lessonId={lesson.id} />
-          </section>
-        ) : null}
-
-        {/* una evaluación o una sesión sin material no dice «sin material»: la evaluación o la sesión son su contenido */}
-        {(lesson.assessment || lesson.completion === 'ATTENDANCE') && lesson.resources.length === 0 ? null : (
-          <Resources
-            enrollmentId={enrollmentId}
-            resources={lesson.resources}
-            videoThreshold={videoThreshold}
-            onVideoWatched={lesson.completion === 'VIDEO_END' ? videoWatched : undefined}
-            reading={reading}
-          />
-        )}
-
-        {inAttempt ? null : <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />}
       </div>
+
+      {notes ? (
+        <div className={`${PAGE} pt-12 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:border-l xl:border-border xl:pt-11 xl:pr-8 xl:pb-10 xl:pl-6`}>
+          <div className={`${MEASURE} xl:max-w-none`}>
+            <div className={INTERFACE}>
+              <MarginNotes enrollmentId={enrollmentId} lesson={lesson} />
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* dentro de un intento manda su cabecera, o las acciones del resultado: una sola acción principal */}
       {inAttempt ? null : (
-        <Completion
-          enrollmentId={enrollmentId}
-          lesson={lesson}
-          upcoming={upcoming}
-          upcomingIsPending={!next && upcoming !== undefined}
-          videoThreshold={videoThreshold}
-          onMarkComplete={markComplete}
-          marking={ownEvent && completion.isPending}
-          error={ownEvent ? completion.error : null}
-          justCompleted={ownEvent && completion.isSuccess}
-          sticky={hasReading}
-        />
+        <div className={`${PAGE} pt-12 pb-16 xl:col-start-1 xl:row-start-2`}>
+          <div className={MEASURE}>
+            <div className={`${INTERFACE} flex flex-col gap-5`}>
+              <p aria-hidden="true" className="text-center font-read tracking-[0.6em] text-ink-muted">
+                · · ·
+              </p>
+              <Completion
+                enrollmentId={enrollmentId}
+                lesson={lesson}
+                upcoming={upcoming}
+                upcomingIsPending={!next && upcoming !== undefined}
+                videoThreshold={videoThreshold}
+                onMarkComplete={markComplete}
+                marking={ownEvent && completion.isPending}
+                error={ownEvent ? completion.error : null}
+                justCompleted={ownEvent && completion.isSuccess}
+              />
+              <LessonSteps enrollmentId={enrollmentId} previous={previous} next={next} />
+            </div>
+          </div>
+        </div>
       )}
     </article>
   )
 }
 
-// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (18–24px)
-function ReadingTools({ controls }: { controls: ReadingControls }) {
-  const { t } = useTranslation('classroom')
-  return (
-    <div role="toolbar" aria-label={t('reading.tools')} className="ml-auto flex items-center gap-1">
-      <Button
-        variant="ghost"
-        aria-pressed={controls.mode}
-        aria-label={t('reading.mode')}
-        onClick={controls.toggleMode}
-        className={`min-w-11 gap-2 px-2.5 ${controls.mode ? 'bg-brand-soft text-brand-strong hover:bg-brand-soft' : ''}`}
-      >
-        <BookOpen aria-hidden="true" className="size-5" />
-        <span className="hidden sm:inline">{t('reading.mode')}</span>
-      </Button>
-      <Button variant="ghost" size="icon" aria-label={t('reading.smaller')} disabled={!controls.canShrink} onClick={controls.shrink}>
-        <AArrowDown aria-hidden="true" className="size-5" />
-      </Button>
-      <span className="min-w-11 text-center text-sm text-ink-muted tabular-nums" aria-live="polite">
-        {t('reading.size', { value: controls.shownSize })}
-      </span>
-      <Button variant="ghost" size="icon" aria-label={t('reading.larger')} disabled={!controls.canGrow} onClick={controls.grow}>
-        <AArrowUp aria-hidden="true" className="size-5" />
-      </Button>
-    </div>
-  )
-}
-
+// anterior y siguiente como filetes con título (Classroom.dc.html). el enlace se llama «Anterior <título>»: el «§n.m» es para el ojo
 function LessonSteps({ enrollmentId, previous, next }: { enrollmentId: string; previous?: PlacedLesson; next?: PlacedLesson }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const to = (placed: PlacedLesson) => links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: placed.lesson.id })
+  const section = (placed: PlacedLesson) => ` · ${t('classroom.section', { unit: placed.unit.order, lesson: placed.lesson.order })}`
   if (!previous && !next) return null
-  const stepClass = 'flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 hover:bg-surface-muted'
+  const step =
+    'flex min-h-11 min-w-0 flex-col gap-1 border-t border-border py-3.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
   return (
-    <nav aria-label={t('classroom.steps')} className={`${LESSON_COLUMN} flex flex-col gap-3 pb-8 sm:flex-row`}>
+    <nav aria-label={t('classroom.steps')} className="mt-2 grid gap-4 sm:grid-cols-2">
       {previous ? (
-        <Link to={to(previous)} className={stepClass}>
-          <ChevronLeft aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
-          <span className="flex min-w-0 flex-col text-sm">
-            <span className="text-xs text-ink-muted">{t('classroom.previous')}</span>
-            <span className="truncate font-medium text-ink">{previous.lesson.title}</span>
+        <Link to={to(previous)} className={`${step} text-ink hover:text-link`}>
+          <span className="meta">
+            {t('classroom.previous')}
+            <span aria-hidden="true">{section(previous)}</span>
           </span>
+          <span className="font-read text-h4 font-normal break-words">{previous.lesson.title}</span>
         </Link>
       ) : (
-        <span className="hidden flex-1 sm:block" />
+        <span aria-hidden="true" className="hidden sm:block" />
       )}
       {next ? (
-        <Link to={to(next)} className={`${stepClass} justify-end text-right`}>
-          <span className="flex min-w-0 flex-col text-sm">
-            <span className="text-xs text-ink-muted">{t('classroom.next')}</span>
-            <span className="truncate font-medium text-ink">{next.lesson.title}</span>
+        <Link to={to(next)} className={`${step} text-right text-link hover:text-brand-strong`}>
+          <span className="meta text-link">
+            {t('classroom.next')}
+            <span aria-hidden="true">{section(next)}</span>
           </span>
-          <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
+          <span className="font-read text-h4 font-normal break-words underline decoration-1 underline-offset-4">{next.lesson.title}</span>
         </Link>
-      ) : (
-        <span className="hidden flex-1 sm:block" />
-      )}
+      ) : null}
     </nav>
   )
 }

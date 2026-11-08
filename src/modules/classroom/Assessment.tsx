@@ -11,7 +11,8 @@ import { classroomQuery, useStartAttempt } from './api'
 import { AttemptActionProblem, AttemptView } from './AttemptView'
 import type { AssessmentSummary, Lesson } from './contract'
 import { WRAP } from './parts'
-import { attemptKnots, Knot, type KnotState } from './Quipu'
+import { StateMark, type MarkState } from '../../shared/StateMark'
+import { attemptMarks } from './lessons'
 import { ATTEMPT_PARAM, CLASSROOM_ROUTES, LESSON_PARAM } from './routes'
 
 type AssessedLesson = Lesson & { assessment: AssessmentSummary }
@@ -118,7 +119,7 @@ function ResultActions({ enrollmentId, lesson }: { enrollmentId: string; lesson:
   )
 }
 
-const ATTEMPT_STATE: Partial<Record<KnotState, string>> = { used: 'assessment.knotUsed', active: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
+const ATTEMPT_STATE: Partial<Record<MarkState, string>> = { used: 'assessment.knotUsed', started: 'assessment.knotCurrent', todo: 'assessment.knotFree' }
 
 function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesson: AssessedLesson }) {
   const { t, i18n } = useTranslation('classroom')
@@ -127,14 +128,14 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
   const { assessment } = lesson
   const locale = i18n.language
   const timed = assessment.timeLimitMinutes !== null
-  const knots = attemptKnots(assessment.maxAttempts, assessment.attemptsUsed - (open ? 1 : 0), open !== null)
+  const marks = attemptMarks(assessment.maxAttempts, assessment.attemptsUsed - (open ? 1 : 0), open !== null)
   return (
     <section
       aria-labelledby={`assessment-${assessment.id}`}
       className="@container flex flex-col gap-5 rounded-card border border-border bg-surface px-4 py-5 sm:px-6"
     >
       {/* la lección ya lleva su título encima: solo se repite aquí si la evaluación se llama de otro modo */}
-      <h3 id={`assessment-${assessment.id}`} className={assessment.title === lesson.title ? 'sr-only' : 'text-title-3 text-ink'}>
+      <h3 id={`assessment-${assessment.id}`} className={assessment.title === lesson.title ? 'sr-only' : 'text-h4 text-ink'}>
         {assessment.title}
       </h3>
 
@@ -164,10 +165,10 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
           </span>
         </p>
         <ul aria-labelledby={attemptsLabel} className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink">
-          {knots.map((knot, index) => (
+          {marks.map((mark, index) => (
             <li key={index} className="inline-flex items-center gap-2">
-              <Knot {...knot} />
-              <span>{t('assessment.knot', { number: formatNumber(index + 1, locale), state: t(ATTEMPT_STATE[knot.state] ?? 'assessment.knotFree') })}</span>
+              <StateMark state={mark} />
+              <span>{t('assessment.knot', { number: formatNumber(index + 1, locale), state: t(ATTEMPT_STATE[mark] ?? 'assessment.knotFree') })}</span>
             </li>
           ))}
         </ul>
@@ -213,7 +214,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0 @lg:flex-col @lg:justify-start @lg:gap-0.5 @lg:py-0">
       <dt className="shrink-0 text-sm text-ink-muted">{label}</dt>
-      <dd className="text-right text-title-3 text-ink tabular-nums @lg:text-left">{children}</dd>
+      <dd className="text-right text-h4 text-ink tabular-nums @lg:text-left">{children}</dd>
     </div>
   )
 }

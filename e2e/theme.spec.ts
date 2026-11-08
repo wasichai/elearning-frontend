@@ -157,7 +157,7 @@ test('el certificado pone al titular en Newsreader, servida por la app', async (
 })
 
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
-  test(`el sello de maíz al terminar el curso (${reducedMotion}): una animación, o ninguna con movimiento reducido`, async ({ page }) => {
+  test(`el sello al terminar el curso (${reducedMotion}): una animación, o ninguna con movimiento reducido`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion })
     await withTheme(page, 'colofon')
     await fakeApi(page, { signedIn: true, courseComplete: true })
@@ -165,8 +165,8 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const seal = page.locator('[data-seal]')
     await expect(seal).toBeVisible()
 
-    // temporal: hasta las tareas 4/5 el maíz es --warning (colofon.css)
-    expect(await style(seal, 'background-color')).toBe('rgb(138, 83, 0)')
+    // un estado cumplido: --success de colofon (#2D6A45)
+    expect(await style(seal, 'background-color')).toBe('rgb(45, 106, 69)')
     expect(await style(seal, 'animation-name')).toBe(reducedMotion === 'reduce' ? 'none' : 'seal')
     if (reducedMotion === 'no-preference') expect(await style(seal, 'animation-iteration-count')).toBe('1')
   })

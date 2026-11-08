@@ -4,7 +4,7 @@ import { resolveConfig } from '@wasichai/core'
 import { isValidElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { ColofonMark } from './shared/ColofonMark'
-import { homeRoute, shellNav } from './shellNav'
+import { homeRoute, shellChrome, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
 import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
 
@@ -34,7 +34,8 @@ describe('createConfig', () => {
       systemThemes: COLOFON_SYSTEM_THEMES,
       defaultLoginEmail: '',
       shellNav,
-      homeRoute
+      homeRoute,
+      shellChrome
     })
   })
 
@@ -120,5 +121,18 @@ describe('tema guardado antes del bundle', () => {
     expect(boot(null, true).theme).toBe('colofon-dark')
     expect(boot('system', true).theme).toBe('colofon-dark')
     expect(boot('otro').theme).toBe('colofon')
+  })
+})
+
+describe('shellChrome', () => {
+  it('shellChrome is compact on a lesson url and full on /mis-cursos', () => {
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '?leccion=lec-html' })).toBe('compact')
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '?leccion=lec-eva&intento=int-1' })).toBe('compact')
+    // sin ?leccion el aula abre igual una lección (o el aula vacía): también estrecho
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1', search: '' })).toBe('compact')
+    expect(shellChrome({ pathname: '/mis-cursos', search: '' })).toBe('full')
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1/sesiones', search: '?leccion=lec-html' })).toBe('full')
+    expect(shellChrome({ pathname: '/mis-cursos/mat-srtm-1/finalizacion', search: '' })).toBe('full')
+    expect(shellChrome({ pathname: '/cursos/srtm', search: '?leccion=x' })).toBe('full')
   })
 })

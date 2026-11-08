@@ -198,8 +198,8 @@ test.describe('con ancho (el temario plegado o a 1440 px)', () => {
     await index.getByRole('button', { name: 'Pregunta 5, en blanco' }).click()
     await expect(question('5. Explica cómo se liquida una licencia.')).toBeFocused()
     await expectClearOfHeader(page, question('5. Explica cómo se liquida una licencia.'))
-    // la cabecera y el índice siguen a la vista, debajo de la barra de la lección
-    const bar = await page.locator('article > div.sticky').boundingBox()
+    // la cabecera y el índice siguen a la vista, debajo de la barra del aula
+    const bar = await page.locator('header.sticky:has(h1)').boundingBox()
     const header = await page.locator('header:has(h3)').boundingBox()
     expect(header!.y).toBeGreaterThanOrEqual(bar!.y + bar!.height - 1)
     await expect(page.getByRole('button', { name: 'Entregar' })).toBeInViewport()

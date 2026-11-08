@@ -129,9 +129,49 @@ describe('modo lectura de la lección', () => {
     expect(article()).toContainElement(document.querySelector<HTMLElement>('[data-reading]'))
   })
 
-  it('una lección sin lectura HTML no muestra las herramientas', async () => {
+  it('una lección sin lectura HTML no muestra el tamaño ni el modo lectura; el modo foco, sí', async () => {
     renderLesson('lec-video')
     expect(await screen.findByRole('heading', { level: 2, name: 'Recorrido por la pantalla' })).toBeInTheDocument()
-    expect(screen.queryByRole('toolbar', { name: 'Lectura' })).not.toBeInTheDocument()
+    const bar = within(await tools())
+    expect(bar.queryByRole('button', { name: 'Modo lectura' })).not.toBeInTheDocument()
+    expect(bar.queryByRole('button', { name: 'Texto más grande' })).not.toBeInTheDocument()
+    expect(bar.getByRole('button', { name: 'Modo foco' })).toBeInTheDocument()
+  })
+
+  it('en modo foco los archivos siguen en el cuerpo: una lección PDF muestra Ver y Descargar', async () => {
+    localStorage.setItem(KEY, JSON.stringify({ mode: false, focus: true }))
+    renderLesson('lec-pdf')
+    expect(await screen.findByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Notas al margen' })).not.toBeInTheDocument()
+    const lesson = within(screen.getByRole('article', { name: 'Guía de liquidación' }))
+    expect(lesson.getByRole('button', { name: 'Ver guia-liquidacion.pdf' })).toBeInTheDocument()
+    expect(lesson.getByRole('button', { name: 'Descargar guia-liquidacion.pdf (471 kB)' })).toBeInTheDocument()
+  })
+
+  it('el modo foco deja solo el texto: pliega el índice y las notas al margen, y se recuerda', async () => {
+    const first = renderLesson()
+    const focus = within(await tools()).getByRole('button', { name: 'Modo foco' })
+    expect(focus).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('navigation', { name: 'Unidades del curso' })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Notas al margen' })).toBeInTheDocument()
+
+    await userEvent.click(focus)
+
+    expect(focus).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('navigation', { name: 'Unidades del curso' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Notas al margen' })).not.toBeInTheDocument()
+    expect(within(article()).getByRole('heading', { level: 4, name: 'Entrar y salir del portal' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: false, focus: true })
+    // «Índice» lo pide de vuelta: quita el modo foco
+    expect(screen.getByRole('button', { name: 'Índice', pressed: false })).toBeInTheDocument()
+
+    first.unmount()
+    renderLesson()
+    expect(within(await tools()).getByRole('button', { name: 'Modo foco' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('complementary', { name: 'Notas al margen' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Índice', pressed: false }))
+    expect(screen.getByRole('navigation', { name: 'Unidades del curso' })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Notas al margen' })).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: false, focus: false, syllabusHidden: false })
   })
 })

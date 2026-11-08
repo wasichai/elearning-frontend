@@ -39,7 +39,7 @@ export function ProblemState({ title, description, details = [], technical, chil
     <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose gap-3 py-12 text-sm">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-danger" />
       <div className="flex min-w-0 flex-col items-start gap-3">
-        <p className="text-title-3 text-ink">{title}</p>
+        <p className="text-h4 text-ink">{title}</p>
         {description ? <p className="text-base text-ink-muted">{description}</p> : null}
         {details.length > 0 ? (
           <ul className="list-disc pl-5 text-ink-muted">

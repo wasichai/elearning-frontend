@@ -1,11 +1,12 @@
 import { ApiError } from '@wasichai/core'
-import { Button } from '@wasichai/ui'
-import { CircleAlert, FileText } from 'lucide-react'
-import { Component, useMemo, type ReactNode } from 'react'
+import { Button, PdfDialog } from '@wasichai/ui'
+import { CircleAlert, Download, Eye, FileText } from 'lucide-react'
+import { Component, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
-import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useObjectUrl } from '../../shared/files'
-import { formatFileSize, LESSON_COLUMN } from './parts'
+import { ForeignFileError, inertBlob, isVideo, NotPdfError, useDownload, useFileBlob, useObjectUrl, usePdfLoader } from '../../shared/files'
+import { TEXT_LINK } from '../../shared/buttons'
+import { formatFileSize, useOpenLabel } from './parts'
 import { ReadingDocument } from './ReadingDocument'
 import { useReading } from './readingApi'
 import { DEFAULT_READING_SIZE, type ReadingSize } from './readingPreferences'
@@ -13,7 +14,8 @@ import { watchedEnough } from './video'
 import { MediaSkeleton, DocumentSkeleton } from '../../shared/PageSkeleton'
 
 // el material de una lección. cómo se muestra cada recurso lo dice su tipo (ADR-0012): HTML en la página, desde su lectura
-// en bloques (ADR-0045), VIDEO en el reproductor del navegador; PDF y lo que la interfaz no sabe mostrar, como descarga.
+// en bloques (ADR-0045), y VIDEO en el reproductor del navegador. el PDF y lo que la interfaz no sabe mostrar son archivos: una
+// figura en el cuerpo con «Ver» (el PDF) y «Descargar», y un enlace breve en las notas al margen (FileResources).
 // onVideoWatched avisa cada vez que el reproductor dice que se vio lo bastante (umbral de RF-AUL-04 o fin): quien lo
 // recibe decide enviarlo una sola vez
 // reading: lo que la barra de la lección elige para la lectura HTML (tamaño e interlineado). el tema del modo lectura lo
@@ -23,6 +25,9 @@ export interface ReadingSettings {
   roomy?: boolean
 }
 
+// lo que se lee o se ve en la página
+export const isInline = (resource: Pick<Resource, 'type'>) => resource.type === 'HTML' || resource.type === 'VIDEO'
+
 interface ResourcesProps {
   enrollmentId: string
   resources: Resource[]
@@ -31,28 +36,25 @@ interface ResourcesProps {
   reading?: ReadingSettings
 }
 
+// los recursos de la lección, en su orden y todos en el cuerpo (Classroom.dc.html): la lectura y el vídeo se leen o se ven aquí; un PDF u otro
+// archivo es una figura con su nombre, «Ver» (solo el PDF) y «Descargar». así una lección de solo archivos no queda vacía, tampoco en modo foco
 export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideoWatched, reading }: ResourcesProps) {
   const { t } = useTranslation('classroom')
-  if (resources.length === 0) return <p className={`${LESSON_COLUMN} text-sm text-ink-muted`}>{t('resource.none')}</p>
   // con un solo recurso, su título repetiría el de la lección: queda para quien navega por encabezados
   const onlyOne = resources.length === 1
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       {resources.map((resource) => (
-        <section key={resource.id} aria-label={resource.title} className={`flex flex-col gap-3 ${LESSON_COLUMN}`}>
-          <h3 className={onlyOne ? 'sr-only' : 'text-title-3 text-ink'}>{resource.title}</h3>
-          {resource.file ? (
-            <ResourceBody
-              enrollmentId={enrollmentId}
-              resourceId={resource.id}
-              type={resource.type}
-              file={resource.file}
-              videoThreshold={videoThreshold}
-              onVideoWatched={onVideoWatched}
-              reading={reading}
-            />
+        <section key={resource.id} id={resourceAnchor(resource.id)} aria-label={resource.title} className="flex scroll-mt-24 flex-col gap-3">
+          <h3 className={onlyOne ? 'sr-only' : 'font-read text-h4 text-ink'}>{resource.title}</h3>
+          {!resource.file ? (
+            <p className="text-secondary text-ink-muted">{t('resource.noFile')}</p>
+          ) : resource.type === 'HTML' ? (
+            <HtmlResource enrollmentId={enrollmentId} resourceId={resource.id} reading={reading} />
+          ) : resource.type === 'VIDEO' ? (
+            <VideoResource file={resource.file} threshold={videoThreshold} onWatched={onVideoWatched} />
           ) : (
-            <NoFile />
+            <FileFigure type={resource.type} file={resource.file} />
           )}
         </section>
       ))}
@@ -60,25 +62,80 @@ export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideo
   )
 }
 
-function NoFile() {
-  const { t } = useTranslation('classroom')
-  return <p className="rounded-md border border-dashed border-border-control px-4 py-3 text-sm text-ink-muted">{t('resource.noFile')}</p>
+const resourceAnchor = (id: string) => `recurso-${id}`
+
+// los archivos de la lección en las notas al margen: un enlace breve a su figura en el cuerpo, con tipo y tamaño (Classroom.dc.html, Recursos)
+export function FileResources({ resources }: { resources: Resource[] }) {
+  const { t, i18n } = useTranslation('classroom')
+  const resourceType = useOpenLabel('resourceType')
+  const files = resources.filter((resource) => !isInline(resource))
+  if (files.length === 0) return <p className="font-read text-body text-ink">{t('classroom.noFiles')}</p>
+  return (
+    <ul className="flex flex-col gap-3">
+      {files.map((resource) => {
+        const anchor = `#${resourceAnchor(resource.id)}`
+        return (
+          <li key={resource.id} className="flex flex-col gap-0.5">
+            <a href={anchor} className={`${TEXT_LINK} font-semibold [overflow-wrap:anywhere]`}>
+              {resource.file?.name ?? resource.title}
+            </a>
+            <span className="text-secondary text-ink-muted">
+              {resource.file
+                ? t('resource.kind', { type: resourceType(resource.type), size: formatFileSize(resource.file.size, i18n.language) })
+                : t('resource.noFile')}
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
-interface BodyProps {
-  enrollmentId: string
-  resourceId: string
-  type: string
-  file: ResourceFile
-  videoThreshold: number
-  onVideoWatched?: () => void
-  reading?: ReadingSettings
+// un archivo en el cuerpo (Classroom.dc.html, la figura del PDF): su icono, «Documento · tipo · tamaño», el nombre y sus acciones
+function FileFigure({ type, file }: { type: string; file: ResourceFile }) {
+  const { t, i18n } = useTranslation('classroom')
+  const resourceType = useOpenLabel('resourceType')
+  const { download, pending, error } = useDownload(file)
+  const [viewing, setViewing] = useState(false)
+  const size = formatFileSize(file.size, i18n.language)
+  const pdf = type === 'PDF'
+  return (
+    <figure className="m-0 grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-x-5 gap-y-3 border-t border-ink border-b border-b-border py-4 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+      <span aria-hidden="true" className="flex aspect-[3/4] items-center justify-center rounded-card border border-border bg-surface text-ink-muted">
+        <FileText className="size-6" />
+      </span>
+      <figcaption className="flex min-w-0 flex-col gap-1.5">
+        <span className="meta">{t('resource.document', { kind: t('resource.kind', { type: resourceType(type), size }) })}</span>
+        <span className="text-h5 [overflow-wrap:anywhere] text-ink">{file.name}</span>
+        <span className="mt-1 flex flex-wrap gap-2.5">
+          {pdf ? (
+            <Button variant="secondary" onClick={() => setViewing(true)} aria-label={t('resource.viewLabel', { name: file.name })} className="gap-2">
+              <Eye aria-hidden="true" className="size-4" />
+              {t('resource.view')}
+            </Button>
+          ) : null}
+          <Button
+            variant="secondary"
+            onClick={() => void download()}
+            disabled={pending}
+            aria-label={t('resource.downloadLabel', { name: file.name, size })}
+            className="gap-2"
+          >
+            <Download aria-hidden="true" className="size-4" />
+            {pending ? t('resource.downloading') : t('resource.download')}
+          </Button>
+        </span>
+        {error ? <FileProblem error={error} /> : null}
+      </figcaption>
+      {viewing ? <PdfViewer file={file} onClose={() => setViewing(false)} /> : null}
+    </figure>
+  )
 }
 
-function ResourceBody({ enrollmentId, resourceId, type, file, videoThreshold, onVideoWatched, reading }: BodyProps) {
-  if (type === 'HTML') return <HtmlResource enrollmentId={enrollmentId} resourceId={resourceId} reading={reading} />
-  if (type === 'VIDEO') return <VideoResource file={file} threshold={videoThreshold} onWatched={onVideoWatched} />
-  return <DownloadResource file={file} />
+// el visor de @wasichai/ui: se monta abierto y se desmonta al cerrarse. el archivo se baja con la sesión y solo llega si es un PDF de verdad
+function PdfViewer({ file, onClose }: { file: ResourceFile; onClose: () => void }) {
+  const load = usePdfLoader(file.name)
+  return <PdfDialog title={file.name} source={file.url} load={load} onClose={onClose} renderError={(error) => <FileProblemText error={error} />} />
 }
 
 // la lectura HTML, pintada en la página desde su documento de bloques (ADR-0045): el servidor la sanea y la interfaz la
@@ -116,10 +173,12 @@ class RenderBoundary extends Component<{ fallback: ReactNode; children: ReactNod
 
 // eventos reales del reproductor: timeupdate con lo reproducido (si el umbral no es el final) y ended
 function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; threshold: number; onWatched?: () => void }) {
-  const { t } = useTranslation('classroom')
+  const { t, i18n } = useTranslation('classroom')
   const query = useFileBlob(file)
   const media = useMemo(() => query.data && inertBlob(query.data, isVideo), [query.data])
   const source = useObjectUrl(media)
+  const { download, pending, error } = useDownload(file)
+  const size = formatFileSize(file.size, i18n.language)
   if (query.isError) return <FileProblem error={query.error} onRetry={() => void query.refetch()} />
   if (!source) return <MediaSkeleton label={t('resource.loading')} />
   return (
@@ -130,32 +189,13 @@ function VideoResource({ file, threshold, onWatched }: { file: ResourceFile; thr
         src={source}
         onTimeUpdate={onWatched ? (event) => watchedEnough(event.currentTarget, threshold) && onWatched() : undefined}
         onEnded={onWatched}
-        className="aspect-video w-full rounded-lg bg-ink"
+        className="aspect-video w-full rounded-card bg-ink"
       />
-      <DownloadResource file={file} quiet />
-    </div>
-  )
-}
-
-function DownloadResource({ file, quiet = false }: { file: ResourceFile; quiet?: boolean }) {
-  const { t, i18n } = useTranslation('classroom')
-  const { download, pending, error } = useDownload(file)
-  const size = formatFileSize(file.size, i18n.language)
-  return (
-    <div className="flex flex-col gap-2">
-      <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 ${quiet ? '' : 'rounded-lg border border-border bg-surface p-3'}`}>
-        <span aria-hidden="true" className="flex min-w-0 items-center gap-2.5 text-sm break-all text-ink">
-          <FileText className="size-5 shrink-0 text-ink-muted" />
-          <span>
-            {file.name} <span className="whitespace-nowrap text-ink-muted">{size}</span>
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <span aria-hidden="true" className="text-secondary [overflow-wrap:anywhere] text-ink-muted">
+          {file.name} · {size}
         </span>
-        <Button
-          variant={quiet ? 'ghost' : 'secondary'}
-          onClick={() => void download()}
-          disabled={pending}
-          aria-label={t('resource.downloadLabel', { name: file.name, size })}
-        >
+        <Button variant="ghost" onClick={() => void download()} disabled={pending} aria-label={t('resource.downloadLabel', { name: file.name, size })}>
           {pending ? t('resource.downloading') : t('resource.download')}
         </Button>
       </div>
@@ -164,18 +204,29 @@ function DownloadResource({ file, quiet = false }: { file: ResourceFile; quiet?:
   )
 }
 
+function FileProblemText({ error }: { error: unknown }) {
+  const { t } = useTranslation('classroom')
+  return (
+    <>
+      {error instanceof NotPdfError
+        ? t('resource.notPdf')
+        : error instanceof ForeignFileError
+          ? t('resource.foreign')
+          : error instanceof ApiError
+            ? t('resource.failedStatus', { status: error.status })
+            : t('resource.failed')}
+    </>
+  )
+}
+
 function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { t } = useTranslation('classroom')
-  const message =
-    error instanceof ForeignFileError
-      ? t('resource.foreign')
-      : error instanceof ApiError
-        ? t('resource.failedStatus', { status: error.status })
-        : t('resource.failed')
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-card border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
       <CircleAlert aria-hidden="true" className="size-5 shrink-0" />
-      <span className="min-w-0 flex-1">{message}</span>
+      <span className="min-w-0 flex-1">
+        <FileProblemText error={error} />
+      </span>
       {onRetry && !(error instanceof ForeignFileError) ? (
         <Button variant="secondary" onClick={onRetry}>
           {t('resource.retry')}

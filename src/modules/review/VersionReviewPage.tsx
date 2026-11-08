@@ -491,7 +491,7 @@ function DecisionPanel({ version, onDone }: { version: StudioVersion; onDone: (n
   return (
     <section aria-labelledby="decide" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="decide" className="text-title-3 text-ink">
+        <h2 id="decide" className="text-h4 text-ink">
           {t('decide.title')}
         </h2>
         <StatusBadge state="review">{t('decide.missing')}</StatusBadge>
@@ -611,7 +611,7 @@ function PublishPanel({ version, onDone }: { version: StudioVersion; onDone: (no
   return (
     <section aria-labelledby="publish" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="publish" className="text-title-3 text-ink">
+        <h2 id="publish" className="text-h4 text-ink">
           {t('publish.title')}
         </h2>
         <StatusBadge state="active">{t('publish.missing')}</StatusBadge>

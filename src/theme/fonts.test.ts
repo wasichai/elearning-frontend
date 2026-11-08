@@ -95,10 +95,8 @@ describe('la celebración', () => {
     expect(index).toMatch(/@keyframes seal\s*\{\s*from\s*\{\s*transform: scale\(0\.4\) rotate\(-30deg\);\s*opacity: 0;\s*\}\s*\}/)
   })
 
-  it('el maíz es un token del tema, con respaldo para los temas de Wasichai', () => {
-    const theme = /@theme inline\s*\{([\s\S]*?)\n\}/.exec(index)?.[1] ?? ''
-    expect(/--color-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--maiz, var(--warning))')
-    expect(/--color-on-maiz:\s*([^;]+);/.exec(theme)?.[1]).toBe('var(--on-maiz, var(--surface))')
+  it('el maíz de Quipu ya no existe: ni token ni utilidad', () => {
+    expect(index).not.toMatch(/maiz/)
   })
 })
 

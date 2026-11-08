@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
-import { API_URL, browserFor, expandedUnits, newStudent, signIn, token } from './helpers'
+import { ALL_COMPLETED, API_URL, browserFor, courseProgress, expandedUnits, newStudent, signIn, token } from './helpers'
 
 // el curso corto de punta a punta contra el backend de verdad (CORTO-101, ADR-0016), en el navegador. son los recorridos
 // 5 (evaluación), 6 (resultado), 7 (el docente ve lo permitido) y 13 (sin permiso no puede), hasta el certificado
@@ -229,7 +229,7 @@ test('el curso corto: matrícula, evaluación, corrección, asistencia y certifi
     await expect(page.getByText('Respuesta correcta: Falso')).toBeVisible()
     await expect((await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${ASSESSMENT}.*Aprobada`) })).toBeVisible()
     await expect((await expandedUnits(page)).getByRole('link', { name: new RegExp(`^${SESSION_LESSON}.*Completada`) })).toBeVisible()
-    await expect(page.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '100')
+    await expect(courseProgress(page)).toHaveAccessibleName(ALL_COMPLETED)
   })
 
   let code = ''

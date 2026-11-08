@@ -23,6 +23,24 @@
     text-decoration-thickness: 2px;
   }
 
+  /* una herramienta de barra (role=toolbar; .tool en Classroom.dc.html) es un control, no un enlace: tinta y sin subrayado. pulsada, el
+     brand-soft con su filete; aria-pressed lo dice además del color */
+  [role='toolbar'] [data-slot='button'][data-variant='ghost'] {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  [role='toolbar'] [data-slot='button'][data-variant='ghost']:hover:not(:disabled) {
+    background-color: var(--table-head);
+    color: var(--ink);
+  }
+
+  [role='toolbar'] [data-slot='button'][data-variant='ghost'][aria-pressed='true'] {
+    background-color: var(--brand-soft);
+    color: var(--brand);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+
   [data-slot='button'][data-size='md'] {
     height: 44px;
   }

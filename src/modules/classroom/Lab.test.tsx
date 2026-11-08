@@ -26,7 +26,10 @@ describe('LessonView: el laboratorio', () => {
     await screen.findByRole('heading', { level: 2, name: 'Práctica: el padrón a una fecha pasada' })
 
     const lab = screen.getByRole('region', { name: 'Laboratorio' })
-    expect(within(lab).getByText('Responder qué anuncios estaban vigentes el día de una inspección.')).toBeInTheDocument()
+    // el objetivo va en las notas al margen, una sola vez
+    const objective = 'Responder qué anuncios estaban vigentes el día de una inspección.'
+    expect(within(screen.getByRole('complementary', { name: 'Notas al margen' })).getByText(objective)).toBeInTheDocument()
+    expect(within(lab).queryByText(objective)).not.toBeInTheDocument()
     const list = (name: string) =>
       within(within(lab).getByRole('region', { name }))
         .getAllByRole('listitem')

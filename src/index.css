@@ -98,13 +98,8 @@
     U+FEFF, U+FFFD;
 }
 
-/* temporal: se retira en la tarea 5. la celebración contenida de Quipu (PantallaFinalizacion): el maíz del sello, que
-   ponen los temas Colofón (los de Wasichai no lo tienen: respaldo en warning), y la única animación de celebración del producto, que no se repite. inline: el
-   valor se resuelve en el elemento, así un subárbol con otro tema cuenta */
+/* la celebración contenida de la finalización: la única animación de celebración del producto, que no se repite */
 @theme inline {
-  --color-maiz: var(--maiz, var(--warning));
-  --color-on-maiz: var(--on-maiz, var(--surface));
-  --color-maiz-soft: var(--maiz-soft, var(--warning-soft));
   --animate-seal: seal 900ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
 
   @keyframes seal {
@@ -164,24 +159,6 @@
   --container-index-col: 280px;
   --container-margin-col: 264px;
   --container-content-max: 1200px;
-
-  /* temporal: se retira en las tareas 5 a 9, con las pantallas que aún usan la escala de Quipu, sobre la de Colofón */
-  --text-title-2: 25px;
-  --text-title-2--line-height: 31px;
-  --text-title-2--font-weight: 520;
-  --text-title-3: 20px;
-  --text-title-3--line-height: 27px;
-  --text-title-3--font-weight: 600;
-  --text-numeral: 25px;
-  --text-numeral--line-height: 31px;
-  --text-numeral--font-weight: 520;
-  --text-read-title: 44px;
-  --text-read-title--line-height: 50px;
-  --text-read-title--font-weight: 380;
-  --text-read-body: 20px;
-  --text-read-body--line-height: 33px;
-  --text-read-body-sm: 17px;
-  --text-read-body-sm--line-height: 28px;
 }
 
 /* los espaciados se emiten siempre, se usen o no (static): son tokens de Foundations que las pantallas leen con var(--space-n) */

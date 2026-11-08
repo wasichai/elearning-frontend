@@ -62,7 +62,7 @@ export function AttemptResultView({ enrollmentId, attempt, passingPercent, title
       </div>
       {questions.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h4 className="text-title-3 text-ink">{t('result.byQuestion')}</h4>
+          <h4 className="text-h4 text-ink">{t('result.byQuestion')}</h4>
           <ol className="flex flex-col divide-y divide-border">
             {questions.map((question) => (
               <li key={question.id} className="py-5 first:pt-2 last:pb-0">
@@ -103,10 +103,10 @@ function ResultSummary({ result, passingPercent }: { result: AttemptResult; pass
   return (
     <div role="status" className="flex items-center gap-4">
       <GradeRing label={t('result.grade', { value: grade })} percent={result.percent} tone={result.passed ? 'text-success' : 'text-warning'}>
-        <span className={`block tabular-nums ${Number.isInteger(result.percent) ? 'text-title-2' : 'text-title-3'} text-ink`}>{grade}</span>
+        <span className={`block tabular-nums ${Number.isInteger(result.percent) ? 'text-h3' : 'text-h4'} text-ink`}>{grade}</span>
       </GradeRing>
       <div className="flex min-w-0 flex-col gap-1">
-        <p className={`flex items-center gap-2 text-title-2 ${result.passed ? 'text-success' : 'text-warning'}`}>
+        <p className={`flex items-center gap-2 text-h3 ${result.passed ? 'text-success' : 'text-warning'}`}>
           <Icon aria-hidden="true" className="size-6 shrink-0" />
           {t(result.passed ? 'result.passed' : 'result.failed')}
         </p>
@@ -148,7 +148,7 @@ function QuestionOutcome({ question, answer, outcome, enrollmentId }: { question
   const title = t('question.prompt', { order: question.order, prompt: question.prompt })
   return (
     <article aria-label={title} className="flex flex-col gap-3 text-sm">
-      <h5 className={`font-read text-read-body-sm font-medium text-ink ${LONG_TEXT}`}>{title}</h5>
+      <h5 className={`font-read text-h5 leading-7 font-medium text-ink ${LONG_TEXT}`}>{title}</h5>
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {outcome?.points == null ? (
           <>

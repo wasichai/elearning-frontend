@@ -93,4 +93,11 @@ describe('SegmentedProgress', () => {
     expect(screen.getByText('45 de 54 completadas')).toBeVisible()
     expect(screen.getByText('· 9 iniciadas')).toBeVisible()
   })
+
+  it('un curso de más de 70 lecciones no desborda su caja: la fila recorta en lugar de empujar', () => {
+    renderProgress(Array.from({ length: 12 }, (_, at) => unit(String(at + 1), empty(6))))
+    const row = screen.getByRole('img')
+    expect(row.querySelectorAll('[data-slot="progress-segment"]')).toHaveLength(72)
+    expect(row).toHaveClass('overflow-hidden', 'min-w-0')
+  })
 })
