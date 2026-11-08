@@ -17,7 +17,8 @@ export const READING_ID_PREFIX = 'lectura-'
 const SAFE_ID = /^[A-Za-z0-9_-]+$/
 const SAFE_IMAGE = /^data:image\/(png|jpeg|gif|webp);base64,/
 
-// el interlineado de text-reading (33/20) y el abierto del modo lectura sobre un tema oscuro (34/19)
+// la escala de lectura parte del token --text-reading (20/33): el tamaño lo elige el estudiante (por defecto, 20px) y el
+// interlineado guarda la proporción 33/20; el abierto del modo lectura sobre un tema oscuro es 1,79
 const LEADING = '1.65'
 const ROOMY_LEADING = '1.79'
 
@@ -143,8 +144,8 @@ function BlockView({ block }: { block: Block }) {
     }
     case 'table':
       return (
-        // una tabla ancha se desplaza sola, y con el teclado
-        <div tabIndex={0} className="overflow-x-auto">
+        // una tabla ancha se desplaza sola, y con el teclado: una región con el nombre de su pie o «Tabla»
+        <div role="region" aria-label={block.caption ? plainText(block.caption) : t('reading.table')} tabIndex={0} className="overflow-x-auto">
           <table className="w-full border-collapse font-sans text-[0.8em]/[1.45] tabular-nums">
             {block.caption ? (
               <caption className="pb-2 text-left meta">
@@ -168,7 +169,12 @@ function BlockView({ block }: { block: Block }) {
       )
     case 'code':
       return (
-        <pre tabIndex={0} className="overflow-x-auto rounded-md bg-surface-muted px-4 py-3 font-mono text-[0.8em]/[1.6] whitespace-pre hyphens-none">
+        <pre
+          role="region"
+          aria-label={block.language ? t('reading.codeIn', { language: block.language }) : t('reading.code')}
+          tabIndex={0}
+          className="overflow-x-auto rounded-md bg-surface-muted px-4 py-3 font-mono text-[0.8em]/[1.6] whitespace-pre hyphens-none"
+        >
           <code data-language={block.language ?? undefined}>{block.text}</code>
         </pre>
       )
@@ -201,7 +207,18 @@ function BlockView({ block }: { block: Block }) {
       )
     }
     case 'figure':
-      if (!SAFE_IMAGE.test(block.src)) return null
+      // sin una imagen que se pueda pintar, quedan su texto alternativo y su pie, como el servidor hace con una imagen remota
+      if (!SAFE_IMAGE.test(block.src))
+        return (
+          <>
+            {block.alt ? <p className="text-pretty">{block.alt}</p> : null}
+            {block.caption ? (
+              <p className="text-pretty">
+                <Inlines content={block.caption} />
+              </p>
+            ) : null}
+          </>
+        )
       return (
         <figure className="flex flex-col gap-2">
           <img src={block.src} alt={block.alt} className="h-auto max-w-full rounded-md" />
@@ -219,6 +236,12 @@ function BlockView({ block }: { block: Block }) {
   }
 }
 
+// una cabecera de columna que abarca varias es de su grupo de columnas; una de fila que abarca varias, de su grupo de filas
+function headerScope(cell: Cell, scope: 'col' | 'row'): 'col' | 'colgroup' | 'row' | 'rowgroup' {
+  if (scope === 'col') return cell.colspan > 1 ? 'colgroup' : 'col'
+  return cell.rowspan > 1 ? 'rowgroup' : 'row'
+}
+
 function Row({ cells, scope }: { cells: Cell[]; scope: 'col' | 'row' }) {
   return (
     <tr>
@@ -227,7 +250,7 @@ function Row({ cells, scope }: { cells: Cell[]; scope: 'col' | 'row' }) {
         return (
           <Cell
             key={index}
-            scope={cell.header ? scope : undefined}
+            scope={cell.header ? headerScope(cell, scope) : undefined}
             colSpan={cell.colspan}
             rowSpan={cell.rowspan}
             className={`border-b border-border px-3 py-2 text-left align-top ${cell.header ? 'font-semibold' : ''}`}

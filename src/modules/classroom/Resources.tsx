@@ -1,7 +1,7 @@
 import { ApiError } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CircleAlert, FileText } from 'lucide-react'
-import { useMemo } from 'react'
+import { Component, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, useDownload, useFileBlob, useObjectUrl } from '../../shared/files'
@@ -93,7 +93,25 @@ export function HtmlResource({ enrollmentId, resourceId, reading = {} }: { enrol
         <DocumentSkeleton label={t('resource.loading')} />
       </div>
     )
-  return <ReadingDocument document={query.data} size={reading.size ?? DEFAULT_READING_SIZE} roomy={reading.roomy} />
+  return (
+    // un documento que cumple el contrato pero falla al pintarse se queda en su recurso: la lección sigue
+    <RenderBoundary key={resourceId} fallback={<FileProblem error={undefined} />}>
+      <ReadingDocument document={query.data} size={reading.size ?? DEFAULT_READING_SIZE} roomy={reading.roomy} />
+    </RenderBoundary>
+  )
+}
+
+// un error al pintar sus hijos muestra fallback en lugar de tumbar la página (React solo lo permite con una clase)
+class RenderBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children
+  }
 }
 
 // eventos reales del reproductor: timeupdate con lo reproducido (si el umbral no es el final) y ended

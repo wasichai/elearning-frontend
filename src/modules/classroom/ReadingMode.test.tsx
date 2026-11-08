@@ -62,33 +62,34 @@ describe('modo lectura de la lección', () => {
     expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: false })
   })
 
-  it('A+ y A− cambian el texto de la lectura de 2 en 2 entre 17 y 23px', async () => {
+  it('A+ y A− cambian el texto de la lectura de 2 en 2 entre 18 y 24px, desde los 20px de text-reading', async () => {
     renderLesson()
     const bar = within(await tools())
     const larger = bar.getByRole('button', { name: 'Texto más grande' })
     const smaller = bar.getByRole('button', { name: 'Texto más pequeño' })
-    expect(bar.getByText('19 px')).toBeInTheDocument()
+    expect(bar.getByText('20 px')).toBeInTheDocument()
+    expect(await readingStyle('--reading-size')).toBe('20px')
 
     await userEvent.click(larger)
-    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('21px'))
+    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('22px'))
     await userEvent.click(larger)
-    expect(bar.getByText('23 px')).toBeInTheDocument()
+    expect(bar.getByText('24 px')).toBeInTheDocument()
     expect(larger).toBeDisabled()
 
     for (const _ of [1, 2, 3]) await userEvent.click(smaller)
-    expect(bar.getByText('17 px')).toBeInTheDocument()
+    expect(bar.getByText('18 px')).toBeInTheDocument()
     expect(smaller).toBeDisabled()
-    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('17px'))
-    expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: false, size: 17 })
+    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('18px'))
+    expect(JSON.parse(localStorage.getItem(KEY) ?? '{}')).toEqual({ mode: false, size: 18 })
   })
 
   it('al volver, la lección se abre con el modo y el tamaño guardados', async () => {
-    localStorage.setItem(KEY, JSON.stringify({ mode: true, size: 21 }))
+    localStorage.setItem(KEY, JSON.stringify({ mode: true, size: 22 }))
     renderLesson()
 
     expect(within(await tools()).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'true')
     expect(article()).toHaveAttribute('data-theme', 'colofon-lectura')
-    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('21px'))
+    await waitFor(async () => expect(await readingStyle('--reading-size')).toBe('22px'))
   })
 
   it('una preferencia guardada que no se entiende se ignora', async () => {
@@ -96,7 +97,7 @@ describe('modo lectura de la lección', () => {
     renderLesson()
 
     expect(within(await tools()).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'false')
-    expect(within(await tools()).getByText('19 px')).toBeInTheDocument()
+    expect(within(await tools()).getByText('20 px')).toBeInTheDocument()
   })
 
   it('si el navegador no deja guardar, el modo lectura funciona igual', async () => {

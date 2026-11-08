@@ -18,6 +18,9 @@ const es = {
     size: '{{value}} px',
     // la lectura en bloques: el aviso para lector de pantalla de un enlace externo y el nombre de cada admonición
     external: '(abre en otra pestaña)',
+    table: 'Tabla',
+    code: 'Código',
+    codeIn: 'Código ({{language}})',
     admonition: { note: 'Nota', tip: 'Consejo', important: 'Importante', warning: 'Advertencia', caution: 'Precaución' }
   },
   enrollments: {
@@ -556,6 +559,9 @@ const en: typeof es = {
     larger: 'Larger text',
     size: '{{value}} px',
     external: '(opens in a new tab)',
+    table: 'Table',
+    code: 'Code',
+    codeIn: 'Code ({{language}})',
     admonition: { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' }
   },
   enrollments: {

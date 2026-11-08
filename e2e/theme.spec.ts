@@ -102,7 +102,7 @@ test('modo lectura: papel sepia en la lección y en su lectura, A+ y se recuerda
   const background = () => article.evaluate((element) => getComputedStyle(element).backgroundColor)
   const fontSize = () => reading.evaluate((element) => getComputedStyle(element).fontSize)
   await expect.poll(background).toBe('rgb(255, 255, 255)')
-  await expect.poll(fontSize).toBe('19px')
+  await expect.poll(fontSize).toBe('20px')
   // la lectura en Newsreader, la de la app
   expect(await style(reading, 'font-family')).toMatch(/^Newsreader,/)
 
@@ -117,12 +117,12 @@ test('modo lectura: papel sepia en la lección y en su lectura, A+ y se recuerda
   expect((await box(toggle)).height).toBe(44)
 
   await tools.getByRole('button', { name: 'Texto más grande' }).click()
-  await expect.poll(fontSize).toBe('21px')
+  await expect.poll(fontSize).toBe('22px')
 
   await page.reload()
   await expect(page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' })).toHaveAttribute('aria-pressed', 'true')
   await expect.poll(background).toBe('rgb(242, 235, 221)')
-  await expect.poll(fontSize).toBe('21px')
+  await expect.poll(fontSize).toBe('22px')
 })
 
 test('modo lectura en colofon-dark: sigue oscuro y abre el interlineado de la lectura', async ({ page }) => {
@@ -135,8 +135,8 @@ test('modo lectura en colofon-dark: sigue oscuro y abre el interlineado de la le
   const article = page.getByRole('article', { name: 'Tipos de anuncio' })
   await expect(article).not.toHaveAttribute('data-theme')
   await expect.poll(() => article.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(22, 29, 38)')
-  // 1,79 × 19px
-  await expect.poll(() => reading.evaluate((element) => getComputedStyle(element).lineHeight)).toBe('34.01px')
+  // 1,79 × 20px
+  await expect.poll(() => reading.evaluate((element) => getComputedStyle(element).lineHeight)).toBe('35.8px')
 })
 
 test('el certificado pone al titular en Newsreader, servida por la app', async ({ page }) => {

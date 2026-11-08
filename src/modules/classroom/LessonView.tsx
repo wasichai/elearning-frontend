@@ -146,7 +146,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   )
 }
 
-// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (17–23px)
+// la barra de la lección con las herramientas de lectura: el modo lectura y el tamaño del texto (18–24px)
 function ReadingTools({ controls }: { controls: ReadingControls }) {
   const { t } = useTranslation('classroom')
   return (

@@ -59,7 +59,7 @@ const everyBlock: ReadingDocumentDto = {
   ]
 }
 
-function renderReading(document: ReadingDocumentDto, size: ReadingSize = 19, roomy = false) {
+function renderReading(document: ReadingDocumentDto, size: ReadingSize = 20, roomy = false) {
   return renderWithProviders(<ReadingDocument document={document} size={size} roomy={roomy} />, { modules: [classroomModule()] })
 }
 
@@ -148,6 +148,66 @@ describe('ReadingDocument', () => {
     expect(container.querySelector('img, figure')).not.toBeInTheDocument()
   })
 
+  it('de una figura con src no válido quedan su alt y su pie como texto', () => {
+    const { container } = renderReading({
+      title: null,
+      blocks: [
+        { type: 'figure', src: 'https://rastreo.example/pixel.png', alt: 'El mapa del portal', caption: [text('Figura 1')] },
+        { type: 'figure', src: 'javascript:alert(1)', alt: '', caption: null }
+      ]
+    })
+
+    expect(container.querySelector('img, figure')).not.toBeInTheDocument()
+    expect(screen.getByText('El mapa del portal').tagName).toBe('P')
+    expect(screen.getByText('Figura 1').tagName).toBe('P')
+    expect(container.querySelectorAll('p')).toHaveLength(2)
+  })
+
+  it('las cabeceras que abarcan varias columnas o filas lo dicen con su scope', () => {
+    const cell = (value: string, colspan = 1, rowspan = 1, header = true) => ({
+      content: [{ type: 'paragraph' as const, content: [text(value)] }],
+      colspan,
+      rowspan,
+      header
+    })
+    renderReading({
+      title: null,
+      blocks: [
+        {
+          type: 'table',
+          caption: null,
+          head: [[cell('Turno'), cell('Horario', 2)]],
+          body: [
+            [cell('Mañana', 1, 2), cell('8:00', 1, 1, false), cell('12:00', 1, 1, false)],
+            [cell('9:00', 1, 1, false), cell('13:00', 1, 1, false)],
+            [cell('Tarde'), cell('14:00', 1, 1, false), cell('18:00', 1, 1, false)]
+          ]
+        }
+      ]
+    })
+
+    expect(screen.getByRole('columnheader', { name: 'Turno' })).toHaveAttribute('scope', 'col')
+    expect(screen.getByRole('columnheader', { name: 'Horario' })).toHaveAttribute('scope', 'colgroup')
+    expect(screen.getByRole('rowheader', { name: 'Mañana' })).toHaveAttribute('scope', 'rowgroup')
+    expect(screen.getByRole('rowheader', { name: 'Tarde' })).toHaveAttribute('scope', 'row')
+  })
+
+  it('la tabla y el código, que se desplazan con el teclado, son regiones con nombre', () => {
+    renderReading({
+      title: null,
+      blocks: [
+        { type: 'table', caption: [text('Horarios '), { type: 'strong', content: [text('de atención')] }], head: [], body: [] },
+        { type: 'table', caption: null, head: [], body: [] },
+        { type: 'code', language: 'kotlin', text: 'val x = 1' },
+        { type: 'code', language: null, text: 'ls' }
+      ]
+    })
+
+    for (const name of ['Horarios de atención', 'Tabla', 'Código (kotlin)', 'Código'])
+      expect(screen.getByRole('region', { name })).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('region', { name: 'Código (kotlin)' }).tagName).toBe('PRE')
+  })
+
   it('pinta los id con el prefijo lectura- y reescribe con él las anclas internas', () => {
     const { container } = renderReading(everyBlock)
 
@@ -199,15 +259,15 @@ describe('ReadingDocument', () => {
   })
 
   it('el tamaño elegido y el interlineado abierto llegan a la lectura', () => {
-    const { container, unmount } = renderReading(everyBlock, 21)
+    const { container, unmount } = renderReading(everyBlock, 22)
     const root = () => container.querySelector<HTMLElement>('[data-reading]')!
-    expect(root().style.getPropertyValue('--reading-size')).toBe('21px')
+    expect(root().style.getPropertyValue('--reading-size')).toBe('22px')
     expect(root().style.getPropertyValue('--reading-leading')).toBe('1.65')
     unmount()
 
-    const roomy = renderReading(everyBlock, 19, true)
+    const roomy = renderReading(everyBlock, 20, true)
     const element = roomy.container.querySelector<HTMLElement>('[data-reading]')!
-    expect(element.style.getPropertyValue('--reading-size')).toBe('19px')
+    expect(element.style.getPropertyValue('--reading-size')).toBe('20px')
     expect(element.style.getPropertyValue('--reading-leading')).toBe('1.79')
   })
 

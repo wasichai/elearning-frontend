@@ -1,9 +1,10 @@
 import { useWasichaiConfig } from '@wasichai/core'
 import { useState } from 'react'
 
-// el tamaño del texto de la lectura que elige el estudiante: de 17 a 23px, de 2 en 2
-export const READING_SIZES = [17, 19, 21, 23] as const
-export const DEFAULT_READING_SIZE = 19
+// el tamaño del texto de la lectura que elige el estudiante: de 18 a 24px, de 2 en 2. la escala parte del token
+// --text-reading (20/33 en src/index.css), el tamaño por defecto; el interlineado guarda su proporción (ReadingDocument)
+export const READING_SIZES = [18, 20, 22, 24] as const
+export const DEFAULT_READING_SIZE = 20
 export type ReadingSize = (typeof READING_SIZES)[number]
 
 // lo que el estudiante elige en la barra de la lección: el modo lectura y el tamaño del texto de la lectura. se guarda en
