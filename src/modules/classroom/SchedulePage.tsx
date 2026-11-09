@@ -1,7 +1,7 @@
 import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { formatTime, formatTimeRange, timeZoneLabel } from '../../shared/format'
@@ -19,6 +19,7 @@ import {
   civilNoon,
   localToday,
   parseWeek,
+  requestedWeek,
   placements,
   scheduleDays,
   scheduleRange,
@@ -47,10 +48,12 @@ const fragmentOf = (session: AgendaSession) => `#${anchorOf(session)}`
 // dos vistas: la rejilla de la semana con el detalle debajo, o la lista por días; a 390 px solo la lista. al lado, lo que queda por hacer
 export function SchedulePage() {
   const { t, i18n } = useTranslation('classroom')
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const [now] = useState(() => Date.now())
   const today = localToday(now)
-  const monday = parseWeek(params.get(WEEK_PARAM), now)
+  const param = params.get(WEEK_PARAM)
+  const monday = parseWeek(param, now)
+  useCanonicalWeek(param, setParams)
   const range = useMemo(() => scheduleRange(monday), [monday])
   const agenda = useAgenda(range)
   const panel = useClassroomPanel()
@@ -88,6 +91,23 @@ export function SchedulePage() {
       </div>
     </ScreenBody>
   )
+}
+
+// la URL dice siempre un lunes: otro día de la semana se cambia por su lunes y un valor que no vale se quita, sin dejar rastro en el historial
+function useCanonicalWeek(param: string | null, setParams: ReturnType<typeof useSearchParams>[1]) {
+  const requested = requestedWeek(param)
+  useEffect(() => {
+    if (param === null || param === requested) return
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        if (requested) next.set(WEEK_PARAM, requested)
+        else next.delete(WEEK_PARAM)
+        return next
+      },
+      { replace: true }
+    )
+  }, [param, requested, setParams])
 }
 
 function weekTitle(monday: string, locale: string) {
@@ -222,7 +242,7 @@ function WeekGrid({ days, today, locale }: WeekProps) {
   const height = `${(last - first) * HOUR_REM}rem`
   const hours = Array.from({ length: last - first }, (_, index) => first + index)
   return (
-    <div className="border-t border-ink bg-surface">
+    <div className="border-y border-t-ink border-b-border bg-surface">
       <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
         <span aria-hidden="true" className="border-b border-ink" />
         {days.map(({ date }) => {
@@ -252,6 +272,10 @@ function WeekGrid({ days, today, locale }: WeekProps) {
               {formatHour(hour, locale)}
             </span>
           ))}
+          {/* la hora en que acaba la última, sobre el filete de cierre: el último tramo no queda abierto */}
+          <span className="text-secondary absolute right-2 -translate-y-full pb-0.5 text-ink-muted tabular-nums" style={{ top: height }}>
+            {formatHour(last, locale)}
+          </span>
         </div>
         {days.map((day) => (
           <ol
@@ -283,7 +307,7 @@ function WeekGrid({ days, today, locale }: WeekProps) {
                 >
                   <a
                     href={fragmentOf(session)}
-                    aria-label={t('schedule.block', { hours: hoursText, title: session.title, status })}
+                    aria-label={t('schedule.block', { hours: hoursText, title: session.title, course: session.courseTitle, status })}
                     title={session.title}
                     className={`flex h-full min-w-0 overflow-hidden rounded-md px-2 py-1 text-[0.8125rem] leading-tight ${FOCUS} ${BLOCK_TONE[session.status]} ${
                       short ? 'flex-row items-center gap-1.5' : 'flex-col gap-0.5'

@@ -24,7 +24,7 @@ export function addDays(date: string, days: number): string {
   return civil(noon)
 }
 
-export function mondayOf(date: string): string {
+function mondayOf(date: string): string {
   // getUTCDay: 0 es domingo
   return addDays(date, -((civilNoon(date).getUTCDay() + 6) % 7))
 }
@@ -35,14 +35,23 @@ export function localToday(now: number): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-// la semana de la URL (?semana=2026-11-16), llevada a su lunes; sin ella o si no es una fecha que exista, la de hoy
-export function parseWeek(param: string | null, now: number): string {
+// los años que admite ?semana=: fuera de ellos, la semana o sus vecinas dejarían de escribirse como YYYY-MM-DD
+const FIRST_YEAR = 1900
+const LAST_YEAR = 9998
+
+// el lunes de la semana que pide la URL (?semana=2026-11-18 → 2026-11-16), o undefined si no es una fecha que exista en esos años
+export function requestedWeek(param: string | null): string | undefined {
   const match = param ? CIVIL_DATE.exec(param) : null
-  if (match && civil(civilNoon(param!)) === param) return mondayOf(param!)
-  return mondayOf(localToday(now))
+  if (!match || Number(match[1]) < FIRST_YEAR || Number(match[1]) > LAST_YEAR || civil(civilNoon(param!)) !== param) return undefined
+  return mondayOf(param!)
 }
 
-export function weekDates(monday: string): string[] {
+// la semana visible: la de la URL o, sin ella o si no vale, la de hoy
+export function parseWeek(param: string | null, now: number): string {
+  return requestedWeek(param) ?? mondayOf(localToday(now))
+}
+
+function weekDates(monday: string): string[] {
   return Array.from({ length: WEEK_DAYS }, (_, offset) => addDays(monday, offset))
 }
 
@@ -52,7 +61,7 @@ export function scheduleRange(monday: string): AgendaRange {
   return paddedDayRange(new Date(year!, month! - 1, day!), WEEK_DAYS)
 }
 
-export const sessionDate = (session: AgendaSession) => zonedDateTime(session.start, session.timeZone).date
+const sessionDate = (session: AgendaSession) => zonedDateTime(session.start, session.timeZone).date
 
 export interface ScheduleDay {
   date: string
@@ -93,28 +102,36 @@ export interface Placement {
   // minutos desde la medianoche, en la zona de la edición
   start: number
   end: number
-  // las que se pisan van lado a lado: el carril de esta y cuántos tiene el día
+  // las que se pisan van lado a lado: el carril de esta y cuántos tiene su grupo de solape (una sola, todo el ancho)
   lane: number
   lanes: number
 }
 
+// por grupos de solape: un grupo se cierra cuando la siguiente empieza después de que acaben todas las suyas. dentro, cada una toma el
+// primer carril libre, y el grupo reparte el ancho entre los carriles que usó
 export function placements(sessions: AgendaSession[]): Placement[] {
-  const ends: number[] = []
-  const placed = sessions
-    .map((session) => ({ session, ...minutesOf(session) }))
-    .sort((a, b) => a.start - b.start)
-    .map((item) => {
-      const free = ends.findIndex((end) => end <= item.start)
-      const lane = free >= 0 ? free : ends.length
-      ends[lane] = item.end
-      return { ...item, lane }
-    })
-  return placed.map((item) => ({ ...item, lanes: ends.length }))
+  const result: Placement[] = []
+  let group: Omit<Placement, 'lanes'>[] = []
+  let ends: number[] = []
+  const close = () => {
+    result.push(...group.map((item) => ({ ...item, lanes: ends.length })))
+    group = []
+    ends = []
+  }
+  for (const item of sessions.map((session) => ({ session, ...minutesOf(session) })).sort((a, b) => a.start - b.start)) {
+    if (group.length > 0 && item.start >= Math.max(...ends)) close()
+    const free = ends.findIndex((end) => end <= item.start)
+    const lane = free >= 0 ? free : ends.length
+    ends[lane] = item.end
+    group.push({ ...item, lane })
+  }
+  close()
+  return result
 }
 
 export type ScheduleView = 'week' | 'list'
 
-export function parseScheduleView(stored: string | null): ScheduleView {
+function parseScheduleView(stored: string | null): ScheduleView {
   try {
     const value: unknown = stored === null ? null : JSON.parse(stored)
     return typeof value === 'object' && value !== null && (value as { view?: unknown }).view === 'list' ? 'list' : 'week'

@@ -381,7 +381,7 @@ test.describe('el horario', () => {
     await expect(recovery).toContainText('8:00')
     await expect(recovery).toContainText('Introducción al SGSPE')
     // el bloque de la rejilla lleva a su detalle
-    await page.getByRole('link', { name: /Recuperación de la consulta, Programada$/ }).click()
+    await page.getByRole('link', { name: /Recuperación de la consulta, Introducción al SGSPE, Programada$/ }).click()
     await expect(page).toHaveURL(/#sesion-mat-sgspe-1-ses-3$/)
 
     await page.getByRole('link', { name: 'Semana siguiente' }).click()

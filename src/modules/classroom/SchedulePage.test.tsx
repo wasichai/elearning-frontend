@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
+import { useLocation } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isoInstant } from './agenda'
 import { classroomModule } from './module'
@@ -36,10 +37,22 @@ const session = (id: string, start: string, end: string, patch: object = {}) => 
 const agendaOf = (...items: object[]): MockRoute => ({ path: AGENDA, body: items })
 const panelOf = (...items: object[]): MockRoute => ({ path: PANEL, body: items })
 
+// la búsqueda de la URL a la vista, para ver cómo queda ?semana=
+function Search() {
+  return <output aria-label="búsqueda">{useLocation().search}</output>
+}
+
 function renderSchedule(routes: MockRoute[], route = '/horario') {
   fetchMock = mockFetch([...routes, panelOf(), agendaOf()])
-  return renderWithProviders(<SchedulePage />, { modules: [classroomModule()], route, path: '/horario' })
+  return renderWithProviders(
+    <>
+      <SchedulePage />
+      <Search />
+    </>,
+    { modules: [classroomModule()], route, path: '/horario' }
+  )
 }
+const search = () => screen.getByRole('status', { name: 'búsqueda' })
 
 const agendaCalls = () => fetchMock.calls.filter((call) => call.path.split('?')[0] === AGENDA).map((call) => new URL(call.url, 'http://x').searchParams)
 // la medianoche local de una fecha civil, como la pide la pantalla
@@ -74,6 +87,21 @@ describe('SchedulePage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Semana del 9 al 15 de noviembre' })).toBeInTheDocument()
     expect(within(screen.getByRole('navigation', { name: 'Semanas' })).getByRole('link', { name: 'Hoy' })).toHaveAttribute('aria-current', 'date')
   })
+
+  it('la URL dice siempre un lunes: otro día se cambia por su lunes', async () => {
+    renderSchedule([], '/horario?semana=2026-11-18')
+
+    await screen.findByRole('heading', { level: 1, name: 'Semana del 16 al 22 de noviembre' })
+    await waitFor(() => expect(search()).toHaveTextContent('?semana=2026-11-16'))
+  })
+
+  for (const value of ['2026-02-30', '9999-12-27', '0001-01-01', 'mañana'])
+    it(`un ?semana= que no vale (${value}) no rompe la pantalla: muestra la de hoy y se quita de la URL`, async () => {
+      renderSchedule([], `/horario?semana=${value}`)
+
+      expect(await screen.findByRole('heading', { level: 1, name: 'Semana del 9 al 15 de noviembre' })).toBeInTheDocument()
+      await waitFor(() => expect(search()).toBeEmptyDOMElement())
+    })
 
   it('groups sessions by day in the offering time zone', async () => {
     renderSchedule(
@@ -130,8 +158,8 @@ describe('SchedulePage', () => {
       'href',
       'https://meet.example/normal'
     )
-    // la rejilla dice el estado en el nombre de cada bloque y enlaza a su detalle
-    const block = screen.getByRole('link', { name: /Consulta cancelada, Cancelada$/ })
+    // la rejilla dice la hora, el título, el curso y el estado en el nombre de cada bloque, y enlaza a su detalle
+    const block = screen.getByRole('link', { name: new RegExp(`, Consulta cancelada, ${enrollment.course.title}, Cancelada$`) })
     expect(block).toHaveClass('line-through')
     expect(block).toHaveAttribute('href', `#sesion-${enrollment.id}-cancelada`)
     expect(document.getElementById(`sesion-${enrollment.id}-cancelada`)).toHaveAccessibleName('Consulta cancelada')

@@ -18,14 +18,14 @@ const TYPE_ICONS: Record<SessionType, LucideIcon> = {
 }
 
 // la insignia de cada estado: la palabra la dice siempre, el color nunca va solo
-export const SESSION_STATUS_STATE: Record<SessionStatus, StatusState> = {
+const SESSION_STATUS_STATE: Record<SessionStatus, StatusState> = {
   PROGRAMADA: 'active',
   REPROGRAMADA: 'warning',
   CANCELADA: 'overdue'
 }
 
 // se entra a una sesión que no está cancelada ni terminó y tiene un enlace https: el mismo criterio en la pestaña Sesiones y en el horario
-export function joinLink(session: Session, now: number): string | undefined {
+function joinLink(session: Session, now: number): string | undefined {
   const ended = now >= Date.parse(session.end)
   return session.status !== 'CANCELADA' && !ended && session.link && isHttpsUrl(session.link) ? session.link : undefined
 }
