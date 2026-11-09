@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { mockFetch, renderWithProviders, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CatalogPage } from './CatalogPage'
@@ -83,6 +83,9 @@ describe('textos del catálogo', () => {
     expect(screen.getByText('4 weeks · 48 h')).toBeInTheDocument()
     expect(screen.getByText('Nov 9 – Dec 4, 2026')).toBeInTheDocument()
     expect(screen.getByText('Enrollment open')).toBeInTheDocument()
-    expect(screen.getByText('Illustrative content')).toBeInTheDocument()
+    expect(within(screen.getByRole('list')).getByText('Next offering')).toBeInTheDocument()
+    expect(screen.getByText('Catalog · courses and upcoming offerings')).toBeInTheDocument()
+    // la página es mixta: solo la fila ilustrativa lleva su marca
+    expect(screen.getAllByText('Illustrative content')).toHaveLength(1)
   })
 })

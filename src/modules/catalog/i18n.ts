@@ -4,6 +4,7 @@ const es = {
   catalog: {
     title: 'Catálogo de cursos',
     subtitle: 'Cursos abiertos, con su carga de trabajo y sus próximas ediciones.',
+    eyebrow: 'Catálogo · cursos y próximas ediciones',
     results: 'Resultados',
     loading: 'Cargando cursos…',
     count_one: '{{count, number}} curso',
@@ -82,6 +83,7 @@ const es = {
   },
   offering: {
     next: 'Próxima edición:',
+    nextLabel: 'Próxima edición',
     none: 'Sin ediciones programadas por ahora',
     state: {
       open: 'Inscripción abierta',
@@ -253,6 +255,7 @@ const en: typeof es = {
   catalog: {
     title: 'Course catalog',
     subtitle: 'Open courses, with their workload and upcoming offerings.',
+    eyebrow: 'Catalog · courses and upcoming offerings',
     results: 'Results',
     loading: 'Loading courses…',
     count_one: '{{count, number}} course',
@@ -331,6 +334,7 @@ const en: typeof es = {
   },
   offering: {
     next: 'Next offering:',
+    nextLabel: 'Next offering',
     none: 'No offerings scheduled yet',
     state: {
       open: 'Enrollment open',

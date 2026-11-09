@@ -7,12 +7,13 @@ import { PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody } from '../../shared/Screen'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
 import type { CoursePage } from './contract'
-import { CourseCard, CourseCardSkeleton } from './CourseCard'
+import { CourseRow, CourseRowSkeleton } from './CourseRow'
+import { allIllustrative } from './parts'
 import { CatalogBand } from './FilterBar'
 import { ProblemState, useProblemText } from './ProblemState'
 
-const GRID = 'grid gap-6 md:grid-cols-2 xl:grid-cols-3'
-const SKELETON_CARDS = Array.from({ length: 6 }, (_, index) => index)
+const ROWS = 'flex flex-col divide-y divide-border border-y border-border'
+const SKELETON_ROWS = Array.from({ length: 5 }, (_, index) => index)
 
 export function CatalogPage() {
   const { t } = useTranslation('catalog')
@@ -40,12 +41,12 @@ export function CatalogPage() {
     <PublicLayout fullBleed>
       <CatalogBand filters={filters} page={query.data} busy={query.isPlaceholderData} onChange={update} onRemove={removeFilter} onClear={clearFilters} />
       <ScreenBody>
-        <section aria-labelledby="catalog-results" className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="text-h4 text-ink">
+        <section aria-labelledby="catalog-results" className="flex flex-col gap-2">
+          <div className="rule-strong flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 pt-3">
+            <h2 id="catalog-results" ref={resultsHeading} tabIndex={-1} className="text-h3 font-read text-ink">
               {t('catalog.results')}
             </h2>
-            <p role="status" className="text-sm text-ink-muted tabular-nums">
+            <p role="status" className="text-secondary text-ink-muted tabular-nums">
               {problem ? null : query.data ? t('catalog.count', { count: query.data.totalElements }) : t('catalog.loading')}
             </p>
           </div>
@@ -54,9 +55,9 @@ export function CatalogPage() {
           ) : query.data ? (
             <Results page={query.data} filters={filters} busy={query.isPlaceholderData} onPage={goToPage} onClear={clearFilters} />
           ) : (
-            <div className={GRID}>
-              {SKELETON_CARDS.map((card) => (
-                <CourseCardSkeleton key={card} />
+            <div className={ROWS}>
+              {SKELETON_ROWS.map((row) => (
+                <CourseRowSkeleton key={row} />
               ))}
             </div>
           )}
@@ -101,13 +102,11 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
 
   return (
     <div aria-busy={busy} className={`flex flex-col gap-6 transition-opacity ${busy ? 'opacity-60' : ''}`}>
-      <ol className={GRID}>
+      <ul className={ROWS}>
         {page.content.map((course) => (
-          <li key={course.slug} className="min-w-0">
-            <CourseCard course={course} />
-          </li>
+          <CourseRow key={course.slug} course={course} showIllustrative={course.illustrative && !allIllustrative(page)} />
         ))}
-      </ol>
+      </ul>
       {page.totalPages > 1 ? (
         <Pagination page={page.page} totalPages={page.totalPages} totalElements={page.totalElements} onPage={(index) => onPage(index + 1)} />
       ) : null}

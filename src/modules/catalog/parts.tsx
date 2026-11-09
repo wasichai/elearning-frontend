@@ -2,7 +2,7 @@ import { FlaskConical, type LucideIcon } from 'lucide-react'
 import { useCallback, useSyncExternalStore, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StatusState } from '../../shared/StatusBadge'
-import type { NextOffering } from './contract'
+import type { CoursePage, NextOffering } from './contract'
 
 // piezas que comparten la lista y la ficha
 
@@ -10,12 +10,15 @@ import type { NextOffering } from './contract'
 export function IllustrativeMark() {
   const { t } = useTranslation('catalog')
   return (
-    <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+    <span className="text-secondary inline-flex items-center gap-1 text-ink-muted">
       <FlaskConical aria-hidden="true" className="size-3.5 shrink-0" />
       {t('course.illustrative')}
     </span>
   )
 }
+
+// el aviso de «ilustrativo» se dice una vez en el encabezado si lo son todos; si no, cada fila ilustrativa lleva el suyo
+export const allIllustrative = (page: CoursePage | undefined) => !!page && page.content.length > 0 && page.content.every((course) => course.illustrative)
 
 // un dato con icono, dentro de un <dl>: el nombre lo lee el lector de pantalla, la vista se queda con el icono y el valor
 export function IconFact({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: ReactNode }) {

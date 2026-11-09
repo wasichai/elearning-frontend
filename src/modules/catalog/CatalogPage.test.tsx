@@ -68,43 +68,85 @@ describe('CatalogPage', () => {
     expect(screen.queryByText(/null|undefined/)).not.toBeInTheDocument()
   })
 
-  it('lista los cursos como tarjetas con su banda, sus datos y un solo enlace', async () => {
+  it('results render as list rows with enrollment status', async () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 
     const list = await screen.findByRole('list')
+    expect(list.tagName).toBe('UL')
     const items = within(list).getAllByRole('listitem')
     expect(items).toHaveLength(2)
     expect(screen.getByRole('status')).toHaveTextContent('2 cursos')
 
     const first = within(items[0]!)
+    // el título es el enlace principal y el único interactivo de la fila: sin fila entera clicable
     expect(first.getByRole('heading', { level: 3, name: courseSummary.title })).toBeInTheDocument()
     expect(first.getByRole('link', { name: courseSummary.title })).toHaveAttribute('href', '/cursos/srtm-anuncios')
+    expect(first.getAllByRole('link')).toHaveLength(1)
+    expect(first.queryByRole('button')).not.toBeInTheDocument()
+    expect(items[0]!.querySelector('a[class*="after:"]')).toBeNull()
     expect(first.getByText(courseSummary.summary)).toBeInTheDocument()
-    expect(first.getByText('Gestión municipal')).toBeInTheDocument()
+    // la colección, en meta (sin mayúsculas sostenidas: las versalitas las pone la utilidad)
+    expect(first.getByText('Gestión municipal')).toHaveClass('meta')
     expect(first.getByText('Inicial')).toBeInTheDocument()
     expect(first.getByText('Asíncrona')).toBeInTheDocument()
     expect(first.getByText('4 semanas · 48 h')).toBeInTheDocument()
-    expect(first.getByText(/9 nov.*4 dic.*2026/)).toBeInTheDocument()
-    expect(first.getByText('Inscripción abierta')).toBeInTheDocument()
-    expect(first.getByText('Contenido ilustrativo')).toBeInTheDocument()
-    // una marca discreta, no una insignia de color que compita con la de inscripción
-    expect(first.getByText('Contenido ilustrativo').closest("[data-slot='badge']")).toBeNull()
-    // los hechos en una fila con iconos: su nombre lo lee el lector de pantalla
+    // los hechos con su nombre para el lector de pantalla
     for (const label of ['Nivel', 'Modalidad', 'Duración']) expect(first.getByText(label)).toHaveClass('sr-only')
+    // la próxima edición y la inscripción, en insignia con icono y palabra
+    expect(first.getByText('Próxima edición')).toBeInTheDocument()
+    expect(first.getByText(/9 nov.*4 dic.*2026/)).toBeInTheDocument()
+    const badge = first.getByText('Inscripción abierta').closest('[data-state]')!
+    expect(badge).toHaveAttribute('data-state', 'active')
+    expect(badge.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(first.getByText('Inscripción abierta')).toHaveClass('text-secondary')
+    expect(items.every((item) => item.querySelector('[data-slot="cord-banner"]') === null)).toBe(true)
 
     const second = within(items[1]!)
     expect(second.getByText('Sin ediciones programadas por ahora')).toBeInTheDocument()
-    expect(second.queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
     expect(second.getByText('6 semanas · 72 h')).toBeInTheDocument()
+    expect(second.queryByText('Próxima edición')).not.toBeInTheDocument()
+  })
 
-    // sin banda decorativa; el enlace es lo único interactivo de la tarjeta
-    expect(items.every((item) => item.querySelector('[data-slot="cord-banner"]') === null)).toBe(true)
-    expect(first.getAllByRole('link')).toHaveLength(1)
-    expect(first.queryByRole('button')).not.toBeInTheDocument()
-    // la categoría no va en mayúsculas sostenidas
-    expect(first.getByText('Gestión municipal')).not.toHaveClass('uppercase')
-    // la disponibilidad, en insignia con icono y palabra
-    expect(first.getByText('Inscripción abierta').closest('[data-state]')).toHaveAttribute('data-state', 'active')
+  it('illustrative notice appears once', async () => {
+    const illustrative = [
+      { ...courseSummary, slug: 'a', title: 'Curso A' },
+      { ...courseSummary, slug: 'b', title: 'Curso B' }
+    ]
+    renderCatalog([{ path: COURSES, body: { ...coursePage, content: illustrative } }])
+    await screen.findByRole('list')
+
+    // una vez, en el encabezado, y no en cada fila
+    const notices = screen.getAllByText('Contenido ilustrativo')
+    expect(notices).toHaveLength(1)
+    expect(within(screen.getByRole('list')).queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
+  })
+
+  it('in a mixed page each illustrative row carries its own mark and the header none', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    const items = within(await screen.findByRole('list')).getAllByRole('listitem')
+
+    // solo el primero es ilustrativo: su marca va en su fila y el encabezado no dice nada
+    expect(screen.getAllByText('Contenido ilustrativo')).toHaveLength(1)
+    expect(within(items[0]!).getByText('Contenido ilustrativo')).toBeInTheDocument()
+    expect(within(items[1]!).queryByText('Contenido ilustrativo')).not.toBeInTheDocument()
+  })
+
+  it('the illustrative mark is 14 px', async () => {
+    renderCatalog([{ path: COURSES, body: coursePage }])
+    await screen.findByRole('list')
+
+    expect(screen.getByText('Contenido ilustrativo').closest('span')).toHaveClass('text-secondary')
+  })
+
+  it('long title is clamped with full title available', async () => {
+    const title = `Agentes de IA con trazabilidad y revisión humana para procesos públicos ${'y servicios '.repeat(8)}`.trim()
+    expect(title.length).toBeGreaterThan(90)
+    renderCatalog([{ path: COURSES, body: { ...coursePage, content: [{ ...courseSummary, title }] } }])
+
+    const link = await screen.findByRole('link', { name: title })
+    expect(link).toHaveAttribute('title', title)
+    expect(link).toHaveClass('line-clamp-2')
+    expect(link.closest('li')).toHaveClass('min-w-0')
   })
 
   it('la región de resultados lleva su título visible y el recuento', async () => {
@@ -116,7 +158,7 @@ describe('CatalogPage', () => {
     expect(within(region).getByRole('status')).toHaveTextContent('2 cursos')
   })
 
-  // RF-CAT-09: la tarjeta distingue la edición completa de la cerrada
+  // RF-CAT-09: la fila distingue la edición completa de la cerrada
   it.each([
     ['FULL', 'Edición completa'],
     ['CLOSED', 'Inscripción cerrada']
@@ -133,11 +175,11 @@ describe('CatalogPage', () => {
     renderCatalog([{ path: COURSES, body: coursePage }])
 
     expect(screen.getByRole('status')).toHaveTextContent('Cargando cursos…')
-    // el hueco de las tarjetas, con su geometría, y todavía ninguna lista que anunciar
-    expect(document.querySelectorAll('[data-slot="course-card-skeleton"]').length).toBeGreaterThan(0)
+    // el hueco de las filas, con su geometría, y todavía ninguna lista que anunciar
+    expect(document.querySelectorAll('[data-slot="course-row-skeleton"]').length).toBeGreaterThan(0)
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
     expect(await screen.findByRole('list')).toBeInTheDocument()
-    expect(document.querySelector('[data-slot="course-card-skeleton"]')).toBeNull()
+    expect(document.querySelector('[data-slot="course-row-skeleton"]')).toBeNull()
   })
 
   it('buscar cambia la petición y la URL, y vuelve a la primera página', async () => {
