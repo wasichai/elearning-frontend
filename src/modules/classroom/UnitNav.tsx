@@ -58,14 +58,17 @@ export function UnitNav({
   )
 }
 
-// las lecciones que cuentan para el progreso del curso, como las cuenta el servidor: una NOT_YET todavía no se puede completar
+// todas las lecciones del índice, para que la barra tenga un segmento por cada una y la abierta siempre su anillo. una NOT_YET todavía no
+// se puede completar y el servidor no la cuenta: va como NO_CUENTA, que SegmentedProgress pinta discontinua y deja fuera de la cifra
 export function progressUnits(units: Unit[]): ProgressUnit[] {
   return units.map((unit) => ({
     id: unit.id,
     title: unit.title,
-    lessons: unit.lessons
-      .filter((lesson) => lesson.completion !== 'NOT_YET')
-      .map((lesson) => ({ id: lesson.id, title: lesson.title, state: lesson.progress.status }))
+    lessons: unit.lessons.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      state: lesson.completion === 'NOT_YET' ? 'NO_CUENTA' : lesson.progress.status
+    }))
   }))
 }
 
@@ -83,6 +86,8 @@ function UnitEntry({
   const { t, i18n } = useTranslation('classroom')
   const values = { completed: formatNumber(unit.progress.completedLessons, i18n.language), total: formatNumber(unit.progress.totalLessons, i18n.language) }
   const holdsCurrent = unit.lessons.some((lesson) => lesson.id === currentLessonId)
+  // «x de y» son las cifras del servidor, sin las NOT_YET, como la barra; las que no cuentan se nombran para que y no contradiga la lista
+  const notCounted = unit.lessons.filter((lesson) => lesson.completion === 'NOT_YET').length
   return (
     // React solo toca open cuando holdsCurrent cambia: la unidad abierta sigue a la lección actual y, entre tanto, quien mira abre y pliega lo que quiera
     <details open={holdsCurrent} className="group/unit">
@@ -97,8 +102,14 @@ function UnitEntry({
           <span className="font-read text-h5 break-words">{t('classroom.unit', { order: unit.order, title: unit.title })}</span>
           {unit.progress.totalLessons > 0 ? (
             <span className="text-secondary text-ink-muted tabular-nums">
-              <span aria-hidden="true">{t('classroom.unitTally', { order: unit.order, ...values })}</span>
-              <span className="sr-only">{t('classroom.unitProgressLabel', values)}</span>
+              <span aria-hidden="true">
+                {t('classroom.unitTally', { order: unit.order, ...values })}
+                {notCounted > 0 ? ` ${t('classroom.unitNotCounted', { count: notCounted })}` : null}
+              </span>
+              <span className="sr-only">
+                {t('classroom.unitProgressLabel', values)}
+                {notCounted > 0 ? t('classroom.unitNotCountedLabel', { count: notCounted }) : null}
+              </span>
             </span>
           ) : null}
         </h3>
@@ -136,6 +147,7 @@ function LessonLink({
   const lessonType = useOpenLabel('lessonType')
   const metaId = useId()
   const minutes = lesson.durationMinutes === null ? null : t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })
+  const meta = [lessonType(lesson.type), minutes, lesson.completion === 'NOT_YET' ? t('classroom.lessonNotCounted') : null].filter(Boolean).join(' · ')
   return (
     <Link
       to={links.to(CLASSROOM_ROUTES.classroom, { enrollmentId }, { [LESSON_PARAM]: lesson.id })}
@@ -156,7 +168,7 @@ function LessonLink({
         <span className={`font-read text-body break-words ${current ? 'font-semibold' : ''}`}>{lesson.title}</span>{' '}
         <span className="sr-only">{t(`lessonStatus.${lesson.progress.status}`)}</span>
         <span id={metaId} aria-hidden="true" className="text-secondary text-ink-muted">
-          {minutes ? `${lessonType(lesson.type)} · ${minutes}` : lessonType(lesson.type)}
+          {meta}
         </span>
       </span>
     </Link>

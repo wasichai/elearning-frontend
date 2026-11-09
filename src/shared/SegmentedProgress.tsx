@@ -2,8 +2,10 @@ import { useTranslation } from 'react-i18next'
 
 // el progreso de un curso en una fila, un segmento por lección y agrupado por unidades (docs/design-system/colofon/Components.dc.html §5).
 // el estado no va solo en el color: completada es relleno, iniciada es rayado (nunca cuenta como hecha), no iniciada solo contorno.
+// NO_CUENTA es una lección que el servidor no cuenta para el progreso (completion NOT_YET): tiene su segmento, para que la barra tenga
+// tantos como el índice, pero en contorno discontinuo y fuera de la cifra, del texto y del aria-label.
 // los textos están en el i18n del aula (src/shared no tiene espacio de nombres): quien la use debe tener el módulo `classroom` registrado
-export type LessonProgressState = 'NO_INICIADA' | 'INICIADA' | 'COMPLETADA' | 'APROBADA'
+export type LessonProgressState = 'NO_INICIADA' | 'INICIADA' | 'COMPLETADA' | 'APROBADA' | 'NO_CUENTA'
 
 export interface ProgressUnit {
   id: string
@@ -12,7 +14,7 @@ export interface ProgressUnit {
 }
 
 export function progressSummary(units: ProgressUnit[]): { done: number; started: number; total: number } {
-  const lessons = units.flatMap((unit) => unit.lessons)
+  const lessons = units.flatMap((unit) => unit.lessons).filter((lesson) => lesson.state !== 'NO_CUENTA')
   return {
     done: lessons.filter((lesson) => lesson.state === 'COMPLETADA' || lesson.state === 'APROBADA').length,
     started: lessons.filter((lesson) => lesson.state === 'INICIADA').length,
@@ -24,7 +26,8 @@ const SEGMENT: Record<LessonProgressState, string> = {
   COMPLETADA: 'border-ink bg-ink',
   APROBADA: 'border-ink bg-ink',
   INICIADA: 'border-ink-muted bg-[repeating-linear-gradient(135deg,var(--ink-muted)_0_1.5px,transparent_1.5px_4px)]',
-  NO_INICIADA: 'border-border-control'
+  NO_INICIADA: 'border-border-control',
+  NO_CUENTA: 'border-dashed border-border-control'
 }
 
 export function SegmentedProgress({ units, currentLessonId, size = 'md' }: { units: ProgressUnit[]; currentLessonId?: string; size?: 'sm' | 'md' }) {
@@ -36,8 +39,9 @@ export function SegmentedProgress({ units, currentLessonId, size = 'md' }: { uni
   const label = startedText ? `${doneText}, ${startedText.replace(/^·\s*/, '')}` : doneText
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {/* overflow-hidden: con más de 70 lecciones el mínimo de cada segmento (2px más su hueco) puede superar el ancho; la fila recorta y no empuja la página */}
-      <div role="img" aria-label={label} className="flex min-w-0 flex-nowrap gap-1 overflow-hidden">
+      {/* overflow-hidden: con más de 70 lecciones el mínimo de cada segmento (2px más su hueco) puede superar el ancho; la fila recorta y no empuja
+          la página. p-0.5 con -m-0.5: el recorte deja sitio al anillo de 2px de la actual, también en la primera y la última, sin mover la fila */}
+      <div role="img" aria-label={label} className="-m-0.5 flex min-w-0 flex-nowrap gap-1 overflow-hidden p-0.5">
         {units
           .filter((unit) => unit.lessons.length > 0)
           .map((unit) => (

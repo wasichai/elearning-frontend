@@ -73,6 +73,8 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
   const reading: ReadingSettings = { size: readingControls.size, roomy: readingControls.mode && dark }
   // sin notas en el modo foco ni dentro de un intento: el intento es una tarea con su propia cabecera y necesita el ancho
   const notes = !readingControls.focus && !inAttempt
+  // el folio cuenta todas las lecciones del recorrido, también las que no cuentan para el progreso: es su lugar en el índice
+  const folioValues = { position: formatNumber(position, i18n.language), total: formatNumber(total, i18n.language) }
   const minutes = lesson.durationMinutes === null ? null : t('classroom.minutes', { value: formatNumber(lesson.durationMinutes, i18n.language) })
   // una evaluación, una sesión o un laboratorio son su contenido: sin recursos no dicen «sin material»
   const bare = lesson.resources.length === 0 && !lesson.assessment && !lesson.lab && lesson.completion !== 'ATTENDANCE'
@@ -92,7 +94,8 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
                 { label: t('classroom.unitShort', { order: unit.order }) },
                 { label: t('classroom.section', { unit: unit.order, lesson: lesson.order }) }
               ]}
-              folio={t('classroom.folio', { position: formatNumber(position, i18n.language), total: formatNumber(total, i18n.language) })}
+              folio={t('classroom.folio', folioValues)}
+              folioLabel={t('classroom.folioLabel', folioValues)}
             />
             <h2
               id={`lesson-${lesson.id}`}

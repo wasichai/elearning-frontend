@@ -310,11 +310,12 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
     renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [lima, pagoPago] } }])
 
     await screen.findByRole('heading', { level: 1, name: courseDetail.title })
-    // la recomendada (la abierta) arriba; la otra, debajo
-    const [first, second] = within(section('Ediciones'))
-      .getAllByRole('heading', { level: 3 })
-      .map((heading) => heading.closest<HTMLElement>('[data-slot$="offering"]')!)
+    // la recomendada (la abierta) arriba; la otra, debajo, en «Otras ediciones»
+    const [first, second] = [section('Ediciones'), section('Otras ediciones')].map((group) =>
+      within(group).getByRole('heading', { level: 3 }).closest<HTMLElement>('[data-slot$="offering"]')!
+    )
     expect(first).toHaveAttribute('data-slot', 'recommended-offering')
+    expect(second).toHaveAttribute('data-slot', 'offering')
     expect(within(first!).getByRole('heading', { level: 3 })).toHaveTextContent('9 nov – 4 dic 2026')
     expect(within(first!).getByText('15 oct – 6 nov 2026')).toBeInTheDocument()
     expect(within(second!).getByRole('heading', { level: 3 })).toHaveTextContent('4–29 ene 2027')
@@ -322,6 +323,26 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
     expect(within(second!).getByText('hasta el 1 ene 2027')).toBeInTheDocument()
     expect(within(second!).getByText(/\(Pacific\/Pago_Pago\)$/)).toBeInTheDocument()
     expect(within(second!).getByText('Esta edición todavía no admite matrículas.')).toBeInTheDocument()
+  })
+})
+
+describe('CourseDetailPage: la columna lateral', () => {
+  it('va la acción (fija en escritorio), después «En esta página» y al final las demás ediciones, en ese orden de tabulación', async () => {
+    const later = { ...courseDetail.offerings[0]!, code: 'edicion-2027', status: 'PROGRAMADA', enrollmentOpen: false, enrollmentStatus: 'CLOSED' }
+    renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [courseDetail.offerings[0], later] } }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    const aside = document.querySelector<HTMLElement>('[data-slot="course-aside"]')!
+    const action = aside.querySelector<HTMLElement>('[data-slot="course-action-block"]')!
+    const index = screen.getByRole('navigation', { name: 'En esta página' })
+    const others = section('Otras ediciones')
+    expect(action.compareDocumentPosition(index) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(index.compareDocumentPosition(others) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // solo el bloque de acción se pega; la columna no tiene desplazamiento propio
+    expect(action.className).toContain('sticky')
+    expect(aside.className).not.toMatch(/sticky|overflow-y-auto|max-h-/)
+    expect(index.className).not.toContain('sticky')
+    expect(within(action).getByText('Próxima edición')).toBeInTheDocument()
   })
 })
 

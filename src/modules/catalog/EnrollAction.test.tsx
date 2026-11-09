@@ -68,6 +68,8 @@ const offerings = async () => {
   const heading = await screen.findByRole('heading', { level: 2, name: 'Ediciones' })
   return within(heading.closest('section')!)
 }
+// las demás ediciones van en su sección, tras «En esta página»
+const otherOfferings = () => within(screen.getByRole('heading', { level: 2, name: 'Otras ediciones' }).closest('section')!)
 
 const MY_ENROLLMENTS = '/lms/classroom/enrollments'
 const myEnrollment = (id: string, status = 'ACTIVA', code = 'edicion-srtm-2026-11', slug = 'srtm-anuncios') => ({
@@ -98,7 +100,7 @@ describe('una sola acción principal', () => {
 
     const section = await offerings()
     expect(section.getByRole('button', { name: ACTION })).toHaveAttribute('data-variant', 'primary')
-    expect(section.getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
+    expect(otherOfferings().getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
   })
 
   it('sin sesión, la entrada también es la única primaria', async () => {
@@ -137,7 +139,7 @@ describe('ya matriculada', () => {
 
     const section = await offerings()
     expect(await section.findByRole('link', { name: 'Ir al curso' })).toHaveAttribute('data-variant', 'primary')
-    expect(section.getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
+    expect(otherOfferings().getByRole('button', { name: SECOND_ACTION })).toHaveAttribute('data-variant', 'secondary')
   })
 
   it('con una matrícula en una edición que ya no se ofrece, lo avisa y lleva al curso', async () => {

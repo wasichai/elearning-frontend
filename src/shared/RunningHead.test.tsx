@@ -21,6 +21,13 @@ describe('RunningHead', () => {
     expect(nav.getByText('6 / 14')).toBeVisible()
   })
 
+  it('el folio lleva su etiqueta para el lector de pantalla; la cifra «1 / 15» es para el ojo', () => {
+    renderHead(<RunningHead trail={[{ label: 'Mis cursos', to: '/mis-cursos' }]} folio="1 / 15" folioLabel="Lección 1 de 15" />)
+    const nav = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(nav.getByText('1 / 15')).toHaveAttribute('aria-hidden', 'true')
+    expect(nav.getByText('Lección 1 de 15')).toHaveClass('sr-only')
+  })
+
   it('en inglés la ruta es «Breadcrumb»', () => {
     renderHead(<RunningHead trail={[{ label: 'My courses', to: '/mis-cursos' }]} />, 'en')
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument()

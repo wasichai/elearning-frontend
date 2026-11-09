@@ -365,6 +365,7 @@ describe('ClassroomPage: el aula Colofón', () => {
     expect(head.getByText('Unidad 2')).not.toHaveAttribute('aria-current')
     // el folio: la posición en el recorrido del curso
     expect(head.getByText('3 / 4')).toBeInTheDocument()
+    expect(head.getByText('Lección 3 de 4')).toHaveClass('sr-only')
   })
 
   it('lesson index shows unit progress as "Unidad 1 — 1 de 2"', async () => {
@@ -373,16 +374,34 @@ describe('ClassroomPage: el aula Colofón', () => {
 
     const nav = within(units())
     expect(nav.getByText('Unidad 1 — 1 de 2')).toBeInTheDocument()
-    expect(nav.getByText('Unidad 2 — 0 de 1')).toBeInTheDocument()
-    // arriba del índice, el progreso segmentado del curso con las lecciones que cuentan (una NOT_YET no)
+    // la unidad 2 lista dos lecciones: la cifra es la del servidor (la evaluación NOT_YET no cuenta) y lo dice
+    expect(nav.getByText('Unidad 2 — 0 de 1 · 1 no cuenta')).toBeInTheDocument()
+    expect(nav.getByRole('heading', { level: 3, name: /^Unidad 2\./ })).toHaveTextContent('0 de 1 lecciones completadas; 1 no cuenta para el avance')
+    // arriba del índice, el progreso segmentado: un segmento por lección del índice, y la cifra solo con las que cuentan
     const index = screen.getByRole('region', { name: 'Índice' })
     const progress = within(index).getByRole('img', { name: '1 de 3 completadas' })
     expect(progress.compareDocumentPosition(units()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect([...progress.querySelectorAll('[data-slot="progress-segment"]')].map((segment) => segment.getAttribute('data-state'))).toEqual([
       'COMPLETADA',
       'NO_INICIADA',
-      'NO_INICIADA'
+      'NO_INICIADA',
+      'NO_CUENTA'
     ])
+  })
+
+  it('una lección NOT_YET abierta lleva el anillo de actual en el progreso, y el folio cuenta todas', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-quiz')
+    await lessonHeading('Cuestionario de la unidad')
+
+    const progress = within(screen.getByRole('region', { name: 'Índice' })).getByRole('img', { name: '1 de 3 completadas' })
+    const current = progress.querySelector('[data-slot="progress-segment"][data-current]')
+    expect(current).toHaveAttribute('data-state', 'NO_CUENTA')
+    expect(current).toHaveClass('ring-2', 'ring-brand')
+    const head = within(screen.getByRole('navigation', { name: 'Ruta' }))
+    expect(head.getByText('4 / 4')).toBeInTheDocument()
+    expect(head.getByText('Lección 4 de 4')).toBeInTheDocument()
+    // en el índice, la lección dice que no cuenta para el avance
+    expect(within(units()).getByRole('link', { name: /Cuestionario de la unidad/ })).toHaveAccessibleDescription(/No cuenta para el avance/)
   })
 
   it('margin notes list lesson objective, resources and linked sessions', async () => {

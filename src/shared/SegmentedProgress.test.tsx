@@ -83,6 +83,25 @@ describe('SegmentedProgress', () => {
     expect(screen.getByText('· 1 started')).toBeVisible()
   })
 
+  it('una lección que no cuenta tiene su segmento, discontinuo, fuera de la cifra, y el anillo de actual se ve', () => {
+    // el artboard con una evaluación NOT_YET: 15 lecciones en el índice, 14 que cuentan
+    const units = [...FOURTEEN.slice(0, 3), unit('4', [...empty(2), 'NO_CUENTA'])]
+    renderProgress(units, { currentLessonId: '4-3' })
+    const row = screen.getByRole('img')
+    const segments = [...row.querySelectorAll<HTMLElement>('[data-slot="progress-segment"]')]
+    expect(segments).toHaveLength(15)
+    expect(progressSummary(units)).toEqual({ done: 0, started: 1, total: 14 })
+    expect(row).toHaveAttribute('aria-label', '0 de 14 completadas, 1 iniciada')
+    expect(screen.getByText('0 de 14 completadas')).toBeVisible()
+    const notCounted = segments.at(-1)!
+    expect(notCounted).toHaveAttribute('data-state', 'NO_CUENTA')
+    expect(notCounted).toHaveClass('border-dashed')
+    expect(notCounted).toHaveAttribute('data-current')
+    expect(notCounted).toHaveClass('ring-2', 'ring-brand')
+    // la fila recorta lo que desborda, pero deja sitio al anillo de 2px por arriba, por abajo y en los extremos
+    expect(row).toHaveClass('p-0.5')
+  })
+
   it('un curso de 40 o más lecciones sigue en una fila y cuenta bien', () => {
     const units = [
       ...Array.from({ length: 9 }, (_, at) => unit(String(at + 1), [...Array.from({ length: 5 }, () => 'COMPLETADA' as const), 'INICIADA'])),

@@ -13,14 +13,15 @@ export const ROW_FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-0
 export const UNIT_ROW = '-mx-2 flex min-h-13 cursor-pointer list-none items-center gap-2 rounded-md px-2 py-2 hover:bg-surface-muted'
 
 // las fechas de la edición son fechas civiles de su zona: se escriben en esa zona y se dice cuál es, salvo que la página ya lo diga
-export function OfferingDates({ offering, showZone = true }: { offering: Enrollment['offering']; showZone?: boolean }) {
+// phase=false: sin la fase de la edición, para una matrícula ya completada («Aún no empieza» contradiría el curso terminado)
+export function OfferingDates({ offering, showZone = true, phase = true }: { offering: Enrollment['offering']; showZone?: boolean; phase?: boolean }) {
   const { t, i18n } = useTranslation('classroom')
   const locale = i18n.language
   return (
     <p className="flex flex-wrap gap-x-2 text-secondary text-ink-muted">
       <span>
         <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
-        <span> · {t(`offering.status.${offering.status}`)}</span>
+        {phase ? <span> · {t(`offering.status.${offering.status}`)}</span> : null}
       </span>
       {showZone ? <span>{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
     </p>
