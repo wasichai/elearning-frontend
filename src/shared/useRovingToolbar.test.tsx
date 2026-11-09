@@ -3,13 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { useRovingToolbar } from './useRovingToolbar'
 
-function Bar({ secondDisabled = false }: { secondDisabled?: boolean }) {
+function Bar({ firstDisabled = false, secondDisabled = false }: { firstDisabled?: boolean; secondDisabled?: boolean }) {
   const toolbar = useRovingToolbar<HTMLDivElement>()
   return (
     <>
       <button>antes</button>
       <div role="toolbar" aria-label="Herramientas" {...toolbar}>
-        <button>uno</button>
+        <button disabled={firstDisabled}>uno</button>
         <button disabled={secondDisabled}>dos</button>
         <button>tres</button>
       </div>
@@ -80,6 +80,27 @@ describe('useRovingToolbar', () => {
     rerender(<Bar secondDisabled />)
     expect(screen.getByRole('button', { name: 'tres' })).toHaveFocus()
     expect(tabindexes()).toEqual([null, '-1', '-1', '0', null])
+  })
+
+  it('si el foco nunca estuvo en la barra, deshabilitar su primer botón no se lo quita al resto de la página', () => {
+    const { rerender } = render(<Bar firstDisabled={false} />)
+    expect(document.body).toHaveFocus()
+
+    rerender(<Bar firstDisabled />)
+    expect(document.body).toHaveFocus()
+    // el tabstop sí pasa al siguiente botón disponible
+    expect(tabindexes()).toEqual([null, '-1', '0', '-1', null])
+  })
+
+  it('si el foco salió de la barra hacia otro control, tampoco se lo vuelve a llevar', async () => {
+    const { rerender } = render(<Bar />)
+    await userEvent.tab()
+    await userEvent.tab()
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'después' })).toHaveFocus()
+
+    rerender(<Bar firstDisabled />)
+    expect(screen.getByRole('button', { name: 'después' })).toHaveFocus()
   })
 
   it('salta los botones deshabilitados', async () => {

@@ -12,6 +12,8 @@ const available = (element: HTMLElement) =>
 export function useRovingToolbar<T extends HTMLElement>() {
   const ref = useRef<T>(null)
   const current = useRef<HTMLElement | null>(null)
+  // la barra tuvo el foco de verdad: el último foco en ella fue por onFocus y no salió con onBlur hacia fuera. sin él, sync solo reparte tabindex
+  const hadFocus = useRef(false)
   const items = useCallback(() => [...(ref.current?.querySelectorAll<HTMLElement>(ITEMS) ?? [])].filter(available), [])
   const sync = useCallback(() => {
     const list = items()
@@ -19,7 +21,7 @@ export function useRovingToolbar<T extends HTMLElement>() {
     // navegador puede haberlo soltado ya (el foco queda en el body): entonces vale el último que lo tuvo
     const all = [...(ref.current?.querySelectorAll<HTMLElement>(ITEMS) ?? [])]
     const focused = document.activeElement
-    const lost = current.current && !list.includes(current.current) && (!focused || focused === document.body) ? current.current : null
+    const lost = hadFocus.current && current.current && !list.includes(current.current) && (!focused || focused === document.body) ? current.current : null
     const stranded = focused && ref.current?.contains(focused) && !list.includes(focused as HTMLElement) ? (focused as HTMLElement) : lost
     if (stranded && all.includes(stranded) && list.length > 0) {
       const at = all.indexOf(stranded)
@@ -41,12 +43,18 @@ export function useRovingToolbar<T extends HTMLElement>() {
   const onFocus = useCallback(
     (event: FocusEvent<T>) => {
       if (items().includes(event.target as HTMLElement)) {
+        hadFocus.current = true
         current.current = event.target as HTMLElement
         sync()
       }
     },
     [items, sync]
   )
+  const onBlur = useCallback((event: FocusEvent<T>) => {
+    // el foco se fue a otro sitio de la página: ya no es de la barra. si no va a ninguno (lo soltó un botón que se deshabilita), sigue siéndolo
+    const next = event.relatedTarget as Node | null
+    if (next && !event.currentTarget.contains(next)) hadFocus.current = false
+  }, [])
   const onKeyDown = useCallback(
     (event: KeyboardEvent<T>) => {
       const keys: Record<string, (at: number, count: number) => number> = {
@@ -69,5 +77,5 @@ export function useRovingToolbar<T extends HTMLElement>() {
     },
     [items, sync]
   )
-  return { ref, onFocus, onKeyDown }
+  return { ref, onFocus, onBlur, onKeyDown }
 }
