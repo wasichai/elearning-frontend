@@ -49,7 +49,7 @@ function OfferingSessions({ code }: { code: string }) {
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <div className="flex flex-col gap-0.5 text-sm">
+            <div className="flex flex-col gap-0.5 text-secondary">
               {timeZone ? <p className="text-ink-muted">{t('sessions.timeZone', { zone: timeZoneLabel(timeZone, i18n.language) })}</p> : null}
               <p role="status" className="font-medium text-success empty:hidden">
                 {created ? t('sessions.created', { count: created, value: created }) : ''}
@@ -99,7 +99,7 @@ function SessionGroup({ title, sessions, past, code, all }: { title: string; ses
       <div className="flex flex-col gap-5">
         {groupByDay(sessions).map((group) => (
           <div key={group.date} className="flex flex-col gap-1">
-            <h3 className="text-sm font-semibold text-ink first-letter:uppercase">
+            <h3 className="text-secondary font-semibold text-ink first-letter:uppercase">
               {new Intl.DateTimeFormat(i18n.language, { dateStyle: 'full', timeZone: group.sessions[0]!.timeZone }).format(new Date(group.sessions[0]!.start))}
             </h3>
             <ol className="flex flex-col divide-y divide-border border-y border-border">
@@ -147,10 +147,10 @@ function SessionItem({ code, session, sessions, past }: { code: string; session:
   const original = session.originalSessionId ? sessions.find((candidate) => candidate.id === session.originalSessionId) : undefined
   const attendance = links.to(TEACHING_ROUTES.attendance, { code, sessionId: session.id })
   return (
-    <article aria-label={session.title} className="flex flex-col gap-3 py-3 text-sm @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-6">
+    <article aria-label={session.title} className="flex flex-col gap-3 py-3 text-secondary @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-6">
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h4 className={`text-base font-medium break-words ${cancelled ? 'text-ink-muted line-through' : 'text-ink'}`}>{session.title}</h4>
+          <h4 className={`text-body font-medium break-words ${cancelled ? 'text-ink-muted line-through' : 'text-ink'}`}>{session.title}</h4>
           <SessionState session={session} past={past} />
         </div>
         <p className="text-ink tabular-nums">
@@ -249,8 +249,8 @@ function RescheduleDialog({ code, session, onClose }: { code: string; session: S
     <ReturnFocus>
       <Dialog open onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-md">
-          <DialogTitle className="text-lg font-semibold">{t('reschedule.title', { title: session.title })}</DialogTitle>
-          <DialogDescription className="mt-2 text-sm text-ink-muted">
+          <DialogTitle className="text-h4 text-ink">{t('reschedule.title', { title: session.title })}</DialogTitle>
+          <DialogDescription className="mt-2 text-ink-muted">
             {t('reschedule.description', { zone: timeZoneLabel(session.timeZone, i18n.language) })}
           </DialogDescription>
           <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
@@ -287,7 +287,7 @@ function RescheduleDialog({ code, session, onClose }: { code: string; session: S
               />
             </div>
             {invalid ? (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-secondary text-danger">
                 {invalid === 'when' ? t('reschedule.whenRequired') : t('reason.invalid', { max: CHANGE_REASON_MAX_LENGTH })}
               </p>
             ) : null}

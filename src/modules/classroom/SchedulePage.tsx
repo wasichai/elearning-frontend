@@ -309,7 +309,7 @@ function WeekGrid({ days, today, locale }: WeekProps) {
                     href={fragmentOf(session)}
                     aria-label={t('schedule.block', { hours: hoursText, title: session.title, course: session.courseTitle, status })}
                     title={session.title}
-                    className={`flex h-full min-w-0 overflow-hidden rounded-md px-2 py-1 text-[0.8125rem] leading-tight ${FOCUS} ${BLOCK_TONE[session.status]} ${
+                    className={`flex h-full min-w-0 overflow-hidden rounded-md px-2 py-1 text-secondary leading-tight ${FOCUS} ${BLOCK_TONE[session.status]} ${
                       short ? 'flex-row items-center gap-1.5' : 'flex-col gap-0.5'
                     }`}
                   >

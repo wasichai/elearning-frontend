@@ -49,7 +49,7 @@ export function GradingTray({ items, loading, error, onRetry }: { items: Teachin
           <Skeleton className="h-4 w-2/5" />
         </div>
       ) : null}
-      {!loading && !error && groups.length === 0 ? <p className="text-sm text-ink-muted">{t('panel.tray.none')}</p> : null}
+      {!loading && !error && groups.length === 0 ? <p className="text-secondary text-ink-muted">{t('panel.tray.none')}</p> : null}
       {only ? (
         <TrayBody group={groups[0]!} primary={first} />
       ) : (
@@ -57,7 +57,7 @@ export function GradingTray({ items, loading, error, onRetry }: { items: Teachin
           {groups.map((group) => (
             <div key={group.offering.code} className="flex flex-col gap-1.5">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                <h3 className="min-w-0 text-sm font-semibold break-words text-ink">{group.offering.course.title}</h3>
+                <h3 className="min-w-0 text-secondary font-semibold break-words text-ink">{group.offering.course.title}</h3>
                 <Link to={links.to(TEACHING_ROUTES.queue, { code: group.offering.code })} className={TEXT_LINK}>
                   {t('panel.tray.queue')}
                 </Link>
@@ -104,7 +104,7 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
     <div className="flex items-center gap-3 py-2.5 sm:gap-6">
       {who ? <Initials of={who} className="hidden size-8 text-xs @md:flex" /> : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 @xl:flex-row @xl:items-center @xl:gap-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-secondary">
           <span className="font-medium text-ink">
             <Submitter attempt={attempt} />
           </span>
@@ -113,7 +113,7 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
         <time
           dateTime={attempt.submittedAt}
           title={formatDateTime(attempt.submittedAt, locale, timeZone)}
-          className="text-sm text-ink-muted @xl:w-40 @xl:shrink-0"
+          className="text-secondary text-ink-muted @xl:w-40 @xl:shrink-0"
         >
           {t('panel.tray.age', { age: submittedAge(attempt.submittedAt, Date.now(), locale) })}
         </time>

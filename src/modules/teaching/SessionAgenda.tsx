@@ -13,7 +13,7 @@ import { TEACHING_ROUTES } from './routes'
 type AgendaSession = Session & { offering: TeachingOffering }
 
 const ROW_LINK =
-  'flex min-h-11 flex-col gap-0.5 py-2.5 text-sm break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
+  'flex min-h-11 flex-col gap-0.5 py-2.5 text-secondary break-words transition-colors duration-[160ms] hover:bg-surface-muted motion-reduce:transition-none'
 
 // la agenda «Próximas sesiones» de las ediciones vivas. sale del panel: si no se pudo leer, lo dice y lo demás se ve igual
 export function SessionAgenda({ items, loading, failed, onRetry }: { items: TeachingPanelItem[]; loading: boolean; failed: boolean; onRetry: () => void }) {
@@ -43,8 +43,8 @@ export function SessionAgenda({ items, loading, failed, onRetry }: { items: Teac
           ))}
         </ul>
       ) : null}
-      {hidden > 0 ? <p className="text-sm text-ink-muted">{t('panel.agenda.more', { count: hidden })}</p> : null}
-      {!loading && !failed && sessions.length === 0 ? <p className="text-sm text-ink-muted">{t('panel.agenda.none')}</p> : null}
+      {hidden > 0 ? <p className="text-secondary text-ink-muted">{t('panel.agenda.more', { count: hidden })}</p> : null}
+      {!loading && !failed && sessions.length === 0 ? <p className="text-secondary text-ink-muted">{t('panel.agenda.none')}</p> : null}
     </Section>
   )
 }

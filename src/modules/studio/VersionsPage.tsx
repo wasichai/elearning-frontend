@@ -106,7 +106,7 @@ function CoursesHint() {
   const links = useWasichaiLinks()
   if (!canReadCourses(permissions)) return null
   return (
-    <p className="flex max-w-prose flex-col items-start gap-1 text-sm text-ink-muted">
+    <p className="flex max-w-prose flex-col items-start gap-1 text-secondary text-ink-muted">
       <span>{t('versions.coursesHint')}</span>
       <Link to={links.records(COURSE_OBJECT)} className={TEXT_LINK}>
         {t('versions.allCourses')}
@@ -144,13 +144,13 @@ function CourseVersions({ group, primary }: { group: CourseGroup; primary: strin
   const { course, versions, newFrom } = group
   const headingId = `course-${course.id}`
   return (
-    <section aria-labelledby={headingId} className="overflow-hidden rounded-card border border-border bg-surface">
-      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 px-4 pt-4 sm:px-5">
+    <section aria-labelledby={headingId} className="rule-strong">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 pt-4">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h2 id={headingId} className="text-h4 text-ink [overflow-wrap:anywhere]">
+          <h2 id={headingId} className="font-read text-h4 text-ink [overflow-wrap:anywhere]">
             {course.title}
           </h2>
-          <p className="text-sm text-ink-muted">{course.code}</p>
+          <p className="text-secondary text-ink-muted">{course.code}</p>
         </div>
         {newFrom ? (
           <NewVersionButton
@@ -161,7 +161,7 @@ function CourseVersions({ group, primary }: { group: CourseGroup; primary: strin
           />
         ) : null}
       </div>
-      <ul className="mt-2 flex flex-col divide-y divide-border px-4 sm:px-5">
+      <ul className="mt-2 flex flex-col divide-y divide-border border-b border-border">
         {versions.map((version) => (
           <li key={version.id}>
             <VersionItem version={version} primary={primary === version.id} />
@@ -183,7 +183,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
   return (
     <article ref={home} tabIndex={-1} aria-labelledby={headingId} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 outline-none">
       <div className="flex min-w-0 flex-col gap-1.5">
-        <h3 id={headingId} className="text-base font-semibold text-ink">
+        <h3 id={headingId} className="text-h5 text-ink">
           <Link
             to={links.to(STUDIO_ROUTES.version, { id: version.id })}
             aria-label={t('versions.name', name)}
@@ -192,7 +192,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
             {t('versions.number', { number: version.number })}
           </Link>
         </h3>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink-muted">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-secondary text-ink-muted">
           <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
           <GeneratorBadge namespace={STUDIO_MODULE_ID} generator={version.generator} />
           {version.openComments > 0 ? (
@@ -202,7 +202,7 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
           ) : null}
           {version.updatedAt ? <span>{t('versions.updated', { date: formatInstant(version.updatedAt, locale) })}</span> : null}
         </div>
-        <p role="status" className="text-sm text-success empty:hidden">
+        <p role="status" className="text-secondary text-success empty:hidden">
           {submit.isSuccess ? t('version.submitted') : ''}
         </p>
       </div>

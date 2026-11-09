@@ -154,6 +154,22 @@
   --text-reading--line-height: 33px;
   --text-reading--font-weight: 400;
 
+  /* la escala de dentro de una lectura, relativa a su tamaño (que elige quien lee, 18–24px): los encabezados del documento, la letra
+     menor de tablas, código y pies, y la de notas y atribuciones. text-read-heading… solo dentro de ReadingDocument */
+  --text-read-heading: 1.45em;
+  --text-read-heading--line-height: 1.25;
+  --text-read-heading--font-weight: 460;
+  --text-read-subheading: 1.2em;
+  --text-read-subheading--line-height: 1.3;
+  --text-read-subheading--font-weight: 520;
+  --text-read-minor: 1em;
+  --text-read-minor--line-height: 1.4;
+  --text-read-minor--font-weight: 600;
+  --text-read-small: 0.8em;
+  --text-read-small--line-height: 1.45;
+  --text-read-note: 0.85em;
+  --text-read-note--line-height: 1.55;
+
   /* max-w-measure, w-index-col, w-margin-col, max-w-content-max */
   --container-measure: 66ch;
   --container-index-col: 280px;

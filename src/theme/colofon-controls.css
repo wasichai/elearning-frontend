@@ -176,6 +176,13 @@
   [data-slot='table-head'][scope='col'] {
     font-weight: 600;
   }
+
+  /* un encabezado de fila es un nombre (un estudiante, un componente de la carga): se lee como el texto de la fila */
+  [data-slot='table-head'][scope='row'] {
+    font-variant-caps: normal;
+    letter-spacing: normal;
+    font-size: inherit;
+  }
 }
 
 /* el ::after del botón sm se coloca respecto del botón. en la capa base: una clase de quien lo usa (absolute) gana, y

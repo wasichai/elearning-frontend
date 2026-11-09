@@ -49,7 +49,7 @@ export function ImportJobs({ interval, onOpen }: { interval: number; onOpen: (jo
           <Skeleton className="h-4 w-1/2" />
         </div>
       ) : null}
-      {jobs && jobs.length === 0 ? <p className="max-w-prose text-sm text-ink-muted">{t('import.jobs.empty')}</p> : null}
+      {jobs && jobs.length === 0 ? <p className="max-w-prose text-secondary text-ink-muted">{t('import.jobs.empty')}</p> : null}
       {shown && shown.length > 0 ? (
         <>
           {/* el sondeo cambia las filas en silencio: se anuncia solo cuántas siguen en marcha */}
@@ -98,8 +98,8 @@ function JobRow({ job, courseTitle, onOpen }: { job: ImportJob; courseTitle: str
           <span className="font-semibold [overflow-wrap:anywhere] text-ink">{subject}</span>
           <StatusBadge state={JOB_BADGE[job.status]}>{t(`import.jobs.status.${job.status}`)}</StatusBadge>
         </div>
-        {detail ? <span className="font-mono text-xs break-all text-ink-muted">{detail}</span> : null}
-        <time dateTime={instant} className="text-sm text-ink-muted">
+        {detail ? <span className="font-mono text-secondary break-all text-ink-muted">{detail}</span> : null}
+        <time dateTime={instant} className="text-secondary text-ink-muted">
           {t(job.finishedAt ? 'import.jobs.finished' : 'import.jobs.requested', { date })}
         </time>
       </div>

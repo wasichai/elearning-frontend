@@ -61,10 +61,10 @@ const THE_UNIT = { kind: 'UNIT_COMPLETED', at: '2026-11-03T15:20:00Z', ref: 'uni
 const THE_ASSESSMENT = { kind: 'ASSESSMENT_PASSED', at: '2026-11-04T10:05:00Z', ref: 'eva-final' }
 const THE_CERTIFICATE = { kind: 'CERTIFICATE_ISSUED', at: '2026-11-05T09:00:00Z', ref: 'K7Q2-M9XW-4RTB' }
 
-// los logros van en el panel: en una ventana estrecha, en la hoja del temario, que se abre para verlos
+// los logros van en el índice: en una ventana estrecha, en su hoja inferior, que se abre para verlos
 async function withAchievements(page: Page, achievements: object[]) {
   await reloadWith(page, () => page.route(CLASSROOM_SGSPE, (route) => route.fulfill({ json: { ...assessmentClassroom, achievements } })))
-  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: /^(Temario|Syllabus)$/ }).click()
+  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByRole('button', { name: /^(Índice|Index)$/, expanded: false }).click()
 }
 
 const certified = { ...finishedEnrollment, status: 'FINALIZADA', certificateCode: 'K7Q2-M9XW-4RTB' }

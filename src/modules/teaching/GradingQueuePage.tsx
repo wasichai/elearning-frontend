@@ -75,7 +75,7 @@ function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] })
       <ul aria-label={t('queue.title')} className="flex flex-col divide-y divide-border border-y border-border @2xl:hidden">
         {sorted.map((attempt, index) => (
           <li key={attempt.attemptId} className="flex items-center gap-3 py-2.5">
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-secondary">
               <span className="font-medium text-ink">
                 <Submitter attempt={attempt} />
               </span>
@@ -98,9 +98,9 @@ function Sent({ code, attempt }: { code: string; attempt: PendingAttempt }) {
   const locale = i18n.language
   const zone = useOfferings().data?.find((candidate) => candidate.code === code)?.timeZone
   return (
-    <span className="flex flex-col text-sm">
+    <span className="flex flex-col text-secondary">
       <span className="text-ink">{t('panel.tray.age', { age: submittedAge(attempt.submittedAt, Date.now(), locale) })}</span>
-      <time dateTime={attempt.submittedAt} className="text-xs text-ink-muted">
+      <time dateTime={attempt.submittedAt} className="text-secondary text-ink-muted">
         {formatDateTime(attempt.submittedAt, locale, zone ?? 'UTC')}
       </time>
     </span>

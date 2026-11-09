@@ -42,10 +42,10 @@ export function QuestionField({ question, answer, saved, disabled, onChange, onU
   const promptId = useId()
   return (
     <fieldset ref={fieldsetRef} tabIndex={-1} className="flex min-w-0 flex-col gap-4 focus:outline-none" aria-describedby={`${promptId}-points`}>
-      <legend id={promptId} className="float-left w-full font-read text-h5 leading-7 font-medium text-ink @2xl:text-[19px]/[30px]">
+      <legend id={promptId} className="float-left w-full font-read text-h5 leading-7 font-medium text-ink @2xl:text-h4">
         {t('question.prompt', { order: question.order, prompt: question.prompt })}
       </legend>
-      <p id={`${promptId}-points`} className="-mt-2 text-sm text-ink-muted">
+      <p id={`${promptId}-points`} className="-mt-2 text-secondary text-ink-muted">
         {t('question.points', { count: question.points, value: formatNumber(question.points, i18n.language) })} · {t(`question.type.${question.type}`)}
       </p>
       <QuestionInput question={question} answer={answer} saved={saved} disabled={disabled} onChange={onChange} onUpload={onUpload} promptId={promptId} />
@@ -72,7 +72,7 @@ function QuestionInput({ question, answer, saved, disabled, onChange, onUpload, 
             // toda la fila es el objetivo; la elegida se distingue por su control marcado, además del borde y el relleno
             <label
               key={option.id}
-              className="flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface px-3 py-3 text-base text-ink hover:bg-surface-muted has-checked:border-brand has-checked:bg-brand-soft has-checked:inset-ring has-checked:inset-ring-brand has-disabled:cursor-not-allowed has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
+              className="flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border border-border bg-surface px-3 py-3 text-body text-ink hover:bg-surface-muted has-checked:border-brand has-checked:bg-brand-soft has-checked:inset-ring has-checked:inset-ring-brand has-disabled:cursor-not-allowed has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus"
             >
               <input
                 type={multiple ? 'checkbox' : 'radio'}
@@ -147,7 +147,7 @@ function FileQuestion({
     setState({ busy: false, error })
   }
   return (
-    <div className="flex flex-col items-start gap-3 text-sm">
+    <div className="flex flex-col items-start gap-3 text-secondary">
       <p role="status" className={`flex items-center gap-2 font-medium ${answer.submissionId && !state.busy ? 'text-success' : 'text-ink'}`}>
         {state.busy ? (
           <LoaderCircle aria-hidden="true" className="size-5 shrink-0 animate-spin motion-reduce:animate-none" />
@@ -173,7 +173,7 @@ function FileQuestion({
         aria-describedby={`${promptId}-file-hint`}
         disabled={disabled || state.busy}
         onChange={(event) => void choose(event)}
-        className="max-w-full text-sm text-ink-muted file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-md file:border file:border-border-control file:bg-surface file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-surface-muted"
+        className="max-w-full text-secondary text-ink-muted file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-md file:border file:border-border-control file:bg-surface file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-surface-muted"
       />
       <p id={`${promptId}-file-hint`} className="text-ink-muted">
         {t('question.fileHint', { size: formatFileSize(MAX_UPLOAD_BYTES, i18n.language) })}
@@ -212,7 +212,7 @@ export function QuestionIndex({
                 aria-label={t(answered ? 'attempt.indexAnswered' : 'attempt.indexBlank', { number })}
                 aria-current={active ? 'step' : undefined}
                 onClick={() => onGo(index)}
-                className={`relative flex size-11 flex-col items-center justify-start gap-0.5 rounded-md pt-1.5 text-xs tabular-nums hover:bg-surface-muted/60 ${
+                className={`relative flex size-11 flex-col items-center justify-start gap-0.5 rounded-md pt-1.5 text-secondary tabular-nums hover:bg-surface-muted/60 ${
                   active ? 'font-semibold text-ink inset-ring-2 inset-ring-brand' : 'text-ink-muted'
                 }`}
               >
@@ -223,7 +223,7 @@ export function QuestionIndex({
           )
         })}
       </ol>
-      <p aria-hidden="true" className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">
+      <p aria-hidden="true" className="flex flex-wrap gap-x-3 gap-y-1 text-secondary text-ink-muted">
         <span className="inline-flex items-center gap-1.5">
           <StateMark state="done" />
           {t('attempt.legendAnswered')}
@@ -240,7 +240,7 @@ export function QuestionIndex({
 export function Rubric({ rubric }: { rubric: Question['rubric'] }) {
   const { t, i18n } = useTranslation('classroom')
   return (
-    <div className="text-sm">
+    <div className="text-secondary">
       <p className="font-medium text-ink">{t('question.rubric')}</p>
       <ul className="list-disc pl-5 text-ink-muted">
         {rubric.map((criterion) => (

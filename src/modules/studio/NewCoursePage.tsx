@@ -68,7 +68,7 @@ function DraftStage({ course, error, pending, onRetry }: { course: RecordItem; e
   const describe = useFirstDraftError()
   if (pending)
     return (
-      <p role="status" className="text-base text-ink">
+      <p role="status" className="text-body text-ink">
         {t('newCourse.creatingDraft')}
       </p>
     )

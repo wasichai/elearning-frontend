@@ -589,3 +589,17 @@ test('los logros no añaden peticiones: las lecturas del aula son las mismas con
   await expect(achievements(page)).toBeVisible()
   expect(withThem).toEqual(without)
 })
+
+// el enlace de las notas a un archivo es un ancla de la propia lección: con el router de la app no cambia de pantalla ni de lección
+test('el enlace de las notas a un archivo lleva a su figura sin salir de la lección', async ({ page }) => {
+  await fakeApi(page, { signedIn: true })
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+  await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toBeVisible()
+
+  await page.getByRole('complementary', { name: 'Notas al margen' }).getByRole('link', { name: 'plantilla.xlsx' }).click()
+
+  await expect(page).toHaveURL('/mis-cursos/mat-srtm-1?leccion=lec-pdf#recurso-rec-xlsx')
+  await expect(page.getByRole('region', { name: 'Plantilla de cálculo' })).toBeInViewport()
+  await expect(page.getByRole('heading', { level: 2, name: 'Guía de liquidación' })).toHaveCount(1)
+})

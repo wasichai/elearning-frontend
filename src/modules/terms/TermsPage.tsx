@@ -282,7 +282,7 @@ function Withdraw({ onDone }: { onDone: (outcome: WithdrawOutcome) => void }) {
     })
   return (
     <Section title={t('withdraw.title')} description={t('withdraw.intro')} className="border-t border-border pt-6">
-      <dl className="flex flex-col gap-3 text-sm">
+      <dl className="flex flex-col gap-3 text-secondary">
         <Fact label={t('withdraw.erasedLabel')}>{t('withdraw.erased')}</Fact>
         <Fact label={t('withdraw.anonymizedLabel')}>{t('withdraw.anonymized')}</Fact>
         <Fact label={t('withdraw.keptLabel')}>{t('withdraw.kept')}</Fact>

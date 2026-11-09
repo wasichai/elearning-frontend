@@ -107,12 +107,12 @@ function VersionReview({ version }: { version: StudioVersionDetail }) {
         aria-label={t('version.rail')}
         className="contents lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:flex lg:max-h-[calc(100dvh-3rem)] lg:min-w-0 lg:flex-col lg:gap-8 lg:overflow-y-auto"
       >
-        <div className="order-1 flex min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-4">
+        <div className="rule-strong order-1 flex min-w-0 flex-col gap-3 pt-4">
           {notice ? <Notice tone="success">{notice}</Notice> : null}
-          <p className="text-sm text-ink [overflow-wrap:anywhere]">
+          <p className="text-secondary text-ink [overflow-wrap:anywhere]">
             {t(open ? 'decide.reviewing' : 'decide.viewing', { number: version.number, course: version.course.title })}
           </p>
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink-muted">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-secondary text-ink-muted">
             {version.openComments > 0 ? (
               <StatusBadge state="warning">
                 {t('inbox.openComments', { count: version.openComments, value: formatNumber(version.openComments, i18n.language) })}
@@ -147,7 +147,7 @@ function VersionReview({ version }: { version: StudioVersionDetail }) {
             empty
           />
         </Section>
-        {units.length === 0 ? <p className="text-sm text-ink-muted">{t('content.empty')}</p> : null}
+        {units.length === 0 ? <p className="text-secondary text-ink-muted">{t('content.empty')}</p> : null}
         <ol className="flex flex-col gap-8">
           {units.map((unit) => (
             <li key={unit.id}>
@@ -218,7 +218,7 @@ function NextStep({ version, onDone }: { version: StudioVersionDetail; onDone: (
   return (
     <>
       <Notice tone="notice">{t('version.closed')}</Notice>
-      {version.status === 'APROBADA' ? <p className="text-sm text-ink-muted">{t('version.awaitingPublish')}</p> : null}
+      {version.status === 'APROBADA' ? <p className="text-secondary text-ink-muted">{t('version.awaitingPublish')}</p> : null}
     </>
   )
 }
@@ -246,8 +246,8 @@ function LessonItem({
     ...(lesson.hasAssessment ? [t('content.assessment')] : [])
   ]
   return (
-    <div className="flex flex-col gap-1 text-sm">
-      <h3 className="text-base font-medium text-ink [overflow-wrap:anywhere]">{label}</h3>
+    <div className="flex flex-col gap-1 text-secondary">
+      <h3 className="text-body font-medium text-ink [overflow-wrap:anywhere]">{label}</h3>
       <p className="text-ink-muted">{facts.join(' · ')}</p>
       {lesson.sourceRef ? (
         <details className="group text-ink-muted">
@@ -255,7 +255,7 @@ function LessonItem({
             <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 transition-transform duration-[160ms] group-open:rotate-90" />
             <span>{t('content.sourceToggle')}</span>
           </summary>
-          <p className="pl-[1.125rem] text-xs break-all">{t('content.source', { source: lesson.sourceRef })}</p>
+          <p className="pl-[1.125rem] text-secondary break-all">{t('content.source', { source: lesson.sourceRef })}</p>
         </details>
       ) : null}
       <SectionComments
@@ -328,7 +328,7 @@ function SectionComments({
             {resolved > 0 ? <StatusBadge state="done">{counts[counts.length - 1]}</StatusBadge> : null}
           </button>
         ) : empty && !writing ? (
-          <p className="text-sm text-ink-muted">{t('comments.none')}</p>
+          <p className="text-secondary text-ink-muted">{t('comments.none')}</p>
         ) : (
           <span />
         )}
@@ -365,9 +365,9 @@ function CommentItem({ versionId, comment }: { versionId: string; comment: Revie
   const resolve = useResolveComment(versionId)
   const describe = useActionError()
   return (
-    <div className="flex flex-col gap-1.5 text-sm">
+    <div className="flex flex-col gap-1.5 text-secondary">
       <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{comment.text}</p>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-secondary text-ink-muted">
         <StatusBadge state={comment.resolved ? 'done' : 'warning'}>{comment.resolved ? t('comments.resolved') : t('comments.pending')}</StatusBadge>
         {comment.createdAt ? <span>{formatInstant(comment.createdAt, i18n.language)}</span> : null}
         {comment.resolved ? null : (
@@ -415,7 +415,7 @@ function CommentForm({
     comment.mutate({ section, text: trimmed }, { onSuccess: onClose })
   }
   return (
-    <form aria-label={t('comments.formLabel', { section: label })} onSubmit={submit} className="flex flex-col gap-2 text-sm">
+    <form aria-label={t('comments.formLabel', { section: label })} onSubmit={submit} className="flex flex-col gap-2 text-secondary">
       <div className="flex w-full flex-col gap-1.5">
         <Label htmlFor={`${id}-text`}>{t('comments.text')}</Label>
         <Textarea
@@ -491,7 +491,7 @@ function DecisionPanel({ version, onDone }: { version: StudioVersion; onDone: (n
   return (
     <section aria-labelledby="decide" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="decide" className="text-h4 text-ink">
+        <h2 id="decide" className="font-read text-h4 text-ink">
           {t('decide.title')}
         </h2>
         <StatusBadge state="review">{t('decide.missing')}</StatusBadge>
@@ -506,7 +506,7 @@ function DecisionPanel({ version, onDone }: { version: StudioVersion; onDone: (n
             >
               {t(`decide.${decision}`)}
             </Button>
-            <p className="text-sm text-ink-muted">{t(`decide.effect.${decision}`)}</p>
+            <p className="text-secondary text-ink-muted">{t(`decide.effect.${decision}`)}</p>
           </li>
         ))}
       </ul>
@@ -562,8 +562,8 @@ function ReasonDialog({
     <ReturnFocus>
       <Dialog open onOpenChange={(open) => !open && !busy && onCancel()}>
         <DialogContent className="max-w-md">
-          <DialogTitle className="text-lg font-semibold">{t(`decide.${decision}Title`)}</DialogTitle>
-          <DialogDescription className="mt-2 text-sm text-ink-muted">{t(`decide.${decision}Description`)}</DialogDescription>
+          <DialogTitle className="text-h4 text-ink">{t(`decide.${decision}Title`)}</DialogTitle>
+          <DialogDescription className="mt-2 text-ink-muted">{t(`decide.${decision}Description`)}</DialogDescription>
           <form noValidate onSubmit={submit} className="mt-4 flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`${id}-reason`}>{t('decide.reasonLabel')}</Label>
@@ -582,7 +582,7 @@ function ReasonDialog({
               />
             </div>
             {missing ? (
-              <p id={`${id}-missing`} role="alert" className="flex items-start gap-1.5 text-sm text-danger">
+              <p id={`${id}-missing`} role="alert" className="flex items-start gap-1.5 text-secondary text-danger">
                 <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
                 <span>{t('decide.reasonRequired')}</span>
               </p>
@@ -611,12 +611,12 @@ function PublishPanel({ version, onDone }: { version: StudioVersion; onDone: (no
   return (
     <section aria-labelledby="publish" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="publish" className="text-h4 text-ink">
+        <h2 id="publish" className="font-read text-h4 text-ink">
           {t('publish.title')}
         </h2>
         <StatusBadge state="active">{t('publish.missing')}</StatusBadge>
       </div>
-      <p className="text-sm text-ink-muted">{t('publish.hint')}</p>
+      <p className="text-secondary text-ink-muted">{t('publish.hint')}</p>
       <Button className={`${WRAP} min-h-11 w-full`} onClick={() => setConfirming(true)}>
         {t('publish.action')}
       </Button>
@@ -655,14 +655,14 @@ function DecisionHistory({ decisions }: { decisions: ReviewDecision[] }) {
   return (
     <Section title={t('history.title')}>
       {decisions.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t('history.empty')}</p>
+        <p className="text-secondary text-ink-muted">{t('history.empty')}</p>
       ) : (
-        <ol className="flex flex-col gap-3 text-sm">
+        <ol className="flex flex-col gap-3 text-secondary">
           {[...decisions].reverse().map((decision) => (
             <li key={`${decision.at}-${decision.decision}`} className="flex flex-col gap-1">
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge state={DECISION_BADGE[decision.decision]}>{t(`decision.${decision.decision}`)}</StatusBadge>
-                <span className="text-xs text-ink-muted">{formatInstant(decision.at, i18n.language)}</span>
+                <span className="text-secondary text-ink-muted">{formatInstant(decision.at, i18n.language)}</span>
               </p>
               {decision.reason ? <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{decision.reason}</p> : null}
             </li>

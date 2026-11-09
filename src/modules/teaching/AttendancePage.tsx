@@ -36,7 +36,7 @@ export function AttendancePage() {
   return (
     <OfferingFrame code={code} subtitle={session?.title ?? t('attendance.title')} back={back} backLabel={t('attendance.back')}>
       {session ? (
-        <p className="text-sm text-ink-muted">
+        <p className="text-secondary text-ink-muted">
           {formatInstantRange(session.start, session.end, i18n.language, session.timeZone)} ({timeZoneLabel(session.timeZone, i18n.language)})
         </p>
       ) : null}
@@ -138,7 +138,7 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
         >
           {t('attendance.markAll')}
         </Button>
-        <p className="text-xs text-ink-muted">{t('attendance.markAllHint')}</p>
+        <p className="text-secondary text-ink-muted">{t('attendance.markAllHint')}</p>
       </div>
       <ul aria-label={t('attendance.title')} className="flex flex-col divide-y divide-border border-y border-border [&_button]:scroll-mb-32">
         {sorted.map((row) => {
@@ -148,7 +148,7 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
           return (
             <li key={row.enrollmentId} className="@container py-3">
               <div className="flex flex-col gap-2 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-6">
-                <div className="flex min-w-0 flex-col gap-0.5 text-sm">
+                <div className="flex min-w-0 flex-col gap-0.5 text-secondary">
                   <span className="font-medium text-ink">
                     <Submitter attempt={row} />
                   </span>
@@ -165,7 +165,7 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
                         type="button"
                         aria-pressed={active}
                         onClick={() => choose(row, status)}
-                        className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1 text-xs transition-colors duration-[160ms] motion-reduce:transition-none @2xl:flex-row @2xl:gap-1.5 @2xl:px-3 @2xl:text-sm ${
+                        className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1 text-secondary transition-colors duration-[160ms] motion-reduce:transition-none @2xl:flex-row @2xl:gap-1.5 @2xl:px-3 @2xl:text-sm ${
                           active ? `border-2 font-medium ${pressed}` : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
                         }`}
                       >
@@ -193,11 +193,11 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
             onChange={(event) => setReason(event.target.value)}
             className="scroll-mb-40"
           />
-          <p id={`${id}-reason-hint`} className="text-xs text-ink-muted">
+          <p id={`${id}-reason-hint`} className="text-secondary text-ink-muted">
             {t('attendance.reasonHint')}
           </p>
           {reasonInvalid ? (
-            <p role="alert" className="text-sm text-danger">
+            <p role="alert" className="text-secondary text-danger">
               {t('reason.invalid', { max: CHANGE_REASON_MAX_LENGTH })}
             </p>
           ) : null}
@@ -210,7 +210,7 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
           </Notice>
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <p role="status" className="text-sm font-semibold text-ink">
+          <p role="status" className="text-secondary font-semibold text-ink">
             {dirty
               ? t('attendance.unsaved', { count: unsaved, value: formatNumber(unsaved, locale) })
               : save.isSuccess

@@ -40,15 +40,19 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
         <Achievement classroom={classroom} rules={completion.rules} />
       ) : (
         <section aria-labelledby="completion-rules" className="flex flex-col gap-3">
-          <h2 id="completion-rules" className="text-h4 text-ink">
+          <h2 id="completion-rules" className="font-read text-h4 text-ink">
             {t('completionPanel.rules')}
           </h2>
-          <p role="status" className="text-sm font-medium text-ink">
+          <p role="status" className="text-secondary font-medium text-ink">
             {completion.met
               ? t('completionPanel.met')
               : t('completionPanel.notMet', { missing: completion.rules.filter((rule) => !rule.met).length, count: completion.rules.length })}
           </p>
-          {completion.rules.length === 0 ? <p className="text-sm text-ink-muted">{t('completionPanel.noRules')}</p> : <RuleList rules={completion.rules} />}
+          {completion.rules.length === 0 ? (
+            <p className="text-secondary text-ink-muted">{t('completionPanel.noRules')}</p>
+          ) : (
+            <RuleList rules={completion.rules} />
+          )}
           {completion.met ? null : <NextStep classroom={classroom} />}
         </section>
       )}
@@ -57,25 +61,26 @@ function CompletionPanel({ classroom }: { classroom: Classroom }) {
   )
 }
 
-// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. es un estado cumplido: el bloque en success-soft y el sello en success
+// el logro, contenido: el sello y las cifras del servidor, sin adjetivos. entre filetes, sin caja (Colofón): el estado cumplido lo dicen el
+// sello en success y el texto
 function Achievement({ classroom, rules }: { classroom: Classroom; rules: CompletionRule[] }) {
   const { t } = useTranslation('classroom')
   return (
     <section
       aria-labelledby="completion-achievement"
-      className="flex flex-col gap-4 rounded-lg bg-success-soft p-5 text-ink sm:flex-row sm:items-start sm:gap-5"
+      className="rule-strong flex flex-col gap-4 border-b border-border pt-5 pb-6 text-ink sm:flex-row sm:items-start sm:gap-5"
     >
       <Seal />
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <h2 id="completion-achievement" className="text-h4 text-balance">
+          <h2 id="completion-achievement" className="font-read text-h4 text-balance">
             {t('completionPanel.achieved', { course: classroom.course.title })}
           </h2>
-          <p role="status" className="text-sm">
+          <p role="status" className="text-secondary">
             {t(classroom.certificateCode ? 'completionPanel.metIssued' : 'completionPanel.met')}
           </p>
         </div>
-        <dl className="flex flex-col gap-1 text-sm">
+        <dl className="flex flex-col gap-1 text-secondary">
           {rules.map((rule) => (
             <div key={rule.rule} className="flex flex-col sm:flex-row sm:gap-3">
               <dt>{t(`completionPanel.rule.${rule.rule}`)}</dt>
@@ -114,7 +119,7 @@ function RuleList({ rules }: { rules: CompletionRule[] }) {
   return (
     <ul className="flex flex-col divide-y divide-border border-y border-border">
       {ordered.map((rule) => (
-        <li key={rule.rule} className="flex flex-col items-start gap-1.5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <li key={rule.rule} className="flex flex-col items-start gap-1.5 py-3 text-secondary sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-col">
             <span className="font-medium text-ink">{t(`completionPanel.rule.${rule.rule}`)}</span>
             <span className="text-ink-muted tabular-nums">{rule.detail}</span>
@@ -159,19 +164,19 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
   )
   if (code)
     return (
-      <section aria-labelledby="certificate-issued" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
-        <h2 id="certificate-issued" className="text-h4 text-ink">
+      <section aria-labelledby="certificate-issued" className="rule-strong flex flex-col gap-3 pt-4">
+        <h2 id="certificate-issued" className="font-read text-h4 text-ink">
           {t('certificate.issuedTitle')}
         </h2>
         {issued ? (
-          <p role="status" className="text-sm text-ink">
+          <p role="status" className="text-secondary text-ink">
             {issued.holderName.trim() === name.trim()
               ? t('certificate.issued', { name: issued.holderName })
               : t('certificate.alreadyIssued', { name: issued.holderName })}
           </p>
         ) : null}
-        <p className="text-sm text-ink-muted">{t('certificate.shareHint')}</p>
-        <p className="font-mono text-sm tracking-wider break-all text-ink">{t('certificate.code', { code })}</p>
+        <p className="text-secondary text-ink-muted">{t('certificate.shareHint')}</p>
+        <p className="font-mono text-secondary tracking-wider break-all text-ink">{t('certificate.code', { code })}</p>
         {certificateLink(code)}
       </section>
     )
@@ -186,8 +191,8 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
     setConfirming(holderName)
   }
   return (
-    <section aria-labelledby="certificate-request" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
-      <h2 id="certificate-request" className="text-h4 text-ink">
+    <section aria-labelledby="certificate-request" className="rule-strong flex flex-col gap-3 pt-4">
+      <h2 id="certificate-request" className="font-read text-h4 text-ink">
         {t('certificate.requestTitle')}
       </h2>
       {met ? (
@@ -209,7 +214,7 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
               aria-invalid={problem ? true : undefined}
               onChange={(event) => setName(event.target.value)}
             />
-            <p id={`${nameId}-hint`} className="text-xs text-ink-muted">
+            <p id={`${nameId}-hint`} className="text-secondary text-ink-muted">
               {t('certificate.nameHint', { max: HOLDER_NAME_MAX })}
             </p>
           </div>
@@ -221,7 +226,7 @@ function CertificateSection({ classroom, met }: { classroom: Classroom; met: boo
         </form>
       ) : (
         <>
-          <p className="text-sm text-ink-muted">{t('certificate.notYet')}</p>
+          <p className="text-secondary text-ink-muted">{t('certificate.notYet')}</p>
           {request.error ? <RequestProblem error={request.error} /> : null}
         </>
       )}

@@ -211,6 +211,23 @@ describe('RosterPage: matriculados de una edición', () => {
       expect(figure('Evaluaciones por corregir')).toBe('1')
     })
 
+    // problema 13 del diagnóstico: cuatro cifras de alturas distintas y un «1» de otro color, suelto. ahora las cuatro tienen la misma forma
+    // (etiqueta, cifra en tinta, nota) y lo que hay que hacer con las pendientes lo dice su nota, no su color
+    it('todas las cifras en tinta y con la misma forma; las pendientes dicen dónde están', async () => {
+      renderRoster([
+        { path: OFFERINGS, body: [offering] },
+        { path: STUDENTS, body: roster }
+      ])
+
+      const region = await screen.findByRole('region', { name: 'Resumen de la edición' })
+      const values = [...region.querySelectorAll('dt + dd')]
+      expect(values).toHaveLength(4)
+      for (const value of values) expect(value.className).toMatch(/\btext-ink\b/)
+      expect(within(region).getByText('Intentos en la cola de corrección.')).toBeInTheDocument()
+      // el título de la región es para lectores de pantalla: no abre una sección vacía a la vista
+      expect(region.querySelector('.rule-strong')).toBeNull()
+    })
+
     it('no da cifras que no sabe: sin lecciones, sesiones ni evaluaciones, solo los matriculados', async () => {
       const bare = { ...roster[0], progress: { completedLessons: 0, totalLessons: 0, percent: 0 }, attendance: { attended: 0, total: 0 }, assessments: [] }
       renderRoster([

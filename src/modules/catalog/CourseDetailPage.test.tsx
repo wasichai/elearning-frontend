@@ -382,6 +382,41 @@ describe('CourseDetailPage: una ficha que se recorre', () => {
     ).toEqual(['ComponentePor semanaTotal', 'Teoría1272', 'Práctica1272', 'Autónomas1272', 'Total36216'])
   })
 
+  // un componente con horas por semana y total 0, o al revés, sigue teniendo dato: su fila se pinta con su cero
+  it('una fila con horas por semana y total 0 se pinta, y también la que tiene total y 0 por semana', async () => {
+    const workload = {
+      ...courseDetail.workload,
+      weekly: { theory: 12, practice: 0, supervised: 3, autonomous: 0 },
+      theoryHours: 0,
+      practiceHours: 30,
+      supervisedHours: 0,
+      autonomousHours: 0
+    }
+    renderCourse([{ path: COURSE, body: { ...courseDetail, workload } }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    const table = within(section('Carga de trabajo y créditos')).getByRole('table', { name: 'Horas en 6 semanas' })
+    expect(within(table).getByRole('row', { name: 'Teoría 12 0' })).toBeInTheDocument()
+    expect(within(table).getByRole('row', { name: 'Práctica 0 30' })).toBeInTheDocument()
+    expect(within(table).getByRole('row', { name: 'Supervisadas 3 0' })).toBeInTheDocument()
+    expect(within(table).queryByRole('row', { name: /^Autónomas/ })).not.toBeInTheDocument()
+  })
+
+  it('sin ningún componente con horas no hay tabla: un total de ceros no dice nada', async () => {
+    const workload = {
+      ...courseDetail.workload,
+      weekly: { theory: 0, practice: 0, supervised: 0, autonomous: 0 },
+      theoryHours: 0,
+      practiceHours: 0,
+      supervisedHours: 0,
+      autonomousHours: 0
+    }
+    renderCourse([{ path: COURSE, body: { ...courseDetail, workload } }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    expect(within(section('Carga de trabajo y créditos')).queryByRole('table')).not.toBeInTheDocument()
+  })
+
   it('«En esta página» enlaza a cada sección presente, y cada una es su destino', async () => {
     renderCourse([{ path: COURSE, body: courseDetail }])
 

@@ -112,7 +112,7 @@ function ResultActions({ enrollmentId, lesson }: { enrollmentId: string; lesson:
             {flow.start.isPending ? t('assessment.starting') : t('result.retry')}
           </Button>
         ) : null}
-        {note ? <p className="text-sm text-ink-muted">{note}</p> : null}
+        {note ? <p className="text-secondary text-ink-muted">{note}</p> : null}
       </div>
       {flow.dialog}
     </div>
@@ -130,12 +130,9 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
   const timed = assessment.timeLimitMinutes !== null
   const marks = attemptMarks(assessment.maxAttempts, assessment.attemptsUsed - (open ? 1 : 0), open !== null)
   return (
-    <section
-      aria-labelledby={`assessment-${assessment.id}`}
-      className="@container flex flex-col gap-5 rounded-card border border-border bg-surface px-4 py-5 sm:px-6"
-    >
+    <section aria-labelledby={`assessment-${assessment.id}`} className="@container rule-strong flex flex-col gap-5 pt-5">
       {/* la lección ya lleva su título encima: solo se repite aquí si la evaluación se llama de otro modo */}
-      <h3 id={`assessment-${assessment.id}`} className={assessment.title === lesson.title ? 'sr-only' : 'text-h4 text-ink'}>
+      <h3 id={`assessment-${assessment.id}`} className={assessment.title === lesson.title ? 'sr-only' : 'font-read text-h4 text-ink'}>
         {assessment.title}
       </h3>
 
@@ -156,7 +153,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
       </dl>
 
       <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+        <p className="flex flex-wrap items-baseline justify-between gap-x-3 text-secondary">
           <span id={attemptsLabel} className="font-medium text-ink">
             {t('assessment.attempts')}
           </span>
@@ -164,7 +161,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
             {t('assessment.attemptsValue', { used: formatNumber(assessment.attemptsUsed, locale), max: formatNumber(assessment.maxAttempts, locale) })}
           </span>
         </p>
-        <ul aria-labelledby={attemptsLabel} className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink">
+        <ul aria-labelledby={attemptsLabel} className="flex flex-wrap gap-x-5 gap-y-2 text-secondary text-ink">
           {marks.map((mark, index) => (
             <li key={index} className="inline-flex items-center gap-2">
               <StateMark state={mark} />
@@ -180,7 +177,7 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
         <Alert tone="notice">{closedNotice}</Alert>
       ) : open ? (
         <div className="flex flex-col gap-3 @lg:flex-row @lg:items-center @lg:justify-between">
-          <p className="text-sm text-ink-muted">{t(timed ? 'assessment.resumeTimed' : 'assessment.resumeHint')}</p>
+          <p className="text-secondary text-ink-muted">{t(timed ? 'assessment.resumeTimed' : 'assessment.resumeHint')}</p>
           <Button asChild className={`w-full shrink-0 @lg:w-auto ${WRAP} min-h-11`}>
             <Link to={attemptLink(open)}>{t('assessment.resume')}</Link>
           </Button>
@@ -195,8 +192,8 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
 
       {canStart ? (
         <div className="flex flex-col gap-2 border-t border-border pt-4">
-          <h4 className="text-sm font-medium text-ink">{t('assessment.onStart')}</h4>
-          <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-muted">
+          <h4 className="text-secondary font-medium text-ink">{t('assessment.onStart')}</h4>
+          <ul className="flex list-disc flex-col gap-1 pl-5 text-secondary text-ink-muted">
             <li>{t('assessment.onStartAttempt', numbers)}</li>
             {timed ? <li>{t('assessment.onStartTimer', { value: formatNumber(assessment.timeLimitMinutes!, locale) })}</li> : null}
             {timed ? <li>{t('assessment.onStartDeadline')}</li> : null}
@@ -213,8 +210,8 @@ function AssessmentPanel({ enrollmentId, lesson }: { enrollmentId: string; lesso
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-2 first:pt-0 last:pb-0 @lg:flex-col @lg:justify-start @lg:gap-0.5 @lg:py-0">
-      <dt className="shrink-0 text-sm text-ink-muted">{label}</dt>
-      <dd className="text-right text-h4 text-ink tabular-nums @lg:text-left">{children}</dd>
+      <dt className="shrink-0 text-secondary text-ink-muted">{label}</dt>
+      <dd className="text-right font-read text-h4 text-ink tabular-nums @lg:text-left">{children}</dd>
     </div>
   )
 }

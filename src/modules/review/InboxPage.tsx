@@ -65,13 +65,13 @@ function VersionItem({ version, primary }: { version: StudioVersion; primary: bo
   return (
     <article aria-labelledby={headingId} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4">
       <div className="flex min-w-0 flex-1 basis-72 flex-col gap-1.5">
-        <h2 id={headingId} className="text-h4 text-ink [overflow-wrap:anywhere]">
+        <h2 id={headingId} className="font-read text-h4 text-ink [overflow-wrap:anywhere]">
           <Link to={to} className="inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:text-brand-strong hover:underline sm:min-h-6">
             {version.course.title}
           </Link>
         </h2>
-        <p className="text-sm text-ink-muted">{t('inbox.code', { course: version.course.code, number: version.number })}</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-ink-muted">
+        <p className="text-secondary text-ink-muted">{t('inbox.code', { course: version.course.code, number: version.number })}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-secondary text-ink-muted">
           <StatusBadge state={VERSION_BADGE[version.status]}>{t(`status.${version.status}`)}</StatusBadge>
           <GeneratorBadge namespace={REVIEW_MODULE_ID} generator={version.generator} />
           {version.openComments > 0 ? (

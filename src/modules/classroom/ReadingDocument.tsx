@@ -106,9 +106,9 @@ function Blocks({ blocks }: { blocks: Block[] }) {
 // la jerarquía de la página: la lección es h2 y el recurso h3, así que los h2…h4 del documento caen en h4…h6. scroll-mt: el índice de las
 // notas al margen salta a ellos, y la barra del aula (sticky) no los tapa
 const HEADINGS = {
-  2: { tag: 'h4', className: 'mt-[0.6em] scroll-mt-24 text-[1.45em]/[1.25] font-[460] text-balance' },
-  3: { tag: 'h5', className: 'mt-[0.4em] scroll-mt-24 text-[1.2em]/[1.3] font-[520] text-balance' },
-  4: { tag: 'h6', className: 'scroll-mt-24 text-[1em]/[1.4] font-semibold' }
+  2: { tag: 'h4', className: 'mt-[0.6em] scroll-mt-24 text-read-heading text-balance' },
+  3: { tag: 'h5', className: 'mt-[0.4em] scroll-mt-24 text-read-subheading text-balance' },
+  4: { tag: 'h6', className: 'scroll-mt-24 text-read-minor' }
 } as const
 
 function BlockView({ block }: { block: Block }) {
@@ -147,7 +147,7 @@ function BlockView({ block }: { block: Block }) {
       return (
         // una tabla ancha se desplaza sola, y con el teclado: una región con el nombre de su pie o «Tabla»
         <div role="region" aria-label={block.caption ? plainText(block.caption) : t('reading.table')} tabIndex={0} className="overflow-x-auto">
-          <table className="w-full border-collapse font-sans text-[0.8em]/[1.45] tabular-nums">
+          <table className="w-full border-collapse font-sans text-read-small tabular-nums">
             {block.caption ? (
               <caption className="pb-2 text-left meta">
                 <Inlines content={block.caption} />
@@ -174,7 +174,7 @@ function BlockView({ block }: { block: Block }) {
           role="region"
           aria-label={block.language ? t('reading.codeIn', { language: block.language }) : t('reading.code')}
           tabIndex={0}
-          className="overflow-x-auto rounded-md bg-surface-muted px-4 py-3 font-mono text-[0.8em]/[1.6] whitespace-pre hyphens-none"
+          className="overflow-x-auto rounded-md bg-surface-muted px-4 py-3 font-mono text-read-small leading-[1.6] whitespace-pre hyphens-none"
         >
           <code data-language={block.language ?? undefined}>{block.text}</code>
         </pre>
@@ -186,7 +186,7 @@ function BlockView({ block }: { block: Block }) {
             <Blocks blocks={block.content} />
           </blockquote>
           {block.attribution ? (
-            <figcaption className="mt-[0.4em] text-[0.85em] text-ink-muted">
+            <figcaption className="mt-[0.4em] text-read-note text-ink-muted">
               — <Inlines content={block.attribution} />
             </figcaption>
           ) : null}
@@ -201,7 +201,7 @@ function BlockView({ block }: { block: Block }) {
           <span aria-hidden="true" className="pt-[0.2em] meta">
             {label}
           </span>
-          <div className="flex flex-col gap-[0.6em] text-[0.86em]/[1.55] italic">
+          <div className="flex flex-col gap-[0.6em] text-read-note italic">
             <Blocks blocks={block.content} />
           </div>
         </div>
@@ -224,7 +224,7 @@ function BlockView({ block }: { block: Block }) {
         <figure className="flex flex-col gap-2">
           <img src={block.src} alt={block.alt} className="h-auto max-w-full rounded-md" />
           {block.caption ? (
-            <figcaption className="font-sans text-[0.8em] text-ink-muted">
+            <figcaption className="font-sans text-read-small text-ink-muted">
               <Inlines content={block.caption} />
             </figcaption>
           ) : null}
@@ -285,7 +285,7 @@ function InlineView({ inline }: { inline: Inline }): ReactNode {
         </strong>
       )
     case 'code':
-      return <code className="rounded-sm bg-surface-muted px-[0.25em] font-mono text-[0.85em]">{inline.text}</code>
+      return <code className="rounded-sm bg-surface-muted px-[0.25em] font-mono text-read-note">{inline.text}</code>
     case 'link':
       return <ReadingLink href={inline.href} content={inline.content} />
     case 'break':

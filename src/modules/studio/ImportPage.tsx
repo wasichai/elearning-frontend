@@ -168,7 +168,7 @@ function ImportSteps({ stage }: { stage: ImportStatus | 'form' }) {
           <li
             key={step}
             aria-current={isCurrent ? 'step' : undefined}
-            className={`flex min-w-0 flex-col gap-1 border-t-2 pt-2 text-sm ${isCurrent ? 'border-current font-semibold text-ink' : 'border-border text-ink-muted'}`}
+            className={`flex min-w-0 flex-col gap-1 border-t-2 pt-2 text-secondary ${isCurrent ? 'border-current font-semibold text-ink' : 'border-border text-ink-muted'}`}
           >
             <Icon aria-hidden="true" className={`size-4 shrink-0 ${tone} ${isCurrent && working ? 'animate-spin motion-reduce:animate-none' : ''}`} />
             <span>{failedHere ? t('import.steps.failed') : t(`import.steps.${step}`)}</span>
@@ -214,11 +214,11 @@ function Sources({ sources }: { sources: ImportSource[] }) {
     <Section title={t('import.sources.title')} description={sources.length > 0 ? t('import.sources.hint') : undefined}>
       {sources.length === 0 ? (
         <div className="flex max-w-prose flex-col gap-1">
-          <p className="text-base font-semibold text-ink">{t('import.sources.empty')}</p>
-          <p className="text-sm text-ink-muted">{t('import.sources.emptyHint')}</p>
+          <p className="text-body font-semibold text-ink">{t('import.sources.empty')}</p>
+          <p className="text-secondary text-ink-muted">{t('import.sources.emptyHint')}</p>
         </div>
       ) : (
-        <ul className="flex flex-col divide-y divide-border border-y border-border text-sm">
+        <ul className="flex flex-col divide-y divide-border border-y border-border text-secondary">
           {sources.map((source) => (
             <li key={`${source.repository}@${source.sha ?? ''}`} className="flex flex-wrap gap-x-3 gap-y-0.5 py-2">
               <span className="font-mono break-all text-ink">{source.repository}</span>
@@ -237,13 +237,13 @@ type FieldErrors = { sha?: string | undefined; path?: string | undefined; course
 function FieldHelp({ id, error, hint }: { id: string; error?: string | undefined; hint?: string | undefined }) {
   if (error)
     return (
-      <p id={id} className="flex items-start gap-1.5 text-sm text-danger">
+      <p id={id} className="flex items-start gap-1.5 text-secondary text-danger">
         <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
         <span className="min-w-0">{error}</span>
       </p>
     )
   return hint ? (
-    <p id={id} className="text-sm text-ink-muted">
+    <p id={id} className="text-secondary text-ink-muted">
       {hint}
     </p>
   ) : null
@@ -362,7 +362,7 @@ function ImportForm({
               </Button>
             </div>
           ) : courses.data && courses.data.length === 0 ? (
-            <p className="text-sm text-ink-muted">{t('import.form.coursesEmpty')}</p>
+            <p className="text-secondary text-ink-muted">{t('import.form.coursesEmpty')}</p>
           ) : (
             <Select
               value={courseId}
@@ -392,9 +392,9 @@ function ImportForm({
         </div>
 
         {ready ? (
-          <p className="text-sm break-all text-ink-muted">{t('import.form.preview', { source: sourceRef(source.repository, sha, cleanPath) })}</p>
+          <p className="text-secondary break-all text-ink-muted">{t('import.form.preview', { source: sourceRef(source.repository, sha, cleanPath) })}</p>
         ) : null}
-        <p className="max-w-prose text-sm text-ink-muted">{t('import.form.note')}</p>
+        <p className="max-w-prose text-secondary text-ink-muted">{t('import.form.note')}</p>
         {start.error ? <Notice tone="danger">{describe(start.error)}</Notice> : null}
         <Button type="submit" className={`self-start ${WRAP}`} disabled={start.isPending}>
           {start.isPending ? t('import.form.submitting') : t('import.form.submit')}
@@ -454,7 +454,7 @@ function JobPanel({
       {status ? <ImportSteps stage={status} /> : null}
       <Section title={t('import.job.title')}>
         {/* solo la palabra del estado: si no cambia, el DOM no cambia y una consulta más no se anuncia */}
-        <p role="status" aria-live="polite" className="text-base font-semibold text-ink">
+        <p role="status" aria-live="polite" className="text-body font-semibold text-ink">
           {job ? t(`import.status.${job.status}`) : t('import.job.loading')}
         </p>
         {job ? <JobState job={job} /> : null}
@@ -490,14 +490,16 @@ function JobState({ job }: { job: ImportJob }) {
   const { t } = useTranslation('studio')
   return (
     <div className="flex flex-col gap-2">
-      <p className="max-w-prose text-sm text-ink-muted">{t(`import.statusHint.${job.status}`)}</p>
-      {!isFinished(job.status) && job.error ? <p className="text-sm break-all text-ink-muted">{t('import.job.transient', { error: job.error })}</p> : null}
+      <p className="max-w-prose text-secondary text-ink-muted">{t(`import.statusHint.${job.status}`)}</p>
+      {!isFinished(job.status) && job.error ? (
+        <p className="text-secondary break-all text-ink-muted">{t('import.job.transient', { error: job.error })}</p>
+      ) : null}
       {job.status === 'FALLIDO' ? (
         <>
           <Notice tone="danger">
             <span className="[overflow-wrap:anywhere]">{t('import.job.failed', { error: job.error ?? t('import.job.noReason') })}</span>
           </Notice>
-          <p className="max-w-prose text-sm text-ink-muted">{t('import.job.failedHint')}</p>
+          <p className="max-w-prose text-secondary text-ink-muted">{t('import.job.failedHint')}</p>
         </>
       ) : null}
     </div>
@@ -547,12 +549,12 @@ function Report({ report }: { report: ImportReport }) {
   const partial = report.problems.length < report.problemCount
   return (
     <Section title={t('import.report.title')}>
-      <p className="text-sm break-all text-ink-muted">{t('import.report.source', { source: report.source })}</p>
+      <p className="text-secondary break-all text-ink-muted">{t('import.report.source', { source: report.source })}</p>
       {report.problemCount === 0 ? (
         <Notice tone="success">{t('import.report.noProblems')}</Notice>
       ) : (
         <>
-          <p className="text-sm text-ink">
+          <p className="text-secondary text-ink">
             {t('import.report.problems', { count: report.problemCount, value: formatNumber(report.problemCount, locale) })}
             {partial
               ? ` ${t('import.report.truncated', { shown: formatNumber(report.problems.length, locale), total: formatNumber(report.problemCount, locale) })}`
@@ -570,10 +572,10 @@ function Report({ report }: { report: ImportReport }) {
               ))}
             </StatList>
           </div>
-          {partial ? <p className="text-sm text-ink-muted">{t('import.report.partial')}</p> : null}
+          {partial ? <p className="text-secondary text-ink-muted">{t('import.report.partial')}</p> : null}
         </>
       )}
-      <dl className="grid grid-cols-2 gap-x-6 gap-y-1 border-y border-border py-3 text-sm sm:grid-cols-3">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-1 border-y border-border py-3 text-secondary sm:grid-cols-3">
         {COUNTS.map((count) => (
           <div key={count} className="flex justify-between gap-2">
             <dt className="text-ink-muted">{t(`import.report.${count}`)}</dt>
@@ -595,18 +597,18 @@ function ProblemGroup({ kind, severity, problems }: { kind: ImportProblemKind | 
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-        <h3 className="text-base font-semibold text-ink">
+        <h3 className="text-body font-semibold text-ink">
           {t('import.report.group', {
             kind: kind ? t(`import.kind.${kind}`) : t('import.report.otherKind'),
             value: formatNumber(problems.length, i18n.language)
           })}
         </h3>
-        <span className={`inline-flex items-center gap-1 text-sm ${SEVERITY_TONE[severity]}`}>
+        <span className={`inline-flex items-center gap-1 text-secondary ${SEVERITY_TONE[severity]}`}>
           <Icon aria-hidden="true" className="size-4 shrink-0" />
           {t(`import.severity.${severity}`)}
         </span>
       </div>
-      <ul className="flex flex-col divide-y divide-border border-l-2 border-border pl-3 text-sm">
+      <ul className="flex flex-col divide-y divide-border border-l-2 border-border pl-3 text-secondary">
         {problems.map((problem, index) => (
           <li key={`${problem.origin}:${problem.line}:${index}`} className="py-1.5">
             <ProblemItem problem={problem} />
@@ -625,7 +627,7 @@ function ProblemItem({ problem }: { problem: ImportProblem }) {
   const origin = fileOf(problem.origin)
   return (
     <div className="flex flex-col">
-      <span className="font-mono text-xs break-all text-ink-muted">
+      <span className="font-mono text-secondary break-all text-ink-muted">
         {problem.line === 0 ? t('import.report.wholeFile', { origin }) : t('import.report.line', { origin, line: problem.line })}
       </span>
       <span className="break-all text-ink">{problem.detail}</span>

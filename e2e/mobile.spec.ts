@@ -111,6 +111,26 @@ test.describe('la acción de la ficha, al pie', () => {
     const overflow = await horizontalOverflow(page)
     expect(overflow.wider).toEqual([])
   })
+
+  // un motivo largo no se lee en media columna: con el aviso, la acción ocupa toda la fila de la barra
+  test('con un 409 largo, la acción y su aviso ocupan toda la fila', async ({ page }) => {
+    const api = await fakeApi(page, { signedIn: true, enrolled: false })
+    const detail = 'Para matricularte en esta edición antes debes aprobar: PRE-X (Fundamentos de rentas municipales) y PRE-Y (Atención al contribuyente)'
+    api.failOnce((url) => url.pathname === '/api/lms/enrollments', 409, detail)
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/cursos/srtm-anuncios')
+
+    const bar = page.locator('[data-slot="course-action"]')
+    await bar.getByRole('button', { name: ACTION }).click()
+    const alert = bar.getByRole('alert')
+    await expect(alert).toHaveText(detail)
+
+    const row = (await bar.locator('> div').boundingBox())!
+    const action = (await bar.getByRole('button', { name: ACTION }).boundingBox())!
+    // la fila menos sus márgenes de 16 px
+    expect(action.width).toBeGreaterThanOrEqual(row.width - 32 - 1)
+    expect((await alert.boundingBox())!.width).toBeGreaterThan(row.width / 2)
+  })
 })
 
 test('la ficha del curso no desborda en horizontal', async ({ page }) => {

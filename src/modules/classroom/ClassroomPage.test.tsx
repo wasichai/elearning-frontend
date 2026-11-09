@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { mockFetch, renderWithProviders, type FetchMock, type MockRoute } from '@wasichai/testing'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -480,6 +480,42 @@ describe('ClassroomPage: el aula Colofón', () => {
     const sheet = within(screen.getByRole('region', { name: 'Plantilla de cálculo' }))
     expect(sheet.getByRole('button', { name: 'Descargar plantilla.xlsx (10 kB)' })).toBeInTheDocument()
     expect(sheet.queryByRole('button', { name: /^Ver/ })).not.toBeInTheDocument()
+  })
+
+  // el vocabulario de tipos es cerrado (tipo_recurso): uno que no está en él no sale «tal cual» (HOJA_CALCULO → «Hoja calculo»)
+  it('un tipo de recurso fuera del vocabulario se nombra «Archivo»', async () => {
+    renderClassroom([{ path: CLASSROOM, body: classroom }], '/mis-cursos/mat-srtm-1?leccion=lec-pdf')
+    await lessonHeading('Guía de liquidación')
+
+    const sheet = within(screen.getByRole('region', { name: 'Plantilla de cálculo' }))
+    expect(sheet.getByText('Documento · Archivo · 10 kB')).toBeInTheDocument()
+    expect(within(notes()).getByText('Archivo · 10 kB')).toBeInTheDocument()
+    expect(screen.queryByText(/Hoja calculo/)).not.toBeInTheDocument()
+  })
+
+  // con zoom de texto la barra del aula crece con su contenido; el índice y la cabecera de un intento se colocan bajo su altura medida
+  it('la barra del aula no tiene altura fija: su altura medida se comparte con lo que va debajo', async () => {
+    let report: ((entries: { target: Element }[]) => void) | undefined
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: (entries: { target: Element }[]) => void) {
+          report = callback
+        }
+        observe() {}
+        disconnect() {}
+      }
+    )
+    renderClassroom([{ path: CLASSROOM, body: classroom }])
+    await lessonHeading('Recorrido por la pantalla')
+
+    const bar = screen.getByRole('heading', { level: 1, name: classroom.course.title }).closest('header')!
+    expect(bar.className).not.toMatch(/(^|\s)h-\(--classroom-bar\)/)
+    expect(bar).toHaveClass('min-h-14')
+    vi.spyOn(bar, 'getBoundingClientRect').mockReturnValue({ height: 92 } as DOMRect)
+    act(() => report?.([{ target: bar }]))
+    expect(bar.parentElement!.style.getPropertyValue('--classroom-bar')).toBe('92px')
+    vi.unstubAllGlobals()
   })
 
   it('el título del documento dice la lección abierta y el curso', async () => {
