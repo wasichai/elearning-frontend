@@ -44,8 +44,8 @@ export function AttemptResultView({ enrollmentId, attempt, passingPercent, title
   const questions = [...attempt.questions].sort((a, b) => a.order - b.order)
   return (
     <section aria-labelledby={`result-${attempt.id}`} className="flex scroll-mt-18 flex-col gap-8">
-      <div className="@container flex flex-col gap-5 rounded-card border border-border bg-surface px-4 py-5 sm:px-6">
-        <div className="flex flex-col gap-0.5 text-sm text-ink-muted">
+      <div className="@container rule-strong flex flex-col gap-5 pt-5">
+        <div className="flex flex-col gap-0.5 text-secondary text-ink-muted">
           <p className="font-semibold text-ink">{title}</p>
           <div className="flex flex-col gap-0.5 @lg:flex-row @lg:items-baseline @lg:justify-between @lg:gap-4">
             <div className="flex flex-wrap items-baseline gap-x-1">
@@ -62,7 +62,7 @@ export function AttemptResultView({ enrollmentId, attempt, passingPercent, title
       </div>
       {questions.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h4 className="text-h4 text-ink">{t('result.byQuestion')}</h4>
+          <h4 className="font-read text-h4 text-ink">{t('result.byQuestion')}</h4>
           <ol className="flex flex-col divide-y divide-border">
             {questions.map((question) => (
               <li key={question.id} className="py-5 first:pt-2 last:pb-0">
@@ -89,12 +89,12 @@ function ResultSummary({ result, passingPercent }: { result: AttemptResult; pass
     return (
       <div role="status" className="flex items-center gap-4">
         <GradeRing label={t('result.noGrade')} percent={null}>
-          <span className="block text-xs/4 font-medium text-ink-muted">{t('result.noGrade')}</span>
+          <span className="text-secondary block font-medium text-ink-muted">{t('result.noGrade')}</span>
         </GradeRing>
         <div className="flex min-w-0 flex-col items-start gap-1.5">
           <StatusBadge state="review">{t('result.pending')}</StatusBadge>
-          <p className="text-sm text-ink">{t('result.pendingHint', score)}</p>
-          <p className="text-sm text-ink-muted">{t('result.pendingNext')}</p>
+          <p className="text-secondary text-ink">{t('result.pendingHint', score)}</p>
+          <p className="text-secondary text-ink-muted">{t('result.pendingNext')}</p>
         </div>
       </div>
     )
@@ -103,14 +103,14 @@ function ResultSummary({ result, passingPercent }: { result: AttemptResult; pass
   return (
     <div role="status" className="flex items-center gap-4">
       <GradeRing label={t('result.grade', { value: grade })} percent={result.percent} tone={result.passed ? 'text-success' : 'text-warning'}>
-        <span className={`block tabular-nums ${Number.isInteger(result.percent) ? 'text-h3' : 'text-h4'} text-ink`}>{grade}</span>
+        <span className={`block tabular-nums ${Number.isInteger(result.percent) ? 'font-read text-h3' : 'text-h4'} text-ink`}>{grade}</span>
       </GradeRing>
       <div className="flex min-w-0 flex-col gap-1">
-        <p className={`flex items-center gap-2 text-h3 ${result.passed ? 'text-success' : 'text-warning'}`}>
+        <p className={`flex items-center gap-2 font-read text-h3 ${result.passed ? 'text-success' : 'text-warning'}`}>
           <Icon aria-hidden="true" className="size-6 shrink-0" />
           {t(result.passed ? 'result.passed' : 'result.failed')}
         </p>
-        <p className="text-sm text-ink-muted">{t('result.score', { ...score, passing: formatNumber(passingPercent, locale) })}</p>
+        <p className="text-secondary text-ink-muted">{t('result.score', { ...score, passing: formatNumber(passingPercent, locale) })}</p>
       </div>
     </div>
   )
@@ -147,7 +147,7 @@ function QuestionOutcome({ question, answer, outcome, enrollmentId }: { question
   const given = answer ? answerText(question, answer, optionText, t('question.fileDeliveredUnnamed')) : ''
   const title = t('question.prompt', { order: question.order, prompt: question.prompt })
   return (
-    <article aria-label={title} className="flex flex-col gap-3 text-sm">
+    <article aria-label={title} className="flex flex-col gap-3 text-secondary">
       <h5 className={`font-read text-h5 leading-7 font-medium text-ink ${LONG_TEXT}`}>{title}</h5>
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
         {outcome?.points == null ? (
@@ -172,13 +172,13 @@ function QuestionOutcome({ question, answer, outcome, enrollmentId }: { question
       </p>
       <p className="text-ink">
         <span className="text-ink-muted">{t('result.yourAnswer')} </span>
-        {given ? <span className={`font-read text-base ${LONG_TEXT}`}>{given}</span> : <span className="text-ink-muted">{t('result.noAnswer')}</span>}
+        {given ? <span className={`font-read text-body ${LONG_TEXT}`}>{given}</span> : <span className="text-ink-muted">{t('result.noAnswer')}</span>}
       </p>
       {outcome?.solution ? <Solution solution={outcome.solution} optionText={optionText} /> : null}
       {outcome?.comment ? (
         <div className="flex flex-col gap-0.5 border-l-2 border-border-control pl-3">
           <p className="text-ink-muted">{t('result.comment')}</p>
-          <p className={`font-read text-base text-ink ${LONG_TEXT}`}>{outcome.comment}</p>
+          <p className={`font-read text-body text-ink ${LONG_TEXT}`}>{outcome.comment}</p>
         </div>
       ) : null}
       {outcome?.reviewLessonId ? <ReviewLesson enrollmentId={enrollmentId} lessonId={outcome.reviewLessonId} /> : null}

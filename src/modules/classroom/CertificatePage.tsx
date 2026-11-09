@@ -42,7 +42,7 @@ function VerifyMeaning() {
   const { t } = useTranslation('classroom')
   return (
     <Section title={t('verify.meaningTitle')}>
-      <p className="max-w-prose text-sm text-ink">{t('verify.meaningGeneral')}</p>
+      <p className="max-w-prose text-secondary text-ink">{t('verify.meaningGeneral')}</p>
     </Section>
   )
 }
@@ -134,7 +134,7 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
       <div className={`${screenContainer()} flex flex-col gap-6 py-6 pb-16 print:p-0`}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 print:hidden">
           <Button onClick={() => window.print()}>{t('certificate.print')}</Button>
-          <p className="max-w-prose text-sm text-ink-muted">{t('certificate.printHint')}</p>
+          <p className="max-w-prose text-secondary text-ink-muted">{t('certificate.printHint')}</p>
         </div>
         {/* el documento: siempre en el tema claro de Colofón, se vea la página como se vea, para que en pantalla y en papel sea el
           mismo; con la proporción de un A4 apaisado desde tableta (en el móvil, una columna) y la hoja entera al imprimir */}
@@ -144,30 +144,30 @@ function CertificateView({ certificate }: { certificate: Certificate }) {
           style={{ colorScheme: COLOFON_THEME.colorScheme }}
           className="flex flex-col items-center justify-center gap-5 rounded-card border-2 border-border bg-surface px-6 py-10 text-center text-ink sm:aspect-[297/210] sm:px-12 print:fixed print:inset-0 print:aspect-auto print:rounded-none print:border-0 print:px-[18mm] print:py-[14mm] print:[print-color-adjust:exact]"
         >
-          {appName ? <p className="text-sm font-semibold tracking-widest text-ink-muted uppercase">{appName}</p> : null}
-          <p className="text-2xl font-semibold tracking-tight">{t('certificate.heading')}</p>
-          <p className="text-sm text-ink-muted">{t('certificate.certifies')}</p>
-          <h1 id="certificate-holder" className="font-read text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+          {appName ? <p className="meta">{appName}</p> : null}
+          <p className="font-read text-h3">{t('certificate.heading')}</p>
+          <p className="text-secondary text-ink-muted">{t('certificate.certifies')}</p>
+          <h1 id="certificate-holder" className="font-read text-h2 text-balance sm:text-h1">
             {certificate.holderName}
           </h1>
-          <p className="max-w-prose font-read text-lg font-semibold">
+          <p className="max-w-prose font-read text-h4 font-normal italic">
             {t(certificate.result === 'APROBADO' ? 'certificate.passedCourse' : 'certificate.completedCourse', { course: certificate.course.title })}
           </p>
-          <dl className="grid w-full max-w-xl gap-x-8 gap-y-3 text-left text-sm sm:grid-cols-2">
+          <dl className="grid w-full max-w-xl gap-x-8 gap-y-3 text-left text-secondary sm:grid-cols-2">
             <Fact label={t('certificate.courseCode')}>{t('certificate.courseVersion', { code: certificate.course.code, version: certificate.version })}</Fact>
             <Fact label={t('certificate.offering')}>{formatCivilRange(certificate.offering.startDate, certificate.offering.endDate, zone, locale)}</Fact>
             <Fact label={t('certificate.hours')}>{t('certificate.hoursValue', { value: formatNumber(certificate.totalHours, locale) })}</Fact>
             <Fact label={t('certificate.issuedAt')}>{formatInstant(certificate.issuedAt, locale, zone)}</Fact>
           </dl>
           {certificate.rules.length > 0 ? (
-            <ul className="flex w-full max-w-xl flex-col gap-1 text-left text-sm text-ink-muted">
+            <ul className="flex w-full max-w-xl flex-col gap-1 text-left text-secondary text-ink-muted">
               {certificate.rules.map((rule) => (
                 <li key={rule.rule}>{t('certificate.rule', { rule: t(`completionPanel.rule.${rule.rule}`), detail: rule.detail })}</li>
               ))}
             </ul>
           ) : null}
-          <p className="pt-2 font-mono text-sm tracking-wider">{t('certificate.verifyCode', { code: certificate.code })}</p>
-          <p className="text-xs text-ink-muted">{t('certificate.verifyAt', { url: window.location.href })}</p>
+          <p className="pt-2 font-mono text-secondary tracking-wider">{t('certificate.verifyCode', { code: certificate.code })}</p>
+          <p className="text-secondary text-ink-muted">{t('certificate.verifyAt', { url: window.location.href })}</p>
         </article>
         <Link to={links.to(CLASSROOM_ROUTES.verify)} className={`${TEXT_LINK} self-start print:hidden`}>
           {t('verify.another')}
@@ -186,11 +186,11 @@ function VerificationBand({ certificate }: { certificate: Certificate }) {
         <div role="status" className="flex items-start gap-3">
           <ShieldCheck aria-hidden="true" className="size-6 shrink-0 text-success" />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="text-h4 text-success">{t('verify.valid')}</p>
-            <p className="max-w-prose text-sm text-ink">{t('verify.meaning')}</p>
+            <p className="font-read text-h4 text-success">{t('verify.valid')}</p>
+            <p className="max-w-prose text-secondary text-ink">{t('verify.meaning')}</p>
           </div>
         </div>
-        <dl className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2 sm:pl-9 lg:grid-cols-4">
+        <dl className="grid gap-x-8 gap-y-2 text-secondary sm:grid-cols-2 sm:pl-9 lg:grid-cols-4">
           <BandFact label={t('verify.holder')}>{certificate.holderName}</BandFact>
           <BandFact label={t('certificate.courseCode')}>{certificate.course.title}</BandFact>
           <BandFact label={t('verify.codeLabel')}>
@@ -215,7 +215,7 @@ function BandFact({ label, children }: { label: string; children: ReactNode }) {
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col">
-      <dt className="text-xs text-ink-muted">{label}</dt>
+      <dt className="text-secondary text-ink-muted">{label}</dt>
       <dd>{children}</dd>
     </div>
   )

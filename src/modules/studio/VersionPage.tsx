@@ -113,7 +113,7 @@ function Actions({ version }: { version: StudioVersionDetail }) {
         )}
         <SubmitVersionButton version={version} submit={submit} variant="primary" offered={draft && hasLessons(version)} focusHome={home} />
       </div>
-      <p role="status" className="text-sm text-success empty:hidden">
+      <p role="status" className="text-secondary text-success empty:hidden">
         {submit.isSuccess ? t('version.submitted') : ''}
       </p>
     </div>
@@ -145,7 +145,7 @@ function Version({ version }: { version: StudioVersionDetail }) {
       <div className="flex min-w-0 flex-col gap-8">
         {draft ? (
           hasLessons(version) ? (
-            <p className="max-w-prose text-base text-ink-muted">{t('statusHint.BORRADOR')}</p>
+            <p className="max-w-prose text-body text-ink-muted">{t('statusHint.BORRADOR')}</p>
           ) : (
             <BlockedSubmit version={version} />
           )
@@ -187,16 +187,16 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
     >
       {sorted.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="max-w-prose text-sm text-ink-muted">{t('syllabus.empty')}</p>
-          {/* lo que el servidor pone a la v1 vacía (#270): el curso no tiene duración ni modalidad */}
-          {draft && version.number === 1 ? <p className="max-w-prose text-sm text-ink-muted">{t('syllabus.firstDraftDefaults')}</p> : null}
+          <p className="max-w-prose text-secondary text-ink-muted">{t('syllabus.empty')}</p>
+          {/* lo que el servidor pone a la v1 vacía (incidencia 270): el curso no tiene duración ni modalidad */}
+          {draft && version.number === 1 ? <p className="max-w-prose text-secondary text-ink-muted">{t('syllabus.firstDraftDefaults')}</p> : null}
         </div>
       ) : (
         <ol className="flex flex-col gap-6">
           {sorted.map((unit: StudioUnit) => (
             <li key={unit.id} className="flex flex-col gap-2">
               <div className="flex items-start justify-between gap-4">
-                <h3 className="min-w-0 text-base font-semibold text-ink [overflow-wrap:anywhere]">
+                <h3 className="min-w-0 text-body font-semibold text-ink [overflow-wrap:anywhere]">
                   {t('syllabus.unit', { order: unit.order, title: unit.title })}
                 </h3>
                 {draft ? (
@@ -214,7 +214,7 @@ function Syllabus({ version, draft }: { version: StudioVersionDetail; draft: boo
                 label={t('comments.of', { name: unit.title })}
               />
               {unit.lessons.length === 0 ? (
-                <p className="text-sm text-ink-muted">{t('syllabus.noLessons')}</p>
+                <p className="text-secondary text-ink-muted">{t('syllabus.noLessons')}</p>
               ) : (
                 <ol className="flex flex-col divide-y divide-border border-y border-border">
                   {[...unit.lessons]
@@ -256,7 +256,7 @@ function LessonItem({ lesson, draft, comments }: { lesson: StudioLesson; draft: 
     t('syllabus.resources', { count: lesson.resources, value: formatNumber(lesson.resources, i18n.language) })
   ]
   return (
-    <div className="flex flex-col gap-1 text-sm">
+    <div className="flex flex-col gap-1 text-secondary">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="font-medium text-ink [overflow-wrap:anywhere]">{t('syllabus.lesson', { order: lesson.order, title: lesson.title })}</span>
@@ -278,7 +278,7 @@ function LessonItem({ lesson, draft, comments }: { lesson: StudioLesson; draft: 
             <ChevronRight aria-hidden="true" className="size-3.5 shrink-0 transition-transform duration-[160ms] group-open:rotate-90" />
             <span>{t('syllabus.sourceToggle')}</span>
           </summary>
-          <p className="pl-[1.125rem] text-xs break-all">{t('syllabus.source', { ref: lesson.sourceRef })}</p>
+          <p className="pl-[1.125rem] text-secondary break-all">{t('syllabus.source', { ref: lesson.sourceRef })}</p>
         </details>
       ) : null}
       <CommentList comments={comments} label={t('comments.of', { name: lesson.title })} />
@@ -291,10 +291,10 @@ function CommentList({ comments, label }: { comments: ReviewComment[]; label: st
   const { t, i18n } = useTranslation('studio')
   if (comments.length === 0) return null
   return (
-    <ul aria-label={label} className="mt-1 flex flex-col gap-2 border-l-2 border-border pl-3 text-sm">
+    <ul aria-label={label} className="mt-1 flex flex-col gap-2 border-l-2 border-border pl-3 text-secondary">
       {comments.map((comment) => (
         <li key={comment.id} className="flex flex-col gap-1">
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-secondary text-ink-muted">
             <StatusBadge state={comment.resolved ? 'done' : 'warning'}>{comment.resolved ? t('comments.resolved') : t('comments.pending')}</StatusBadge>
             {comment.createdAt ? <span>{formatDateTime(comment.createdAt, i18n.language, localZone())}</span> : null}
           </p>
@@ -317,13 +317,13 @@ function Comments({ version }: { version: StudioVersionDetail }) {
   return (
     <Section title={t('comments.title')}>
       {comments.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t('comments.empty')}</p>
+        <p className="text-secondary text-ink-muted">{t('comments.empty')}</p>
       ) : (
         <>
-          <p className="text-sm text-ink-muted">
+          <p className="text-secondary text-ink-muted">
             {open > 0 ? t('comments.open', { count: open, value: formatNumber(open, i18n.language) }) : t('comments.allResolved')}
           </p>
-          {inSyllabus > 0 ? <p className="text-sm text-ink-muted">{t('comments.inSyllabus')}</p> : null}
+          {inSyllabus > 0 ? <p className="text-secondary text-ink-muted">{t('comments.inSyllabus')}</p> : null}
           <LabeledComments comments={whole} label={t('comments.whole')} />
           <LabeledComments comments={orphans} label={t('comments.orphans')} />
         </>
@@ -337,7 +337,7 @@ function LabeledComments({ comments, label }: { comments: ReviewComment[]; label
   if (comments.length === 0) return null
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-sm font-medium text-ink">{label}</p>
+      <p className="text-secondary font-medium text-ink">{label}</p>
       <CommentList comments={comments} label={label} />
     </div>
   )
@@ -349,14 +349,14 @@ function Decisions({ decisions }: { decisions: ReviewDecision[] }) {
   return (
     <Section title={t('decisions.title')}>
       {decisions.length === 0 ? (
-        <p className="text-sm text-ink-muted">{t('decisions.empty')}</p>
+        <p className="text-secondary text-ink-muted">{t('decisions.empty')}</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {[...decisions].reverse().map((decision) => (
-            <li key={`${decision.at}-${decision.decision}`} className="flex flex-col gap-1 text-sm">
+            <li key={`${decision.at}-${decision.decision}`} className="flex flex-col gap-1 text-secondary">
               <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge state={DECISION_BADGE[decision.decision]}>{t(`decision.${decision.decision}`)}</StatusBadge>
-                <span className="text-xs text-ink-muted">{formatDateTime(decision.at, i18n.language, localZone())}</span>
+                <span className="text-secondary text-ink-muted">{formatDateTime(decision.at, i18n.language, localZone())}</span>
               </p>
               {decision.reason ? <p className="whitespace-pre-line text-ink [overflow-wrap:anywhere]">{decision.reason}</p> : null}
             </li>

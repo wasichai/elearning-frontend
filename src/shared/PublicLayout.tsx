@@ -25,7 +25,7 @@ export function PublicLayout({ children, width = 'content', fullBleed = false }:
       <span>{appName}</span>
     </>
   )
-  const brandClass = 'inline-flex min-h-11 items-center gap-2 rounded-sm text-base font-semibold tracking-tight text-ink'
+  const brandClass = 'inline-flex min-h-11 items-center gap-2 rounded-sm text-body font-semibold tracking-tight text-ink'
   return (
     <div className="flex min-h-full flex-col bg-surface-muted text-ink">
       <header className="border-b border-border bg-surface print:hidden">
@@ -51,7 +51,7 @@ function PublicEntry() {
   const { t } = useTranslation(CORE_NAMESPACE)
   const { user, permissions } = useAuth()
   const links = useWasichaiLinks()
-  const linkClass = 'inline-flex min-h-11 items-center rounded-sm px-1 text-sm font-medium text-link underline-offset-4 hover:underline'
+  const linkClass = 'inline-flex min-h-11 items-center rounded-sm px-1 text-secondary font-medium text-link underline-offset-4 hover:underline'
   if (user && canLearn(permissions) && links.has(MY_COURSES_ROUTE))
     return (
       <Link to={links.to(MY_COURSES_ROUTE)} className={linkClass}>
@@ -78,7 +78,7 @@ export function PublicHeading({ title, subtitle, eyebrow }: { title: string; sub
     <div className="flex flex-col gap-2 pt-10 pb-6">
       {eyebrow}
       <h1 className="font-read text-h2 text-balance text-ink sm:text-h1">{title}</h1>
-      {subtitle ? <p className="max-w-prose text-base text-ink-muted">{subtitle}</p> : null}
+      {subtitle ? <p className="max-w-prose text-body text-ink-muted">{subtitle}</p> : null}
     </div>
   )
 }

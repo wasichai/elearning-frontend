@@ -56,7 +56,7 @@ export function Submitter({ attempt }: { attempt: { name?: string | null; email:
     <span className="flex min-w-0 flex-col">
       <span>{attempt.name}</span>
       {attempt.email ? (
-        <span className="text-xs font-normal text-ink-muted">
+        <span className="text-secondary font-normal text-ink-muted">
           <EmailText email={attempt.email} />
         </span>
       ) : null}
@@ -151,8 +151,8 @@ export function QueryProblem({ error, resource, onRetry }: { error: unknown; res
   if (kind === 'notFound')
     return (
       <div role="alert" className="flex max-w-prose flex-col gap-2 py-6">
-        <p className="text-base font-semibold text-ink">{title}</p>
-        <p className="text-sm text-ink-muted">{t('problem.notFoundHint')}</p>
+        <p className="text-body font-semibold text-ink">{title}</p>
+        <p className="text-secondary text-ink-muted">{t('problem.notFoundHint')}</p>
       </div>
     )
   return (
@@ -168,7 +168,7 @@ export function QueryProblem({ error, resource, onRetry }: { error: unknown; res
 export function BlockProblem({ text, retryLabel, onRetry }: { text: string; retryLabel: string; onRetry: () => void }) {
   const { t } = useTranslation('teaching')
   return (
-    <div role="alert" className="flex gap-2 text-sm">
+    <div role="alert" className="flex gap-2 text-secondary">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-danger" />
       <div className="flex min-w-0 flex-col items-start gap-2">
         <p className="text-ink">{text}</p>

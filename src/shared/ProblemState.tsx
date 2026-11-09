@@ -36,11 +36,11 @@ interface ProblemStateProps {
 // un error explicado: qué pasó, qué hacer, y la acción para hacerlo. con icono y palabra: el color nunca va solo
 export function ProblemState({ title, description, details = [], technical, children }: ProblemStateProps) {
   return (
-    <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose gap-3 py-12 text-sm">
+    <div role="alert" data-slot="query-state" data-state="error" className="flex max-w-prose gap-3 py-12 text-secondary">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-danger" />
       <div className="flex min-w-0 flex-col items-start gap-3">
         <p className="text-h4 text-ink">{title}</p>
-        {description ? <p className="text-base text-ink-muted">{description}</p> : null}
+        {description ? <p className="text-body text-ink-muted">{description}</p> : null}
         {details.length > 0 ? (
           <ul className="list-disc pl-5 text-ink-muted">
             {details.map((detail) => (
@@ -50,7 +50,7 @@ export function ProblemState({ title, description, details = [], technical, chil
         ) : null}
         {children ? <div className="flex flex-wrap items-center gap-3">{children}</div> : null}
         {technical ? (
-          <details className="text-xs text-ink-muted">
+          <details className="text-secondary text-ink-muted">
             <summary className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-focus">{technical.summary}</summary>
             <p className="mt-1 font-mono">{technical.text}</p>
           </details>

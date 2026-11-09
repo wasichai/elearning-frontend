@@ -80,7 +80,7 @@ export function SessionRow({
     : null
   const tone = cancelled ? 'text-ink-muted line-through' : past ? 'text-ink-muted' : 'text-ink'
   return (
-    <article id={id} aria-label={session.title} className="flex min-w-0 scroll-mt-6 flex-col gap-1.5 text-sm">
+    <article id={id} aria-label={session.title} className="flex min-w-0 scroll-mt-6 flex-col gap-1.5 text-secondary">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <time dateTime={session.start} className={`font-medium tabular-nums ${tone}`}>
           {date ? <span className="first-letter:uppercase">{date} · </span> : null}

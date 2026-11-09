@@ -60,7 +60,7 @@ export function Completion({
             {marking ? t('completion.marking') : t('completion.mark')}
           </Button>
         ) : (
-          <p className="flex min-h-11 items-center text-sm text-ink-muted">
+          <p className="flex min-h-11 items-center text-secondary text-ink-muted">
             {lesson.completion === 'VIDEO_END' && videoThreshold < 1
               ? t('completion.videoPart', { percent: formatNumber(videoThreshold * 100, i18n.language) })
               : t(`completion.how.${lesson.completion}`)}
@@ -103,7 +103,7 @@ function UpcomingStep({ enrollmentId, upcoming, pending, focus }: { enrollmentId
   }, [focus])
   if (!upcoming)
     return (
-      <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex flex-col gap-2 text-secondary sm:flex-row sm:items-center sm:gap-3">
         <p className="text-ink">{t('completion.courseDone')}</p>
         <Button asChild variant="secondary">
           <Link ref={ref} to={links.to(CLASSROOM_ROUTES.enrollments)}>
@@ -114,9 +114,9 @@ function UpcomingStep({ enrollmentId, upcoming, pending, focus }: { enrollmentId
     )
   return (
     <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-      {pending ? <p className="text-sm text-ink-muted">{t('completion.pending')}</p> : null}
+      {pending ? <p className="text-secondary text-ink-muted">{t('completion.pending')}</p> : null}
       {/* con el temario abierto a 1024 no cabe y quedaría cortado; el título sigue en «Siguiente», sobre el pie */}
-      <p aria-hidden="true" className="min-w-0 truncate text-sm text-ink-muted sm:hidden xl:block">
+      <p aria-hidden="true" className="min-w-0 truncate text-secondary text-ink-muted sm:hidden xl:block">
         {upcoming.lesson.title}
       </p>
       <Button asChild className={`${WRAP} shrink-0`}>

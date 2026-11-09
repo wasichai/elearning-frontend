@@ -42,7 +42,7 @@ function CourseFirstDraft({ courseId }: { courseId: string }) {
           </div>
         ) : (
           <div className="flex flex-col items-start gap-3">
-            {failure ? <Notice tone="danger">{failure.message}</Notice> : <p className="max-w-prose text-sm text-ink-muted">{t('firstDraft.hint')}</p>}
+            {failure ? <Notice tone="danger">{failure.message}</Notice> : <p className="max-w-prose text-secondary text-ink-muted">{t('firstDraft.hint')}</p>}
             {!failure || failure.retry ? (
               <Button
                 variant="primary"

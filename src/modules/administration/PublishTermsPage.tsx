@@ -81,7 +81,7 @@ function Publish() {
           </Notice>
         ) : null}
         {current ? (
-          <p className="text-sm text-ink-muted">
+          <p className="text-secondary text-ink-muted">
             {t('publish.current', {
               version: current.version,
               days: t('publish.days', { count: current.retentionDays, formatted: formatNumber(current.retentionDays, i18n.language) }),
@@ -259,12 +259,12 @@ function PublishForm({ current, onDirty, onPublished }: { current: TermsVersion 
 function FieldHelp({ id, error, hint }: { id: string; error: string | undefined; hint: string }) {
   if (!error)
     return (
-      <p id={id} className="text-sm text-ink-muted">
+      <p id={id} className="text-secondary text-ink-muted">
         {hint}
       </p>
     )
   return (
-    <p id={id} role="alert" className="flex items-start gap-1.5 text-sm text-danger">
+    <p id={id} role="alert" className="flex items-start gap-1.5 text-secondary text-danger">
       <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <span>{error}</span>
     </p>

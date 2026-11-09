@@ -47,8 +47,8 @@ function Roster({ code }: { code: string }) {
   if (query.isError && kind === 'notFound')
     return (
       <div role="alert" className="flex max-w-prose flex-col gap-2 py-6">
-        <p className="text-base font-semibold text-ink">{t('roster.notFound')}</p>
-        <p className="text-sm text-ink-muted">{t('roster.notFoundHint')}</p>
+        <p className="text-body font-semibold text-ink">{t('roster.notFound')}</p>
+        <p className="text-secondary text-ink-muted">{t('roster.notFoundHint')}</p>
       </div>
     )
   if (query.isError)
@@ -91,29 +91,28 @@ function Summary({ entries }: { entries: RosterEntry[] }) {
   const { t, i18n } = useTranslation('teaching')
   const format = (value: number) => formatNumber(value, i18n.language)
   const { students, meanPercent, attendance, assessments } = useMemo(() => rosterSummary(entries), [entries])
+  const id = useId()
+  // el título es para lectores de pantalla: a la vista, las cifras ya dicen qué son y no abren una sección «§» vacía
   return (
-    <Section title={<span className="sr-only">{t('roster.summary.title')}</span>}>
+    <section aria-labelledby={id}>
+      <h2 id={id} className="sr-only">
+        {t('roster.summary.title')}
+      </h2>
       <StatList>
         <Stat label={t('roster.summary.students')} value={format(students)} />
         {meanPercent !== undefined ? (
-          <Stat
-            label={t('roster.summary.mean')}
-            value={t('roster.summary.percent', { value: format(meanPercent) })}
-            hint={<span className="block max-w-48">{t('roster.summary.meanHint')}</span>}
-          />
+          <Stat label={t('roster.summary.mean')} value={t('roster.summary.percent', { value: format(meanPercent) })} hint={t('roster.summary.meanHint')} />
         ) : null}
         {attendance.total > 0 ? (
           <Stat
             label={t('roster.summary.attendance')}
             value={t('roster.summary.attendanceValue', { attended: format(attendance.attended), total: format(attendance.total) })}
-            hint={<span className="block max-w-48">{t('roster.summary.attendanceHint')}</span>}
+            hint={t('roster.summary.attendanceHint')}
           />
         ) : null}
-        {assessments.total > 0 ? (
-          <Stat label={t('roster.summary.pending')} value={format(assessments.pending)} tone={assessments.pending > 0 ? 'review' : undefined} />
-        ) : null}
+        {assessments.total > 0 ? <Stat label={t('roster.summary.pending')} value={format(assessments.pending)} hint={t('roster.summary.pendingHint')} /> : null}
       </StatList>
-    </Section>
+    </section>
   )
 }
 
@@ -127,7 +126,7 @@ function ProgressCell({ student }: { student: RosterEntry }) {
       <div aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-full bg-border">
         <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
       </div>
-      <span className="text-sm text-ink tabular-nums">
+      <span className="text-secondary text-ink tabular-nums">
         {t('roster.progressValue', {
           percent: formatNumber(percent, locale),
           completed: formatNumber(completedLessons, locale),
@@ -153,7 +152,7 @@ function Lowest({ entries }: { entries: RosterEntry[] }) {
         <ul className="grid grid-cols-1 divide-y divide-border border-y border-border @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">
           {lowest.map((student) => (
             <li key={student.enrollmentId} className="flex min-w-0 flex-col gap-1.5 py-3 @2xl:px-5 @2xl:first:pl-0 @2xl:last:pr-0">
-              <span className="text-sm font-medium text-ink">
+              <span className="text-secondary font-medium text-ink">
                 <Submitter attempt={student} />
               </span>
               <ProgressCell student={student} />
@@ -184,7 +183,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
   return (
     <Section title={heading}>
       <Toolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} entries={entries} sort={sort} onSort={setSort} />
-      <p role="status" className="text-sm text-ink-muted empty:hidden">
+      <p role="status" className="text-secondary text-ink-muted empty:hidden">
         {filtered && shown.length > 0
           ? t('roster.shown', { count: entries.length, shown: formatNumber(shown.length, locale), value: formatNumber(entries.length, locale) })
           : ''}
@@ -219,7 +218,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
               <tbody>
                 {shown.map((student) => (
                   <tr key={student.enrollmentId}>
-                    <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
+                    <Th scope="row" className="bg-transparent pl-0 font-normal text-ink">
                       <Submitter attempt={student} />
                     </Th>
                     <Td>
@@ -239,7 +238,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
               </tbody>
             </Table>
           </div>
-          <ul aria-label={heading} className="flex flex-col gap-3 @2xl:hidden">
+          <ul aria-label={heading} className="flex flex-col divide-y divide-border border-y border-border @2xl:hidden">
             {shown.map((student) => (
               <StudentCard key={student.enrollmentId} student={student} />
             ))}
@@ -341,7 +340,7 @@ function FilterChip({ pressed, onClick, children }: { pressed: boolean; onClick:
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors duration-[160ms] motion-reduce:transition-none ${
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-secondary transition-colors duration-[160ms] motion-reduce:transition-none ${
         pressed ? 'border-brand bg-brand-soft font-medium text-brand-strong' : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
       }`}
     >
@@ -359,9 +358,9 @@ function EnrollmentBadge({ student }: { student: RosterEntry }) {
 function AttendanceText({ student: { attendance } }: { student: RosterEntry }) {
   const { t, i18n } = useTranslation('teaching')
   const locale = i18n.language
-  if (attendance.total === 0) return <span className="text-sm text-ink-muted">{t('roster.noSessions')}</span>
+  if (attendance.total === 0) return <span className="text-secondary text-ink-muted">{t('roster.noSessions')}</span>
   return (
-    <span className="text-sm text-ink tabular-nums">
+    <span className="text-secondary text-ink tabular-nums">
       {t('roster.attendanceValue', { attended: formatNumber(attendance.attended, locale), total: formatNumber(attendance.total, locale) })}
     </span>
   )
@@ -369,11 +368,11 @@ function AttendanceText({ student: { attendance } }: { student: RosterEntry }) {
 
 function Assessments({ student }: { student: RosterEntry }) {
   const { t } = useTranslation('teaching')
-  if (student.assessments.length === 0) return <span className="text-sm text-ink-muted">{t('roster.noAssessments')}</span>
+  if (student.assessments.length === 0) return <span className="text-secondary text-ink-muted">{t('roster.noAssessments')}</span>
   return (
     <ul className="flex flex-col gap-1.5">
       {student.assessments.map((assessment) => (
-        <li key={assessment.lessonId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+        <li key={assessment.lessonId} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-secondary">
           <span className="min-w-0 break-words text-ink">{assessment.title}</span>
           <AssessmentState assessment={assessment} />
         </li>
@@ -399,15 +398,15 @@ function StudentCard({ student }: { student: RosterEntry }) {
   const { t } = useTranslation('teaching')
   const name = submitterOf(student) ?? t('roster.noEmail')
   return (
-    <li aria-label={name} className="flex min-w-0 flex-col gap-3 rounded-card border border-border bg-surface p-4">
+    <li aria-label={name} className="flex min-w-0 flex-col gap-3 py-4">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-        <span className="min-w-0 text-sm font-medium text-ink">
+        <span className="min-w-0 text-secondary font-medium text-ink">
           <Submitter attempt={student} />
         </span>
         <EnrollmentBadge student={student} />
       </div>
       <ProgressCell student={student} />
-      <dl className="flex flex-col gap-2 text-sm">
+      <dl className="flex flex-col gap-2 text-secondary">
         <div className="flex flex-col gap-0.5">
           <dt className="text-ink-muted">{t('roster.attendance')}</dt>
           <dd>

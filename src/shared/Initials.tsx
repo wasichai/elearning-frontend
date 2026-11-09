@@ -11,7 +11,7 @@ export function initialsOf(text: string): string {
     .join('')
 }
 
-export function Initials({ of, className = 'size-10 text-sm' }: { of: string; className?: string }) {
+export function Initials({ of, className = 'size-10 text-secondary' }: { of: string; className?: string }) {
   return (
     <span
       aria-hidden="true"

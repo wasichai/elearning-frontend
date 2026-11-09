@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { Resource, ResourceFile } from './contract'
 import { ForeignFileError, inertBlob, isVideo, NotPdfError, useDownload, useFileBlob, useObjectUrl, usePdfLoader } from '../../shared/files'
 import { TEXT_LINK } from '../../shared/buttons'
-import { formatFileSize, useOpenLabel } from './parts'
+import { formatFileSize } from './parts'
 import { ReadingDocument } from './ReadingDocument'
 import { useReading } from './readingApi'
 import { DEFAULT_READING_SIZE, type ReadingSize } from './readingPreferences'
@@ -64,10 +64,16 @@ export function Resources({ enrollmentId, resources, videoThreshold = 1, onVideo
 
 const resourceAnchor = (id: string) => `recurso-${id}`
 
+// el vocabulario de tipo_recurso es cerrado: un tipo que no está en él no se enseña «tal cual» (HOJA_CALCULO), es un archivo sin más
+function useResourceType() {
+  const { t } = useTranslation('classroom')
+  return (type: string) => t(`resourceType.${type}`, { defaultValue: t('resource.genericType') })
+}
+
 // los archivos de la lección en las notas al margen: un enlace breve a su figura en el cuerpo, con tipo y tamaño (Classroom.dc.html, Recursos)
 export function FileResources({ resources }: { resources: Resource[] }) {
   const { t, i18n } = useTranslation('classroom')
-  const resourceType = useOpenLabel('resourceType')
+  const resourceType = useResourceType()
   const files = resources.filter((resource) => !isInline(resource))
   if (files.length === 0) return <p className="font-read text-body text-ink">{t('classroom.noFiles')}</p>
   return (
@@ -94,7 +100,7 @@ export function FileResources({ resources }: { resources: Resource[] }) {
 // un archivo en el cuerpo (Classroom.dc.html, la figura del PDF): su icono, «Documento · tipo · tamaño», el nombre y sus acciones
 function FileFigure({ type, file }: { type: string; file: ResourceFile }) {
   const { t, i18n } = useTranslation('classroom')
-  const resourceType = useOpenLabel('resourceType')
+  const resourceType = useResourceType()
   const { download, pending, error } = useDownload(file)
   const [viewing, setViewing] = useState(false)
   const size = formatFileSize(file.size, i18n.language)
@@ -222,7 +228,7 @@ function FileProblemText({ error }: { error: unknown }) {
 function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { t } = useTranslation('classroom')
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-card border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-card border border-danger bg-danger-soft px-4 py-3 text-secondary text-danger">
       <CircleAlert aria-hidden="true" className="size-5 shrink-0" />
       <span className="min-w-0 flex-1">
         <FileProblemText error={error} />

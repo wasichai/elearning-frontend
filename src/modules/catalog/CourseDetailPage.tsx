@@ -352,7 +352,7 @@ function sourceTitle(path: string): string {
 
 function Sources({ sources }: { sources: string[] }) {
   return (
-    <ul className="flex max-w-prose flex-col gap-3 text-sm">
+    <ul className="flex max-w-prose flex-col gap-3 text-secondary">
       {sources.map((source) => {
         const path = REPOSITORY_SOURCE.exec(source)?.[1]
         return (
@@ -361,7 +361,7 @@ function Sources({ sources }: { sources: string[] }) {
             {path ? (
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-ink">{sourceTitle(path)}</span>
-                <span className="font-mono text-xs break-all text-ink-muted">{source}</span>
+                <span className="font-mono text-secondary break-all text-ink-muted">{source}</span>
               </span>
             ) : (
               <span className="min-w-0 text-ink">{source}</span>
@@ -649,7 +649,8 @@ function ActionFooter({
             </span>
           </p>
         ) : null}
-        <div className="min-w-0 flex-1 basis-40">
+        {/* con el aviso de un fallo (un 409 largo), la acción toma toda la fila: el motivo no se lee en media columna */}
+        <div className="min-w-0 flex-1 basis-40 has-[[role=alert]]:basis-full">
           {current ? <GoToCourse enrollmentId={current.id} /> : firstOpen ? <EnrollAction offering={firstOpen} /> : null}
         </div>
       </div>
@@ -671,40 +672,43 @@ function Workload({ course }: { course: CourseDetail }) {
   const rowHead = 'text-body! bg-transparent tracking-normal! text-ink [font-variant-caps:normal]!'
   return (
     <div className="flex flex-col gap-3">
-      <Table className="max-w-xl tabular-nums">
-        <caption className="text-secondary pb-2 text-left text-ink-muted">{t('workload.caption', { count: w.weeks })}</caption>
-        <thead>
-          <tr>
-            <Th scope="col">{t('workload.component')}</Th>
-            <Th scope="col" className="text-right">
-              {t('workload.perWeek')}
-            </Th>
-            <Th scope="col" className="text-right">
-              {t('workload.total')}
-            </Th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((key) => (
-            <tr key={key}>
-              <Th scope="row" className={`${rowHead} font-normal`}>
-                {t(`workload.${key}`)}
+      {/* sin ningún componente con horas, la tabla solo diría ceros: quedan las horas de contacto y dirigidas */}
+      {rows.length > 0 ? (
+        <Table className="max-w-xl tabular-nums">
+          <caption className="text-secondary pb-2 text-left text-ink-muted">{t('workload.caption', { count: w.weeks })}</caption>
+          <thead>
+            <tr>
+              <Th scope="col">{t('workload.component')}</Th>
+              <Th scope="col" className="text-right">
+                {t('workload.perWeek')}
               </Th>
-              <Td className="text-right tabular-nums">{n(w.weekly[key])}</Td>
-              <Td className="text-right tabular-nums">{n(totals[key])}</Td>
+              <Th scope="col" className="text-right">
+                {t('workload.total')}
+              </Th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <Th scope="row" className={rowHead}>
-              {t('workload.sum')}
-            </Th>
-            <Td className="text-right font-semibold tabular-nums">{n(weeklyTotal)}</Td>
-            <Td className="text-right font-semibold tabular-nums">{n(w.totalHours)}</Td>
-          </tr>
-        </tfoot>
-      </Table>
+          </thead>
+          <tbody>
+            {rows.map((key) => (
+              <tr key={key}>
+                <Th scope="row" className={`${rowHead} font-normal`}>
+                  {t(`workload.${key}`)}
+                </Th>
+                <Td className="text-right tabular-nums">{n(w.weekly[key])}</Td>
+                <Td className="text-right tabular-nums">{n(totals[key])}</Td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <Th scope="row" className={rowHead}>
+                {t('workload.sum')}
+              </Th>
+              <Td className="text-right font-semibold tabular-nums">{n(weeklyTotal)}</Td>
+              <Td className="text-right font-semibold tabular-nums">{n(w.totalHours)}</Td>
+            </tr>
+          </tfoot>
+        </Table>
+      ) : null}
       <dl className="text-secondary flex flex-wrap gap-x-6 gap-y-1">
         <Fact label={t('workload.contact')}>{t('workload.hours', { value: n(w.contactHours) })}</Fact>
         <Fact label={t('workload.directed')}>{t('workload.hours', { value: n(w.directedHours) })}</Fact>
@@ -719,11 +723,11 @@ function CreditsView({ credits }: { credits: Credits }) {
   const n = (value: number) => formatNumber(value, i18n.language)
   if (!credits.system) return null
   if (credits.approved !== null)
-    return <p className="text-sm font-medium text-ink">{t('credits.approved', { value: n(credits.approved), system: credits.system })}</p>
+    return <p className="text-secondary font-medium text-ink">{t('credits.approved', { value: n(credits.approved), system: credits.system })}</p>
   const proposal = credits.proposal
   if (!proposal) return null
   return (
-    <div className="flex flex-col gap-3 text-sm">
+    <div className="flex flex-col gap-3 text-secondary">
       <p className="font-medium text-ink">{t('credits.proposed', { count: proposal.proposed, value: n(proposal.proposed), system: proposal.system })}</p>
       {proposal.warnings.length > 0 ? (
         <Alert tone="warning" title={t('credits.warnings')}>

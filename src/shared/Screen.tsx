@@ -28,7 +28,7 @@ export interface Crumb {
 export function Breadcrumbs({ label, items }: { label: string; items: Crumb[] }) {
   return (
     <nav aria-label={label} className="print:hidden">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-ink-muted">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-secondary text-ink-muted">
         {items.map((item, index) => (
           <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1">
             {index > 0 ? <ChevronRight aria-hidden="true" className="size-3.5 shrink-0" /> : null}
@@ -67,7 +67,7 @@ export function SectionTabs({ label, items }: { label: string; items: SectionTab
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `inline-flex min-h-11 shrink-0 items-center border-b-2 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+              `inline-flex min-h-11 shrink-0 items-center border-b-2 text-secondary whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
                 isActive ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-muted hover:border-border-control hover:text-ink'
               }`
             }
@@ -149,36 +149,36 @@ export function Section({
   )
 }
 
-// una cifra con su etiqueta. va dentro de un <StatList>: es una lista de definiciones
+// una cifra con su etiqueta. va dentro de un <StatList>: es una lista de definiciones. todas con la misma forma (problema 13 del
+// diagnóstico): abre con un filete, la etiqueta en versalitas, la cifra en tinta y, si hace falta, una nota que dice qué hacer con ella.
+// la cifra nunca cambia de color: lo que pide atención lo dice la nota
 export function Stat({
   label,
   value,
   hint,
-  icon: Icon,
-  tone
+  icon: Icon
 }: {
   label: ReactNode
   value: ReactNode
   hint?: ReactNode
   icon?: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
-  // solo cuando la cifra pide atención; la palabra de hint o label dice por qué: el color nunca va solo
-  tone?: 'review' | 'warning' | 'done'
 }) {
-  const color = tone === 'review' ? 'text-notice' : tone === 'warning' ? 'text-warning' : tone === 'done' ? 'text-success' : 'text-ink'
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="flex items-center gap-1.5 text-sm text-ink-muted">
-        {Icon ? <Icon aria-hidden className="size-4 shrink-0" /> : null}
+    <div className="rule row-span-3 grid min-w-0 grid-rows-subgrid content-start pt-3 pb-3">
+      <dt className="meta flex items-start gap-1.5">
+        {Icon ? <Icon aria-hidden className="mt-0.5 size-4 shrink-0" /> : null}
         {label}
       </dt>
-      <dd className={`text-h3 tabular-nums ${color}`}>{value}</dd>
-      {hint ? <dd className="text-sm text-ink-muted">{hint}</dd> : null}
+      <dd className="font-read text-h3 text-ink tabular-nums lining-nums">{value}</dd>
+      {hint ? <dd className="text-secondary max-w-56 text-ink-muted">{hint}</dd> : null}
     </div>
   )
 }
 
+// las cifras en columnas iguales que comparten sus filas (subgrid): las etiquetas, las cifras y las notas quedan a la misma altura aunque una
+// etiqueta ocupe dos líneas o una cifra no tenga nota
 export function StatList({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <dl className={`grid grid-cols-2 gap-x-6 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-10 ${className}`}>{children}</dl>
+  return <dl className={`grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] ${className}`}>{children}</dl>
 }
 
 // el hueco de algo que está cargando, con la geometría real. decorativo: el aviso a lectores lo da quien lo usa (role="status")

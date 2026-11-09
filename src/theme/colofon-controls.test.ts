@@ -234,6 +234,9 @@ describe('colofon-controls.css', () => {
     // solo los de columna fijan el peso: el de un encabezado de fila lo decide quien lo usa
     expect(head.has('font-weight')).toBe(false)
     expect(declared("[data-slot='table-head'][scope='col']").get('font-weight')).toBe('600')
+    // un encabezado de fila es un nombre (un estudiante, un componente de la carga): sin versalitas ni el cuerpo de la cabecera
+    const row = declared("[data-slot='table-head'][scope='row']")
+    expect([row.get('font-variant-caps'), row.get('letter-spacing'), row.get('font-size')]).toEqual(['normal', 'normal', 'inherit'])
   })
 
   it('los ítems del menú miden 44px como mínimo', () => {

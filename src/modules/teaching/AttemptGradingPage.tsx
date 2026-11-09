@@ -41,14 +41,14 @@ export function AttemptGradingPage() {
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
         {/* el correo va aquí y no en la cabecera: es una palabra larga que la ensancharía en el móvil */}
         {student ? (
-          <p className="min-w-0 text-sm text-ink-muted [overflow-wrap:anywhere]">
+          <p className="min-w-0 text-secondary text-ink-muted [overflow-wrap:anywhere]">
             {t('grading.student', { student: submitterOf(student) ?? t('roster.noEmail') })}
           </p>
         ) : (
           <span />
         )}
         {place?.position ? (
-          <nav aria-label={t('grading.positionLabel')} className="flex flex-wrap items-center gap-x-4 text-sm">
+          <nav aria-label={t('grading.positionLabel')} className="flex flex-wrap items-center gap-x-4 text-secondary">
             <span className="font-medium text-ink tabular-nums">{t('grading.position', { position: place.position, total: place.total })}</span>
             {place.previous ? (
               <Link to={attemptLink(place.previous)} className={TEXT_LINK}>
@@ -198,7 +198,7 @@ function AttemptGrading({ code, attempt, place, onDirty }: { code: string; attem
   const askingError = asking ? Object.values(errors)[0] : undefined
   return (
     <div className="flex flex-col gap-5">
-      <h2 className="text-h4 text-ink">{t('grading.attempt', { number: attempt.number })}</h2>
+      <h2 className="font-read text-h4 text-ink">{t('grading.attempt', { number: attempt.number })}</h2>
       {!result ? <Alert tone="notice">{t('grading.open')}</Alert> : null}
       {/* lo enfocado no queda tapado por el total fijo */}
       <ol className="flex flex-col gap-4 [&_button]:scroll-mb-48 [&_input]:scroll-mb-48 [&_textarea]:scroll-mb-48">
@@ -298,18 +298,18 @@ function TotalBar({
       {failed ? <Notice tone="danger">{t('grading.saveFailed')}</Notice> : null}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex min-w-0 flex-col">
-          <p role="status" className="text-sm font-semibold text-ink tabular-nums">
+          <p role="status" className="text-secondary font-semibold text-ink tabular-nums">
             {result.pending || result.percent === null
               ? t('grading.pending', { score, max })
               : t(result.passed ? 'grading.passed' : 'grading.failed', { percent: formatNumber(result.percent, locale), score, max })}
           </p>
           {projected !== undefined ? (
-            <p className="text-sm text-ink-muted tabular-nums">{t('grading.projected', { score: formatNumber(projected, locale), max })}</p>
+            <p className="text-secondary text-ink-muted tabular-nums">{t('grading.projected', { score: formatNumber(projected, locale), max })}</p>
           ) : null}
         </div>
         {finished ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <p role="status" className="text-sm font-medium text-ink">
+            <p role="status" className="text-secondary font-medium text-ink">
               {t(queueKnown ? 'grading.finished' : 'grading.finishedSaved')}
             </p>
             <Button asChild className={`${WRAP} min-h-11 shrink-0 px-5`}>
@@ -349,12 +349,9 @@ function QuestionReview({
   const file = answer?.submission?.file
   const form = children(heading)
   return (
-    <article
-      aria-label={heading}
-      className={`grid grid-cols-1 gap-5 rounded-card border border-border bg-surface p-4 text-sm sm:p-5 ${form ? 'xl:grid-cols-2 xl:gap-8' : ''}`}
-    >
+    <article aria-label={heading} className={`rule grid grid-cols-1 gap-5 pt-5 text-secondary ${form ? 'xl:grid-cols-2 xl:gap-8' : ''}`}>
       <div className="flex min-w-0 flex-col gap-3">
-        <h3 className="text-base font-medium text-ink">{heading}</h3>
+        <h3 className="text-body font-medium text-ink">{heading}</h3>
         {question.type === 'FILE' ? (
           file ? (
             <SubmissionDownload file={file} />
@@ -439,13 +436,13 @@ function RubricCells({ question, chosen, onChoose }: { question: Question; chose
               type="button"
               aria-pressed={pressed}
               onClick={() => onChoose(pressed ? chosen.filter((candidate) => candidate !== index) : [...chosen, index])}
-              className={`flex min-h-[72px] flex-col justify-center gap-1 rounded-md border p-3 text-left text-sm text-ink transition-colors duration-[160ms] motion-reduce:transition-none ${
+              className={`flex min-h-[72px] flex-col justify-center gap-1 rounded-md border p-3 text-left text-secondary text-ink transition-colors duration-[160ms] motion-reduce:transition-none ${
                 pressed ? 'border-2 border-brand bg-brand-soft' : 'border-border-control bg-surface hover:bg-surface-muted'
               }`}
             >
               <span>{t('grading.criterion', { description: criterion.description, points: formatNumber(criterion.points, i18n.language) })}</span>
               {pressed ? (
-                <span aria-hidden="true" className="flex items-center gap-1 text-xs font-medium text-brand-strong">
+                <span aria-hidden="true" className="flex items-center gap-1 text-secondary font-medium text-brand-strong">
                   <Check className="size-3.5 shrink-0" />
                   {t('grading.chosen')}
                 </span>
@@ -454,7 +451,7 @@ function RubricCells({ question, chosen, onChoose }: { question: Question; chose
           )
         })}
       </div>
-      <p className="text-xs text-ink-muted">{t('grading.rubricHint')}</p>
+      <p className="text-secondary text-ink-muted">{t('grading.rubricHint')}</p>
     </div>
   )
 }

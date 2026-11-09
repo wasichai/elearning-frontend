@@ -94,7 +94,8 @@ const es = {
       attendance: 'Asistencia',
       attendanceValue: '{{attended}} de {{total}}',
       attendanceHint: 'Asistencias sumadas de todos los estudiantes.',
-      pending: 'Evaluaciones por corregir'
+      pending: 'Evaluaciones por corregir',
+      pendingHint: 'Intentos en la cola de corrección.'
     },
     lowest: {
       title: 'Menor avance',
@@ -517,7 +518,8 @@ const en: typeof es = {
       attendance: 'Attendance',
       attendanceValue: '{{attended}} of {{total}}',
       attendanceHint: 'Attendances added up across all students.',
-      pending: 'Assessments to grade'
+      pending: 'Assessments to grade',
+      pendingHint: 'Attempts in the grading queue.'
     },
     lowest: {
       title: 'Lowest progress',

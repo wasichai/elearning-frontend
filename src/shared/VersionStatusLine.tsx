@@ -28,7 +28,7 @@ export function VersionStatusLine({ namespace, status, updated }: { namespace: s
     <Section title={t('version.state', { status: t(`status.${status}`) })}>
       {current === -1 ? (
         updated ? (
-          <p className="text-sm text-ink-muted">{updated}</p>
+          <p className="text-secondary text-ink-muted">{updated}</p>
         ) : null
       ) : (
         <ol aria-label={t('version.path')} className="flex flex-col">
@@ -44,7 +44,7 @@ export function VersionStatusLine({ namespace, status, updated }: { namespace: s
                     <span aria-hidden="true" className={`w-px grow ${done || isCurrent ? 'bg-border-control' : 'bg-border'}`} />
                   ) : null}
                 </span>
-                <span className={`flex min-w-0 flex-col pb-3 text-sm ${isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
+                <span className={`flex min-w-0 flex-col pb-3 text-secondary ${isCurrent ? 'font-semibold text-ink' : 'text-ink-muted'}`}>
                   <span>{t(`status.${step}`)}</span>
                   {isCurrent ? (
                     updated ? (

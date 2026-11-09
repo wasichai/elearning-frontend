@@ -146,7 +146,7 @@ function Access({ to, icon: Icon, children }: { to: string; icon?: LucideIcon; c
   return (
     <Link
       to={to}
-      className="flex min-h-11 min-w-0 items-center gap-2 px-5 py-2 text-sm break-words text-ink transition-colors duration-[160ms] hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none sm:px-6"
+      className="flex min-h-11 min-w-0 items-center gap-2 py-2 text-secondary break-words text-ink transition-colors duration-[160ms] hover:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus motion-reduce:transition-none @2xl:px-4 @2xl:first:pl-0"
     >
       {Icon ? <Icon aria-hidden="true" className="size-4 shrink-0 text-ink-muted" /> : null}
       {children}
@@ -167,10 +167,10 @@ function OfferingCard({ offering, upcoming, showZone }: { offering: TeachingOffe
   const locale = i18n.language
   const { code, course, enrolled, pendingAttempts } = offering
   return (
-    <article className="@container flex h-full flex-col overflow-hidden rounded-card border border-border bg-surface">
-      <div className="flex flex-1 flex-col gap-2 px-5 pt-3 pb-4 sm:px-6">
+    <article className="@container rule-strong flex h-full flex-col">
+      <div className="flex flex-1 flex-col gap-2 pt-3 pb-4">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
-          <h3 className="min-w-0 text-base leading-snug font-semibold tracking-tight break-words">
+          <h3 className="min-w-0 font-read text-h4 break-words">
             <Link
               to={links.to(TEACHING_ROUTES.roster, { code })}
               className="inline-flex min-h-11 items-center rounded-sm text-ink underline-offset-4 hover:text-brand-strong hover:underline sm:min-h-6"
@@ -180,13 +180,13 @@ function OfferingCard({ offering, upcoming, showZone }: { offering: TeachingOffe
           </h3>
           <OfferingStatusBadge status={offering.status} />
         </div>
-        <p className="text-sm text-ink-muted">{course.code}</p>
-        <p className="flex flex-wrap gap-x-3 text-sm text-ink-muted">
+        <p className="text-secondary text-ink-muted">{course.code}</p>
+        <p className="flex flex-wrap gap-x-3 text-secondary text-ink-muted">
           <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
           {showZone ? <span>{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
         </p>
       </div>
-      <div className="mt-auto grid grid-cols-1 divide-y divide-border border-t border-border @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">
+      <div className="mt-auto grid grid-cols-1 divide-y divide-border border-y border-border @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">
         <Access to={links.to(TEACHING_ROUTES.roster, { code })} icon={Users}>
           {t('offerings.enrolled', { count: enrolled, value: formatNumber(enrolled, locale) })}
         </Access>

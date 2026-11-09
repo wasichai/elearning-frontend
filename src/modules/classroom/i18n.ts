@@ -531,6 +531,8 @@ const es = {
     notPdf: 'Este archivo no es un PDF y no se puede ver aquí.',
     // «PDF · 471 kB»
     kind: '{{type}} · {{size}}',
+    // un tipo de recurso fuera del vocabulario
+    genericType: 'Archivo',
     document: 'Documento · {{kind}}',
     downloading: 'Descargando…',
     failed: 'No pudimos cargar este recurso.',
@@ -1129,6 +1131,7 @@ const en: typeof es = {
     viewLabel: 'View {{name}}',
     notPdf: 'This file is not a PDF and cannot be viewed here.',
     kind: '{{type}} · {{size}}',
+    genericType: 'File',
     document: 'Document · {{kind}}',
     downloading: 'Downloading…',
     failed: 'We could not load this resource.',

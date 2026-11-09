@@ -95,7 +95,7 @@ function EnrollProblem({ error, refusal }: { error: unknown; refusal: TermsRefus
               ? t('enroll.forbiddenUnknown')
               : t('enroll.failed')
   return (
-    <p role="alert" className="max-w-prose text-sm text-danger">
+    <p role="alert" className="max-w-prose text-secondary text-danger">
       {message}
     </p>
   )

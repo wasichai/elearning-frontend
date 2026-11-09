@@ -16,6 +16,7 @@ import { emptyAnswer, isAnswered, QuestionField, QuestionIndex } from './Questio
 import { StateMark } from '../../shared/StateMark'
 import { attemptMarks } from './lessons'
 import { DocumentSkeleton } from '../../shared/PageSkeleton'
+import { useElementHeight } from '../../shared/useElementHeight'
 
 interface AttemptViewProps {
   enrollmentId: string
@@ -91,17 +92,19 @@ function useOnline() {
   )
 }
 
-// la cabecera sigue a la vista debajo de la barra de la lección (3.5rem), y crece con su aviso: lo que recibe el foco o se salta queda debajo
+// la cabecera sigue a la vista debajo de la barra de la lección (--classroom-bar, que mide el aula), y crece con su aviso: lo que recibe el
+// foco o se salta queda debajo
 function useStickyOffset() {
-  const [height, setHeight] = useState<number>()
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
-    if (!ref.current || typeof ResizeObserver === 'undefined') return
-    const observer = new ResizeObserver(([entry]) => entry && setHeight(entry.target.getBoundingClientRect().height))
-    observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [])
-  return { ref, style: { '--attempt-top': `calc(3.5rem + ${height === undefined ? '6rem' : `${height}px`})` } as CSSProperties }
+  const { ref, height } = useElementHeight<HTMLElement>()
+  return { ref, style: { '--attempt-top': `calc(var(--classroom-bar, 3.5rem) + ${height === undefined ? '6rem' : `${height}px`})` } as CSSProperties }
+}
+
+// un elemento a medias bajo la barra del aula: empieza debajo de ella y acaba fuera
+function cutByBar(element: Element): boolean {
+  const barBottom = document.querySelector('[data-slot="classroom-bar"]')?.getBoundingClientRect().bottom
+  if (barBottom === undefined) return false
+  const { top, bottom } = element.getBoundingClientRect()
+  return top < barBottom && bottom > barBottom
 }
 
 // la pregunta que se está viendo cuando se ven todas: la que cruza la franja alta de la pantalla. tras un salto se le deja llegar
@@ -175,10 +178,14 @@ function AttemptForm({
   const busy = save.isPending || submit.isPending || uploading > 0
   const error = submit.error ?? save.error
   const heading = useRef<HTMLHeadingElement>(null)
-  // al abrirlo se va al trabajo: el intento arriba, debajo de la barra de la lección, y el foco en su título
+  // al abrirlo se va al trabajo: el foco en su título y el intento arriba, debajo de la barra de la lección. con poco por debajo, el
+  // desplazamiento se queda a medias y cortaría el título de la lección bajo la barra: entonces se sube lo justo para verlo entero
   useEffect(() => {
-    heading.current?.focus()
-    heading.current?.closest('section')?.scrollIntoView?.({ block: 'start' })
+    const section = heading.current?.closest('section')
+    heading.current?.focus({ preventScroll: true })
+    section?.scrollIntoView?.({ block: 'start' })
+    const title = document.querySelector<HTMLElement>('[data-slot="lesson-title"]')
+    if (title && cutByBar(title)) title.scrollIntoView?.({ block: 'nearest' })
   }, [])
   const sticky = useStickyOffset()
   const formId = useId()
@@ -252,8 +259,8 @@ function AttemptForm({
       >
         <div className="flex flex-col gap-1 @2xl:flex-row @2xl:items-center @2xl:justify-between @2xl:gap-4">
           <div className="flex min-w-0 flex-col">
-            <p className="hidden truncate text-sm font-semibold text-ink @2xl:block">{title}</p>
-            <div className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
+            <p className="hidden truncate text-secondary font-semibold text-ink @2xl:block">{title}</p>
+            <div className="flex flex-wrap items-center gap-x-2 text-secondary text-ink-muted">
               <span className="inline-flex items-center gap-1 font-medium text-ink @2xl:font-normal @2xl:text-ink-muted">
                 <h3 id={`attempt-${attempt.id}`} ref={heading} tabIndex={-1} className="focus:outline-none">
                   {t('attempt.title', { number: attempt.number })}
@@ -302,7 +309,7 @@ function AttemptForm({
       <div className="flex flex-col gap-6 @2xl:grid @2xl:grid-cols-[minmax(0,1fr)_11rem] @2xl:items-start @2xl:gap-8">
         {/* antes en el documento: en poco ancho queda sobre la pregunta; con ancho, es un riel que acompaña */}
         <aside className="flex flex-col gap-3 @2xl:sticky @2xl:top-[calc(var(--attempt-top)+0.75rem)] @2xl:order-last @2xl:max-h-[calc(100dvh-var(--attempt-top)-1.5rem)] @2xl:overflow-y-auto">
-          <div className="flex flex-col gap-0.5 text-sm text-ink-muted">
+          <div className="flex flex-col gap-0.5 text-secondary text-ink-muted">
             <p className="font-medium text-ink">{t('attempt.answered', { answered, total: questions.length })}</p>
             {attempt.deadline ? <DeadlineNote deadline={attempt.deadline} timeZone={timeZone} /> : <p>{t('attempt.noLimit')}</p>}
           </div>
@@ -420,12 +427,12 @@ function SubmitDialog({
         className="max-h-[85dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto"
       >
         <DialogTitle className="pr-10 text-h4 text-ink">{t('attempt.confirmTitle')}</DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-ink-muted">
+        <DialogDescription className="mt-2 text-ink-muted">
           {blank.length > 0 ? t('attempt.confirmUnanswered', { count: blank.length, answered, total }) : t('attempt.confirmAll')}
         </DialogDescription>
         {blank.length > 0 ? (
           <div className="mt-3">
-            <p id={listLabel} className="text-sm font-medium text-ink">
+            <p id={listLabel} className="text-secondary font-medium text-ink">
               {t('attempt.blankTitle')}
             </p>
             <ul aria-labelledby={listLabel} className="grid max-h-48 grid-cols-2 gap-x-4 overflow-y-auto sm:grid-cols-3">
@@ -433,7 +440,7 @@ function SubmitDialog({
                 <li key={index}>
                   <button
                     type="button"
-                    className="inline-flex min-h-11 items-center rounded-sm text-sm text-link underline underline-offset-4"
+                    className="inline-flex min-h-11 items-center rounded-sm text-secondary text-link underline underline-offset-4"
                     onClick={() => {
                       going.current = true
                       onGo(index)

@@ -204,7 +204,7 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(rosterOf)(page)
-      await page.getByRole('searchbox', { name: /^(Buscar por correo|Search by email)$/ }).fill('estudiante.3')
+      await page.getByRole('searchbox', { name: /^(Buscar por nombre o correo|Search by name or email)$/ }).fill('estudiante.3')
     }
   },
   {
@@ -213,7 +213,7 @@ export const teachingScenarios: Scenario[] = [
     api: teacher,
     act: async (page) => {
       await reloaded(rosterOf)(page)
-      await page.getByRole('searchbox', { name: /^(Buscar por correo|Search by email)$/ }).fill('nadie')
+      await page.getByRole('searchbox', { name: /^(Buscar por nombre o correo|Search by name or email)$/ }).fill('nadie')
     }
   },
   {

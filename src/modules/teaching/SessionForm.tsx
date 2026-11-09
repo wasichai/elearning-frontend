@@ -97,14 +97,8 @@ export function SessionForm({
   }
   const locale = i18n.language
   return (
-    <form
-      ref={formRef}
-      noValidate
-      aria-label={t('form.title')}
-      onSubmit={submit}
-      className="flex max-w-3xl flex-col gap-4 rounded-card border border-border bg-surface px-5 py-4"
-    >
-      <h2 className="text-lg font-semibold text-ink">{t('form.title')}</h2>
+    <form ref={formRef} noValidate aria-label={t('form.title')} onSubmit={submit} className="rule-strong flex max-w-3xl flex-col gap-4 pt-4">
+      <h2 className="font-read text-h4 text-ink">{t('form.title')}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField id={`${id}-title`} label={t('form.name')} error={errors.title}>
           {(props) => <Input {...props} autoFocus value={title} onChange={(event) => setTitle(event.target.value)} />}
@@ -150,8 +144,8 @@ export function SessionForm({
         ) : null}
       </div>
       <fieldset className="flex flex-col gap-4 border-t border-border pt-4">
-        <legend className="text-sm font-medium text-ink">{t('form.schedule')}</legend>
-        <p className="text-xs text-ink-muted">{t('form.zoneHint', { zone: timeZoneLabel(timeZone, locale) })}</p>
+        <legend className="text-secondary font-medium text-ink">{t('form.schedule')}</legend>
+        <p className="text-secondary text-ink-muted">{t('form.zoneHint', { zone: timeZoneLabel(timeZone, locale) })}</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <ChoiceField id={`${id}-pattern`} label={t('form.pattern')} value={pattern} onChange={(value) => setPattern(value as RecurrencePattern)}>
             {RECURRENCE_PATTERNS.map((value) => (
@@ -174,10 +168,10 @@ export function SessionForm({
         </div>
         {pattern === 'WEEKDAYS' ? (
           <div role="group" aria-label={t('form.days')} className="flex flex-col gap-2">
-            <p className="text-sm font-medium text-ink">{t('form.days')}</p>
+            <p className="text-secondary font-medium text-ink">{t('form.days')}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
               {WEEK_DAYS.map((day) => (
-                <label key={day} className="flex items-center gap-1.5 text-sm text-ink">
+                <label key={day} className="flex items-center gap-1.5 text-secondary text-ink">
                   <input
                     type="checkbox"
                     checked={days.includes(day)}
@@ -189,7 +183,7 @@ export function SessionForm({
               ))}
             </div>
             {errors.days ? (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-secondary text-danger">
                 {errors.days}
               </p>
             ) : null}
@@ -221,7 +215,7 @@ function FormField({ id, label, error, children }: { id: string; label: string; 
       <Label htmlFor={id}>{label}</Label>
       {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? `${id}-error` : undefined })}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm text-danger">
+        <p id={`${id}-error`} role="alert" className="text-secondary text-danger">
           {error}
         </p>
       ) : null}
@@ -254,7 +248,7 @@ function ChoiceField({
         <SelectContent>{children}</SelectContent>
       </Select>
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm text-danger">
+        <p id={`${id}-error`} role="alert" className="text-secondary text-danger">
           {error}
         </p>
       ) : null}

@@ -54,9 +54,9 @@ export function Achievements({ classroom, units, onNavigate }: { classroom: Clas
             aria-hidden="true"
             className="size-4 shrink-0 text-ink-muted transition-transform duration-[160ms] group-open/achievements:rotate-90 motion-reduce:transition-none"
           />
-          <h2 className="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-sm font-semibold text-ink">
+          <h2 className="flex min-w-0 flex-1 items-baseline justify-between gap-3 text-secondary font-semibold text-ink">
             <span id={titleId}>{t('achievements.title')}</span>
-            <span className="shrink-0 text-xs font-normal text-ink-muted tabular-nums">
+            <span className="shrink-0 text-secondary font-normal text-ink-muted tabular-nums">
               <span aria-hidden="true">{formatNumber(rows.length, i18n.language)}</span>
               <span className="sr-only">{t('achievements.count', { count: rows.length })}</span>
             </span>
@@ -87,7 +87,7 @@ function AchievementRow({ enrollmentId, timeZone, row, onNavigate }: { enrollmen
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-ink">{row.subject ?? label}</span>
         {row.subject || date ? (
-          <span className="text-xs text-ink-muted">
+          <span className="text-secondary text-ink-muted">
             {row.subject ? <span className="text-success">{label}</span> : null}
             {row.subject && date ? ' · ' : null}
             {date}
@@ -96,7 +96,7 @@ function AchievementRow({ enrollmentId, timeZone, row, onNavigate }: { enrollmen
       </span>
     </>
   )
-  const rowClass = '-mx-2 flex min-h-12 items-center gap-2.5 rounded-md px-2 py-1.5 text-sm'
+  const rowClass = '-mx-2 flex min-h-12 items-center gap-2.5 rounded-md px-2 py-1.5 text-secondary'
   const to = row.certificateCode
     ? links.to(CLASSROOM_ROUTES.certificate, { code: row.certificateCode })
     : row.lessonId
