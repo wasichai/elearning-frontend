@@ -7,7 +7,8 @@ export const CLASSROOM_ROUTES = {
   sessions: `${CLASSROOM_MODULE_ID}:sessions`,
   completion: `${CLASSROOM_MODULE_ID}:completion`,
   verify: `${CLASSROOM_MODULE_ID}:verify`,
-  certificate: `${CLASSROOM_MODULE_ID}:certificate`
+  certificate: `${CLASSROOM_MODULE_ID}:certificate`,
+  schedule: `${CLASSROOM_MODULE_ID}:schedule`
 } as const
 
 // la ruta del aula de una matrícula: la registra el módulo y la lee el shell para saber si hay una lección abierta (shellChrome)
@@ -17,6 +18,9 @@ export const CLASSROOM_PATH = 'mis-cursos/:enrollmentId'
 export const LESSON_PARAM = 'leccion'
 // el intento abierto de la evaluación de esa lección (?leccion=<id>&intento=<id>)
 export const ATTEMPT_PARAM = 'intento'
+
+// la semana visible del horario, por su lunes (?semana=2026-11-16): se comparte con el enlace y atrás/adelante la recorren
+export const WEEK_PARAM = 'semana'
 
 // la lista del catálogo (módulo catalog): la clave de ruta como texto, que es lo que permite el registro sin importar
 // otro módulo. si el catálogo no está registrado, links.has(…) es false y no se enlaza

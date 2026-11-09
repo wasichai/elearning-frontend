@@ -425,6 +425,7 @@ describe('ClassroomPage: el aula Colofón', () => {
     const linked = within(within(notes()).getByRole('region', { name: 'Sesiones de la lección' }))
     expect(await linked.findByText('Esta lección no tiene sesiones vinculadas.')).toBeInTheDocument()
     expect(linked.getByRole('link', { name: 'Ver las sesiones del curso' })).toHaveAttribute('href', '/mis-cursos/mat-srtm-1/sesiones')
+    expect(linked.getByRole('link', { name: 'Abrir el horario' })).toHaveAttribute('href', '/horario')
   })
 
   it('PDF resource opens PdfDialog and keeps download', async () => {

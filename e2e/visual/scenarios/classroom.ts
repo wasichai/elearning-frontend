@@ -156,6 +156,52 @@ const startAttempt = async (page: Page) => {
   await page.getByRole('heading', { level: 3, name: /^(Intento|Attempt) 1$/ }).waitFor()
 }
 
+// el horario: la semana del lunes 16 de noviembre, con el reloj ese lunes por la mañana en Lima. una semana de verdad, de dos cursos: una
+// sesión de 30 minutos, dos que se pisan, una reprogramada, una cancelada, una presencial con lugar y un título largo
+const SCHEDULE_MONDAY = new Date('2026-11-16T14:00:00Z')
+const scheduleWeek = () => {
+  const [base] = sessions.slice(-1)
+  const at = (id: string, start: string, minutes: number, patch: object = {}) => ({
+    ...base,
+    id,
+    start,
+    end: new Date(Date.parse(start) + minutes * 60_000).toISOString().replace(/\.\d+Z$/, 'Z'),
+    lessonId: null,
+    originalSessionId: null,
+    link: 'https://meet.example/' + id,
+    modality: 'VIRTUAL',
+    location: null,
+    ...patch
+  })
+  const of = (row: { id: string; course: { title: string }; offering: { code: string } }, session: object) => ({
+    ...session,
+    enrollmentId: row.id,
+    courseTitle: row.course.title,
+    offeringCode: row.offering.code
+  })
+  return [
+    of(otherEnrollment, at('s-bienvenida', '2026-11-16T23:00:00Z', 30, { title: 'Bienvenida y dudas del curso', type: 'TEORIA' })),
+    of(enrollment, at('s-lab', '2026-11-17T22:00:00Z', 90, { title: 'Laboratorio de liquidación', type: 'LABORATORIO' })),
+    of(otherEnrollment, at('s-pisa', '2026-11-17T22:30:00Z', 60, { title: 'Consulta en grupo', type: 'CONSULTA' })),
+    of(enrollment, at('s-movida', '2026-11-18T23:00:00Z', 60, { title: 'Consulta de la unidad 2', type: 'CONSULTA', status: 'REPROGRAMADA' })),
+    of(otherEnrollment, at('s-cancelada', '2026-11-19T23:00:00Z', 60, { title: 'Repaso antes de la evaluación', status: 'CANCELADA' })),
+    of(
+      { ...enrollment, course: { ...enrollment.course, title: LONG_TITLE } },
+      at('s-larga', '2026-11-21T20:00:00Z', 120, {
+        title: 'Taller presencial de casos de fiscalización y determinación de deudas tributarias municipales con ejemplos reales',
+        modality: 'PRESENCIAL',
+        link: null,
+        location: 'Sala 3, Municipalidad de Miraflores'
+      })
+    )
+  ]
+}
+const scheduleWith = (page: Page, agenda: unknown[]) =>
+  reloadWith(page, async () => {
+    await page.clock.setFixedTime(SCHEDULE_MONDAY)
+    await page.route(AGENDA, (route) => route.fulfill({ json: agenda }))
+  })
+
 export const classroomScenarios: Scenario[] = [
   { name: 'student-courses', path: '/mis-cursos', api: student },
   // sin SRTM queda SGSPE (la simulación siempre la tiene): un solo curso, en «Continuar»
@@ -523,6 +569,8 @@ export const classroomScenarios: Scenario[] = [
         await page.clock.setFixedTime(new Date('2026-12-20T12:00:00Z'))
       })
   },
+  { name: 'student-schedule', path: '/horario', api: student, act: (page) => scheduleWith(page, scheduleWeek()) },
+  { name: 'student-schedule-empty', path: '/horario', api: student, act: (page) => scheduleWith(page, []) },
   {
     name: 'student-sessions-agenda',
     path: '/mis-cursos/mat-sgspe-1/sesiones',

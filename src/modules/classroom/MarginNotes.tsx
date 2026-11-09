@@ -51,7 +51,7 @@ function Note({ title, children, as = 'section' }: { title: string; children: Re
   )
 }
 
-// las sesiones de la edición vinculadas a esta lección, a la hora de la edición. sin ninguna, el camino a las del curso
+// las sesiones de la edición vinculadas a esta lección, a la hora de la edición, y el camino a las del curso y al horario de la semana
 function LinkedSessions({ enrollmentId, lessonId }: { enrollmentId: string; lessonId: string }) {
   const { t, i18n } = useTranslation('classroom')
   const links = useWasichaiLinks()
@@ -75,6 +75,9 @@ function LinkedSessions({ enrollmentId, lessonId }: { enrollmentId: string; less
       ) : null}
       <Link to={links.to(CLASSROOM_ROUTES.sessions, { enrollmentId })} className={`${TEXT_LINK} self-start font-semibold`}>
         {t('classroom.allSessions')}
+      </Link>
+      <Link to={links.to(CLASSROOM_ROUTES.schedule)} className={`${TEXT_LINK} self-start font-semibold`}>
+        {t('schedule.open')}
       </Link>
     </Note>
   )

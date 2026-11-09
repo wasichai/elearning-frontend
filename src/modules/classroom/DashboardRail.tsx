@@ -4,6 +4,7 @@ import { CircleAlert, Clock } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { TEXT_LINK } from '../../shared/buttons'
 import { formatAgendaDay, formatTimeRange, timeZoneLabel, zonedDateTime } from '../../shared/format'
 import { Section, Skeleton } from '../../shared/Screen'
 import type { AgendaSession } from './agenda'
@@ -92,6 +93,11 @@ function WeekBlock({ block, pageZone, now }: { block: Block<AgendaSession>; page
   return (
     <Section
       title={t('dashboard.sessions.title')}
+      action={
+        <Link to={links.to(CLASSROOM_ROUTES.schedule)} className={TEXT_LINK}>
+          {t('schedule.open')}
+        </Link>
+      }
       description={zones.length === 1 && zones[0] !== pageZone ? t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, locale) }) : undefined}
     >
       <BlockBody
@@ -161,7 +167,7 @@ function AssessmentState({ assessment }: { assessment: AssessmentSummary }) {
 }
 
 // «Por hacer»: las evaluaciones que quedan, sin plazos (el modelo no los tiene)
-function AssessmentsBlock({ block }: { block: Block<RailAssessment> }) {
+export function AssessmentsBlock({ block }: { block: Block<RailAssessment> }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   return (

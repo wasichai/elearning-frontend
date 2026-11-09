@@ -324,7 +324,9 @@ describe('MyCoursesPage', () => {
     ])
 
     const block = within(await week())
-    const rows = await block.findAllByRole('link')
+    // el primer enlace es el del horario; el resto, las sesiones
+    expect(block.getByRole('link', { name: 'Abrir el horario' })).toHaveAttribute('href', '/horario')
+    const rows = (await block.findAllByRole('link')).filter((link) => link.querySelector('[data-slot="session-title"]'))
     // de la más próxima a la más lejana, de todos los cursos; ni la que terminó ni la de después de 7 días
     expect(rows.map((row) => row.querySelector('[data-slot="session-title"]')?.textContent)).toEqual(['Pronto', 'Luego', 'Se cae'])
     expect(rows[0]).toHaveAttribute('href', `/mis-cursos/${otherEnrollment.id}/sesiones`)
@@ -372,7 +374,7 @@ describe('MyCoursesPage', () => {
     renderPage([panelOf(enrollment), agendaOf(inAgenda(enrollment, 'ses-1', inDays(2)))])
 
     const block = within(await week())
-    await block.findByRole('link')
+    await block.findByRole('link', { name: /Sesión/ })
     expect(block.queryByText(/^Horas en/)).not.toBeInTheDocument()
 
     // ediciones en dos zonas: la página no dice ninguna, y la semana, con sesiones solo de Madrid, dice esa

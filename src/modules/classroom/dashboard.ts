@@ -78,18 +78,25 @@ export function railAssessments(active: Enrollment[], panel: ClassroomPanelItem[
   return active.flatMap((enrollment) => (byId.get(enrollment.id)?.pendingAssessments ?? []).map((pending) => ({ ...pending, enrollment })))
 }
 
-// «Esta semana» pide la agenda desde el comienzo de ayer (hora del navegador), para no perder una sesión en curso que empezó antes de
-// medianoche, hasta 8 días después de hoy: cubre los próximos 7 días desde cualquier hora. redondeada al día, la clave de la consulta
-// no cambia mientras el día no cambie; lo que sobra a cada lado lo quita weekSessions con el reloj de la pantalla
-export function weekRange(now: number): AgendaRange {
-  const today = new Date(now)
-  today.setHours(0, 0, 0, 0)
+// el intervalo de la agenda para `days` días civiles a partir de `first` (una medianoche local), con un día de margen a cada lado: así entra
+// una sesión de cualquier zona cuyo día, en la zona de su edición, cae en esos días (la zona del navegador y la de la edición distan menos de
+// un día). quien lo usa quita lo que sobra. redondeado al día, la clave de la consulta no cambia mientras no cambie `first`
+export function paddedDayRange(first: Date, days: number): AgendaRange {
   const day = (offset: number) => {
-    const date = new Date(today)
+    const date = new Date(first)
     date.setDate(date.getDate() + offset)
     return isoInstant(date)
   }
-  return { from: day(-1), to: day(WEEK_DAYS + 1) }
+  return { from: day(-1), to: day(days + 1) }
+}
+
+// «Esta semana» pide la agenda desde el comienzo de ayer (hora del navegador), para no perder una sesión en curso que empezó antes de
+// medianoche, hasta 8 días después de hoy: cubre los próximos 7 días desde cualquier hora. lo que sobra a cada lado lo quita weekSessions
+// con el reloj de la pantalla
+export function weekRange(now: number): AgendaRange {
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  return paddedDayRange(today, WEEK_DAYS)
 }
 
 // las sesiones de los próximos 7 días de las matrículas activas (la agenda trae también las finalizadas), sin las que ya terminaron.
