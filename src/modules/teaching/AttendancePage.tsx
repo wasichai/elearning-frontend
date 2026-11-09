@@ -169,7 +169,7 @@ function AttendanceForm({ code, sessionId, rows, onDirty }: { code: string; sess
                         type="button"
                         aria-pressed={active}
                         onClick={() => choose(row, status)}
-                        className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1 text-secondary transition-colors duration-[160ms] motion-reduce:transition-none @2xl:flex-row @2xl:gap-1.5 @2xl:px-3 @2xl:text-sm ${
+                        className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-md border px-1 py-1 text-secondary transition-colors duration-[160ms] motion-reduce:transition-none @2xl:flex-row @2xl:gap-1.5 @2xl:px-3 ${
                           active ? `border-2 font-medium ${pressed}` : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
                         }`}
                       >

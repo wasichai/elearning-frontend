@@ -102,7 +102,7 @@ function TrayRow({ code, timeZone, attempt, primary }: { code: string; timeZone:
   const student = who ?? t('roster.noEmail')
   return (
     <div className="flex items-center gap-3 py-2.5 sm:gap-6">
-      {who ? <Initials of={who} className="hidden size-8 text-xs @md:flex" /> : null}
+      {who ? <Initials of={who} className="hidden size-8 text-secondary @md:flex" /> : null}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 @xl:flex-row @xl:items-center @xl:gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-secondary">
           <span className="font-medium text-ink">

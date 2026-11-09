@@ -126,7 +126,11 @@ function ClassroomBar({ classroom, placed, children, ref }: { classroom: Classro
   const { t } = useTranslation('classroom')
   const unit = t('classroom.unit', { order: placed.unit.order, title: placed.unit.title })
   return (
-    <header ref={ref} className="sticky top-0 z-20 flex min-h-14 items-center gap-x-3 border-b border-border bg-surface-muted px-2 py-1.5 sm:px-4 lg:px-6">
+    <header
+      ref={ref}
+      data-slot="classroom-bar"
+      className="sticky top-0 z-20 flex min-h-14 items-center gap-x-3 border-b border-border bg-surface-muted px-2 py-1.5 sm:px-4 lg:px-6"
+    >
       <div className="flex min-w-0 flex-1 flex-col px-2">
         <h1 title={classroom.course.title} className="meta truncate text-ink">
           {classroom.course.title}

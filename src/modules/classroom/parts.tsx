@@ -17,12 +17,12 @@ export function OfferingDates({ offering, showZone = true }: { offering: Enrollm
   const { t, i18n } = useTranslation('classroom')
   const locale = i18n.language
   return (
-    <p className="flex flex-wrap gap-x-2 text-sm text-ink-muted">
+    <p className="flex flex-wrap gap-x-2 text-secondary text-ink-muted">
       <span>
         <span className="text-ink">{formatCivilRange(offering.startDate, offering.endDate, offering.timeZone, locale)}</span>
         <span> · {t(`offering.status.${offering.status}`)}</span>
       </span>
-      {showZone ? <span className="text-xs leading-5">{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
+      {showZone ? <span>{t('offering.timeZone', { zone: timeZoneLabel(offering.timeZone, locale) })}</span> : null}
     </p>
   )
 }

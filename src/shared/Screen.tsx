@@ -28,7 +28,7 @@ export interface Crumb {
 export function Breadcrumbs({ label, items }: { label: string; items: Crumb[] }) {
   return (
     <nav aria-label={label} className="print:hidden">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-ink-muted">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-secondary text-ink-muted">
         {items.map((item, index) => (
           <li key={`${item.label}-${index}`} className="flex min-w-0 items-center gap-1">
             {index > 0 ? <ChevronRight aria-hidden="true" className="size-3.5 shrink-0" /> : null}
@@ -67,7 +67,7 @@ export function SectionTabs({ label, items }: { label: string; items: SectionTab
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              `inline-flex min-h-11 shrink-0 items-center border-b-2 text-sm whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+              `inline-flex min-h-11 shrink-0 items-center border-b-2 text-secondary whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
                 isActive ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-muted hover:border-border-control hover:text-ink'
               }`
             }

@@ -18,15 +18,15 @@ export function Lab({ lab }: { lab: LabData }) {
   return (
     <Card role="region" aria-labelledby="lab-title">
       <CardHeader>
-        <h3 id="lab-title" className="text-base font-semibold text-ink">
+        <h3 id="lab-title" className="font-read text-h4 text-ink">
           {t('lab.title')}
         </h3>
       </CardHeader>
       <CardBody className="flex flex-col gap-5">
         {lab.objective ? (
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-medium text-ink-muted">{t('lab.objective')}</p>
-            <p className="max-w-prose text-base text-ink">{lab.objective}</p>
+            <p className="meta">{t('lab.objective')}</p>
+            <p className="max-w-prose text-body text-ink">{lab.objective}</p>
           </div>
         ) : null}
         {lists.map(([key, items]) => (
@@ -47,10 +47,10 @@ function LabList({ name, items }: { name: string; items: readonly string[] }) {
   const List = ordered ? 'ol' : 'ul'
   return (
     <section aria-labelledby={id} className="flex flex-col gap-1.5">
-      <h4 id={id} className="text-sm font-medium text-ink">
+      <h4 id={id} className="text-secondary font-medium text-ink">
         {t(`lab.${name}`)}
       </h4>
-      <List className={`flex flex-col gap-1 pl-5 text-sm text-ink ${ordered ? 'list-decimal' : 'list-disc'}`}>
+      <List className={`flex flex-col gap-1 pl-5 text-secondary text-ink ${ordered ? 'list-decimal' : 'list-disc'}`}>
         {items.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
@@ -65,10 +65,10 @@ function Environments({ environments }: { environments: LabEnvironment[] }) {
   const { t } = useTranslation('classroom')
   return (
     <section aria-labelledby="lab-environments" className="flex flex-col gap-1.5">
-      <h4 id="lab-environments" className="text-sm font-medium text-ink">
+      <h4 id="lab-environments" className="text-secondary font-medium text-ink">
         {t('lab.environments')}
       </h4>
-      <ul className="flex flex-col gap-1.5 text-sm">
+      <ul className="flex flex-col gap-1.5 text-secondary">
         {environments.map((environment) => (
           <li key={environment.id}>
             {isHttps(environment.url) ? (

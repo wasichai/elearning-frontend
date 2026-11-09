@@ -23,6 +23,8 @@ afterEach(() => {
   files?.restore()
   fetchMock?.restore()
   vi.restoreAllMocks()
+  // el ResizeObserver de la prueba de la barra no se queda para las demás, aunque esa falle
+  vi.unstubAllGlobals()
   localStorage.removeItem('wasichai-test.token')
   localStorage.removeItem('wasichai-test.reading')
 })
@@ -515,7 +517,6 @@ describe('ClassroomPage: el aula Colofón', () => {
     vi.spyOn(bar, 'getBoundingClientRect').mockReturnValue({ height: 92 } as DOMRect)
     act(() => report?.([{ target: bar }]))
     expect(bar.parentElement!.style.getPropertyValue('--classroom-bar')).toBe('92px')
-    vi.unstubAllGlobals()
   })
 
   it('el título del documento dice la lección abierta y el curso', async () => {

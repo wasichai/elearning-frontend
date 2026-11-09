@@ -352,7 +352,7 @@ function sourceTitle(path: string): string {
 
 function Sources({ sources }: { sources: string[] }) {
   return (
-    <ul className="flex max-w-prose flex-col gap-3 text-sm">
+    <ul className="flex max-w-prose flex-col gap-3 text-secondary">
       {sources.map((source) => {
         const path = REPOSITORY_SOURCE.exec(source)?.[1]
         return (
@@ -361,7 +361,7 @@ function Sources({ sources }: { sources: string[] }) {
             {path ? (
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-ink">{sourceTitle(path)}</span>
-                <span className="font-mono text-xs break-all text-ink-muted">{source}</span>
+                <span className="font-mono text-secondary break-all text-ink-muted">{source}</span>
               </span>
             ) : (
               <span className="min-w-0 text-ink">{source}</span>
@@ -723,11 +723,11 @@ function CreditsView({ credits }: { credits: Credits }) {
   const n = (value: number) => formatNumber(value, i18n.language)
   if (!credits.system) return null
   if (credits.approved !== null)
-    return <p className="text-sm font-medium text-ink">{t('credits.approved', { value: n(credits.approved), system: credits.system })}</p>
+    return <p className="text-secondary font-medium text-ink">{t('credits.approved', { value: n(credits.approved), system: credits.system })}</p>
   const proposal = credits.proposal
   if (!proposal) return null
   return (
-    <div className="flex flex-col gap-3 text-sm">
+    <div className="flex flex-col gap-3 text-secondary">
       <p className="font-medium text-ink">{t('credits.proposed', { count: proposal.proposed, value: n(proposal.proposed), system: proposal.system })}</p>
       {proposal.warnings.length > 0 ? (
         <Alert tone="warning" title={t('credits.warnings')}>

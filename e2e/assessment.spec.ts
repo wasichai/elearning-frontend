@@ -265,6 +265,17 @@ test.describe('con ancho (el temario plegado o a 1440 px)', () => {
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
+  // el intento ya empieza a la vista: abrirlo no desplaza la lección a medias y no deja su título cortado bajo la barra del aula
+  test('al empezar, el título de la lección no queda a medias bajo la barra del aula', async ({ page }) => {
+    await fakeApi(page, { signedIn: true })
+    await start(page)
+    await expect(page.getByRole('heading', { level: 3, name: 'Intento 1' })).toBeFocused()
+
+    const bar = (await page.locator('header.sticky:has(h1)').boundingBox())!
+    const title = (await page.getByRole('heading', { level: 2, name: 'Evaluación final' }).boundingBox())!
+    expect(title.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1)
+  })
+
   test('una pregunta por pantalla: el índice y anterior o siguiente la cambian sin perder lo respondido', async ({ page }) => {
     await fakeApi(page, { signedIn: true })
     await start(page)

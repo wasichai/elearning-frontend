@@ -50,7 +50,7 @@ export function VersionDiffSection({ namespace, query }: VersionDiffSectionProps
         <DiffBody namespace={namespace} diff={query.data} />
       ) : (
         <div role="status" className="flex flex-col gap-3">
-          <p className="text-sm text-ink-muted">{t('diff.loading')}</p>
+          <p className="text-secondary text-ink-muted">{t('diff.loading')}</p>
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
@@ -62,7 +62,7 @@ export function VersionDiffSection({ namespace, query }: VersionDiffSectionProps
 function DiffBody({ namespace, diff }: { namespace: string; diff: VersionDiff }) {
   const { t, i18n } = useTranslation(namespace)
   // sin versión anterior todo es ADDED: basta decirlo
-  if (diff.baseVersion === null) return <p className="max-w-prose text-sm text-ink-muted">{t('diff.noBase')}</p>
+  if (diff.baseVersion === null) return <p className="max-w-prose text-secondary text-ink-muted">{t('diff.noBase')}</p>
   const units = byOrder(diff.units)
   const changed = units.filter((unit) => unit.change !== 'SAME')
   const same = units.filter((unit) => unit.change === 'SAME')
@@ -76,7 +76,7 @@ function DiffBody({ namespace, diff }: { namespace: string; diff: VersionDiff })
   if (changed.length === 0)
     return (
       <div className="flex flex-col gap-2">
-        <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
+        <p className="flex flex-wrap items-center gap-2 text-secondary text-ink">
           <ChangeMark namespace={namespace} change="SAME" />
           <span>{t('diff.noChanges', { number: diff.baseVersion })}</span>
         </p>
@@ -85,7 +85,7 @@ function DiffBody({ namespace, diff }: { namespace: string; diff: VersionDiff })
     )
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-ink-muted">{t('diff.base', { number: diff.baseVersion })}</p>
+      <p className="text-secondary text-ink-muted">{t('diff.base', { number: diff.baseVersion })}</p>
       <Summary namespace={namespace} units={units} />
       <Legend namespace={namespace} />
       <ol aria-label={t('diff.changed')} className="flex flex-col divide-y divide-border border-t border-border">
@@ -134,7 +134,7 @@ function Legend({ namespace }: { namespace: string }) {
   const labelId = useId()
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      <p id={labelId} className="text-sm text-ink-muted">
+      <p id={labelId} className="text-secondary text-ink-muted">
         {t('diff.legend')}
       </p>
       <ul aria-labelledby={labelId} className="flex flex-wrap items-center gap-2">
@@ -152,7 +152,7 @@ function ChangeMark({ namespace, change }: { namespace: string; change: DiffChan
   const { t } = useTranslation(namespace)
   const { icon: Icon, box } = MARK[change]
   return (
-    <span data-change={change} className={`inline-flex shrink-0 items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs font-medium ${box}`}>
+    <span data-change={change} className={`inline-flex shrink-0 items-center gap-1 rounded-sm border px-1.5 py-0.5 text-secondary font-medium ${box}`}>
       <Icon aria-hidden="true" className="size-3.5 shrink-0" />
       <span className={change === 'REMOVED' ? 'line-through' : undefined}>{t(`diff.change.${change}`)}</span>
     </span>
@@ -215,11 +215,11 @@ function ChangeLine({
   const known = item.fields.filter(isKnownField).map((field) => t(`diff.field.${field}`))
   const what = [...known, ...(known.length < item.fields.length ? [t('diff.otherFields')] : []), ...(lessonsChanged ? [t('diff.ownLessons')] : [])]
   return (
-    <div className="flex min-w-0 flex-col gap-1 text-sm">
+    <div className="flex min-w-0 flex-col gap-1 text-secondary">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <ChangeMark namespace={namespace} change={item.change} />
         <p
-          className={`min-w-0 [overflow-wrap:anywhere] ${strong ? 'text-base font-semibold' : 'font-medium'} ${removed ? 'text-ink-muted line-through' : 'text-ink'}`}
+          className={`min-w-0 [overflow-wrap:anywhere] ${strong ? 'text-body font-semibold' : 'font-medium'} ${removed ? 'text-ink-muted line-through' : 'text-ink'}`}
         >
           {label}
         </p>
@@ -244,7 +244,7 @@ function ChangeLine({
 // lo que sigue igual: discreto y plegado
 function Unchanged({ summary, names }: { summary: string; names: string[] }) {
   return (
-    <details className="group text-sm text-ink-muted">
+    <details className="group text-secondary text-ink-muted">
       <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 rounded-sm select-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
         <ChevronRight aria-hidden="true" className="size-4 shrink-0 transition-transform duration-[160ms] group-open:rotate-90" />
         <span>{summary}</span>

@@ -96,9 +96,10 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
             />
             <h2
               id={`lesson-${lesson.id}`}
+              data-slot="lesson-title"
               ref={heading}
               tabIndex={-1}
-              className="mt-5 font-read text-h2 text-balance break-words text-ink focus:outline-none sm:mt-7 lg:text-h1"
+              className="mt-5 scroll-mt-[calc(var(--classroom-bar,3.5rem)+0.75rem)] font-read text-h2 text-balance break-words text-ink focus:outline-none sm:mt-7 lg:text-h1"
             >
               {lesson.title}
             </h2>

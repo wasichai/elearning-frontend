@@ -151,7 +151,7 @@ export function CourseFigures({ classroom, lessons = true, stacked = false }: { 
   const shown = items.filter((item) => item.figure && item.figure.total > 0)
   if (shown.length === 0) return null
   return (
-    <ul aria-label={t('course.figures')} className={`flex text-sm text-ink-muted ${stacked ? 'flex-col gap-1' : 'flex-wrap gap-x-5 gap-y-1'}`}>
+    <ul aria-label={t('course.figures')} className={`flex text-secondary text-ink-muted ${stacked ? 'flex-col gap-1' : 'flex-wrap gap-x-5 gap-y-1'}`}>
       {shown.map(({ key, icon: Icon, figure, label }) => (
         <li key={key} className="flex items-center gap-1.5">
           <Icon aria-hidden="true" className="size-4 shrink-0" />

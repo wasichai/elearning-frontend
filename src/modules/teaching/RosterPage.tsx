@@ -218,7 +218,7 @@ function Students({ entries }: { entries: RosterEntry[] }) {
               <tbody>
                 {shown.map((student) => (
                   <tr key={student.enrollmentId}>
-                    <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
+                    <Th scope="row" className="bg-transparent pl-0 font-normal text-ink">
                       <Submitter attempt={student} />
                     </Th>
                     <Td>

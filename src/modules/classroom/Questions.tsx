@@ -173,7 +173,7 @@ function FileQuestion({
         aria-describedby={`${promptId}-file-hint`}
         disabled={disabled || state.busy}
         onChange={(event) => void choose(event)}
-        className="max-w-full text-secondary text-ink-muted file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-md file:border file:border-border-control file:bg-surface file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-surface-muted"
+        className="max-w-full text-secondary text-ink-muted file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-md file:border file:border-border-control file:bg-surface file:px-3 file:py-1.5 file:text-secondary file:font-medium file:text-ink hover:file:bg-surface-muted"
       />
       <p id={`${promptId}-file-hint`} className="text-ink-muted">
         {t('question.fileHint', { size: formatFileSize(MAX_UPLOAD_BYTES, i18n.language) })}

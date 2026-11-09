@@ -31,7 +31,7 @@ export function Sessions({ enrollmentId, lessonId }: { enrollmentId: string; les
   const sessions = lessonId ? query.data.filter((session) => session.lessonId === lessonId) : query.data
   if (sessions.length === 0)
     return lessonId ? (
-      <p className="text-sm text-ink-muted">{t('sessions.noneForLesson')}</p>
+      <p className="text-secondary text-ink-muted">{t('sessions.noneForLesson')}</p>
     ) : (
       <EmptyState title={t('sessions.none')} icon={CalendarDays}>
         <p>{t('sessions.noneHint')}</p>

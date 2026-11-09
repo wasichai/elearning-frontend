@@ -228,7 +228,7 @@ function FileProblemText({ error }: { error: unknown }) {
 function FileProblem({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   const { t } = useTranslation('classroom')
   return (
-    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-card border border-danger bg-danger-soft px-4 py-3 text-sm text-danger">
+    <div role="alert" className="flex flex-wrap items-center gap-3 rounded-card border border-danger bg-danger-soft px-4 py-3 text-secondary text-danger">
       <CircleAlert aria-hidden="true" className="size-5 shrink-0" />
       <span className="min-w-0 flex-1">
         <FileProblemText error={error} />

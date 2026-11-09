@@ -50,14 +50,14 @@ export function Countdown({ deadline, now }: { deadline: string; now: number }) 
   const remaining = Date.parse(deadline) - now
   const stage = deadlineStage(remaining)
   return (
-    <div data-stage={stage} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm ${STAGE_TONE[stage]}`}>
+    <div data-stage={stage} className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-secondary ${STAGE_TONE[stage]}`}>
       <Clock aria-hidden="true" className="size-4 shrink-0" />
       {/* en poco ancho, la palabra debajo de la cifra: cabe junto a «Guardar» y «Entregar» a 360 px */}
       <span className="flex flex-col leading-4 @2xl:flex-row @2xl:items-center @2xl:gap-1.5">
         <span role="timer" aria-live="off" aria-label={t('attempt.timeLeft')} className="font-semibold tabular-nums">
           {formatRemaining(remaining)}
         </span>
-        {stage === 'plenty' ? null : <span className="text-xs font-medium">{t(`attempt.stageWord.${stage}`)}</span>}
+        {stage === 'plenty' ? null : <span className="text-secondary font-medium">{t(`attempt.stageWord.${stage}`)}</span>}
       </span>
       <span role="status" aria-live="polite" className="sr-only">
         {stage === 'fiveMinutes' || stage === 'oneMinute' ? t(`attempt.stage.${stage}`) : ''}

@@ -183,7 +183,7 @@ function Chip({ pressed, onClick, children }: ChipProps) {
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3.5 text-left text-sm ${FOCUS} ${
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3.5 text-left text-secondary ${FOCUS} ${
         pressed ? 'border-brand bg-brand font-semibold text-on-brand' : 'border-border-control bg-surface text-ink hover:bg-surface-muted'
       }`}
     >
@@ -202,7 +202,7 @@ function CategoryChips({ selected, page, onChange }: { selected: string; page: C
   return (
     // el hueco de la derecha es para «Más filtros», en la misma línea desde tableta
     <div role="group" aria-labelledby={id} className="flex flex-wrap items-center gap-2 md:pr-44">
-      <span id={id} className="mr-1 text-sm font-medium text-ink-muted">
+      <span id={id} className="mr-1 text-secondary font-medium text-ink-muted">
         {t('filters.category')}
       </span>
       <Chip pressed={selected === ''} onClick={() => onChange('')}>
@@ -244,7 +244,7 @@ function MoreFilters({ filters, page, busy, count, onChange }: MoreFiltersProps)
         <>
           <span
             aria-hidden="true"
-            className="inline-flex min-w-5 justify-center rounded-full bg-brand-soft px-1.5 text-xs/5 font-semibold text-brand-strong tabular-nums"
+            className="inline-flex min-w-5 justify-center rounded-full bg-brand-soft px-1.5 text-secondary font-semibold text-brand-strong tabular-nums"
           >
             {count}
           </span>
@@ -259,7 +259,7 @@ function MoreFilters({ filters, page, busy, count, onChange }: MoreFiltersProps)
     return (
       <details className="group">
         <summary
-          className={`absolute top-0 right-0 inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-border-control bg-surface px-3 text-sm font-medium text-ink hover:bg-surface-muted [&::-webkit-details-marker]:hidden ${FOCUS}`}
+          className={`absolute top-0 right-0 inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-md border border-border-control bg-surface px-3 text-secondary font-medium text-ink hover:bg-surface-muted [&::-webkit-details-marker]:hidden ${FOCUS}`}
         >
           {label}
           <ChevronDown
@@ -476,7 +476,7 @@ function ActiveFilters({ active, onRemove, onClear }: { active: ActiveFilter[]; 
           type="button"
           aria-label={t('filters.removeOne', { filter: filter.label, interpolation: { escapeValue: false } })}
           onClick={() => onRemove(filter.patch)}
-          className={`inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface-muted px-3 text-left text-sm text-ink hover:bg-border ${FOCUS}`}
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded-md bg-surface-muted px-3 text-left text-secondary text-ink hover:bg-border ${FOCUS}`}
         >
           <span className="min-w-0 break-words">{filter.label}</span>
           <X aria-hidden="true" className="size-4 shrink-0" />

@@ -99,6 +99,14 @@ function useStickyOffset() {
   return { ref, style: { '--attempt-top': `calc(var(--classroom-bar, 3.5rem) + ${height === undefined ? '6rem' : `${height}px`})` } as CSSProperties }
 }
 
+// un elemento a medias bajo la barra del aula: empieza debajo de ella y acaba fuera
+function cutByBar(element: Element): boolean {
+  const barBottom = document.querySelector('[data-slot="classroom-bar"]')?.getBoundingClientRect().bottom
+  if (barBottom === undefined) return false
+  const { top, bottom } = element.getBoundingClientRect()
+  return top < barBottom && bottom > barBottom
+}
+
 // la pregunta que se está viendo cuando se ven todas: la que cruza la franja alta de la pantalla. tras un salto se le deja llegar
 function useCurrentOnScroll(onChange: (index: number) => void) {
   const elements = useRef<(HTMLElement | null)[]>([])
@@ -170,10 +178,14 @@ function AttemptForm({
   const busy = save.isPending || submit.isPending || uploading > 0
   const error = submit.error ?? save.error
   const heading = useRef<HTMLHeadingElement>(null)
-  // al abrirlo se va al trabajo: el intento arriba, debajo de la barra de la lección, y el foco en su título
+  // al abrirlo se va al trabajo: el foco en su título y el intento arriba, debajo de la barra de la lección. con poco por debajo, el
+  // desplazamiento se queda a medias y cortaría el título de la lección bajo la barra: entonces se sube lo justo para verlo entero
   useEffect(() => {
-    heading.current?.focus()
-    heading.current?.closest('section')?.scrollIntoView?.({ block: 'start' })
+    const section = heading.current?.closest('section')
+    heading.current?.focus({ preventScroll: true })
+    section?.scrollIntoView?.({ block: 'start' })
+    const title = document.querySelector<HTMLElement>('[data-slot="lesson-title"]')
+    if (title && cutByBar(title)) title.scrollIntoView?.({ block: 'nearest' })
   }, [])
   const sticky = useStickyOffset()
   const formId = useId()

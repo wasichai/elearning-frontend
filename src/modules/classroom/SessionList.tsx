@@ -66,9 +66,9 @@ export function SessionList({
   )
   return (
     <div className="flex flex-col gap-8">
-      {zones.length === 1 ? <p className="text-sm text-ink-muted">{t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, i18n.language) })}</p> : null}
+      {zones.length === 1 ? <p className="text-secondary text-ink-muted">{t('sessions.timeZone', { zone: timeZoneLabel(zones[0]!, i18n.language) })}</p> : null}
       <AgendaGroup title={t('sessions.upcoming')} level={headingLevel}>
-        {upcoming.length > 0 ? group(upcoming) : <p className="text-sm text-ink-muted">{t('sessions.noneUpcoming')}</p>}
+        {upcoming.length > 0 ? group(upcoming) : <p className="text-secondary text-ink-muted">{t('sessions.noneUpcoming')}</p>}
       </AgendaGroup>
       {past.length > 0 ? (
         <AgendaGroup title={t('sessions.past')} level={headingLevel}>
@@ -101,7 +101,7 @@ function DayGroup({ day, level, children }: { day: Day; level: number; children:
   const Heading = `h${level}` as 'h4' | 'h5'
   return (
     <div className="flex flex-col gap-1 py-3 sm:flex-row sm:gap-6">
-      <Heading className="text-sm sm:w-48 sm:shrink-0 sm:pt-0.5">
+      <Heading className="text-secondary sm:w-48 sm:shrink-0 sm:pt-0.5">
         <span className="inline-block font-semibold text-ink first-letter:uppercase sm:block">{format({ weekday: 'long' })}</span>{' '}
         <span className="text-ink-muted sm:block">{format({ day: 'numeric', month: 'long', year: 'numeric' })}</span>
       </Heading>

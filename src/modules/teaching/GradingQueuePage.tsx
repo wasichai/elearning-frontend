@@ -56,7 +56,7 @@ function Queue({ code, attempts }: { code: string; attempts: PendingAttempt[] })
           <tbody>
             {sorted.map((attempt, index) => (
               <tr key={attempt.attemptId}>
-                <Th scope="row" className="bg-transparent pl-0 text-sm font-normal tracking-normal text-ink normal-case">
+                <Th scope="row" className="bg-transparent pl-0 font-normal text-ink">
                   <Submitter attempt={attempt} />
                 </Th>
                 <Td>{attempt.lessonTitle}</Td>
