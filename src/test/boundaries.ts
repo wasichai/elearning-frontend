@@ -53,7 +53,8 @@ export function offenders(dir: string, check: (file: string, source: string) => 
 // (36px) es para las tablas densas de docencia en escritorio (guía Button del sistema de diseño)
 const SMALL_BUTTON = /\bsize=\{?\s*["']sm["']\s*\}?/
 export function smallButtons(source: string): string[] {
-  return source.split('\n').filter((line) => SMALL_BUTTON.test(line))
+  // SegmentedProgress también tiene size="sm" (una barra, no un botón)
+  return source.split('\n').filter((line) => SMALL_BUTTON.test(line) && !line.includes('<SegmentedProgress'))
 }
 
 // un <EmptyState> sin icono: core pone uno genérico, y el vacío no dice de qué es. el icono va en la misma etiqueta de apertura

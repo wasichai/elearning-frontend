@@ -5,10 +5,11 @@ import { useTranslation } from 'react-i18next'
 import { LibraryBig, SearchX } from 'lucide-react'
 import { PublicLayout } from '../../shared/PublicLayout'
 import { ScreenBody } from '../../shared/Screen'
+import { SectionHead } from '../../shared/SectionHead'
 import { catalogKeys, hasActiveFilters, useCatalogFilters, useCourses, useQueryProblem, type CatalogFilters } from './api'
 import type { CoursePage } from './contract'
 import { CourseRow, CourseRowSkeleton } from './CourseRow'
-import { allIllustrative } from './parts'
+import { allIllustrative, groupByCollection } from './parts'
 import { CatalogBand } from './FilterBar'
 import { ProblemState, useProblemText } from './ProblemState'
 
@@ -100,12 +101,24 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     )
   }
 
+  // con una categoría elegida todas las filas son de ella: no se agrupa
+  const grouped = filters.category === ''
   return (
     <div aria-busy={busy} className={`flex flex-col gap-6 transition-opacity ${busy ? 'opacity-60' : ''}`}>
+      {/* con una categoría elegida todas las filas son de ella: el encabezado sobra. si no, las filas consecutivas de una misma colección van
+          bajo su encabezado; el orden del servidor no se toca, así que una colección que reaparece más abajo repite el suyo */}
       <ul className={ROWS}>
-        {page.content.map((course) => (
-          <CourseRow key={course.slug} course={course} showIllustrative={course.illustrative && !allIllustrative(page)} />
-        ))}
+        {groupByCollection(page.content, grouped).flatMap((group, index) => [
+          group.category ? (
+            // el encabezado es presentación dentro de la lista: no cuenta como un elemento más ni parte las filas en varias listas
+            <li key={`${group.category.slug}-${index}`} role="presentation" className="pb-1 pt-6 first:pt-0">
+              <SectionHead as="h3" title={group.category.name} meta={t('catalog.groupCount', { count: group.courses.length })} />
+            </li>
+          ) : null,
+          ...group.courses.map((course) => (
+            <CourseRow key={course.slug} course={course} grouped={grouped} showIllustrative={course.illustrative && !allIllustrative(page)} />
+          ))
+        ])}
       </ul>
       {page.totalPages > 1 ? (
         <Pagination page={page.page} totalPages={page.totalPages} totalElements={page.totalElements} onPage={(index) => onPage(index + 1)} />

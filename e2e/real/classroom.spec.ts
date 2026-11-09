@@ -165,7 +165,8 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
   await page.getByRole('link', { name: 'Mis cursos' }).click()
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
   await expect(card).toBeVisible()
-  // en «Continuar», el progreso por lección (segmentos, de su aula); en una fila de la lista, la barra continua del resumen. según su avance,
+  // en «Continuar», el progreso por lección (segmentos, de su aula); en una fila de «Otros cursos», también por lección una vez leída su aula (la barra continua del resumen
+  // solo mientras carga o si falla). según su avance,
   // el curso de la semilla puede estar en uno u otro sitio: se mira el elemento que toca en el sitio donde está, y que no está el otro
   const hero = page.getByRole('region', { name: 'Continuar', exact: true })
   if ((await hero.getByRole('heading', { name: COURSE }).count()) > 0) {
@@ -173,8 +174,8 @@ test('el estudiante demo encuentra su curso en «Mis cursos»', async ({ page })
     await expect(hero.getByRole('progressbar')).toHaveCount(0)
   } else {
     const row = page.getByRole('listitem').filter({ has: page.getByRole('heading', { level: 3, name: COURSE }) })
-    await expect(row.getByRole('progressbar', { name: 'Progreso del curso' })).toBeVisible()
-    await expect(row.getByRole('img')).toHaveCount(0)
+    await expect(row.getByRole('img', { name: /^\d+ de \d+ completadas/ })).toBeVisible()
+    await expect(row.getByRole('progressbar')).toHaveCount(0)
   }
   await card.getByRole('link', { name: /^(Continuar|Repasar) «/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: COURSE })).toBeVisible()

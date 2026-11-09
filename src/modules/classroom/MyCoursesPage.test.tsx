@@ -448,14 +448,56 @@ describe('MyCoursesPage', () => {
     expect(screen.queryByRole('region', { name: 'Por hacer' })).not.toBeInTheDocument()
   })
 
-  it('lecturas: el panel, la agenda y el aula de «Continuar»; ni la lista de matrículas ni nada más por matrícula', async () => {
+  it('lecturas: el panel, la agenda y el aula de cada curso en curso; ni la lista de matrículas ni nada más por matrícula', async () => {
     renderPage([panelOf(enrollment, otherEnrollment, finishedEnrollment)])
 
     await within(await screen.findByRole('region', { name: 'Continuar' })).findByRole('img')
+    await waitFor(() => expect(fetchMock.calls.filter((call) => PER_ENROLLMENT.test(call.path))).toHaveLength(2))
     expect(called(PANEL)).toBe(1)
     expect(called(AGENDA)).toBe(1)
     expect(called(ENROLLMENTS)).toBe(0)
-    expect(fetchMock.calls.filter((call) => PER_ENROLLMENT.test(call.path)).map((call) => call.path)).toEqual([PRIMARY_CLASSROOM])
+    // «Continuar» y «Otros cursos»: la terminada no pide su aula
+    expect(fetchMock.calls.filter((call) => PER_ENROLLMENT.test(call.path)).map((call) => call.path)).toEqual([
+      PRIMARY_CLASSROOM,
+      `${ENROLLMENTS}/${otherEnrollment.id}`
+    ])
+  })
+
+  describe('«Otros cursos»', () => {
+    const otherClassroom = () => classroomOf({ ...classroom, id: otherEnrollment.id })
+    const otherRoute = (route: MockRoute): MockRoute => ({ ...route, path: `${ENROLLMENTS}/${otherEnrollment.id}` })
+    const row = () => screen.findByRole('article', { name: otherEnrollment.course.title })
+
+    it('pinta su progreso por lecciones cuando el aula se lee', async () => {
+      renderPage([panelOf(enrollment, otherEnrollment), otherRoute(otherClassroom())])
+
+      const progress = within(await row())
+      const segmented = await progress.findByRole('img')
+      expect(segmented.querySelectorAll('[data-slot="progress-segment"]').length).toBeGreaterThan(0)
+      expect(segmented).toHaveAttribute('aria-label', expect.stringMatching(/^\d+ de \d+ completadas/))
+      expect(progress.queryByRole('progressbar')).not.toBeInTheDocument()
+    })
+
+    it('si el aula falla, se queda la barra continua del panel', async () => {
+      renderPage([panelOf(enrollment, otherEnrollment), otherRoute({ path: '', status: 503, body: problem(503, 'caído') })])
+
+      const progress = within(await row())
+      expect(await progress.findByRole('progressbar')).toBeInTheDocument()
+      await waitFor(() => expect(fetchMock.calls.some((call) => call.path === `${ENROLLMENTS}/${otherEnrollment.id}`)).toBe(true))
+      expect(progress.queryByRole('img')).not.toBeInTheDocument()
+    })
+
+    it('solo los seis primeros cursos en curso piden su aula; el resto, la barra continua', async () => {
+      const many = Array.from({ length: 8 }, (_, index) =>
+        panelItem({ ...otherEnrollment, id: `mat-${index}`, course: { ...otherEnrollment.course, title: `Curso ${index}` } })
+      )
+      renderPage([panelOf(enrollment, ...many)])
+
+      await screen.findByRole('article', { name: 'Curso 7' })
+      await waitFor(() => expect(fetchMock.calls.filter((call) => /\/mat-\d$/.test(call.path))).toHaveLength(6))
+      expect(fetchMock.calls.filter((call) => /\/mat-[67]$/.test(call.path))).toEqual([])
+      expect(within(screen.getByRole('article', { name: 'Curso 7' })).getByRole('progressbar')).toBeInTheDocument()
+    })
   })
 
   // antes: «con más matrículas que el tope, solo lee hasta el tope y lo dice»

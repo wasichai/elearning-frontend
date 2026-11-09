@@ -8,7 +8,9 @@ const es = {
     results: 'Resultados',
     loading: 'Cargando cursos…',
     count_one: '{{count, number}} curso',
-    count_other: '{{count, number}} cursos'
+    count_other: '{{count, number}} cursos',
+    groupCount_one: '{{count, number}} curso',
+    groupCount_other: '{{count, number}} cursos'
   },
   filters: {
     legend: 'Filtrar cursos',
@@ -261,7 +263,9 @@ const en: typeof es = {
     results: 'Results',
     loading: 'Loading courses…',
     count_one: '{{count, number}} course',
-    count_other: '{{count, number}} courses'
+    count_other: '{{count, number}} courses',
+    groupCount_one: '{{count, number}} course',
+    groupCount_other: '{{count, number}} courses'
   },
   filters: {
     legend: 'Filter courses',
