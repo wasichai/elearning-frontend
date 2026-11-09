@@ -169,6 +169,32 @@ describe('en una sola columna', () => {
   afterEach(() => restore())
   const footer = () => document.querySelector<HTMLElement>('[data-slot="course-action"]')
 
+  it('enroll action stays in aside on desktop and sticky footer on mobile', async () => {
+    restore = mockViewport(true)
+    const { unmount } = renderCourse([])
+
+    const action = await (await offerings()).findByRole('button', { name: ACTION })
+    // la edición recomendada, con su acción, en la columna fija
+    const recommended = action.closest<HTMLElement>('[data-slot="recommended-offering"]')!
+    expect(recommended.closest('aside')).not.toBeNull()
+    expect(within(recommended).getByRole('heading', { level: 3 })).toHaveTextContent('9 nov – 4 dic 2026')
+    expect(footer()).toBeNull()
+    unmount()
+    fetchMock.restore()
+    restore()
+
+    restore = mockViewport(false)
+    renderCourse([])
+    await offerings()
+    const bar = footer()!
+    expect(bar).toHaveClass('sticky', 'bottom-0')
+    expect(bar.closest('aside')).toBeNull()
+    expect(within(bar).getByRole('button', { name: ACTION })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: ACTION })).toHaveLength(1)
+    // la edición recomendada sigue en la columna, sin su botón
+    expect(document.querySelector('[data-slot="recommended-offering"]')).toHaveTextContent('Inscripción abierta')
+  })
+
   it('la acción va al pie, una sola vez, y el 409 se explica allí', async () => {
     restore = mockViewport(false)
     renderCourse([{ method: 'POST', path: ENROLLMENTS, status: 409, body: problem(409, 'No quedan plazas en esta edición.') }])

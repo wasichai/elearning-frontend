@@ -46,7 +46,7 @@ describe('CourseDetailPage', () => {
     const firstUnit = within(section('Temario')).getAllByRole('listitem')[0]!
     expect(within(firstUnit).queryByText(/h estimadas/)).not.toBeInTheDocument()
     expect(within(firstUnit).queryByText(/\bmin\b/)).toBeInTheDocument()
-    expect(within(firstUnit).getByText(courseDetail.units[0]!.lessons[0]!.title).nextSibling?.textContent).not.toMatch(/min/)
+    expect(within(firstUnit).getByText(courseDetail.units[0]!.lessons[0]!.title).closest('li')?.textContent).not.toMatch(/min/)
   })
 
   it('pinta el hueco de la ficha mientras carga, con su aviso', async () => {
@@ -127,7 +127,6 @@ describe('CourseDetailPage', () => {
     const workload = within(section('Carga de trabajo y créditos'))
     const table = workload.getByRole('table', { name: 'Horas en 6 semanas' })
     expect(within(table).getByRole('row', { name: 'Teoría 12 72' })).toBeInTheDocument()
-    expect(within(table).getByRole('row', { name: 'Supervisadas 0 0' })).toBeInTheDocument()
     expect(within(table).getByRole('row', { name: 'Total 36 216' })).toBeInTheDocument()
     // horas de contacto y dirigidas
     expect(workload.getAllByText('144 h', { selector: 'dd' })).toHaveLength(2)
@@ -311,7 +310,11 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
     renderCourse([{ path: COURSE, body: { ...courseDetail, offerings: [lima, pagoPago] } }])
 
     await screen.findByRole('heading', { level: 1, name: courseDetail.title })
-    const [first, second] = within(section('Ediciones')).getAllByRole('listitem')
+    // la recomendada (la abierta) arriba; la otra, debajo
+    const [first, second] = within(section('Ediciones'))
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.closest<HTMLElement>('[data-slot$="offering"]')!)
+    expect(first).toHaveAttribute('data-slot', 'recommended-offering')
     expect(within(first!).getByRole('heading', { level: 3 })).toHaveTextContent('9 nov – 4 dic 2026')
     expect(within(first!).getByText('15 oct – 6 nov 2026')).toBeInTheDocument()
     expect(within(second!).getByRole('heading', { level: 3 })).toHaveTextContent('4–29 ene 2027')
@@ -323,6 +326,62 @@ describe('CourseDetailPage con el navegador en otra zona horaria', () => {
 })
 
 describe('CourseDetailPage: una ficha que se recorre', () => {
+  it('sections are numbered and indexed', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+
+    const index = await screen.findByRole('navigation', { name: 'En esta página' })
+    // el índice va en la columna fija, no entre el contenido
+    expect(index.closest('aside')).not.toBeNull()
+    const titles = [
+      'Qué aprenderás',
+      'Temario',
+      'Antes de empezar',
+      'Evaluación y certificación',
+      'Docentes',
+      'Carga de trabajo y créditos',
+      'Fuentes',
+      'Datos del curso'
+    ]
+    const links = within(index).getAllByRole('link')
+    expect(links).toHaveLength(titles.length)
+    titles.forEach((title, i) => {
+      const target = section(title)
+      expect(within(target).getByText(`§${i + 1}`)).toBeInTheDocument()
+      expect(links[i]).toHaveAccessibleName(title)
+      expect(links[i]).toHaveTextContent(`§${i + 1}${title}`)
+      expect(links[i]).toHaveAttribute('href', `#${target.id}`)
+    })
+  })
+
+  it('sections are numbered without gaps when some are missing', async () => {
+    renderCourse([{ path: COURSE, body: { ...courseDetail, sources: [], prerequisiteKnowledge: null, requirements: null, prerequisiteKnowledgeTags: [] } }])
+
+    const index = within(await screen.findByRole('navigation', { name: 'En esta página' }))
+    expect(index.getAllByRole('link').map((link) => link.textContent)).toEqual([
+      '§1Qué aprenderás',
+      '§2Temario',
+      '§3Evaluación y certificación',
+      '§4Docentes',
+      '§5Carga de trabajo y créditos',
+      '§6Datos del curso'
+    ])
+    expect(within(section('Datos del curso')).getByText('§6')).toBeInTheDocument()
+  })
+
+  it('workload rows without data are not rendered', async () => {
+    renderCourse([{ path: COURSE, body: courseDetail }])
+    await screen.findByRole('heading', { level: 1, name: courseDetail.title })
+
+    // el fixture no tiene horas supervisadas: ni por semana ni en total
+    const table = within(section('Carga de trabajo y créditos')).getByRole('table', { name: 'Horas en 6 semanas' })
+    expect(within(table).queryByRole('row', { name: /^Supervisadas/ })).not.toBeInTheDocument()
+    expect(
+      within(table)
+        .getAllByRole('row')
+        .map((row) => row.textContent)
+    ).toEqual(['ComponentePor semanaTotal', 'Teoría1272', 'Práctica1272', 'Autónomas1272', 'Total36216'])
+  })
+
   it('«En esta página» enlaza a cada sección presente, y cada una es su destino', async () => {
     renderCourse([{ path: COURSE, body: courseDetail }])
 
@@ -332,7 +391,7 @@ describe('CourseDetailPage: una ficha que se recorre', () => {
     for (const link of links) {
       const target = document.getElementById(link.getAttribute('href')!.slice(1))
       expect(target, link.textContent!).not.toBeNull()
-      expect(within(target!).getByRole('heading', { level: 2 })).toHaveTextContent(link.textContent!)
+      expect(within(target!).getByRole('heading', { level: 2 })).toHaveAccessibleName(link.textContent!.replace(/^§\d+/, ''))
     }
     expect(index.getByRole('link', { name: 'Temario' })).toHaveAttribute('href', '#temario')
     // sin fuentes, no hay entrada ni sección
