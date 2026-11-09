@@ -45,14 +45,16 @@ export function MyCoursesPage() {
   const now = Date.now()
   const today = new Date(now).toDateString()
   const range = useMemo(() => weekRange(now), [today]) // depende del día, no del instante
-  const agenda = useAgenda(range)
   const read = panel.isError ? undefined : panel.data
   const enrollments = read ?? list.data
+  // sin matrículas no hay nada que agendar: la agenda espera a saber que hay alguna
+  const hasEnrollments = Boolean(enrollments?.length)
+  const agenda = useAgenda(range, { enabled: hasEnrollments })
   const groups = useMemo(() => groupEnrollments(enrollments ?? NO_ENROLLMENTS), [enrollments])
   const active = useMemo(() => railEnrollments(groups), [groups])
   const reload = () => {
     void panel.refetch()
-    void agenda.refetch()
+    if (hasEnrollments) void agenda.refetch()
     if (panel.isError) void list.refetch()
   }
   useRefetchOnRevisit(reload)

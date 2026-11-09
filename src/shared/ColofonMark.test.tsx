@@ -7,7 +7,11 @@ describe('ColofonMark', () => {
     const { container } = render(<ColofonMark />)
     const mark = container.querySelector('svg')!
     expect(mark).toHaveAttribute('aria-hidden', 'true')
-    expect(mark.textContent).toBe('c')
+    // la «c» es un trazado: no hay texto ni fuente de la que depender
+    expect(mark.querySelector('text')).toBeNull()
+    expect(mark.textContent).toBe('')
+    expect(mark.querySelector('path')).toHaveAttribute('stroke', 'var(--on-brand)')
+    expect(mark.innerHTML).not.toContain('Newsreader')
     expect(mark.innerHTML).toContain('var(--brand)')
     expect(mark.innerHTML).toContain('var(--on-brand)')
   })

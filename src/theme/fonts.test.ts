@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { woff2Axes } from '../test/woff2Axes'
 
 // las letras del sistema de diseño Colofón, servidas por la app (sin peticiones a terceros) con su licencia SIL OFL:
 // Newsreader para títulos y lectura (--font-read de @theme) y Source Sans 3 para la interfaz (--font-sans de los temas)
@@ -35,8 +36,30 @@ describe('letras de la app', () => {
     expect(readFileSync(join(fonts, `OFL-${license}.txt`), 'utf8')).toContain('SIL Open Font License, Version 1.1')
   })
 
-  it('Newsreader conserva el eje opsz en sus archivos', () => {
-    for (const face of faces.filter((face) => face.family === 'Newsreader')) expect(face.file).toContain('opsz-wght')
+  // el eje real del archivo (tabla fvar) debe cubrir lo que declara el @font-face: si no, el navegador sintetiza los pesos que faltan
+  it('los archivos de Newsreader conservan el eje opsz (6-72) y cubren el rango de peso declarado', () => {
+    const own = faces.filter((face) => face.family === 'Newsreader')
+    expect(own).toHaveLength(4)
+    for (const face of own) {
+      const axes = woff2Axes(readFileSync(join(fonts, face.file!)))
+      const [min, max] = face.weight!.split(' ').map(Number)
+      expect(
+        axes.find((axis) => axis.tag === 'opsz'),
+        face.file
+      ).toMatchObject({ min: 6, max: 72 })
+      const wght = axes.find((axis) => axis.tag === 'wght')!
+      expect(wght.min, face.file).toBeLessThanOrEqual(min!)
+      expect(wght.max, face.file).toBeGreaterThanOrEqual(max!)
+    }
+  })
+
+  it('los de Source Sans 3 son variables en wght y cubren el rango declarado', () => {
+    for (const face of faces.filter((face) => face.family === 'Source Sans 3')) {
+      const wght = woff2Axes(readFileSync(join(fonts, face.file!))).find((axis) => axis.tag === 'wght')!
+      const [min, max] = face.weight!.split(' ').map(Number)
+      expect(wght.min, face.file).toBeLessThanOrEqual(min!)
+      expect(wght.max, face.file).toBeGreaterThanOrEqual(max!)
+    }
   })
 
   it('no queda ninguna fuente de Quipu', () => {

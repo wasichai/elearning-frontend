@@ -188,6 +188,8 @@ describe('MyCoursesPage', () => {
     expect(await screen.findByText('Todavía no estás matriculado en ningún curso')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ver el catálogo' })).toHaveAttribute('href', '/cursos')
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    // sin matrículas no hay nada que agendar: la agenda no se pide
+    expect(fetchMock.calls.filter((call) => call.path.startsWith(AGENDA))).toEqual([])
   })
 
   it('sin el catálogo registrado, el estado vacío no enlaza a una ruta que no existe', async () => {
@@ -338,7 +340,8 @@ describe('MyCoursesPage', () => {
     const block = within(await week())
     // el primer enlace es el del horario; el resto, las sesiones
     expect(block.getByRole('link', { name: 'Abrir el horario' })).toHaveAttribute('href', '/horario')
-    const rows = (await block.findAllByRole('link')).filter((link) => link.querySelector('[data-slot="session-title"]'))
+    await block.findByText('Pronto')
+    const rows = block.getAllByRole('link').filter((link) => link.querySelector('[data-slot="session-title"]'))
     // de la más próxima a la más lejana, de todos los cursos; ni la que terminó ni la de después de 7 días
     expect(rows.map((row) => row.querySelector('[data-slot="session-title"]')?.textContent)).toEqual(['Pronto', 'Luego', 'Se cae'])
     expect(rows[0]).toHaveAttribute('href', `/mis-cursos/${otherEnrollment.id}/sesiones`)

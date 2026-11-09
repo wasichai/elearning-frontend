@@ -1,13 +1,14 @@
 import { EmptyState, useWasichaiLinks } from '@wasichai/core'
 import { Button } from '@wasichai/ui'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
 import { formatTime, formatTimeRange, timeZoneLabel } from '../../shared/format'
 import { ListSkeleton } from '../../shared/ListSkeleton'
 import { ProblemState } from '../../shared/ProblemState'
 import { ScreenBody, Section } from '../../shared/Screen'
+import { useNow } from '../../shared/useNow'
 import { useAgenda, type AgendaSession } from './agenda'
 import { useClassroomPanel } from './api'
 import { groupEnrollments, railAssessments, railEnrollments } from './dashboard'
@@ -49,7 +50,7 @@ const fragmentOf = (session: AgendaSession) => `#${anchorOf(session)}`
 export function SchedulePage() {
   const { t, i18n } = useTranslation('classroom')
   const [params, setParams] = useSearchParams()
-  const [now] = useState(() => Date.now())
+  const now = useNow()
   const today = localToday(now)
   const param = params.get(WEEK_PARAM)
   const monday = parseWeek(param, now)
@@ -223,6 +224,20 @@ function dayName(date: string, locale: string, options: Intl.DateTimeFormatOptio
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(civilNoon(date)).replace('.', '')
 }
 
+function axisZoneOf(days: ScheduleDay[]): string | undefined {
+  const counts = new Map<string, number>()
+  for (const session of days.flatMap((day) => day.sessions)) counts.set(session.timeZone, (counts.get(session.timeZone) ?? 0) + 1)
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+}
+
+// la zona abreviada («GMT-5», «JST»), para el eje y los bloques; el nombre largo va en el title del eje
+function zoneShort(timeZone: string, locale: string) {
+  return (
+    new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: 'short' }).formatToParts(new Date()).find((part) => part.type === 'timeZoneName')?.value ??
+    timeZone
+  )
+}
+
 function formatHour(hour: number, locale: string) {
   return new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, 0, 1, hour))
 }
@@ -236,15 +251,27 @@ const BLOCK_TONE: Record<AgendaSession['status'], string> = {
 
 // la rejilla: una columna por día y las horas que ocupan las sesiones de la semana. cada sesión, en su carril si se pisa con otra, enlaza a
 // su detalle; la palabra de su estado va en su nombre accesible (y a la vista, si no es la de siempre)
-function WeekGrid({ days, today, locale }: WeekProps) {
+function WeekGrid({ days, today, locale, showZone }: WeekProps) {
   const { t } = useTranslation('classroom')
+  // con ediciones en varias zonas, el eje va en la más frecuente (la primera, si empatan) y lo dice; cada bloque de otra zona dice la suya
+  const axisZone = showZone ? axisZoneOf(days) : undefined
   const { first, last } = timeline(days)
   const height = `${(last - first) * HOUR_REM}rem`
   const hours = Array.from({ length: last - first }, (_, index) => first + index)
   return (
     <div className="border-y border-t-ink border-b-border bg-surface">
       <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
-        <span aria-hidden="true" className="border-b border-ink" />
+        {axisZone ? (
+          <span
+            aria-hidden="true"
+            title={timeZoneLabel(axisZone, locale)}
+            className="text-secondary border-b border-ink px-1 pt-2.5 text-right text-ink-muted tabular-nums"
+          >
+            {zoneShort(axisZone, locale)}
+          </span>
+        ) : (
+          <span aria-hidden="true" className="border-b border-ink" />
+        )}
         {days.map(({ date }) => {
           const isToday = date === today
           return (
@@ -286,8 +313,10 @@ function WeekGrid({ days, today, locale }: WeekProps) {
             }`}
             style={{ height, backgroundSize: `100% ${HOUR_REM}rem` }}
           >
-            {placements(day.sessions).map(({ session, start, end, lane, lanes }) => {
-              const hoursText = formatTimeRange(session.start, session.end, locale, session.timeZone)
+            {placements(day).map(({ session, start, end, lane, lanes, continuation }) => {
+              // fuera de la zona del eje, la hora lleva su zona: ni la posición ni la cifra se confundirían con las del eje
+              const zoneMark = axisZone && session.timeZone !== axisZone ? ` ${zoneShort(session.timeZone, locale)}` : ''
+              const hoursText = formatTimeRange(session.start, session.end, locale, session.timeZone) + zoneMark
               const status = t(`sessions.status.${session.status}`)
               const short = end - start <= 45
               // en un bloque corto o estrecho (se pisa con otra), solo la hora de inicio: el tramo entero va en su nombre y en el detalle
@@ -296,7 +325,7 @@ function WeekGrid({ days, today, locale }: WeekProps) {
               const roomy = end - start >= 90 && lanes === 1
               return (
                 <li
-                  key={sessionKey(session)}
+                  key={`${sessionKey(session)}${continuation ? '-continued' : ''}`}
                   className="absolute p-0.5"
                   style={{
                     top: `${((start - first * 60) / 60) * HOUR_REM}rem`,
@@ -307,13 +336,24 @@ function WeekGrid({ days, today, locale }: WeekProps) {
                 >
                   <a
                     href={fragmentOf(session)}
-                    aria-label={t('schedule.block', { hours: hoursText, title: session.title, course: session.courseTitle, status })}
+                    aria-label={t(continuation ? 'schedule.blockContinued' : 'schedule.block', {
+                      hours: hoursText,
+                      title: session.title,
+                      course: session.courseTitle,
+                      status
+                    })}
                     title={session.title}
                     className={`flex h-full min-w-0 overflow-hidden rounded-md px-2 py-1 text-secondary leading-tight ${FOCUS} ${BLOCK_TONE[session.status]} ${
                       short ? 'flex-row items-center gap-1.5' : 'flex-col gap-0.5'
                     }`}
                   >
-                    <span className="shrink-0 font-semibold tabular-nums">{startOnly ? formatTime(session.start, locale, session.timeZone) : hoursText}</span>
+                    <span data-continuation={continuation ? '' : undefined} className="shrink-0 font-semibold tabular-nums">
+                      {continuation
+                        ? t('schedule.continuesUntil', { time: formatTime(session.end, locale, session.timeZone) + zoneMark })
+                        : startOnly
+                          ? formatTime(session.start, locale, session.timeZone) + zoneMark
+                          : hoursText}
+                    </span>
                     <span className={roomy ? 'line-clamp-3' : 'truncate'}>{session.title}</span>
                     {session.status === 'PROGRAMADA' || short ? null : <span className="truncate font-semibold no-underline">{status}</span>}
                   </a>

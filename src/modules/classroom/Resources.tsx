@@ -79,6 +79,8 @@ export function FileResources({ resources }: { resources: Resource[] }) {
   return (
     <ul className="flex flex-col gap-3">
       {files.map((resource) => {
+        // un fragmento nativo (un ancla del propio documento) y no un Link del router, a propósito: el navegador desplaza al ancla, mueve el foco
+        // a ella y deja la entrada en el historial sin tocar la ruta ni la lección. el router solo se necesita para cambiar de pantalla
         const anchor = `#${resourceAnchor(resource.id)}`
         return (
           <li key={resource.id} className="flex flex-col gap-0.5">

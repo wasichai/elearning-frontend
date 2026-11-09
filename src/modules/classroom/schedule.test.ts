@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AgendaSession } from './agenda'
-import { parseWeek, placements, requestedWeek, scheduleDays, timeline } from './schedule'
+import { parseWeek, placements, requestedWeek, scheduleDays, timeline, type ScheduleDay } from './schedule'
 import { agendaItem, enrollment, sessions } from './test/fixtures'
 
 // la lógica del horario, sin pintar: la semana de la URL, el día de cada sesión en su zona, las horas de la rejilla y los carriles
@@ -57,25 +57,63 @@ describe('los días de la semana', () => {
   })
 })
 
+const dayOf = (sessions: ReturnType<typeof at>[], continued: ReturnType<typeof at>[] = [], date = '2026-11-16'): ScheduleDay => ({ date, sessions, continued })
+
+describe('una sesión que cruza la medianoche', () => {
+  // martes 17 a las 22:00 en Lima hasta el miércoles 18 a las 01:30
+  const night = at('noche', '2026-11-18T03:00:00Z', '2026-11-18T06:30:00Z')
+
+  it('continúa en el día siguiente como continuación, sin contarse dos veces', () => {
+    const days = scheduleDays([night], '2026-11-16')
+    expect(days.map((day) => [day.date, day.sessions.map((s) => s.id), day.continued.map((s) => s.id)])).toEqual([
+      ['2026-11-16', [], []],
+      ['2026-11-17', ['noche'], []],
+      ['2026-11-18', [], ['noche']],
+      ['2026-11-19', [], []],
+      ['2026-11-20', [], []],
+      ['2026-11-21', [], []],
+      ['2026-11-22', [], []]
+    ])
+    const [first] = placements(days[1]!)
+    expect(first).toMatchObject({ start: 22 * 60, end: 24 * 60, continuation: false })
+    const [second] = placements(days[2]!)
+    expect(second).toMatchObject({ start: 0, end: 90, continuation: true })
+  })
+
+  it('la que acaba justo a medianoche no continúa', () => {
+    const days = scheduleDays([at('justo', '2026-11-18T03:00:00Z', '2026-11-18T05:00:00Z')], '2026-11-16')
+    expect(days.flatMap((day) => day.continued)).toEqual([])
+    expect(placements(days[1]!)[0]).toMatchObject({ start: 22 * 60, end: 24 * 60 })
+  })
+
+  it('la del domingo anterior continúa en el lunes de la semana', () => {
+    const days = scheduleDays([at('domingo', '2026-11-16T03:00:00Z', '2026-11-16T06:30:00Z')], '2026-11-16')
+    expect(days[0]!.continued.map((s) => s.id)).toEqual(['domingo'])
+  })
+})
+
 describe('la rejilla', () => {
-  it('va de la hora de la primera a la hora en que acaba la última; una que pasa de medianoche se corta ahí', () => {
+  it('va de la hora de la primera a la hora en que acaba la última; una que pasa de medianoche se corta ahí y sigue el día siguiente', () => {
     const late = scheduleDays(
       [at('pronto', '2026-11-16T14:30:00Z', '2026-11-16T15:30:00Z'), at('tarde', '2026-11-18T02:00:00Z', '2026-11-18T05:30:00Z')],
       '2026-11-16'
     )
-    // 09:30 a 10:30 y 21:00 a 00:30 del día siguiente, en Lima
-    expect(timeline(late)).toEqual({ first: 9, last: 24 })
+    // 09:30 a 10:30 y 21:00 a 00:30 del día siguiente, en Lima: la continuación del jueves empieza a las 00:00
+    expect(timeline(late)).toEqual({ first: 0, last: 24 })
+    expect(timeline(scheduleDays([at('pronto', '2026-11-16T14:30:00Z', '2026-11-16T15:30:00Z')], '2026-11-16'))).toEqual({ first: 9, last: 11 })
     expect(timeline(scheduleDays([at('a', '2026-11-16T22:15:00Z', '2026-11-16T22:45:00Z')], '2026-11-16'))).toEqual({ first: 17, last: 18 })
     expect(timeline(scheduleDays([], '2026-11-16'))).toEqual({ first: 0, last: 0 })
   })
 
   it('las que se pisan comparten el ancho; la que no se pisa con ninguna lo ocupa entero', () => {
-    const placed = placements([
-      // en Lima: 18:00–19:30 y 18:30–19:00 se pisan; 20:00–21:00 va sola
-      at('sola', '2026-11-17T01:00:00Z', '2026-11-17T02:00:00Z'),
-      at('larga', '2026-11-16T23:00:00Z', '2026-11-17T00:30:00Z'),
-      at('pisa', '2026-11-16T23:30:00Z', '2026-11-17T00:00:00Z')
-    ])
+    const placed = placements(
+      dayOf([
+        // en Lima: 18:00–19:30 y 18:30–19:00 se pisan; 20:00–21:00 va sola
+        at('sola', '2026-11-17T01:00:00Z', '2026-11-17T02:00:00Z'),
+        at('larga', '2026-11-16T23:00:00Z', '2026-11-17T00:30:00Z'),
+        at('pisa', '2026-11-16T23:30:00Z', '2026-11-17T00:00:00Z')
+      ])
+    )
 
     expect(ids(placed)).toEqual(['larga', 'pisa', 'sola'])
     expect(placed.map(({ start, end, lane, lanes }) => ({ start, end, lane, lanes }))).toEqual([
@@ -86,7 +124,7 @@ describe('la rejilla', () => {
   })
 
   it('una que empieza cuando acaba otra no se pisa con ella', () => {
-    const placed = placements([at('a', '2026-11-16T23:00:00Z', '2026-11-17T00:00:00Z'), at('b', '2026-11-17T00:00:00Z', '2026-11-17T01:00:00Z')])
+    const placed = placements(dayOf([at('a', '2026-11-16T23:00:00Z', '2026-11-17T00:00:00Z'), at('b', '2026-11-17T00:00:00Z', '2026-11-17T01:00:00Z')]))
 
     expect(placed.map(({ lane, lanes }) => [lane, lanes])).toEqual([
       [0, 1],

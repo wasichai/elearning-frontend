@@ -145,6 +145,8 @@ describe('CatalogPage', () => {
 
     const link = await screen.findByRole('link', { name: title })
     expect(link).toHaveAttribute('title', title)
+    // en táctil no hay title: el resumen describe el enlace
+    expect(link).toHaveAccessibleDescription(courseSummary.summary)
     expect(link).toHaveClass('line-clamp-2')
     expect(link.closest('li')).toHaveClass('min-w-0')
   })

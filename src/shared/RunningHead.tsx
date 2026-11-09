@@ -3,14 +3,14 @@ import { Link } from 'react-router'
 import type { Crumb } from './Screen'
 
 // la cabecera corrida (docs/design-system/colofon/Classroom.dc.html): las migas a la izquierda en versalitas y el folio a la derecha,
-// sobre un filete de tinta. es la ruta de la página: su nombre («Ruta») está en el i18n del aula (src/shared no tiene espacio de
-// nombres), así que quien la use debe tener el módulo `classroom` registrado. ninguna miga desborda: con enlace o sin él se corta
+// sobre un filete de tinta. es la ruta de la página: su nombre («Ruta») está en runningHeadMessages, que quien la use pone bajo la clave
+// runningHead de su espacio de nombres (namespace), igual que VersionDiff. ninguna miga desborda: con enlace o sin él se corta
 // con elipsis y lleva el texto completo en title. la última, si no tiene destino, es la página actual. el folio («1 / 15») es para el ojo;
 // folioLabel («Lección 1 de 15») es lo que oye el lector de pantalla
-export function RunningHead({ trail, folio, folioLabel }: { trail: Crumb[]; folio?: string; folioLabel?: string }) {
-  const { t } = useTranslation('classroom')
+export function RunningHead({ namespace, trail, folio, folioLabel }: { namespace: string; trail: Crumb[]; folio?: string; folioLabel?: string }) {
+  const { t } = useTranslation(namespace)
   return (
-    <nav aria-label={t('course.breadcrumbs')} className="flex items-baseline justify-between gap-4 border-b border-ink pb-2 print:hidden">
+    <nav aria-label={t('runningHead.label')} className="flex items-baseline justify-between gap-4 border-b border-ink pb-2 print:hidden">
       <ol className="flex min-w-0 flex-1 flex-nowrap items-baseline gap-x-2">
         {trail.map((crumb, index) => {
           const last = index === trail.length - 1

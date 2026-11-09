@@ -1,5 +1,6 @@
 import { useWasichaiLinks } from '@wasichai/core'
 import { ChartNoAxesColumnIncreasing, Clock, MonitorPlay } from 'lucide-react'
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { formatCivilRange, formatNumber } from '../../shared/format'
@@ -14,11 +15,13 @@ const ROW = 'grid min-w-0 gap-x-8 gap-y-3 py-5 md:grid-cols-[minmax(0,1fr)_15rem
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 // una fila del catálogo (docs/design-system/colofon/Catalog.dc.html): la colección en meta, el título como único enlace, el resumen en dos
-// líneas y los datos. el título se corta a dos líneas con el completo en title; la fila entera no es clicable
+// líneas y los datos. el título se corta a dos líneas con el completo en title (que no sirve en táctil: ahí el título entero sigue en el DOM, para el lector de
+// pantalla, y la ficha del curso lo muestra); el resumen describe el enlace; la fila entera no es clicable
 // showIllustrative: la marca va en la fila solo si la página es mixta; si todos lo son, la dice el encabezado
 export function CourseRow({ course, showIllustrative = false }: { course: CourseSummary; showIllustrative?: boolean }) {
   const { t, i18n } = useTranslation('catalog')
   const links = useWasichaiLinks()
+  const summaryId = useId()
   return (
     <li className={ROW}>
       <div className="flex min-w-0 flex-col gap-2">
@@ -32,12 +35,17 @@ export function CourseRow({ course, showIllustrative = false }: { course: Course
           <Link
             to={links.to(CATALOG_ROUTES.course, { slug: course.slug })}
             title={course.title}
+            aria-describedby={course.summary ? summaryId : undefined}
             className={`line-clamp-2 rounded-sm break-words underline decoration-border-control underline-offset-4 hover:text-brand-strong hover:decoration-current ${FOCUS}`}
           >
             {course.title}
           </Link>
         </h3>
-        {course.summary ? <p className="text-secondary line-clamp-2 max-w-measure text-ink-muted">{course.summary}</p> : null}
+        {course.summary ? (
+          <p id={summaryId} className="text-secondary line-clamp-2 max-w-measure text-ink-muted">
+            {course.summary}
+          </p>
+        ) : null}
         <dl className="text-secondary flex flex-wrap gap-x-4 gap-y-1">
           <IconFact icon={ChartNoAxesColumnIncreasing} label={t('course.level')}>
             {t(`level.${course.level}`)}

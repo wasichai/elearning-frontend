@@ -320,8 +320,8 @@ test('la lectura no pide nada fuera ni ejecuta nada: un bloque desconocido, un e
   const external = reading.getByRole('link', { name: 'un sitio (abre en otra pestaña)' })
   await expect(external).toHaveAttribute('target', '_blank')
   await expect(external).toHaveAttribute('rel', 'noopener noreferrer')
-  // tiempo de sobra para que la imagen se hubiera pedido o el script hubiera corrido
-  await page.waitForTimeout(1000)
+  // sin esperar un tiempo a ojo: con la red en reposo la imagen ya se habría pedido y el script ya habría corrido
+  await page.waitForLoadState('networkidle')
   expect(outside).toEqual([])
   expect(dialogs).toEqual([])
 })

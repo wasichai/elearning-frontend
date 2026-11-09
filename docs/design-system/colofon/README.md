@@ -7,7 +7,8 @@ backend; el plan, en [`../../superpowers/plans/2026-11-08-colofon.md`](../../sup
 
 Los artboards `.dc.html` de esta carpeta son la fuente de verdad visual (son las fuentes de las láminas del
 canvas, que se ven en el [canvas](https://claude.ai/artifact/3FfeqzTPiBKQzEcKR7MqKc); como HTML sirven de referencia legible
-de estructura, tokens y textos, y no se abren sueltos: cargan el runtime del canvas, que no está en el repositorio). `canvas.json` es la disposición del lienzo. `tokens.json` recoge los valores exactos. Canvas publicado:
+de estructura, tokens y textos, y no se abren sueltos: cargan el runtime del canvas, que no está en el repositorio). `canvas.json` es la
+disposición del lienzo. `tokens.json` recoge los valores exactos. Canvas publicado:
 <https://claude.ai/artifact/3FfeqzTPiBKQzEcKR7MqKc>. Auditoría y decisión: <https://claude.ai/artifact/2vSwNNERREDaTSCPQMbU1C>.
 
 ## Principios

@@ -1,7 +1,8 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { timeZoneLabel, zonedDateTime } from '../../shared/format'
 import type { Session } from '../../shared/sessions'
+import { useNow } from '../../shared/useNow'
 import { SessionRow } from './SessionRow'
 
 interface Day {
@@ -37,7 +38,7 @@ export function SessionList({
   lessonLinks?: boolean
 }) {
   const { t, i18n } = useTranslation('classroom')
-  const [now] = useState(() => Date.now())
+  const now = useNow()
   const zones = [...new Set(sessions.map((session) => session.timeZone))]
   const ended = (session: Session) => now >= Date.parse(session.end)
   const upcoming = sessions.filter((session) => !ended(session)).sort(byStart)
