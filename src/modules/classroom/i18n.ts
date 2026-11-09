@@ -2,7 +2,8 @@
 const es = {
   nav: {
     group: 'Aprendizaje',
-    myCourses: 'Mis cursos'
+    myCourses: 'Mis cursos',
+    schedule: 'Horario'
   },
   // nombres de los temas Colofón en el selector de tema del shell (src/theme/themes.ts)
   theme: {
@@ -337,6 +338,35 @@ const es = {
     accepted: 'Respuestas aceptadas: {{answers}}',
     review: 'Para repasar:'
   },
+  // el horario (SchedulePage): la semana del estudiante con las sesiones de todas sus matrículas
+  schedule: {
+    context: 'Horario · sesiones de tus matrículas',
+    // start y end los escribe el español («del 16 al 22 de noviembre»); range, el inglés («November 16 – 22»)
+    week: 'Semana del {{start}} al {{end}}',
+    weeks: 'Semanas',
+    previous: 'Semana anterior',
+    next: 'Semana siguiente',
+    today: 'Hoy',
+    todayMark: 'hoy',
+    view: 'Vista',
+    viewWeek: 'Semana',
+    viewList: 'Lista',
+    loading: 'Cargando el horario…',
+    empty: 'No tienes sesiones esta semana',
+    emptyHint: 'Las sesiones en vivo de tus cursos aparecen aquí con su día y su hora. Mira otra semana o vuelve a hoy.',
+    nothingBefore: 'Sin sesiones antes de las {{time}}',
+    block: '{{hours}}, {{title}}, {{status}}',
+    details: 'Sesiones de la semana',
+    count_one: '{{count}} sesión',
+    count_other: '{{count}} sesiones',
+    noneDay: 'Sin sesiones',
+    aside: 'Junto al horario',
+    pendingNote: 'Las evaluaciones no tienen fecha: aquí van todas las que te quedan, no solo las de esta semana.',
+    legend: 'Cómo leer el horario',
+    legendRescheduled: ', con borde discontinuo',
+    legendCancelled: ', tachada y sin relleno',
+    open: 'Abrir el horario'
+  },
   sessions: {
     title: 'Sesiones en vivo',
     loading: 'Cargando las sesiones…',
@@ -583,7 +613,8 @@ const es = {
 const en: typeof es = {
   nav: {
     group: 'Learning',
-    myCourses: 'My courses'
+    myCourses: 'My courses',
+    schedule: 'Schedule'
   },
   theme: {
     colofon: 'Colophon',
@@ -908,6 +939,33 @@ const en: typeof es = {
     solution: 'Correct answer: {{answer}}',
     accepted: 'Accepted answers: {{answers}}',
     review: 'To review:'
+  },
+  schedule: {
+    context: 'Schedule · sessions from your enrollments',
+    week: 'Week of {{range}}',
+    weeks: 'Weeks',
+    previous: 'Previous week',
+    next: 'Next week',
+    today: 'Today',
+    todayMark: 'today',
+    view: 'View',
+    viewWeek: 'Week',
+    viewList: 'List',
+    loading: 'Loading the schedule…',
+    empty: 'You have no sessions this week',
+    emptyHint: 'The live sessions of your courses show up here with their day and time. Look at another week or go back to today.',
+    nothingBefore: 'No sessions before {{time}}',
+    block: '{{hours}}, {{title}}, {{status}}',
+    details: "This week's sessions",
+    count_one: '{{count}} session',
+    count_other: '{{count}} sessions',
+    noneDay: 'No sessions',
+    aside: 'Alongside the schedule',
+    pendingNote: 'Assessments have no due date: these are all you have left, not only this week’s.',
+    legend: 'How to read the schedule',
+    legendRescheduled: ', with a dashed border',
+    legendCancelled: ', struck through and unfilled',
+    open: 'Open the schedule'
   },
   sessions: {
     title: 'Live sessions',

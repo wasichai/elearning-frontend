@@ -10,6 +10,7 @@ describe('classroomModule', () => {
       { key: CLASSROOM_ROUTES.enrollments, path: '/mis-cursos', chrome: 'shell' },
       { key: CLASSROOM_ROUTES.classroom, path: '/mis-cursos/:enrollmentId', chrome: 'shell' },
       { key: CLASSROOM_ROUTES.sessions, path: '/mis-cursos/:enrollmentId/sesiones', chrome: 'shell' },
+      { key: CLASSROOM_ROUTES.schedule, path: '/horario', chrome: 'shell' },
       { key: CLASSROOM_ROUTES.completion, path: '/mis-cursos/:enrollmentId/finalizacion', chrome: 'shell' },
       // la verificación del certificado es pública, como el catálogo
       { key: CLASSROOM_ROUTES.verify, path: '/certificados', chrome: 'public' },
@@ -23,7 +24,7 @@ describe('classroomModule', () => {
 
     expect(registry.navGroups[0]?.id).toBe('learning')
     expect(learning).toMatchObject({ labelKey: 'classroom:nav.group' })
-    expect(learning?.items).toHaveLength(1)
+    expect(learning?.items).toHaveLength(2)
     expect(learning?.items[0]).toMatchObject({ labelKey: 'classroom:nav.myCourses', to: '/mis-cursos', disabled: false })
     // cortesía: el servidor responde 403 a GET /lms/classroom/enrollments sin matricula: READ
     const visible = learning?.items[0]?.visible
@@ -34,12 +35,25 @@ describe('classroomModule', () => {
     expect(visible?.(null)).toBe(true)
   })
 
+  it('nav shows Horario for learners only', () => {
+    const registry = createRegistry([coreModule, classroomModule()])
+    const schedule = registry.navGroups.find((group) => group.id === 'learning')?.items.find((item) => item.labelKey === 'classroom:nav.schedule')
+
+    expect(schedule).toMatchObject({ to: '/horario', disabled: false })
+    expect(schedule?.visible?.({ admin: false, objects: { matricula: ['READ'] } })).toBe(true)
+    expect(schedule?.visible?.({ admin: true, objects: {} })).toBe(true)
+    expect(schedule?.visible?.({ admin: false, objects: { curso: ['READ'] } })).toBe(false)
+    // a diferencia de «Mis cursos», sin saber aún los permisos no se ofrece
+    expect(schedule?.visible?.(null)).toBe(false)
+  })
+
   it('los enlaces se construyen por clave de ruta', () => {
     const links = createLinks(createRegistry([coreModule, classroomModule()]))
 
     expect(links.to(CLASSROOM_ROUTES.enrollments)).toBe('/mis-cursos')
     expect(links.to(CLASSROOM_ROUTES.classroom, { enrollmentId: 'mat-1' }, { leccion: 'lec-2' })).toBe('/mis-cursos/mat-1?leccion=lec-2')
     expect(links.to(CLASSROOM_ROUTES.certificate, { code: 'K7Q2-M9XW-4RTB' })).toBe('/certificados/K7Q2-M9XW-4RTB')
+    expect(links.to(CLASSROOM_ROUTES.schedule, {}, { semana: '2026-11-16' })).toBe('/horario?semana=2026-11-16')
   })
 
   it('carga sus páginas bajo demanda y trae sus textos', async () => {

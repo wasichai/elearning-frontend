@@ -1,4 +1,4 @@
-import { BookOpen } from 'lucide-react'
+import { BookOpen, CalendarDays } from 'lucide-react'
 import type { CallerPermissions, WasichaiModule } from '@wasichai/core'
 import { canLearn } from '../../shared/learning'
 import { classroomMessages } from './i18n'
@@ -25,6 +25,8 @@ export function classroomModule(): WasichaiModule {
         chrome: 'shell',
         lazy: () => import('./SessionsPage').then((m) => ({ default: m.SessionsPage }))
       },
+      // el horario: la semana del estudiante, con las sesiones de todas sus matrículas
+      { id: 'schedule', path: 'horario', chrome: 'shell', lazy: () => import('./SchedulePage').then((m) => ({ default: m.SchedulePage })) },
       {
         id: 'completion',
         path: 'mis-cursos/:enrollmentId/finalizacion',
@@ -37,7 +39,11 @@ export function classroomModule(): WasichaiModule {
     ],
     // antes que los grupos de core (datos 10): para un estudiante, aprender es lo primero del menú
     navGroups: [{ id: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.group`, order: 5 }],
-    nav: [{ group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments', visible: offerMyCourses, icon: BookOpen }],
+    nav: [
+      { group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.myCourses`, order: 10, route: 'enrollments', visible: offerMyCourses, icon: BookOpen },
+      // «Horario», solo para quien puede aprender: sin saber aún los permisos no se ofrece (la agenda también exige matricula: READ)
+      { group: 'learning', labelKey: `${CLASSROOM_MODULE_ID}:nav.schedule`, order: 30, route: 'schedule', visible: canLearn, icon: CalendarDays }
+    ],
     i18n: classroomMessages
   }
 }

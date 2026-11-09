@@ -48,17 +48,19 @@ export function parseReadingPreferences(stored: string | null): ReadingPreferenc
   }
 }
 
-function load(key: string): ReadingPreferences {
+// lo guardado en este navegador con esa clave, leído por parse (que entiende también null); sin almacenamiento, lo que parse dé por defecto.
+// lo usan la lectura y el horario (la vista elegida)
+export function readStored<T>(key: string, parse: (stored: string | null) => T): T {
   try {
-    return parseReadingPreferences(localStorage.getItem(key))
+    return parse(localStorage.getItem(key))
   } catch {
-    return { mode: false }
+    return parse(null)
   }
 }
 
-function save(key: string, preferences: ReadingPreferences) {
+export function writeStored(key: string, value: unknown) {
   try {
-    localStorage.setItem(key, JSON.stringify(preferences))
+    localStorage.setItem(key, JSON.stringify(value))
   } catch {
     // sin almacenamiento (modo privado, cuota): la elección vale solo en esta página
   }
@@ -67,10 +69,10 @@ function save(key: string, preferences: ReadingPreferences) {
 export function useReadingPreferences(): ReadingControls {
   const { storagePrefix } = useWasichaiConfig()
   const key = `${storagePrefix}.reading`
-  const [preferences, setPreferences] = useState(() => load(key))
+  const [preferences, setPreferences] = useState(() => readStored(key, parseReadingPreferences))
   const update = (next: ReadingPreferences) => {
     setPreferences(next)
-    save(key, next)
+    writeStored(key, next)
   }
   const shownSize: ReadingSize = preferences.size ?? DEFAULT_READING_SIZE
   const index = READING_SIZES.findIndex((step) => step === shownSize)

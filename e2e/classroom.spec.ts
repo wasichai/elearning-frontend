@@ -364,6 +364,53 @@ test('las unidades se recorren con el teclado y el foco va a la lección abierta
   await expect(target).toHaveAttribute('aria-current', 'page')
 })
 
+test.describe('el horario', () => {
+  // el lunes 16 de noviembre por la mañana en Lima: la recuperación de SGSPE es el martes 17 a las 08:00 de Lima
+  const MONDAY = new Date('2026-11-16T14:00:00Z')
+
+  test('«Horario» está en el menú; la semana va en la URL y atrás vuelve a la anterior', async ({ page }) => {
+    await page.clock.setFixedTime(MONDAY)
+    const api = await fakeApi(page, { signedIn: true })
+    await page.goto('/mis-cursos')
+
+    await page.getByRole('link', { name: 'Horario', exact: true }).click()
+    await expect(page).toHaveURL('/horario')
+    await expect(page.getByRole('heading', { level: 1, name: 'Semana del 16 al 22 de noviembre' })).toBeVisible()
+    const details = page.getByRole('region', { name: 'Sesiones de la semana' })
+    const recovery = details.getByRole('article', { name: 'Recuperación de la consulta' })
+    await expect(recovery).toContainText('8:00')
+    await expect(recovery).toContainText('Introducción al SGSPE')
+    // el bloque de la rejilla lleva a su detalle
+    await page.getByRole('link', { name: /Recuperación de la consulta, Programada$/ }).click()
+    await expect(page).toHaveURL(/#sesion-mat-sgspe-1-ses-3$/)
+
+    await page.getByRole('link', { name: 'Semana siguiente' }).click()
+    await expect(page).toHaveURL('/horario?semana=2026-11-23')
+    await expect(page.getByText('No tienes sesiones esta semana')).toBeVisible()
+    await page.goBack()
+    await page.goBack()
+    await expect(page.getByRole('heading', { level: 1, name: 'Semana del 16 al 22 de noviembre' })).toBeVisible()
+
+    // la lista, elegida, se recuerda al volver
+    await page.getByRole('button', { name: 'Lista' }).click()
+    await page.reload()
+    await expect(page.getByRole('button', { name: 'Lista' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('region', { name: 'Sesiones de la semana' })).toHaveCount(0)
+    expect(api.unexpected).toEqual([])
+  })
+
+  for (const width of [360, 390, 768, 1024, 1440])
+    test(`no desborda en horizontal a ${width} px`, async ({ page }) => {
+      await page.clock.setFixedTime(MONDAY)
+      await page.setViewportSize({ width, height: 800 })
+      await fakeApi(page, { signedIn: true })
+      await page.goto('/horario')
+      await expect(page.getByRole('article', { name: 'Recuperación de la consulta' })).toBeVisible()
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow).toBeLessThanOrEqual(0)
+    })
+})
+
 test.describe('en un teléfono', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
 
