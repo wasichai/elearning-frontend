@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { fakeApi } from './api'
+import { fakeApi, isCourse } from './api'
+import { courseDetail } from '../src/modules/catalog/test/fixtures'
 import { horizontalOverflow } from './overflow'
 
 // a 390 px (un teléfono corriente) nada obliga a desplazarse en horizontal
@@ -38,6 +39,19 @@ test('a 360 px, con filtros activos y la hoja de «Más filtros», tampoco desbo
   await sheet.getByRole('button', { name: /^Ver / }).click()
   await expect(sheet).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Más filtros 4 activos' })).toBeFocused()
+})
+
+// más de 90 caracteres y una palabra larga: el título de la portadilla baja de línea y no empuja la página
+test('una ficha con un título largo no desborda en horizontal', async ({ page }) => {
+  const title = 'Rentas municipales (SRTM): acceso al portal, registro de anuncios y su mantenimiento, y las tasas que generan'
+  await fakeApi(page)
+  await page.route(isCourse(courseDetail.slug), (route) => route.fulfill({ json: { ...courseDetail, title } }))
+  await page.goto(`/cursos/${courseDetail.slug}`)
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible()
+
+  const overflow = await horizontalOverflow(page)
+  expect(overflow.wider).toEqual([])
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth)
 })
 
 test.describe('la acción de la ficha, al pie', () => {

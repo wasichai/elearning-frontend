@@ -71,6 +71,8 @@ const lesson = courseDetail.units[0]!.lessons[0]!
 // una ficha larga, con todo lo que el contrato puede dar: varias unidades y ediciones en cada estado
 const FULL_COURSE = {
   ...courseDetail,
+  // más de 90 caracteres: la portadilla baja de línea sin desbordar
+  title: 'Licencias de anuncios con SRTM: la solicitud, la inspección, la liquidación y la renovación, de principio a fin',
   units: [
     ...courseDetail.units,
     {

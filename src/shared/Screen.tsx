@@ -125,7 +125,8 @@ export function Section({
   children,
   level = 2,
   className = '',
-  anchor
+  anchor,
+  number
 }: {
   title: ReactNode
   description?: ReactNode
@@ -135,11 +136,13 @@ export function Section({
   className?: string
   // el id de la sección, para enlazarla desde un índice («En esta página»); se detiene a un respiro del borde
   anchor?: string
+  // la cifra de «§n», cuando la pantalla numera sus secciones (la ficha del curso)
+  number?: string
 }) {
   const id = useId()
   return (
     <section id={anchor} aria-labelledby={id} className={`flex min-w-0 flex-col gap-3 ${anchor ? 'scroll-mt-6' : ''} ${className}`}>
-      <SectionHead id={id} as={level === 3 ? 'h3' : 'h2'} title={title} meta={action} />
+      <SectionHead id={id} as={level === 3 ? 'h3' : 'h2'} number={number} title={title} meta={action} />
       {description ? <p className="text-secondary text-ink-muted">{description}</p> : null}
       {children}
     </section>
