@@ -42,6 +42,37 @@ describe('SegmentedProgress', () => {
     for (const segment of row.querySelectorAll('[data-slot="progress-segment"]')) expect(segment.className).toContain('min-w-[2px]')
   })
 
+  it('con 72 lecciones agrupa por unidad: un segmento por unidad, relleno proporcional, mismo texto y aria-label', () => {
+    // 6 unidades de 12 lecciones; la primera completa, la segunda a un tercio, la tercera con una iniciada
+    const units = Array.from({ length: 6 }, (_, at) => unit(String(at + 1), empty(12)))
+    units[0] = unit(
+      '1',
+      Array.from({ length: 12 }, () => 'COMPLETADA' as const)
+    )
+    units[1] = unit('2', [...Array.from({ length: 4 }, () => 'APROBADA' as const), ...empty(8)])
+    units[2] = unit('3', ['INICIADA', ...empty(11)])
+    renderProgress(units, { currentLessonId: '2-6' })
+    const row = screen.getByRole('img')
+    const segments = [...row.querySelectorAll<HTMLElement>('[data-slot="progress-segment"]')]
+    expect(segments).toHaveLength(6)
+    expect(segments.map((segment) => segment.querySelector<HTMLElement>('[data-slot="progress-fill"]')!.style.width)).toEqual([
+      '100%',
+      `${(4 / 12) * 100}%`,
+      '0%',
+      '0%',
+      '0%',
+      '0%'
+    ])
+    expect(segments.map((segment) => segment.hasAttribute('data-current'))).toEqual([false, true, false, false, false, false])
+    expect(row).toHaveAttribute('aria-label', '16 de 72 completadas, 1 iniciada')
+    expect(screen.getByText(/16 de 72/)).toBeInTheDocument()
+  })
+
+  it('en el umbral exacto (60 lecciones) todavía hay un segmento por lección', () => {
+    renderProgress(Array.from({ length: 5 }, (_, at) => unit(String(at + 1), empty(12))))
+    expect(screen.getByRole('img').querySelectorAll('[data-slot="progress-segment"]')).toHaveLength(60)
+  })
+
   it('una unidad sin lecciones no deja hueco ni segmento', () => {
     renderProgress([unit('1', ['COMPLETADA']), unit('2', []), unit('3', empty(2))])
     const row = screen.getByRole('img')
@@ -113,10 +144,10 @@ describe('SegmentedProgress', () => {
     expect(screen.getByText('· 9 iniciadas')).toBeVisible()
   })
 
-  it('un curso de más de 70 lecciones no desborda su caja: la fila recorta en lugar de empujar', () => {
-    renderProgress(Array.from({ length: 12 }, (_, at) => unit(String(at + 1), empty(6))))
+  it('un curso en el umbral (60 lecciones) no desborda su caja: la fila recorta en lugar de empujar', () => {
+    renderProgress(Array.from({ length: 12 }, (_, at) => unit(String(at + 1), empty(5))))
     const row = screen.getByRole('img')
-    expect(row.querySelectorAll('[data-slot="progress-segment"]')).toHaveLength(72)
+    expect(row.querySelectorAll('[data-slot="progress-segment"]')).toHaveLength(60)
     expect(row).toHaveClass('overflow-hidden', 'min-w-0')
   })
 })

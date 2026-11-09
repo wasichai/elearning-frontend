@@ -45,6 +45,30 @@ const readingStyle = async (property: '--reading-size' | '--reading-leading') =>
 }
 
 describe('modo lectura de la lección', () => {
+  it('al llevar A− a su límite, el botón se deshabilita y el foco sigue en la barra', async () => {
+    renderLesson()
+    const toolbar = await tools()
+    const smaller = within(toolbar).getByRole('button', { name: 'Texto más pequeño' })
+    for (let press = 0; press < 10 && !smaller.hasAttribute('disabled'); press++) await userEvent.click(smaller)
+
+    expect(smaller).toBeDisabled()
+    expect(toolbar).toContainElement(document.activeElement as HTMLElement)
+    expect(document.activeElement).not.toBe(smaller)
+  })
+
+  it('la barra de herramientas es un solo tabstop y se recorre con las flechas', async () => {
+    renderLesson()
+    const bar = within(await tools())
+    const buttons = bar.getAllByRole('button')
+    expect(buttons.filter((button) => button.getAttribute('tabindex') === '0')).toHaveLength(1)
+
+    buttons[0]!.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(buttons[1]).toHaveFocus()
+    await userEvent.keyboard('{End}')
+    expect(buttons.at(-1)).toHaveFocus()
+  })
+
   it('el botón pone el papel sepia en la lección y se recuerda', async () => {
     renderLesson()
     const toggle = within(await tools()).getByRole('button', { name: 'Modo lectura' })

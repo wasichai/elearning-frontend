@@ -89,6 +89,7 @@ export function LessonView({ enrollmentId, timeZone, placed, previous, next, pen
         <div className={MEASURE}>
           <div className={INTERFACE}>
             <RunningHead
+              namespace="classroom"
               trail={[
                 { label: t('nav.myCourses'), to: links.to(CLASSROOM_ROUTES.enrollments) },
                 { label: t('classroom.unitShort', { order: unit.order }) },

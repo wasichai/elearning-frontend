@@ -79,14 +79,15 @@ describe('CatalogPage', () => {
 
     const first = within(items[0]!)
     // el título es el enlace principal y el único interactivo de la fila: sin fila entera clicable
-    expect(first.getByRole('heading', { level: 3, name: courseSummary.title })).toBeInTheDocument()
+    expect(first.getByRole('heading', { level: 4, name: courseSummary.title })).toBeInTheDocument()
     expect(first.getByRole('link', { name: courseSummary.title })).toHaveAttribute('href', '/cursos/srtm-anuncios')
     expect(first.getAllByRole('link')).toHaveLength(1)
     expect(first.queryByRole('button')).not.toBeInTheDocument()
     expect(items[0]!.querySelector('a[class*="after:"]')).toBeNull()
     expect(first.getByText(courseSummary.summary)).toBeInTheDocument()
-    // la colección, en meta (sin mayúsculas sostenidas: las versalitas las pone la utilidad)
-    expect(first.getByText('Gestión municipal')).toHaveClass('meta')
+    // la colección va en el encabezado de su grupo, no en la fila
+    expect(first.queryByText('Gestión municipal')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Gestión municipal' })).toBeInTheDocument()
     expect(first.getByText('Inicial')).toBeInTheDocument()
     expect(first.getByText('Asíncrona')).toBeInTheDocument()
     expect(first.getByText('4 semanas · 48 h')).toBeInTheDocument()
@@ -105,6 +106,71 @@ describe('CatalogPage', () => {
     expect(second.getByText('Sin ediciones programadas por ahora')).toBeInTheDocument()
     expect(second.getByText('6 semanas · 72 h')).toBeInTheDocument()
     expect(second.queryByText('Próxima edición')).not.toBeInTheDocument()
+  })
+
+  describe('agrupado por colección', () => {
+    const inCategory = (slug: string, name: string, course: string) => ({ ...courseSummary, slug: course, title: course, category: { slug, name } })
+    const withoutCategory = (course: string) => ({ ...courseSummary, slug: course, title: course, category: null })
+    const headings = (level: number) => screen.queryAllByRole('heading', { level }).map((heading) => heading.textContent)
+    const body = (content: object[], extra: object = {}) => ({ path: COURSES, body: { ...coursePage, content, totalElements: content.length, ...extra } })
+    // cada grupo es una sección con el nombre de su encabezado y su propia lista
+    const groups = () => screen.getAllByRole('region', { name: (name) => name !== 'Resultados' })
+    const titlesOf = (region: HTMLElement) =>
+      within(region)
+        .getAllByRole('listitem')
+        .map((item) => within(item).getByRole('heading').textContent)
+
+    it('las filas consecutivas de una colección van bajo su encabezado, en el orden del servidor, y una que reaparece lo repite', async () => {
+      renderCatalog([
+        body([
+          inCategory('a', 'Colección A', 'A1'),
+          inCategory('a', 'Colección A', 'A2'),
+          inCategory('b', 'Colección B', 'B1'),
+          inCategory('a', 'Colección A', 'A3')
+        ])
+      ])
+      await screen.findByRole('region', { name: 'Colección B' })
+
+      expect(headings(3)).toEqual(['Colección A', 'Colección B', 'Colección A'])
+      expect(headings(4)).toEqual(['A1', 'A2', 'B1', 'A3'])
+      expect(groups().map(titlesOf)).toEqual([['A1', 'A2'], ['B1'], ['A3']])
+      expect(groups().map((group) => within(group).getByText(/^\d+ cursos?$/).textContent)).toEqual(['2 cursos', '1 curso', '1 curso'])
+    })
+
+    it('con más de una página, el recuento de cada grupo dice que es el de esta página', async () => {
+      renderCatalog([body([inCategory('a', 'Colección A', 'A1')], { totalElements: 30, totalPages: 3 })])
+
+      expect(await screen.findByText('1 curso en esta página')).toBeInTheDocument()
+    })
+
+    it('con una categoría elegida no hay encabezados y la fila conserva su meta de colección', async () => {
+      renderCatalog([body([inCategory('a', 'Colección A', 'A1'), inCategory('a', 'Colección A', 'A2')])], '/cursos?category=a')
+      await screen.findByRole('list')
+
+      expect(headings(3)).toEqual(['A1', 'A2'])
+      expect(headings(4)).toEqual([])
+      expect(screen.getAllByText('Colección A', { selector: 'p' })).toHaveLength(2)
+      expect(screen.getAllByRole('list')).toHaveLength(1)
+    })
+
+    it('una página mixta junta los cursos sin colección bajo «Sin colección»; los niveles de encabezado son h3 de grupo y h4 de fila', async () => {
+      renderCatalog([body([withoutCategory('S1'), inCategory('a', 'Colección A', 'A1'), withoutCategory('S2')])])
+      await screen.findAllByRole('heading', { level: 4 })
+
+      expect(headings(3)).toEqual(['Sin colección', 'Colección A', 'Sin colección'])
+      expect(headings(4)).toEqual(['S1', 'A1', 'S2'])
+      expect(groups().map(titlesOf)).toEqual([['S1'], ['A1'], ['S2']])
+    })
+
+    it('si ninguna fila tiene colección no hay grupos: una lista con títulos h3', async () => {
+      renderCatalog([body([withoutCategory('S1'), withoutCategory('S2')])])
+      await screen.findByRole('list')
+
+      expect(screen.getAllByRole('list')).toHaveLength(1)
+      expect(headings(3)).toEqual(['S1', 'S2'])
+      expect(headings(4)).toEqual([])
+      expect(screen.queryByText('Sin colección')).not.toBeInTheDocument()
+    })
   })
 
   it('illustrative notice appears once', async () => {
@@ -145,6 +211,8 @@ describe('CatalogPage', () => {
 
     const link = await screen.findByRole('link', { name: title })
     expect(link).toHaveAttribute('title', title)
+    // en táctil no hay title: el resumen describe el enlace
+    expect(link).toHaveAccessibleDescription(courseSummary.summary)
     expect(link).toHaveClass('line-clamp-2')
     expect(link.closest('li')).toHaveClass('min-w-0')
   })

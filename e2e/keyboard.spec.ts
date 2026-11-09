@@ -150,8 +150,12 @@ test('el panel: del menú a «Continuar» y a la lección, con el foco a la vist
 test('la lección: el foco va al título al cambiar y las herramientas de lectura van con el teclado', async ({ page }) => {
   await fakeApi(page, { signedIn: true })
   await page.goto('/mis-cursos/mat-srtm-1?leccion=lec-html')
-  const mode = page.getByRole('toolbar', { name: 'Lectura' }).getByRole('button', { name: 'Modo lectura' })
-  await tabTo(page, mode)
+  const toolbar = page.getByRole('toolbar', { name: 'Lectura' })
+  const mode = toolbar.getByRole('button', { name: 'Modo lectura' })
+  // un solo tabstop para toda la barra: Tab entra por su primer botón y las flechas llegan a los demás
+  await tabTo(page, toolbar.getByRole('button', { name: 'Índice' }))
+  await expect(toolbar.locator('button[tabindex="0"]')).toHaveCount(1)
+  for (let i = 0; i < 6 && !(await mode.evaluate((element) => element === document.activeElement)); i++) await page.keyboard.press('ArrowRight')
   await focusIsVisible(mode)
   await page.keyboard.press('Space')
   await expect(mode).toHaveAttribute('aria-pressed', 'true')

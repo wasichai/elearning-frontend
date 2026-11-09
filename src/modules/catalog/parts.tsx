@@ -2,7 +2,7 @@ import { FlaskConical, type LucideIcon } from 'lucide-react'
 import { useCallback, useSyncExternalStore, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { StatusState } from '../../shared/StatusBadge'
-import type { CoursePage, NextOffering } from './contract'
+import type { CoursePage, CourseSummary, NextOffering } from './contract'
 
 // piezas que comparten la lista y la ficha
 
@@ -78,4 +78,22 @@ export function useMatchesWidth(query: string): boolean {
 export function useOpenLabel(group: string) {
   const { t } = useTranslation('catalog')
   return (value: string) => t(`${group}.${value}`, { defaultValue: value.charAt(0) + value.slice(1).toLowerCase().replaceAll('_', ' ') })
+}
+
+export interface CollectionGroup {
+  category: CourseSummary['category']
+  courses: CourseSummary[]
+}
+
+// las filas consecutivas que comparten colección, en el orden en que llegan. sin encabezados (grouped = false), todas en un grupo sin colección.
+// una colección que reaparece después de otra abre un grupo nuevo: no se reordena nada, para no contradecir la paginación ni el orden del servidor
+export function groupByCollection(courses: CourseSummary[], grouped: boolean): CollectionGroup[] {
+  if (!grouped) return [{ category: null, courses }]
+  const groups: CollectionGroup[] = []
+  for (const course of courses) {
+    const last = groups.at(-1)
+    if (last && (last.category?.slug ?? null) === (course.category?.slug ?? null)) last.courses.push(course)
+    else groups.push({ category: course.category, courses: [course] })
+  }
+  return groups
 }

@@ -19,7 +19,8 @@ test('«Mis cursos» está en el menú y lleva a la siguiente lección con «Con
   await expect(page.getByRole('heading', { level: 1, name: 'Mis cursos' })).toBeVisible()
 
   const card = page.getByRole('article').filter({ has: page.getByRole('heading', { name: COURSE }) })
-  await expect(card.getByRole('progressbar', { name: 'Progreso del curso' })).toHaveAttribute('aria-valuenow', '0')
+  // el progreso por lecciones, con la cifra en su nombre: se lee el aula de la matrícula
+  await expect(card.getByRole('img', { name: /^0 de \d+ completadas/ })).toBeVisible()
   await expect(card.getByText('9 nov – 4 dic 2026')).toBeVisible()
   await card.getByRole('link', { name: `Continuar «${COURSE}»` }).click()
 
@@ -225,9 +226,10 @@ test.describe('el panel del estudiante', () => {
     await expect(page.getByRole('article')).toHaveCount(COUNT)
     await expect(page.getByRole('alert')).toHaveCount(0)
     expect(read).toEqual([0, 1, 0, 1])
-    // por matrícula, solo el aula de la de «Continuar»: la de la lista de respaldo y, ya leído el panel, la primera de sus páginas
+    // por matrícula, solo el aula de la de «Continuar», la de la lista de respaldo y las de los seis primeros cursos de «Otros cursos»: del
+    // séptimo en adelante queda la barra continua
     expect(new Set(api.classroomRequests.filter((request) => /enrollments\/mat-/.test(request)))).toEqual(
-      new Set(['GET /api/lms/classroom/enrollments/mat-srtm-1', 'GET /api/lms/classroom/enrollments/mat-0'])
+      new Set(['GET /api/lms/classroom/enrollments/mat-srtm-1', ...Array.from({ length: 7 }, (_, index) => `GET /api/lms/classroom/enrollments/mat-${index}`)])
     )
   })
 
@@ -320,8 +322,8 @@ test('la lectura no pide nada fuera ni ejecuta nada: un bloque desconocido, un e
   const external = reading.getByRole('link', { name: 'un sitio (abre en otra pestaña)' })
   await expect(external).toHaveAttribute('target', '_blank')
   await expect(external).toHaveAttribute('rel', 'noopener noreferrer')
-  // tiempo de sobra para que la imagen se hubiera pedido o el script hubiera corrido
-  await page.waitForTimeout(1000)
+  // sin esperar un tiempo a ojo: con la red en reposo la imagen ya se habría pedido y el script ya habría corrido
+  await page.waitForLoadState('networkidle')
   expect(outside).toEqual([])
   expect(dialogs).toEqual([])
 })

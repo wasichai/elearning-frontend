@@ -165,6 +165,48 @@ describe('SchedulePage', () => {
     expect(document.getElementById(`sesion-${enrollment.id}-cancelada`)).toHaveAccessibleName('Consulta cancelada')
   })
 
+  it('una sesión que cruza la medianoche continúa en el día siguiente de la rejilla, marcada como continuación', async () => {
+    renderSchedule(
+      [agendaOf(agendaItem(enrollment, session('noche', '2026-11-11T03:00:00Z', '2026-11-11T06:30:00Z', { title: 'Guardia nocturna' })))],
+      '/horario?semana=2026-11-09'
+    )
+
+    const tuesday = within(await screen.findByRole('list', { name: /martes, 10 de noviembre/ }))
+    const wednesday = within(screen.getByRole('list', { name: /miércoles, 11 de noviembre/ }))
+    expect(tuesday.getByRole('link', { name: /, Guardia nocturna, / })).not.toHaveAccessibleName(/continuación/)
+    const continuation = wednesday.getByRole('link', { name: /Guardia nocturna \(continuación del día anterior\)/ })
+    expect(continuation).toHaveAttribute('href', `#sesion-${enrollment.id}-noche`)
+    expect(continuation).toHaveTextContent(/sigue hasta 0?1:30/)
+    // una sola entrada en el detalle: la continuación no cuenta otra vez
+    expect(within(screen.getByRole('region', { name: 'Sesiones de la semana' })).getAllByRole('article')).toHaveLength(1)
+  })
+
+  it('con ediciones en varias zonas, el eje rotula su zona y los bloques de otra indican la suya', async () => {
+    renderSchedule(
+      [
+        agendaOf(
+          agendaItem(enrollment, session('lima1', '2026-11-10T13:00:00Z', '2026-11-10T14:00:00Z', { title: 'En Lima uno' })),
+          agendaItem(enrollment, session('lima2', '2026-11-11T13:00:00Z', '2026-11-11T14:00:00Z', { title: 'En Lima dos' })),
+          agendaItem(otherEnrollment, session('tokio', '2026-11-12T01:00:00Z', '2026-11-12T02:00:00Z', { title: 'En Tokio', timeZone: 'Asia/Tokyo' }))
+        )
+      ],
+      '/horario?semana=2026-11-09'
+    )
+
+    const lima = await screen.findByRole('link', { name: /, En Lima uno, / })
+    expect(lima.getAttribute('aria-label')).not.toMatch(/GMT|UTC/)
+    // la zona del eje es la más frecuente (Lima, GMT-5)
+    expect(screen.getByTitle(/Perú/)).toHaveTextContent('GMT-5')
+    expect(screen.getByRole('link', { name: /, En Tokio, / }).getAttribute('aria-label')).toMatch(/GMT\+9/)
+  })
+
+  it('con una sola zona el eje no lleva rótulo', async () => {
+    renderSchedule([agendaOf(agendaItem(enrollment, session('a', '2026-11-10T13:00:00Z', '2026-11-10T14:00:00Z')))], '/horario?semana=2026-11-09')
+
+    await screen.findByRole('link', { name: /, Sesión a, / })
+    expect(screen.queryByTitle(/Perú/)).not.toBeInTheDocument()
+  })
+
   it('empty week shows EmptyState', async () => {
     renderSchedule([agendaOf()], '/horario')
 

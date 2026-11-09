@@ -155,7 +155,8 @@ test.describe('permisos', () => {
     await expect(page).toHaveURL('/')
     // quieto: ninguna navegación más, y nunca salió de /
     const settled = visited.length
-    await page.waitForTimeout(500)
+    // sin un tiempo a ojo: con la red en reposo cualquier redirección ya habría ocurrido
+    await page.waitForLoadState('networkidle')
     expect(visited).toHaveLength(settled)
     expect(new Set(visited)).toEqual(new Set(['/']))
     await expect(home(page)).toHaveAttribute('href', '/')

@@ -69,7 +69,15 @@ const cell: z.ZodType<Cell> = z.object({
   rowspan: z.number().int().min(1).max(1000),
   header: z.boolean()
 })
-const rows = kept(() => kept(() => cell))
+// una celda que el esquema descarta no se quita de su fila (desplazaría las columnas): queda como celda vacía
+const EMPTY_CELL: Cell = { content: [], colspan: 1, rowspan: 1, header: false }
+const cells: z.ZodType<Cell[]> = z.array(z.unknown()).transform((items) =>
+  items.map((value) => {
+    const parsed = cell.safeParse(value)
+    return parsed.success ? parsed.data : EMPTY_CELL
+  })
+)
+const rows = kept(() => cells)
 
 const blockSchema: z.ZodType<Block> = z.discriminatedUnion('type', [
   z.object({ type: z.literal('heading'), level: z.union([z.literal(2), z.literal(3), z.literal(4)]), id: z.string().nullable(), content: inlines }),

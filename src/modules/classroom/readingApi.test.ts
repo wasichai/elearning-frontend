@@ -2,7 +2,7 @@ import { createApiClient } from '@wasichai/core'
 import { mockFetch, type FetchMock } from '@wasichai/testing'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ContractError } from './contract'
-import { fetchReading } from './readingApi'
+import { fetchReading, type Block } from './readingApi'
 import { readingDocument } from './test/fixtures'
 
 let fetchMock: FetchMock | undefined
@@ -48,6 +48,26 @@ describe('la lectura en bloques', () => {
         { type: 'list', ordered: false, items: [[{ type: 'rule' }]] }
       ]
     })
+  })
+
+  it('una celda que el esquema descarta se queda como celda vacía: no desplaza las columnas', async () => {
+    const ok = (text: string) => ({ content: [{ type: 'paragraph', content: [{ type: 'text', text }] }], colspan: 1, rowspan: 1, header: false })
+    fetchMock = mockFetch([
+      {
+        path: READING,
+        body: {
+          title: null,
+          blocks: [{ type: 'table', caption: null, head: [], body: [[ok('a'), { content: 'roto', colspan: 1, rowspan: 1, header: false }, ok('c')]] }]
+        }
+      }
+    ])
+
+    const [table] = (await fetchReading(client(), 'mat/1', 'rec/html')).blocks
+    expect(table).toMatchObject({ type: 'table' })
+    const row = (table as Extract<Block, { type: 'table' }>).body[0]!
+    expect(row).toHaveLength(3)
+    expect(row[1]).toEqual({ content: [], colspan: 1, rowspan: 1, header: false })
+    expect(row[2]!.content).toEqual([{ type: 'paragraph', content: [{ type: 'text', text: 'c' }] }])
   })
 
   it('una respuesta sin bloques es un error de contrato', async () => {

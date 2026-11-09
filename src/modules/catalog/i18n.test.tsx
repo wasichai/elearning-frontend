@@ -77,7 +77,7 @@ describe('textos del catálogo', () => {
 
     renderWithProviders(<CatalogPage />, { modules: [catalogModule(), learningGroup], route: '/cursos', user: null, permissions: null, language: 'en' })
 
-    expect(await screen.findByText('2 courses')).toBeInTheDocument()
+    expect(await screen.findByText('2 courses', { selector: 'p[role="status"]' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Course catalog' })).toBeInTheDocument()
     expect(screen.getByText('Beginner')).toBeInTheDocument()
     expect(screen.getByText('4 weeks · 48 h')).toBeInTheDocument()

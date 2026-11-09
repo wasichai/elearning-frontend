@@ -1,4 +1,6 @@
 // textos del módulo, espacio de nombres 'classroom' (= id del módulo)
+import { runningHeadMessages } from '../../shared/runningHeadMessages'
+
 const es = {
   nav: {
     group: 'Aprendizaje',
@@ -161,6 +163,7 @@ const es = {
       CERTIFICATE_ISSUED: 'Certificado emitido'
     }
   },
+  runningHead: runningHeadMessages.es,
   // el marco del curso: su ruta, sus pestañas y sus cifras
   course: {
     breadcrumbs: 'Ruta',
@@ -363,6 +366,8 @@ const es = {
     emptyHint: 'Las sesiones en vivo de tus cursos aparecen aquí con su día y su hora. Mira otra semana o vuelve a hoy.',
     nothingBefore: 'Sin sesiones antes de las {{time}}',
     block: '{{hours}}, {{title}}, {{course}}, {{status}}',
+    blockContinued: '{{hours}}, {{title}} (continuación del día anterior), {{course}}, {{status}}',
+    continuesUntil: 'sigue hasta {{time}}',
     details: 'Sesiones de la semana',
     count_one: '{{count}} sesión',
     count_other: '{{count}} sesiones',
@@ -772,6 +777,7 @@ const en: typeof es = {
       CERTIFICATE_ISSUED: 'Certificate issued'
     }
   },
+  runningHead: runningHeadMessages.en,
   course: {
     breadcrumbs: 'Breadcrumb',
     sections: 'Course sections',
@@ -971,6 +977,8 @@ const en: typeof es = {
     emptyHint: 'The live sessions of your courses show up here with their day and time. Look at another week or go back to today.',
     nothingBefore: 'No sessions before {{time}}',
     block: '{{hours}}, {{title}}, {{course}}, {{status}}',
+    blockContinued: '{{hours}}, {{title}} (continued from the previous day), {{course}}, {{status}}',
+    continuesUntil: 'continues until {{time}}',
     details: "This week's sessions",
     count_one: '{{count}} session',
     count_other: '{{count}} sessions',

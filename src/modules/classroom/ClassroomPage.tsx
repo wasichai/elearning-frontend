@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router'
 import { SegmentedProgress } from '../../shared/SegmentedProgress'
 import { useDocumentTitle } from '../../shared/useDocumentTitle'
 import { useElementHeight } from '../../shared/useElementHeight'
+import { useRovingToolbar } from '../../shared/useRovingToolbar'
 import type { Classroom } from './contract'
 import { CourseHeader, CourseQuery, CourseTabs } from './CourseFrame'
 import { defaultLesson, lessonPath, neighbours, orderedUnits, type PlacedLesson } from './lessons'
@@ -149,8 +150,10 @@ function ClassroomBar({ classroom, placed, children, ref }: { classroom: Classro
 function ReadingTools({ controls, hasReading, index }: { controls: ReadingControls; hasReading: boolean; index: ReactNode }) {
   const { t } = useTranslation('classroom')
   const rule = <span aria-hidden="true" className="mx-1 h-6 w-px bg-border" />
+  // patrón ARIA toolbar: un solo tabstop y flechas entre botones
+  const toolbar = useRovingToolbar<HTMLDivElement>()
   return (
-    <div role="toolbar" aria-label={t('reading.tools')} className="ml-auto flex shrink-0 items-center gap-0.5">
+    <div role="toolbar" aria-label={t('reading.tools')} {...toolbar} className="ml-auto flex shrink-0 items-center gap-0.5">
       {index}
       {rule}
       {hasReading ? (

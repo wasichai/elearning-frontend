@@ -45,6 +45,7 @@ export function MyCoursesPage() {
   const now = Date.now()
   const today = new Date(now).toDateString()
   const range = useMemo(() => weekRange(now), [today]) // depende del día, no del instante
+  // la agenda se pide en paralelo con el panel: es una lectura barata y esperar al panel retrasaría la semana del caso habitual
   const agenda = useAgenda(range)
   const read = panel.isError ? undefined : panel.data
   const enrollments = read ?? list.data
@@ -201,7 +202,12 @@ function Dashboard({ groups, zone, rail }: { groups: EnrollmentGroups; zone?: st
     <div className={PANEL}>
       <div className="flex min-w-0 flex-col gap-10">
         {primary ? <PrimaryCourse enrollment={primary} showZone={showZone} /> : null}
-        <CourseSection title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')} enrollments={inProgress} showZone={showZone} />
+        <CourseSection
+          title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')}
+          enrollments={inProgress}
+          showZone={showZone}
+          segmented={SEGMENTED_ROWS}
+        />
         <CourseSection title={t('dashboard.completed')} enrollments={completed} showZone={showZone} phase={false} />
         <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} showZone={showZone} />
       </div>
@@ -220,6 +226,18 @@ const ACTION_LINK = 'text-label inline-flex min-h-11 items-center rounded-sm tex
 
 // el avance cuando no se tiene el estado de cada lección (el resumen de la matrícula): una barra continua y la cuenta. no se pintan
 // segmentos: cuáles están hechos no se sabe, y dibujarlos lo inventaría
+// el progreso de una fila: por lecciones si el aula se lee (pide la misma consulta que el aula, así que comparte su caché); mientras carga o si
+// falla, la barra continua del panel
+function RowProgress({ enrollment }: { enrollment: Enrollment }) {
+  const classroom = useClassroom(enrollment.id)
+  if (!classroom.data) return <CourseMeter progress={enrollment.progress} className="w-full items-end" />
+  return (
+    <div data-slot="row-progress" className="w-full">
+      <SegmentedProgress units={progressUnits(classroom.data.units)} size="sm" />
+    </div>
+  )
+}
+
 function CourseMeter({ progress, className = '' }: { progress: ProgressSummary; className?: string }) {
   const { t, i18n } = useTranslation('classroom')
   const values = {
@@ -299,14 +317,31 @@ function PrimaryCourse({ enrollment, showZone }: { enrollment: Enrollment; showZ
   )
 }
 
-function CourseSection({ title, enrollments, showZone, phase = true }: { title: string; enrollments: Enrollment[]; showZone: boolean; phase?: boolean }) {
+// cuántos cursos en curso piden su aula para pintar el progreso por lecciones (SegmentedProgress sm): una petición por curso, que comparte
+// caché con el aula (y con «Continuar»). seis cubren de sobra un panel normal sin que un estudiante con decenas de matrículas lance decenas
+// de lecturas; del séptimo en adelante queda la barra continua, que se calcula con lo que ya trae el panel
+const SEGMENTED_ROWS = 6
+
+function CourseSection({
+  title,
+  enrollments,
+  showZone,
+  phase = true,
+  segmented = 0
+}: {
+  title: string
+  enrollments: Enrollment[]
+  showZone: boolean
+  phase?: boolean
+  segmented?: number
+}) {
   if (enrollments.length === 0) return null
   return (
     <Section title={title}>
       <ul className="-mt-3 flex flex-col divide-y divide-border border-b border-border">
-        {enrollments.map((enrollment) => (
+        {enrollments.map((enrollment, index) => (
           <li key={enrollment.id}>
-            <CourseRow enrollment={enrollment} showZone={showZone} phase={phase} />
+            <CourseRow enrollment={enrollment} showZone={showZone} phase={phase} segmented={index < segmented} />
           </li>
         ))}
       </ul>
@@ -324,7 +359,7 @@ function statusLine(enrollment: Enrollment): 'next' | 'finished' | 'closed' | 'n
 
 // un curso que no es el de «Continuar»: una fila entre filetes. a la izquierda el título (Newsreader), sus fechas y su estado; a la
 // derecha, su avance y su acción, un enlace y no un botón. con certificado, el avance cede el sitio al estado y al certificado
-function CourseRow({ enrollment, showZone, phase }: { enrollment: Enrollment; showZone: boolean; phase: boolean }) {
+function CourseRow({ enrollment, showZone, phase, segmented }: { enrollment: Enrollment; showZone: boolean; phase: boolean; segmented: boolean }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const titleId = useId()
@@ -385,7 +420,7 @@ function CourseRow({ enrollment, showZone, phase }: { enrollment: Enrollment; sh
         </p>
       ) : line === 'withdrawn' ? null : (
         <div className="flex w-30 flex-col items-end gap-0.5">
-          <CourseMeter progress={enrollment.progress} className="w-full items-end" />
+          {segmented ? <RowProgress enrollment={enrollment} /> : <CourseMeter progress={enrollment.progress} className="w-full items-end" />}
           {line === 'next' ? (
             <Link
               to={links.to(CLASSROOM_ROUTES.classroom, params, { [LESSON_PARAM]: enrollment.nextLesson!.id })}

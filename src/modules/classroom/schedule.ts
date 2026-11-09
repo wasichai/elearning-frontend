@@ -61,23 +61,19 @@ export function scheduleRange(monday: string): AgendaRange {
   return paddedDayRange(new Date(year!, month! - 1, day!), WEEK_DAYS)
 }
 
-const sessionDate = (session: AgendaSession) => zonedDateTime(session.start, session.timeZone).date
-
 export interface ScheduleDay {
   date: string
+  // las sesiones que empiezan este día
   sessions: AgendaSession[]
-}
-
-// los siete días de la semana con sus sesiones, cada una en el día de su edición y en el orden de la agenda (por inicio); lo que la agenda
-// trae de más por el margen queda fuera
-export function scheduleDays(agenda: AgendaSession[], monday: string): ScheduleDay[] {
-  return weekDates(monday).map((date) => ({ date, sessions: agenda.filter((session) => sessionDate(session) === date) }))
+  // las que empezaron un día anterior y terminan este (cruzan la medianoche): se pintan como continuación, pero no cuentan otra vez
+  continued: AgendaSession[]
 }
 
 const DAY_MINUTES = 24 * 60
 
-// el minuto del día en que empieza y en que termina una sesión, en la zona de su edición. si termina otro día, se corta a medianoche
-function minutesOf(session: AgendaSession): { start: number; end: number } {
+// cuándo empieza y termina una sesión en la zona de su edición: fecha civil y minuto del día. una que acaba justo a medianoche acaba el día
+// anterior, a las 24:00, y no continúa en el siguiente
+function span(session: AgendaSession) {
   const at = (instant: string) => {
     const { date, time } = zonedDateTime(instant, session.timeZone)
     const [hours = 0, minutes = 0] = time.split(':').map(Number)
@@ -85,12 +81,35 @@ function minutesOf(session: AgendaSession): { start: number; end: number } {
   }
   const start = at(session.start)
   const end = at(session.end)
-  return { start: start.minutes, end: end.date === start.date ? Math.max(end.minutes, start.minutes + 1) : DAY_MINUTES }
+  if (end.date > start.date && end.minutes === 0)
+    return { startDate: start.date, startMinutes: start.minutes, endDate: addDays(end.date, -1), endMinutes: DAY_MINUTES }
+  return { startDate: start.date, startMinutes: start.minutes, endDate: end.date, endMinutes: end.minutes }
 }
+
+// los siete días de la semana con sus sesiones, cada una en el día de su edición y en el orden de la agenda (por inicio); lo que la agenda
+// trae de más por el margen queda fuera. una sesión que cruza la medianoche continúa en cada día siguiente hasta que acaba
+export function scheduleDays(agenda: AgendaSession[], monday: string): ScheduleDay[] {
+  const spans = agenda.map((session) => ({ session, ...span(session) }))
+  return weekDates(monday).map((date) => ({
+    date,
+    sessions: spans.filter((item) => item.startDate === date).map((item) => item.session),
+    continued: spans.filter((item) => item.startDate < date && date <= item.endDate).map((item) => item.session)
+  }))
+}
+
+// el minuto del día en que empieza y en que termina una sesión en ese día: en el de su inicio, el suyo; en un día de continuación, desde
+// la medianoche. si sigue después de ese día, se corta a medianoche
+function minutesOn(session: AgendaSession, date: string): { start: number; end: number } {
+  const { startDate, startMinutes, endDate, endMinutes } = span(session)
+  const start = date === startDate ? startMinutes : 0
+  return { start, end: date === endDate ? Math.max(endMinutes, start + 1) : DAY_MINUTES }
+}
+
+const dayRanges = (day: ScheduleDay) => [...day.sessions, ...day.continued].map((session) => minutesOn(session, day.date))
 
 // las horas que pinta la rejilla: de la hora en que empieza la primera sesión de la semana a la hora en que acaba la última
 export function timeline(days: ScheduleDay[]): { first: number; last: number } {
-  const all = days.flatMap((day) => day.sessions.map(minutesOf))
+  const all = days.flatMap(dayRanges)
   if (all.length === 0) return { first: 0, last: 0 }
   const first = Math.floor(Math.min(...all.map((range) => range.start)) / 60)
   const last = Math.ceil(Math.max(...all.map((range) => range.end)) / 60)
@@ -102,6 +121,8 @@ export interface Placement {
   // minutos desde la medianoche, en la zona de la edición
   start: number
   end: number
+  // el bloque es la continuación, en este día, de una sesión que empezó el anterior
+  continuation: boolean
   // las que se pisan van lado a lado: el carril de esta y cuántos tiene su grupo de solape (una sola, todo el ancho)
   lane: number
   lanes: number
@@ -109,7 +130,7 @@ export interface Placement {
 
 // por grupos de solape: un grupo se cierra cuando la siguiente empieza después de que acaben todas las suyas. dentro, cada una toma el
 // primer carril libre, y el grupo reparte el ancho entre los carriles que usó
-export function placements(sessions: AgendaSession[]): Placement[] {
+export function placements(day: ScheduleDay): Placement[] {
   const result: Placement[] = []
   let group: Omit<Placement, 'lanes'>[] = []
   let ends: number[] = []
@@ -118,7 +139,11 @@ export function placements(sessions: AgendaSession[]): Placement[] {
     group = []
     ends = []
   }
-  for (const item of sessions.map((session) => ({ session, ...minutesOf(session) })).sort((a, b) => a.start - b.start)) {
+  const items = [
+    ...day.continued.map((session) => ({ session, continuation: true, ...minutesOn(session, day.date) })),
+    ...day.sessions.map((session) => ({ session, continuation: false, ...minutesOn(session, day.date) }))
+  ]
+  for (const item of items.sort((a, b) => a.start - b.start)) {
     if (group.length > 0 && item.start >= Math.max(...ends)) close()
     const free = ends.findIndex((end) => end <= item.start)
     const lane = free >= 0 ? free : ends.length
