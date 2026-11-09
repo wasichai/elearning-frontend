@@ -7,6 +7,8 @@ import type { ReactNode } from 'react'
 export const STATUS_STATES = ['todo', 'active', 'done', 'review', 'overdue', 'warning', 'achievement', 'neutral'] as const
 export type StatusState = (typeof STATUS_STATES)[number]
 
+// done en success: es la insignia semántica (publicada, aprobada, resuelta, terminada). el avance de una lección («hecho» en StateMark y en
+// el progreso segmentado) va en tinta
 const TONE: Record<StatusState, string> = {
   todo: 'bg-surface-muted text-ink-muted',
   active: 'bg-brand-soft text-brand-strong',
@@ -27,7 +29,8 @@ const ICON: Record<StatusState, ReactNode> = {
   active: (
     <>
       <circle cx="8" cy="8" r="5.5" {...STROKE} />
-      <path d="M8 2.5a5.5 5.5 0 0 1 0 11z" fill="currentColor" />
+      {/* la mitad izquierda, como la marca «started» de StateMark */}
+      <path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor" />
     </>
   ),
   done: (

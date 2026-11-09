@@ -103,13 +103,16 @@ function Blocks({ blocks }: { blocks: Block[] }) {
   return blocks.map((block, index) => <BlockView key={index} block={block} />)
 }
 
-// la jerarquía de la página: la lección es h2 y el recurso h3, así que los h2…h4 del documento caen en h4…h6. scroll-mt: el índice de las
-// notas al margen salta a ellos, y la barra del aula (sticky) no los tapa
+// la jerarquía de la página: la lección es h2 y el recurso h3, así que los h2…h4 del documento caen en h4…h6
 const HEADINGS = {
-  2: { tag: 'h4', className: 'mt-[0.6em] scroll-mt-24 text-read-heading text-balance' },
-  3: { tag: 'h5', className: 'mt-[0.4em] scroll-mt-24 text-read-subheading text-balance' },
-  4: { tag: 'h6', className: 'scroll-mt-24 text-read-minor' }
+  2: { tag: 'h4', className: 'mt-[0.6em] text-read-heading text-balance' },
+  3: { tag: 'h5', className: 'mt-[0.4em] text-read-subheading text-balance' },
+  4: { tag: 'h6', className: 'text-read-minor' }
 } as const
+
+// el índice de las notas al margen salta a los encabezados: quedan bajo la barra del aula (sticky, mide su alto en --classroom-bar), con
+// el mismo respiro que el título de la lección
+const BELOW_BAR = 'scroll-mt-[calc(var(--classroom-bar,3.5rem)+0.75rem)]'
 
 function BlockView({ block }: { block: Block }) {
   const { t } = useTranslation('classroom')
@@ -119,8 +122,7 @@ function BlockView({ block }: { block: Block }) {
       if (!heading) return null
       const Tag = heading.tag
       return (
-        // bajo la barra pegajosa de la lección al saltar a su ancla
-        <Tag id={readingId(block.id)} className={`scroll-mt-20 ${heading.className}`}>
+        <Tag id={readingId(block.id)} className={`${BELOW_BAR} ${heading.className}`}>
           <Inlines content={block.content} />
         </Tag>
       )

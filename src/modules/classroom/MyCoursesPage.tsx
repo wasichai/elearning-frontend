@@ -202,7 +202,7 @@ function Dashboard({ groups, zone, rail }: { groups: EnrollmentGroups; zone?: st
       <div className="flex min-w-0 flex-col gap-10">
         {primary ? <PrimaryCourse enrollment={primary} showZone={showZone} /> : null}
         <CourseSection title={primary ? t('dashboard.otherInProgress') : t('dashboard.inProgress')} enrollments={inProgress} showZone={showZone} />
-        <CourseSection title={t('dashboard.completed')} enrollments={completed} showZone={showZone} />
+        <CourseSection title={t('dashboard.completed')} enrollments={completed} showZone={showZone} phase={false} />
         <CourseSection title={t('dashboard.withdrawn')} enrollments={withdrawn} showZone={showZone} />
       </div>
       {rail}
@@ -299,14 +299,14 @@ function PrimaryCourse({ enrollment, showZone }: { enrollment: Enrollment; showZ
   )
 }
 
-function CourseSection({ title, enrollments, showZone }: { title: string; enrollments: Enrollment[]; showZone: boolean }) {
+function CourseSection({ title, enrollments, showZone, phase = true }: { title: string; enrollments: Enrollment[]; showZone: boolean; phase?: boolean }) {
   if (enrollments.length === 0) return null
   return (
     <Section title={title}>
       <ul className="-mt-3 flex flex-col divide-y divide-border border-b border-border">
         {enrollments.map((enrollment) => (
           <li key={enrollment.id}>
-            <CourseRow enrollment={enrollment} showZone={showZone} />
+            <CourseRow enrollment={enrollment} showZone={showZone} phase={phase} />
           </li>
         ))}
       </ul>
@@ -324,7 +324,7 @@ function statusLine(enrollment: Enrollment): 'next' | 'finished' | 'closed' | 'n
 
 // un curso que no es el de «Continuar»: una fila entre filetes. a la izquierda el título (Newsreader), sus fechas y su estado; a la
 // derecha, su avance y su acción, un enlace y no un botón. con certificado, el avance cede el sitio al estado y al certificado
-function CourseRow({ enrollment, showZone }: { enrollment: Enrollment; showZone: boolean }) {
+function CourseRow({ enrollment, showZone, phase }: { enrollment: Enrollment; showZone: boolean; phase: boolean }) {
   const { t } = useTranslation('classroom')
   const links = useWasichaiLinks()
   const titleId = useId()
@@ -348,7 +348,7 @@ function CourseRow({ enrollment, showZone }: { enrollment: Enrollment; showZone:
             </Link>
           )}
         </h3>
-        <OfferingDates offering={enrollment.offering} showZone={showZone} />
+        <OfferingDates offering={enrollment.offering} showZone={showZone} phase={phase} />
         {line === 'withdrawn' ? (
           <p className="mt-1 flex">
             <StatusBadge state="neutral">{t('dashboard.withdrawnBadge')}</StatusBadge>
@@ -378,7 +378,8 @@ function CourseRow({ enrollment, showZone }: { enrollment: Enrollment; showZone:
         )}
       </div>
       {line === 'certified' ? (
-        <p className="text-secondary inline-flex items-center gap-1.5 self-start pt-1 font-semibold text-success">
+        // el logro va en tinta, como su marca (StateMark) y la insignia «achievement»
+        <p className="text-secondary inline-flex items-center gap-1.5 self-start pt-1 font-semibold text-ink">
           <StateMark state="passed" />
           {t('enrollments.certified')}
         </p>

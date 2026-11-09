@@ -79,10 +79,10 @@ describe('MyCoursesPage', () => {
     expect(hero.getByRole('heading', { level: 3, name: enrollment.course.title })).toBeInTheDocument()
     expect(hero.getByText('Unidad 1 · §1.2')).toBeInTheDocument()
     expect(hero.getByText('Recorrido por la pantalla')).toHaveClass('text-h3')
-    // un segmento por lección del aula, con su estado; la siguiente, marcada
+    // un segmento por lección del aula, con su estado (la evaluación NOT_YET, que no cuenta, también); la siguiente, marcada
     const progress = await hero.findByRole('img', { name: '1 de 3 completadas' })
     const segments = [...progress.querySelectorAll('[data-slot="progress-segment"]')]
-    expect(segments.map((segment) => segment.getAttribute('data-state'))).toEqual(['COMPLETADA', 'NO_INICIADA', 'NO_INICIADA'])
+    expect(segments.map((segment) => segment.getAttribute('data-state'))).toEqual(['COMPLETADA', 'NO_INICIADA', 'NO_INICIADA', 'NO_CUENTA'])
     expect(segments[1]).toHaveAttribute('data-current')
 
     const primaries = document.querySelectorAll('[data-slot="button"][data-variant="primary"]')
@@ -148,6 +148,18 @@ describe('MyCoursesPage', () => {
     // completado: ni barra ni acción de seguir
     expect(card.queryByRole('progressbar')).not.toBeInTheDocument()
     expect(card.queryByRole('link', { name: /^(Continuar|Repasar)/ })).not.toBeInTheDocument()
+  })
+
+  it('en «Completados» la matrícula no dice la fase de su edición: «Aún no empieza» contradiría el curso terminado', async () => {
+    // el demo: una edición programada que la persona ya terminó (o se le dio por finalizada)
+    const done = { ...finishedEnrollment, status: 'FINALIZADA', offering: { ...finishedEnrollment.offering, status: 'PROGRAMADA' } }
+    renderPage([panelOf(enrollment, done)])
+
+    const card = within(within(await screen.findByRole('region', { name: 'Completados' })).getByRole('article', { name: done.course.title }))
+    expect(card.getByText('3–28 ago 2026')).toBeInTheDocument()
+    expect(card.queryByText(/Aún no empieza/)).not.toBeInTheDocument()
+    // en curso, la fase sí se dice
+    expect(within(screen.getByRole('region', { name: 'Continuar' })).getByText('· Aún no empieza')).toBeInTheDocument()
   })
 
   it('withdrawn enrollment is not in progress list', async () => {

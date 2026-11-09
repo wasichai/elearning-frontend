@@ -88,7 +88,7 @@ function CourseSkeleton() {
   )
 }
 
-// en escritorio, el contenido y la columna fija (edición recomendada, índice y el resto de ediciones)
+// en escritorio, el contenido y la columna lateral (edición recomendada, fija; índice y el resto de ediciones)
 const TWO_COLUMN_GRID = 'lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-12'
 
 function CourseView({ course }: { course: CourseDetail }) {
@@ -115,19 +115,25 @@ function CourseView({ course }: { course: CourseDetail }) {
           <TitlePage course={course} />
         </div>
         {/* antes en el DOM que el contenido: en una sola columna, las ediciones van primero y es lo que se recorre primero. en dos, la
-            columna fija empieza junto a la portadilla: la acción se ve al abrir la ficha */}
-        <aside
-          data-slot="course-aside"
-          className="-m-1 flex min-w-0 flex-col gap-8 p-1 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto"
-        >
-          {current && !currentOffering ? (
-            <div className="flex flex-col gap-3">
-              <Notice tone="notice">{t('enroll.enrolledElsewhere')}</Notice>
-              {twoColumns ? <GoToCourse enrollmentId={current.id} /> : null}
-            </div>
-          ) : null}
-          <Offerings offerings={course.offerings} enrollments={enrollments} current={current} firstOpen={firstOpen} actionInFooter={!twoColumns} />
-          <OnThisPage numbers={numbers} withCredits={course.credits.system !== null} />
+            columna empieza junto a la portadilla: la acción se ve al abrir la ficha. la columna ocupa todo el alto (self-stretch) para que
+            la acción, lo único fijo, la acompañe hasta el final; el índice y las demás ediciones pasan por debajo */}
+        <aside data-slot="course-aside" className="-m-1 flex min-w-0 flex-col gap-8 p-1 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-stretch">
+          <Offerings
+            offerings={course.offerings}
+            enrollments={enrollments}
+            current={current}
+            firstOpen={firstOpen}
+            actionInFooter={!twoColumns}
+            lead={
+              current && !currentOffering ? (
+                <div className="flex flex-col gap-3">
+                  <Notice tone="notice">{t('enroll.enrolledElsewhere')}</Notice>
+                  {twoColumns ? <GoToCourse enrollmentId={current.id} /> : null}
+                </div>
+              ) : null
+            }
+            index={<OnThisPage numbers={numbers} withCredits={course.credits.system !== null} />}
+          />
         </aside>
         <div className="flex min-w-0 flex-col gap-12 lg:col-start-1 lg:row-start-2">
           {numbers.goals ? (
@@ -298,7 +304,7 @@ function numberSections(present: Record<SectionKey, boolean>): Partial<Record<Se
   return Object.fromEntries(keys.map((key, index) => [key, String(index + 1)]))
 }
 
-// «En esta página», en la columna fija: las secciones con su «§n», como el índice de un libro
+// «En esta página», en la columna lateral, tras la edición recomendada: las secciones con su «§n», como el índice de un libro
 function OnThisPage({ numbers, withCredits }: { numbers: Partial<Record<SectionKey, string>>; withCredits: boolean }) {
   const { t } = useTranslation('catalog')
   const id = useId()
@@ -512,13 +518,23 @@ interface OfferingsProps {
   firstOpen: Offering | undefined
   // en una columna, la acción principal va en la barra del pie y no en su tarjeta
   actionInFooter: boolean
+  // el aviso de una matrícula en otra edición, con su acción: va con la recomendada, en el bloque fijo
+  lead: ReactNode
+  // «En esta página»: entre la recomendada y las demás, para que se vea entero al abrir la ficha
+  index: ReactNode
 }
 
-// las ediciones, en la columna fija: arriba la recomendada (la de la matrícula, si no la primera abierta, si no la primera) y debajo
-// las demás. el título es para el lector de pantalla: a la vista, cada bloque lleva su etiqueta
-function Offerings({ offerings, enrollments, current, firstOpen, actionInFooter }: OfferingsProps) {
+// en dos columnas, solo el bloque de acción (el aviso y la recomendada) se queda fijo al desplazar, y solo si cabe con holgura en el alto
+// de la ventana. top-0 con pt-6 y -mt-6, sobre el fondo de la página: lo que pasa por debajo no asoma por encima de la tarjeta
+const STICKY_ACTION =
+  'lg:-mt-6 lg:bg-surface-muted lg:pt-6 lg:[@media(min-height:40rem)]:sticky lg:[@media(min-height:40rem)]:top-0 lg:[@media(min-height:40rem)]:z-10'
+
+// las ediciones, en la columna: arriba la recomendada (la de la matrícula, si no la primera abierta, si no la primera), después el índice
+// y debajo las demás, cada grupo en su sección. el título de la recomendada es para el lector de pantalla: a la vista, lleva su etiqueta
+function Offerings({ offerings, enrollments, current, firstOpen, actionInFooter, lead, index }: OfferingsProps) {
   const { t } = useTranslation('catalog')
   const id = useId()
+  const othersId = useId()
   const enrollmentIn = (offering: Offering) => enrollments.find((enrollment) => enrollment.offering.code === offering.code)
   const recommended =
     (current && offerings.find((offering) => offering.code === current.offering.code)) ??
@@ -536,20 +552,28 @@ function Offerings({ offerings, enrollments, current, firstOpen, actionInFooter 
     />
   )
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-6">
-      <h2 id={id} className="sr-only">
-        {t('detail.offerings')}
-      </h2>
-      {recommended ? (
-        card(recommended, true)
-      ) : (
-        <Notice tone="notice" title={t('offering.none')}>
-          {t('detail.noOfferingsHint')}
-        </Notice>
-      )}
+    <>
+      <div data-slot="course-action-block" className={`flex flex-col gap-8 ${STICKY_ACTION}`}>
+        {lead}
+        <section aria-labelledby={id} className="flex flex-col">
+          <h2 id={id} className="sr-only">
+            {t('detail.offerings')}
+          </h2>
+          {recommended ? (
+            card(recommended, true)
+          ) : (
+            <Notice tone="notice" title={t('offering.none')}>
+              {t('detail.noOfferingsHint')}
+            </Notice>
+          )}
+        </section>
+      </div>
+      {index}
       {others.length > 0 ? (
-        <div className="flex flex-col">
-          <p className="meta border-b border-ink pb-1.5">{t('detail.otherOfferings')}</p>
+        <section aria-labelledby={othersId} className="flex flex-col">
+          <h2 id={othersId} className="meta border-b border-ink pb-1.5">
+            {t('detail.otherOfferings')}
+          </h2>
           <ul className="flex flex-col divide-y divide-border">
             {others.map((offering) => (
               <li key={offering.code} className="py-4">
@@ -557,9 +581,9 @@ function Offerings({ offerings, enrollments, current, firstOpen, actionInFooter 
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       ) : null}
-    </section>
+    </>
   )
 }
 
