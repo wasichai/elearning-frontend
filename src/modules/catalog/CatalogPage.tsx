@@ -1,6 +1,6 @@
 import { ApiError, EmptyState } from '@wasichai/core'
 import { Button, Pagination } from '@wasichai/ui'
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LibraryBig, SearchX } from 'lucide-react'
 import { PublicLayout } from '../../shared/PublicLayout'
@@ -78,6 +78,7 @@ interface ResultsProps {
 
 function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
   const { t } = useTranslation('catalog')
+  const groupId = useId()
 
   if (page.content.length === 0) {
     // más allá de la última página (una URL vieja o editada) no es lo mismo que no tener resultados
@@ -101,25 +102,41 @@ function Results({ page, filters, busy, onPage, onClear }: ResultsProps) {
     )
   }
 
-  // con una categoría elegida todas las filas son de ella: no se agrupa
-  const grouped = filters.category === ''
+  // con una categoría elegida todas las filas son de ella, y si ninguna fila de la página tiene colección no hay nada que agrupar: una
+  // sola lista con los títulos en h3. si no, cada grupo es una sección con su encabezado h3 y su lista (las filas, h4)
+  const grouped = filters.category === '' && page.content.some((course) => course.category)
+  const rowProps = (course: CoursePage['content'][number]) => ({ course, grouped, showIllustrative: course.illustrative && !allIllustrative(page) })
   return (
     <div aria-busy={busy} className={`flex flex-col gap-6 transition-opacity ${busy ? 'opacity-60' : ''}`}>
-      {/* con una categoría elegida todas las filas son de ella: el encabezado sobra. si no, las filas consecutivas de una misma colección van
-          bajo su encabezado; el orden del servidor no se toca, así que una colección que reaparece más abajo repite el suyo */}
-      <ul className={ROWS}>
-        {groupByCollection(page.content, grouped).flatMap((group, index) => [
-          group.category ? (
-            // el encabezado es presentación dentro de la lista: no cuenta como un elemento más ni parte las filas en varias listas
-            <li key={`${group.category.slug}-${index}`} role="presentation" className="pb-1 pt-6 first:pt-0">
-              <SectionHead as="h3" title={group.category.name} meta={t('catalog.groupCount', { count: group.courses.length })} />
-            </li>
-          ) : null,
-          ...group.courses.map((course) => (
-            <CourseRow key={course.slug} course={course} grouped={grouped} showIllustrative={course.illustrative && !allIllustrative(page)} />
-          ))
-        ])}
-      </ul>
+      {grouped ? (
+        // las filas consecutivas de una misma colección van bajo su encabezado; el orden del servidor no se toca, así que una colección
+        // que reaparece más abajo repite el suyo. los cursos sin colección van juntos bajo «Sin colección»
+        groupByCollection(page.content, true).map((group, index) => {
+          const headingId = `${groupId}-${index}`
+          return (
+            <section key={`${group.category?.slug ?? ''}-${index}`} aria-labelledby={headingId} className="flex flex-col gap-2">
+              <SectionHead
+                as="h3"
+                id={headingId}
+                title={group.category?.name ?? t('catalog.noCollection')}
+                // con más de una página, el recuento es el de esta página: la colección puede seguir en las demás
+                meta={t(page.totalPages > 1 ? 'catalog.groupCountOnPage' : 'catalog.groupCount', { count: group.courses.length })}
+              />
+              <ul className={ROWS}>
+                {group.courses.map((course) => (
+                  <CourseRow key={course.slug} {...rowProps(course)} />
+                ))}
+              </ul>
+            </section>
+          )
+        })
+      ) : (
+        <ul className={ROWS}>
+          {page.content.map((course) => (
+            <CourseRow key={course.slug} {...rowProps(course)} />
+          ))}
+        </ul>
+      )}
       {page.totalPages > 1 ? (
         <Pagination page={page.page} totalPages={page.totalPages} totalElements={page.totalElements} onPage={(index) => onPage(index + 1)} />
       ) : null}

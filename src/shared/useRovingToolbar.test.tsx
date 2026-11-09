@@ -62,6 +62,26 @@ describe('useRovingToolbar', () => {
     expect(screen.getByRole('button', { name: 'dos' })).toHaveFocus()
   })
 
+  it('con un modificador, las flechas no mueven el foco', async () => {
+    render(<Bar />)
+    await userEvent.tab()
+    await userEvent.tab()
+    for (const modifier of ['Shift', 'Alt', 'Control', 'Meta']) await userEvent.keyboard(`{${modifier}>}{ArrowRight}{/${modifier}}`)
+    expect(screen.getByRole('button', { name: 'uno' })).toHaveFocus()
+  })
+
+  it('si el botón con el foco se deshabilita, el foco pasa al vecino disponible más cercano', async () => {
+    const { rerender } = render(<Bar secondDisabled={false} />)
+    await userEvent.tab()
+    await userEvent.tab()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(screen.getByRole('button', { name: 'dos' })).toHaveFocus()
+
+    rerender(<Bar secondDisabled />)
+    expect(screen.getByRole('button', { name: 'tres' })).toHaveFocus()
+    expect(tabindexes()).toEqual([null, '-1', '-1', '0', null])
+  })
+
   it('salta los botones deshabilitados', async () => {
     render(<Bar secondDisabled />)
     await userEvent.tab()

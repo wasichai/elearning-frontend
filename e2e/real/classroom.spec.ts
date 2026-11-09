@@ -131,7 +131,9 @@ test('la presentación de la demo se abre, se descarga y se completa al marcarla
   await expect(page.getByRole('status').filter({ hasText: 'Lección completada' })).toBeVisible()
 })
 
-test('«Mis cursos» lee el panel, la agenda de la semana y solo el aula de «Continuar»: ni la lista aparte ni las sesiones por matrícula', async ({ page }) => {
+test('«Mis cursos» lee el panel, la agenda de la semana y las aulas de «Continuar» y de los primeros cursos en curso: ni la lista aparte ni las sesiones por matrícula', async ({
+  page
+}) => {
   test.skip(!DEMO_PASSWORD, 'necesita WASICHAI_DEMO_PASSWORD, la de los usuarios demo')
   const read: string[] = []
   page.on('request', (sent) => {
@@ -153,9 +155,13 @@ test('«Mis cursos» lee el panel, la agenda de la semana y solo el aula de «Co
   await expect(page.getByRole('alert')).toHaveCount(0)
   expect(read).toContain('/api/lms/classroom/panel')
   expect(read).toContain('/api/lms/classroom/sessions')
-  // por matrícula, como mucho el aula de la de «Continuar» (sus lecciones dan el progreso por segmentos)
+  // por matrícula, solo aulas (sus lecciones dan el progreso por segmentos): la de «Continuar» y las de «Otros cursos», con tope de 6 cursos en
+  // curso (SEGMENTED_ROWS). nunca la lista aparte de matrículas ni las sesiones de cada una
+  await page.waitForLoadState('networkidle')
+  expect(read).not.toContain('/api/lms/classroom/enrollments')
   const perEnrollment = new Set(read.filter((path) => path.startsWith('/api/lms/classroom/enrollments')))
-  expect(perEnrollment.size).toBeLessThanOrEqual(1)
+  const cards = await page.getByRole('article').count()
+  expect(perEnrollment.size).toBeLessThanOrEqual(1 + Math.min(6, cards))
   for (const path of perEnrollment) expect(path).toMatch(/^\/api\/lms\/classroom\/enrollments\/[^/]+$/)
 })
 

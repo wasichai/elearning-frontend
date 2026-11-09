@@ -10,7 +10,10 @@ const es = {
     count_one: '{{count, number}} curso',
     count_other: '{{count, number}} cursos',
     groupCount_one: '{{count, number}} curso',
-    groupCount_other: '{{count, number}} cursos'
+    groupCount_other: '{{count, number}} cursos',
+    groupCountOnPage_one: '{{count, number}} curso en esta página',
+    groupCountOnPage_other: '{{count, number}} cursos en esta página',
+    noCollection: 'Sin colección'
   },
   filters: {
     legend: 'Filtrar cursos',
@@ -265,7 +268,10 @@ const en: typeof es = {
     count_one: '{{count, number}} course',
     count_other: '{{count, number}} courses',
     groupCount_one: '{{count, number}} course',
-    groupCount_other: '{{count, number}} courses'
+    groupCount_other: '{{count, number}} courses',
+    groupCountOnPage_one: '{{count, number}} course on this page',
+    groupCountOnPage_other: '{{count, number}} courses on this page',
+    noCollection: 'No collection'
   },
   filters: {
     legend: 'Filter courses',

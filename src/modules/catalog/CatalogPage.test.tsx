@@ -5,7 +5,7 @@ import { Route, Routes, useLocation, useParams } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CatalogPage } from './CatalogPage'
 import { catalogModule } from './module'
-import { coursePage, courseSummary, courseWithoutOffering, emptyPage, problem } from './test/fixtures'
+import { coursePage, courseSummary, emptyPage, problem } from './test/fixtures'
 import { learningGroup } from './test/learningGroup'
 
 const COURSES = '/lms/public/catalog/courses'
@@ -87,7 +87,7 @@ describe('CatalogPage', () => {
     expect(first.getByText(courseSummary.summary)).toBeInTheDocument()
     // la colección va en el encabezado de su grupo, no en la fila
     expect(first.queryByText('Gestión municipal')).not.toBeInTheDocument()
-    expect(within(list).getByRole('heading', { level: 3, name: 'Gestión municipal' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 3, name: 'Gestión municipal' })).toBeInTheDocument()
     expect(first.getByText('Inicial')).toBeInTheDocument()
     expect(first.getByText('Asíncrona')).toBeInTheDocument()
     expect(first.getByText('4 semanas · 48 h')).toBeInTheDocument()
@@ -110,45 +110,66 @@ describe('CatalogPage', () => {
 
   describe('agrupado por colección', () => {
     const inCategory = (slug: string, name: string, course: string) => ({ ...courseSummary, slug: course, title: course, category: { slug, name } })
-    const headings = () => screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
-    const rowTitles = () => screen.getAllByRole('heading', { level: 4 }).map((heading) => heading.textContent)
+    const withoutCategory = (course: string) => ({ ...courseSummary, slug: course, title: course, category: null })
+    const headings = (level: number) => screen.queryAllByRole('heading', { level }).map((heading) => heading.textContent)
+    const body = (content: object[], extra: object = {}) => ({ path: COURSES, body: { ...coursePage, content, totalElements: content.length, ...extra } })
+    // cada grupo es una sección con el nombre de su encabezado y su propia lista
+    const groups = () => screen.getAllByRole('region', { name: (name) => name !== 'Resultados' })
+    const titlesOf = (region: HTMLElement) =>
+      within(region)
+        .getAllByRole('listitem')
+        .map((item) => within(item).getByRole('heading').textContent)
 
-    it('las filas consecutivas de una colección van bajo un encabezado con su recuento, en el orden del servidor', async () => {
-      const content = [
-        inCategory('a', 'Colección A', 'A1'),
-        inCategory('a', 'Colección A', 'A2'),
-        inCategory('b', 'Colección B', 'B1'),
-        // reaparece más abajo: el encabezado se repite y las filas no se reordenan
-        inCategory('a', 'Colección A', 'A3')
-      ]
-      renderCatalog([{ path: COURSES, body: { ...coursePage, content, totalElements: 4 } }])
-      await screen.findByRole('list')
+    it('las filas consecutivas de una colección van bajo su encabezado, en el orden del servidor, y una que reaparece lo repite', async () => {
+      renderCatalog([
+        body([
+          inCategory('a', 'Colección A', 'A1'),
+          inCategory('a', 'Colección A', 'A2'),
+          inCategory('b', 'Colección B', 'B1'),
+          inCategory('a', 'Colección A', 'A3')
+        ])
+      ])
+      await screen.findByRole('region', { name: 'Colección B' })
 
-      expect(headings()).toEqual(['Colección A', 'Colección B', 'Colección A'])
-      expect(rowTitles()).toEqual(['A1', 'A2', 'B1', 'A3'])
-      // una sola lista: el encabezado no parte las filas
-      expect(screen.getAllByRole('list')).toHaveLength(1)
-      expect(screen.getAllByRole('listitem')).toHaveLength(4)
-      expect(screen.getAllByText(/^[1-9] cursos?$/).map((count) => count.textContent)).toEqual(['4 cursos', '2 cursos', '1 curso', '1 curso'])
+      expect(headings(3)).toEqual(['Colección A', 'Colección B', 'Colección A'])
+      expect(headings(4)).toEqual(['A1', 'A2', 'B1', 'A3'])
+      expect(groups().map(titlesOf)).toEqual([['A1', 'A2'], ['B1'], ['A3']])
+      expect(groups().map((group) => within(group).getByText(/^\d+ cursos?$/).textContent)).toEqual(['2 cursos', '1 curso', '1 curso'])
+    })
+
+    it('con más de una página, el recuento de cada grupo dice que es el de esta página', async () => {
+      renderCatalog([body([inCategory('a', 'Colección A', 'A1')], { totalElements: 30, totalPages: 3 })])
+
+      expect(await screen.findByText('1 curso en esta página')).toBeInTheDocument()
     })
 
     it('con una categoría elegida no hay encabezados y la fila conserva su meta de colección', async () => {
-      const content = [inCategory('a', 'Colección A', 'A1'), inCategory('a', 'Colección A', 'A2')]
-      renderCatalog([{ path: COURSES, body: { ...coursePage, content, totalElements: 2 } }], '/cursos?category=a')
+      renderCatalog([body([inCategory('a', 'Colección A', 'A1'), inCategory('a', 'Colección A', 'A2')])], '/cursos?category=a')
       await screen.findByRole('list')
 
-      expect(screen.queryAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)).toEqual(['A1', 'A2'])
-      expect(screen.queryAllByRole('heading', { level: 4 })).toEqual([])
+      expect(headings(3)).toEqual(['A1', 'A2'])
+      expect(headings(4)).toEqual([])
       expect(screen.getAllByText('Colección A', { selector: 'p' })).toHaveLength(2)
+      expect(screen.getAllByRole('list')).toHaveLength(1)
     })
 
-    it('un curso sin colección no lleva encabezado', async () => {
-      const content = [{ ...courseWithoutOffering }, inCategory('a', 'Colección A', 'A1')]
-      renderCatalog([{ path: COURSES, body: { ...coursePage, content, totalElements: 2 } }])
+    it('una página mixta junta los cursos sin colección bajo «Sin colección»; los niveles de encabezado son h3 de grupo y h4 de fila', async () => {
+      renderCatalog([body([withoutCategory('S1'), inCategory('a', 'Colección A', 'A1'), withoutCategory('S2')])])
+      await screen.findAllByRole('heading', { level: 4 })
+
+      expect(headings(3)).toEqual(['Sin colección', 'Colección A', 'Sin colección'])
+      expect(headings(4)).toEqual(['S1', 'A1', 'S2'])
+      expect(groups().map(titlesOf)).toEqual([['S1'], ['A1'], ['S2']])
+    })
+
+    it('si ninguna fila tiene colección no hay grupos: una lista con títulos h3', async () => {
+      renderCatalog([body([withoutCategory('S1'), withoutCategory('S2')])])
       await screen.findByRole('list')
 
-      expect(headings()).toEqual(['Colección A'])
-      expect(rowTitles()).toEqual([courseWithoutOffering.title, 'A1'])
+      expect(screen.getAllByRole('list')).toHaveLength(1)
+      expect(headings(3)).toEqual(['S1', 'S2'])
+      expect(headings(4)).toEqual([])
+      expect(screen.queryByText('Sin colección')).not.toBeInTheDocument()
     })
   })
 

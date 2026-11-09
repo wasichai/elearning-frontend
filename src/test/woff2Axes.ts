@@ -43,7 +43,9 @@ export function woff2Axes(file: Buffer): FontAxis[] {
     tables.push({ tag, offset, length: stored })
     offset += stored
   }
-  const data = brotliDecompressSync(file.subarray(at))
+  // el flujo Brotli mide compressedLength (uint32 en el offset 20); lo que sigue son metadatos y relleno, no parte de él
+  const compressedLength = file.readUInt32BE(20)
+  const data = brotliDecompressSync(file.subarray(at, at + compressedLength))
   const fvar = tables.find((table) => table.tag === 'fvar')
   if (!fvar) return []
   const view = data.subarray(fvar.offset, fvar.offset + fvar.length)

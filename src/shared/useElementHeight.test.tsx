@@ -24,8 +24,9 @@ beforeEach(() => {
 })
 afterEach(() => vi.unstubAllGlobals())
 
-function Probe({ as: Tag }: { as: 'header' | 'section' }) {
+function Probe({ as: Tag, hidden = false }: { as: 'header' | 'section'; hidden?: boolean }) {
   const { ref, height } = useElementHeight<HTMLElement>()
+  if (hidden) return <output data-testid="probe" data-height={height} />
   return (
     <Tag ref={ref} data-testid="probe" data-height={height}>
       x
@@ -48,5 +49,15 @@ describe('useElementHeight', () => {
     vi.spyOn(observed[1]!, 'getBoundingClientRect').mockReturnValue({ height: 72 } as DOMRect)
     act(() => fire?.())
     expect(getByTestId('probe').dataset.height).toBe('72')
+  })
+
+  it('si el nodo desaparece, la altura vuelve a quedar sin medir', () => {
+    const { rerender, getByTestId } = render(<Probe as="header" />)
+    vi.spyOn(observed[0]!, 'getBoundingClientRect').mockReturnValue({ height: 40 } as DOMRect)
+    act(() => fire?.())
+    expect(getByTestId('probe').dataset.height).toBe('40')
+
+    rerender(<Probe as="header" hidden />)
+    expect(getByTestId('probe').dataset.height).toBeUndefined()
   })
 })

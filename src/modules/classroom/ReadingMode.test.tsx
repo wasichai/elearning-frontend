@@ -45,6 +45,17 @@ const readingStyle = async (property: '--reading-size' | '--reading-leading') =>
 }
 
 describe('modo lectura de la lección', () => {
+  it('al llevar A− a su límite, el botón se deshabilita y el foco sigue en la barra', async () => {
+    renderLesson()
+    const toolbar = await tools()
+    const smaller = within(toolbar).getByRole('button', { name: 'Texto más pequeño' })
+    for (let press = 0; press < 10 && !smaller.hasAttribute('disabled'); press++) await userEvent.click(smaller)
+
+    expect(smaller).toBeDisabled()
+    expect(toolbar).toContainElement(document.activeElement as HTMLElement)
+    expect(document.activeElement).not.toBe(smaller)
+  })
+
   it('la barra de herramientas es un solo tabstop y se recorre con las flechas', async () => {
     renderLesson()
     const bar = within(await tools())

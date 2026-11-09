@@ -42,10 +42,10 @@ test('buscar y filtrar: la petición lleva el filtro y la lista cambia', async (
   await expect(courses(page).getByRole('link')).toHaveText('Introducción al SGSPE')
 
   // y otro encima: categoría (de los facets). ninguno cumple ambos
-  const chip = page.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Gestión municipal (2)' })
+  const chip = page.getByRole('group', { name: 'Categoría' }).getByRole('button', { name: 'Programación (1)' })
   await chip.click()
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
-  await expect.poll(() => api.catalogRequests.at(-1)?.search).toMatch(/category=gestion-municipal/)
+  await expect.poll(() => api.catalogRequests.at(-1)?.search).toMatch(/category=programacion/)
   expect(lastParam(api.catalogRequests, 'level')).toBe('INTERMEDIO')
   await expect(results(page).getByText('Ningún curso coincide con la búsqueda')).toBeVisible()
 

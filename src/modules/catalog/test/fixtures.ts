@@ -32,7 +32,7 @@ export const courseWithoutOffering = {
   summary: 'Primeros pasos con el sistema de gestión.',
   level: 'INTERMEDIO',
   modality: 'HIBRIDA',
-  category: null,
+  category: { slug: 'gestion-municipal', name: 'Gestión municipal' },
   weeks: 6,
   workload: { totalHours: 72, contactHours: 36, autonomousHours: 36 },
   nextOffering: null,

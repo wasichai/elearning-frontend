@@ -8,7 +8,9 @@ export function useElementHeight<T extends HTMLElement>() {
   const [node, setNode] = useState<T | null>(null)
   const ref = useCallback((element: T | null) => setNode(element), [])
   useEffect(() => {
-    if (!node || typeof ResizeObserver === 'undefined') return
+    // sin nodo no hay altura: la anterior era de otro elemento
+    if (!node) return setHeight(undefined)
+    if (typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(([entry]) => entry && setHeight(entry.target.getBoundingClientRect().height))
     observer.observe(node)
     return () => observer.disconnect()

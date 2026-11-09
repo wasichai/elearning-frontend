@@ -7,11 +7,10 @@ const MINUTE = 60_000
 export function useNow(): number {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    const refresh = () =>
-      setNow((previous) => {
-        const next = Date.now()
-        return Math.floor(next / MINUTE) === Math.floor(previous / MINUTE) ? previous : next
-      })
+    const refresh = () => {
+      const next = Date.now()
+      setNow((previous) => (Math.floor(next / MINUTE) === Math.floor(previous / MINUTE) ? previous : next))
+    }
     const onVisible = () => {
       if (document.visibilityState === 'visible') refresh()
     }
