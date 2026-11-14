@@ -23,7 +23,7 @@ describe('createConfig', () => {
   it('arma el config de la app y core lo acepta tal cual', () => {
     const config = createConfig({ VITE_APP_NAME: 'Aula Abierta', DEV: false })
 
-    expect(resolveConfig({ ...config, appLogo: undefined })).toEqual({
+    expect(resolveConfig({ ...config, appLogo: undefined, publicHome: undefined })).toEqual({
       apiBaseUrl: '/api',
       appName: 'Aula Abierta',
       appTagline: '',
@@ -37,6 +37,10 @@ describe('createConfig', () => {
       homeRoute,
       shellChrome
     })
+  })
+
+  it('sin sesión, / es la portada pública', () => {
+    expect(createConfig({ DEV: false }).publicHome).toBeDefined()
   })
 
   it('la marca Colofón acompaña al nombre en el shell y el login', () => {

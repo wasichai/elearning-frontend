@@ -1,8 +1,11 @@
 import type { WasichaiConfig } from '@wasichai/core'
-import { createElement } from 'react'
+import { createElement, lazy } from 'react'
 import { ColofonMark } from './shared/ColofonMark'
 import { homeRoute, shellChrome, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
+
+// la portada pública: lo que / muestra sin sesión, fuera del shell (publicHome de @wasichai/core). perezosa: quien entra con sesión no la baja
+const LandingPage = lazy(() => import('./modules/catalog/LandingPage').then((m) => ({ default: m.LandingPage })))
 
 // nombre de trabajo: el producto se llama como diga VITE_APP_NAME en cada despliegue (ADR-0005 del backend)
 export const DEFAULT_APP_NAME = 'wasichai-learning'
@@ -51,6 +54,8 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     shellNav,
     // adónde lleva / y «Inicio» según quién entra
     homeRoute,
+    // y sin sesión, / es la portada
+    publicHome: LandingPage,
     // la lección abierta, en el shell estrecho
     shellChrome
   }

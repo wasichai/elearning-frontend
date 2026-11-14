@@ -171,8 +171,24 @@ export function useQueryProblem(query: ObservedQuery, queryKey: QueryKey): { pro
   }
 }
 
+// lo que pide la portada: el banner (featured), las cifras y áreas (todo el catálogo) y una fila por área
+export interface LandingQuery {
+  featured?: boolean
+  category?: string
+  size: number
+}
+
+export function landingPath(query: LandingQuery): string {
+  const params = new URLSearchParams()
+  if (query.featured) params.set('featured', 'true')
+  if (query.category) params.set('category', query.category)
+  params.set('size', String(query.size))
+  return `${COURSES_PATH}?${params}`
+}
+
 export const catalogKeys = {
   all: ['catalog'] as const,
+  landing: (query: LandingQuery) => ['catalog', 'landing', query] as const,
   courses: (filters: CatalogFilters) => ['catalog', 'courses', filters] as const,
   course: (slug: string) => ['catalog', 'course', slug] as const,
   myEnrollments: ['catalog', 'my-enrollments'] as const
@@ -185,6 +201,16 @@ export function useCourses(filters: CatalogFilters) {
     queryFn: ({ queryKey, signal }) => remembering(queryKey, () => fetchCourses(client, filters, signal)),
     // al cambiar de filtro o página se queda la lista anterior a la vista (atenuada) en vez de un parpadeo de carga
     placeholderData: keepPreviousData,
+    retry: retryNetwork
+  })
+}
+
+export function useLandingCourses(query: LandingQuery) {
+  const client = useApiClient()
+  return useQuery({
+    queryKey: catalogKeys.landing(query),
+    queryFn: ({ queryKey, signal }) =>
+      remembering(queryKey, async () => parseContract(coursePageSchema, 'GET courses', await client.request<unknown>(landingPath(query), { signal }))),
     retry: retryNetwork
   })
 }

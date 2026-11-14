@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
-import { fakeApi, type FakeApiOptions } from './api'
+import { coursePage, courseSummary } from '../src/modules/catalog/test/fixtures'
+import { fakeApi, isCourseList, type FakeApiOptions } from './api'
 
 // el destino de «Inicio» (issue #142): quien administra conserva el panel de core; los demás, la primera sección del LMS que el
 // servidor les deja abrir (aula, docencia, estudio, revisión), por permiso; sin ninguna, también el panel. nadie aterriza en un 403
@@ -167,11 +168,38 @@ test.describe('permisos', () => {
 })
 
 test.describe('sin sesión', () => {
-  test('/ lleva al login', async ({ page }) => {
-    await fakeApi(page)
+  // la portada pública (publicHome de @wasichai/core): / ya no pide iniciar sesión; el resto del LMS, sí
+  test('/ es la portada pública, sin shell, y desde ella se inicia sesión', async ({ page }) => {
+    const watch = await watchPanel(page)
+    const api = await fakeApi(page)
     await page.goto('/')
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('heading', { level: 1, name: /^Aprende en / })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'El catálogo en cifras' })).toBeVisible()
+    await expect(menu(page)).toHaveCount(0)
+    await page.getByRole('link', { name: 'Iniciar sesión' }).click()
     await expect(page).toHaveURL(/\/login(\?|$)/)
-    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible()
+    expect(watch.requests).toEqual([])
+    expect(api.unexpected).toEqual([])
+  })
+
+  test('el banner presenta el curso destacado y lleva a su ficha', async ({ page }) => {
+    await fakeApi(page)
+    await page.route(
+      (url) => isCourseList(url) && url.searchParams.get('featured') === 'true',
+      (route) => route.fulfill({ json: { ...coursePage, content: [{ ...courseSummary, featured: true }], totalElements: 1 } })
+    )
+    await page.goto('/')
+    const hero = page.getByRole('region', { name: courseSummary.title })
+    await expect(hero.getByText('Curso destacado')).toBeVisible()
+    await hero.getByRole('link', { name: 'Ver el curso' }).click()
+    await expect(page).toHaveURL(`/cursos/${courseSummary.slug}`)
+  })
+
+  test('una ruta del LMS sigue pidiendo iniciar sesión', async ({ page }) => {
+    await fakeApi(page)
+    await page.goto('/mis-cursos')
+    await expect(page).toHaveURL(/\/login\?returnTo=/)
   })
 
   async function signIn(page: Page) {
