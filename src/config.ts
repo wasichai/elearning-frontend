@@ -3,24 +3,19 @@ import { createElement, lazy } from 'react'
 import { ColofonMark } from './shared/ColofonMark'
 import { homeRoute, shellChrome, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
+import { appLogoUrl, appName, type BrandEnv } from './brand'
+
+export { appLogoUrl, appName, DEFAULT_APP_NAME } from './brand'
 
 // la portada pública: lo que / muestra sin sesión, fuera del shell (publicHome de @wasichai/core). perezosa: quien entra con sesión no la baja
 const LandingPage = lazy(() => import('./modules/catalog/LandingPage').then((m) => ({ default: m.LandingPage })))
 
-// nombre de trabajo: el producto se llama como diga VITE_APP_NAME en cada despliegue (ADR-0005 del backend)
-export const DEFAULT_APP_NAME = 'wasichai-learning'
 // el administrador de la semilla de Wasichai (perfil dev del backend); en producción el login sale vacío
 export const DEV_LOGIN_EMAIL = 'admin@wasichai.local'
 
-export interface AppEnv {
-  VITE_APP_NAME?: string
+export interface AppEnv extends BrandEnv {
   VITE_VIDEO_COMPLETION?: string
   DEV: boolean
-}
-
-// una variable vacía en .env cuenta como no puesta
-export function appName(env: Pick<AppEnv, 'VITE_APP_NAME'> = import.meta.env): string {
-  return env.VITE_APP_NAME?.trim() || DEFAULT_APP_NAME
 }
 
 // fracción de un vídeo que hay que reproducir para completar su lección (RF-AUL-04): por defecto, todo (el final).
@@ -41,8 +36,9 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     appName: appName(env),
     // sin el lema por defecto de Wasichai, que habla de otro producto; el nombre basta
     appTagline: '',
-    // la marca junto al nombre: barra lateral, cajón, barra estrecha y login. core la deja aria-hidden
-    appLogo: createElement(ColofonMark, { className: 'size-7' }),
+    // la marca junto al nombre: barra lateral, cajón, barra estrecha, login y páginas públicas. core la deja aria-hidden.
+    // VITE_APP_LOGO la cambia por la imagen del despliegue
+    appLogo: brandLogo(appLogoUrl(env)),
     storagePrefix: 'elearning',
     languages: ['es', 'en'],
     timeZone: 'America/Lima',
@@ -59,4 +55,9 @@ export function createConfig(env: AppEnv = import.meta.env): WasichaiConfig {
     // la lección abierta, en el shell estrecho
     shellChrome
   }
+}
+
+// la imagen del despliegue, decorativa como la marca (el nombre es el texto accesible), o la «c» de Colofón
+function brandLogo(url: string | undefined) {
+  return url ? createElement('img', { src: url, alt: '', className: 'size-7 shrink-0 object-contain' }) : createElement(ColofonMark, { className: 'size-7' })
 }

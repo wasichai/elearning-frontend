@@ -29,7 +29,8 @@ GitHub Packages, **fijados a la misma versión exacta** (dependen entre sí a ve
    de rol.
 5. **Español e inglés**, con i18n por módulo (`WasichaiModule.i18n`, espacio de nombres = id del módulo). Ningún texto
    visible escrito a mano en un componente.
-6. **El nombre del producto sale de `VITE_APP_NAME`** (`config.appName`), nunca del código.
+6. **El nombre y el logo del producto salen de `VITE_APP_NAME` y `VITE_APP_LOGO`** (`config.appName`, `config.appLogo`,
+   `src/brand.ts`), nunca del código. Toda pantalla toma la marca de la configuración, no de `ColofonMark`.
 7. **Wasichai primero**: lo que falte en `@wasichai/*` se pide allí con este proyecto como segundo usuario concreto,
    no se parchea aquí. Sin clases ni rutas internas de los paquetes, solo su API pública.
 8. **Sin sobreingeniería**: una abstracción necesita un segundo usuario concreto; cada dependencia, un requisito.
