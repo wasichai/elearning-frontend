@@ -76,3 +76,9 @@ Valores exactos en [`tokens.json`](tokens.json). Tres temas: `colofon` (claro), 
 | [`Responsive.dc.html`](Responsive.dc.html)     | Adaptación a 768 y notas de comportamiento                              |
 
 Los artboards muestran datos de ejemplo. Donde muestren algo que la API no da, no se pinta.
+
+La portada pública (`/` sin sesión, `catalog/LandingPage.tsx`) no tiene artboard propio. Parte de un diseño de referencia
+externo («Saberes Abiertos»), pero se lleva a Colofón con las piezas del catálogo: la banda de `Catalog.dc.html` hace de
+banner, las cifras usan `Stat` y las filas por área son `CourseRow`. De la referencia se quitan las tarjetas con portada,
+la paleta, las fuentes y las cifras que la API no publica (estudiantes, docentes, valoración; ADR-0023 y ADR-0046 del
+backend), además de «Únete gratis», porque no hay autorregistro.

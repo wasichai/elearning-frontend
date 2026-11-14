@@ -1,6 +1,36 @@
 // textos del módulo, espacio de nombres 'catalog' (= id del módulo)
 const es = {
   nav: { courses: 'Catálogo' },
+  // la portada pública (LandingPage): lo que `/` muestra sin sesión
+  landing: {
+    eyebrow: 'Formación en línea',
+    title: 'Aprende en {{name}}',
+    subtitle: 'Cursos con su carga de trabajo publicada, sus próximas ediciones y certificados que cualquiera puede verificar.',
+    featured: 'Curso destacado',
+    starts: 'Empieza el {{date}}',
+    viewCourse: 'Ver el curso',
+    explore: 'Explorar cursos',
+    empty: 'Todavía no hay cursos publicados.',
+    figures: {
+      title: 'El catálogo en cifras',
+      courses_one: 'curso publicado',
+      courses_other: 'cursos publicados',
+      areas_one: 'área',
+      areas_other: 'áreas'
+    },
+    areas: 'Áreas',
+    all: 'Ver todos',
+    allInArea: 'Ver todos los cursos de {{name}}',
+    reasons: {
+      title: 'Cómo se aprende aquí',
+      pace: { title: 'A tu ritmo', text: 'Cursos asíncronos, en vivo o híbridos: cada ficha dice la modalidad y cuándo empieza cada edición.' },
+      workload: { title: 'Sabes cuánto te pide', text: 'Antes de inscribirte ves las horas de teoría, práctica y trabajo autónomo, y los créditos.' },
+      certificates: { title: 'Certificados verificables', text: 'Cada certificado lleva un código que cualquiera puede comprobar en línea.' }
+    },
+    footer: '© {{year}} {{name}}',
+    footerNav: 'Enlaces del sitio',
+    verify: 'Verificar un certificado'
+  },
   catalog: {
     title: 'Catálogo de cursos',
     subtitle: 'Cursos abiertos, con su carga de trabajo y sus próximas ediciones.',
@@ -259,6 +289,35 @@ const es = {
 // mismas claves que es: el tipo lo exige al compilar e i18n.test.ts lo comprueba hoja a hoja
 const en: typeof es = {
   nav: { courses: 'Catalog' },
+  landing: {
+    eyebrow: 'Online learning',
+    title: 'Learn at {{name}}',
+    subtitle: 'Courses with their published workload, their upcoming offerings and certificates anyone can verify.',
+    featured: 'Featured course',
+    starts: 'Starts on {{date}}',
+    viewCourse: 'View the course',
+    explore: 'Explore courses',
+    empty: 'There are no published courses yet.',
+    figures: {
+      title: 'The catalog in figures',
+      courses_one: 'published course',
+      courses_other: 'published courses',
+      areas_one: 'area',
+      areas_other: 'areas'
+    },
+    areas: 'Areas',
+    all: 'View all',
+    allInArea: 'View all courses in {{name}}',
+    reasons: {
+      title: 'How you learn here',
+      pace: { title: 'At your pace', text: 'Self-paced, live or blended courses: each page states the modality and when every offering starts.' },
+      workload: { title: 'Know what it takes', text: 'Before enrolling you see the hours of theory, practice and independent work, and the credits.' },
+      certificates: { title: 'Verifiable certificates', text: 'Every certificate carries a code anyone can check online.' }
+    },
+    footer: '© {{year}} {{name}}',
+    footerNav: 'Site links',
+    verify: 'Verify a certificate'
+  },
   catalog: {
     title: 'Course catalog',
     subtitle: 'Open courses, with their workload and upcoming offerings.',

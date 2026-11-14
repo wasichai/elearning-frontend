@@ -133,7 +133,21 @@ const openMoreFilters = async (page: Page) => {
   await expect(level).toBeVisible()
 }
 
+// la portada con un curso destacado y el catálogo lleno: banner, cifras, áreas y una fila por área
+const withFeatured = (page: Page) =>
+  reloadWith(page, (route) => {
+    const url = new URL(route.request().url())
+    const category = url.searchParams.get('category')
+    if (url.searchParams.get('featured') === 'true')
+      return route.fulfill({ json: { ...FULL_CATALOG, content: [{ ...FULL_CATALOG.content[2], featured: true }], totalElements: 1 } })
+    if (category)
+      return route.fulfill({ json: { ...FULL_CATALOG, content: FULL_CATALOG.content.filter((course) => course.category?.slug === category).slice(0, 4) } })
+    return route.fulfill({ json: FULL_CATALOG })
+  })
+
 export const catalogScenarios: Scenario[] = [
+  { name: 'landing', path: '/' },
+  { name: 'landing-featured', path: '/', act: withFeatured },
   { name: 'catalog', path: '/cursos' },
   { name: 'catalog-full', path: '/cursos', act: withFullCatalog },
   {

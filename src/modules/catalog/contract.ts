@@ -55,7 +55,9 @@ const courseBase = z.object({
   modality: z.enum(MODALITIES),
   category: category.nullable(),
   weeks: z.number().int().nonnegative(),
-  illustrative: z.boolean()
+  illustrative: z.boolean(),
+  // destacado en la portada (ADR-0046 del backend): opcional, un backend anterior no lo manda
+  featured: z.boolean().optional().default(false)
 })
 
 export const courseSummarySchema = courseBase.extend({ workload: summaryWorkload, nextOffering: nextOffering.nullable() })

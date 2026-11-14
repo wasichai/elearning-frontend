@@ -161,7 +161,9 @@ function listCourses(catalog: Catalog, url: URL): Reply {
       (!params.get('maxWeeks') || course.weeks <= Number(params.get('maxWeeks'))) &&
       // el resumen solo trae la próxima edición; en los ejemplos es la única. una completa no cuenta como abierta
       (!params.get('enrollmentOpen') || (course.nextOffering?.enrollmentOpen === true) === (params.get('enrollmentOpen') === 'true')) &&
-      (!params.get('minAutonomousHours') || course.workload.autonomousHours >= Number(params.get('minAutonomousHours')))
+      (!params.get('minAutonomousHours') || course.workload.autonomousHours >= Number(params.get('minAutonomousHours'))) &&
+      // los destacados de la portada (ADR-0046 del backend): en los ejemplos no hay ninguno
+      (!params.get('featured') || ('featured' in course && course.featured === true) === (params.get('featured') === 'true'))
   )
   const size = Number(params.get('size') ?? 12)
   return {
