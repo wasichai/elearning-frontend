@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { ColofonMark } from './shared/ColofonMark'
 import { homeRoute, shellChrome, shellNav } from './shellNav'
 import { COLOFON_SYSTEM_THEMES, COLOFON_THEMES } from './theme/themes'
-import { appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
+import { appLogoUrl, appName, createConfig, DEFAULT_APP_NAME, DEFAULT_VIDEO_COMPLETION, DEV_LOGIN_EMAIL, videoCompletion } from './config'
 
 describe('appName', () => {
   it('toma VITE_APP_NAME', () => {
@@ -16,6 +16,20 @@ describe('appName', () => {
   it('usa el nombre de trabajo si la variable falta o está vacía', () => {
     expect(appName({})).toBe(DEFAULT_APP_NAME)
     expect(appName({ VITE_APP_NAME: '  ' })).toBe(DEFAULT_APP_NAME)
+  })
+})
+
+describe('appLogoUrl', () => {
+  it('toma VITE_APP_LOGO: una ruta del sitio o una URL http(s)', () => {
+    expect(appLogoUrl({ VITE_APP_LOGO: ' /marca/logo.svg ' })).toBe('/marca/logo.svg')
+    expect(appLogoUrl({ VITE_APP_LOGO: 'https://cdn.example.org/logo.png' })).toBe('https://cdn.example.org/logo.png')
+  })
+
+  it('vacía, ausente o con otro esquema, no hay logo propio: queda la marca Colofón', () => {
+    expect(appLogoUrl({})).toBeUndefined()
+    expect(appLogoUrl({ VITE_APP_LOGO: '  ' })).toBeUndefined()
+    expect(appLogoUrl({ VITE_APP_LOGO: 'javascript:alert(1)' })).toBeUndefined()
+    expect(appLogoUrl({ VITE_APP_LOGO: '//otro.example/logo.svg' })).toBeUndefined()
   })
 })
 
@@ -41,6 +55,11 @@ describe('createConfig', () => {
 
   it('sin sesión, / es la portada pública', () => {
     expect(createConfig({ DEV: false }).publicHome).toBeDefined()
+  })
+
+  it('con VITE_APP_LOGO, el logo es esa imagen, decorativa: el nombre sigue siendo el texto accesible', () => {
+    const logo = createConfig({ VITE_APP_LOGO: '/logo.svg', DEV: false }).appLogo
+    expect(isValidElement<{ src: string; alt: string }>(logo) && logo.type === 'img' && logo.props).toMatchObject({ src: '/logo.svg', alt: '' })
   })
 
   it('la marca Colofón acompaña al nombre en el shell y el login', () => {

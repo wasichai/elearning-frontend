@@ -37,10 +37,11 @@ y la interfaz se apunta a ella con `WASICHAI_API_URL=http://localhost:8096 yarn 
 
 Variables (opcionales; copia `.env.example` a `.env` o expórtalas en tu shell):
 
-| Variable           | Para qué                                                                    | Por defecto             |
-| ------------------ | --------------------------------------------------------------------------- | ----------------------- |
-| `VITE_APP_NAME`    | Nombre visible del producto; se fija al compilar                            | `wasichai-learning`     |
-| `WASICHAI_API_URL` | Backend al que `yarn dev` y `yarn preview` envían `/api`; no entra al build | `http://localhost:8090` |
+| Variable           | Para qué                                                                                                                                                                                        | Por defecto               |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `VITE_APP_NAME`    | Nombre visible del producto, también el título de la pestaña; se fija al compilar                                                                                                               | `wasichai-learning`       |
+| `VITE_APP_LOGO`    | Logo: ruta del sitio (archivo en `public/`, p. ej. `/logo.svg`) o URL http(s); va junto al nombre en el menú, el login y las páginas públicas, y es el icono de la pestaña. Se fija al compilar | la marca Colofón (la «c») |
+| `WASICHAI_API_URL` | Backend al que `yarn dev` y `yarn preview` envían `/api`; no entra al build                                                                                                                     | `http://localhost:8090`   |
 
 ## Estructura
 

@@ -1,9 +1,8 @@
-import { CORE_NAMESPACE, useAppTitle, useAuth, useWasichaiLinks } from '@wasichai/core'
+import { CORE_NAMESPACE, useAppTitle, useAuth, useWasichaiConfig, useWasichaiLinks } from '@wasichai/core'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { canLearn } from './learning'
-import { ColofonMark } from './ColofonMark'
 import { screenContainer, type ScreenWidth } from './Screen'
 
 // el catálogo y el aula (otros módulos), por su clave de ruta como texto: src/shared no importa ningún módulo
@@ -17,11 +16,13 @@ const MY_COURSES_LABEL = 'classroom:nav.myCourses'
 // no sale al imprimir: una página impresa no lleva navegación. con fullBleed la página pone sus propios márgenes: bandas a todo el ancho
 export function PublicLayout({ children, width = 'content', fullBleed = false }: { children: ReactNode; width?: ScreenWidth; fullBleed?: boolean }) {
   const { appName } = useAppTitle()
+  // la misma marca del shell y del login (config.appLogo: la «c» de Colofón o VITE_APP_LOGO)
+  const { appLogo } = useWasichaiConfig()
   const links = useWasichaiLinks()
   const home = links.has(CATALOG_COURSES_ROUTE) ? links.to(CATALOG_COURSES_ROUTE) : undefined
   const brand = (
     <>
-      <ColofonMark />
+      {appLogo}
       <span>{appName}</span>
     </>
   )
