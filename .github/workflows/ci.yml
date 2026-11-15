@@ -28,10 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     # un yarn install o un navegador colgados no deben quemar las 6 h por defecto
     timeout-minutes: 25
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # los paquetes de GitHub Packages de wasichai piden un token read:packages: packages-token lo pide a Infisical por OIDC, sin secretos en el repo
+      # export false: solo los pasos que lo nombran lo ven, no los que ejecutan el código del pull request
+      - id: packages
+        uses: ./.github/actions/packages-token
+        with:
+          export: 'false'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -40,7 +50,7 @@ jobs:
           scope: '@wasichai'
       - run: yarn install --frozen-lockfile
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+          NODE_AUTH_TOKEN: ${{ steps.packages.outputs.token }}
       - run: yarn lint
       - run: yarn typecheck
       - run: yarn test
@@ -66,12 +76,22 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     steps:
       # el historial entero: commitlint recorre base..head del PR
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      # los paquetes de GitHub Packages de wasichai piden un token read:packages: packages-token lo pide a Infisical por OIDC, sin secretos en el repo
+      # export false: solo los pasos que lo nombran lo ven, no los que ejecutan el código del pull request
+      - id: packages
+        uses: ./.github/actions/packages-token
+        with:
+          export: 'false'
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
@@ -81,7 +101,7 @@ jobs:
       # la versión de commitlint y su configuración son las del lockfile, las mismas del hook commit-msg
       - run: yarn install --frozen-lockfile --ignore-scripts
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+          NODE_AUTH_TOKEN: ${{ steps.packages.outputs.token }}
       - run: npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -115,10 +135,20 @@ jobs:
       WASICHAI_EMAIL: admin@wasichai.local
       WASICHAI_PASSWORD: admin
       WASICHAI_DEMO_PASSWORD: Demo-ci-e2e-2026
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # los paquetes de GitHub Packages de wasichai piden un token read:packages: packages-token lo pide a Infisical por OIDC, sin secretos en el repo
+      # export false: solo los pasos que lo nombran lo ven, no los que ejecutan el código del pull request
+      - id: packages
+        uses: ./.github/actions/packages-token
+        with:
+          export: 'false'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: wasichai/elearning-backend
@@ -134,7 +164,7 @@ jobs:
         working-directory: backend
         env:
           GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ steps.packages.outputs.token }}
       # el borrador de lecciones renderiza su AsciiDoc a HTML con Asciidoctor (ADR-0018 §7 del backend), la misma versión fija de su CI
       - name: Asciidoctor
         run: |
@@ -179,7 +209,7 @@ jobs:
           scope: '@wasichai'
       - run: yarn install --frozen-lockfile
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN || github.token }}
+          NODE_AUTH_TOKEN: ${{ steps.packages.outputs.token }}
       - run: npx playwright install --with-deps chromium
       - run: yarn e2e:real
         env:
